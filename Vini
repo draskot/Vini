@@ -1,0 +1,98 @@
+
+# The program for computing the efficacy of cancer drugs                                                                                   #
+echo "If using this program in your academic research , please cite:"                                                   #
+echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
+echo ; sleep 1
+
+WORKDIR=`cat workdir`
+max_therapy_level=`cat $WORKDIR/max_therapy_level`
+
+data="_data"
+
+for (( therapy_level=1; therapy_level<=max_therapy_level; therapy_level++ ))
+do
+    echo $therapy_level > $WORKDIR/therapy_level
+    cancer_type=`cat $WORKDIR/cancer_type`          #getting cancer type from the preproc script
+
+    if  [ $cancer_type == "all" ]
+    then
+        echo "All cancer types will be screened."
+        start_date=`date`
+        echo "Analysis started at" $start_date
+        rm -f $WORKDIR/END
+        x=27; i=052
+        for (( j=10; j<$x; j++ ))
+        do
+            cancer_type=$i$j
+            echo $cancer_type > $WORKDIR/cancer_type
+            echo "Processing" $cancer_type "cancer pathway"
+
+            mkdir -p $WORKDIR/$cancer_type$data              #create staging directory
+
+            sh create_relations_receptors_files   #Creates relations, receptors and receptors_expanded files
+            sh repository_check          #Create receptors_contracted file
+
+            sh copy_genes_to_stage                   #Copy Vina pdb receptor files to the stage
+            sh create_receptor_pdbqt_files                  #Creating initial receptor pdbqt files
+            nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+            echo $nr_complexes > $WORKDIR/nr_complexes
+            sh estimate_Vina_computational_time
+            sh estimate_EB_matrices_computational_time
+            sh vini
+            while [ ! -f $WORKDIR/END ]
+            do
+                sleep 1
+            done
+            rm -f $WORKDIR/END                                   #End file created from vini at the end
+        done
+        cancer_type=05200                                     #Processing pathways in cancer 05200
+        echo $cancer_type > $WORKDIR/cancer_type
+        echo "Processing pathways in cancer"
+        mkdir -p $WORKDIR/$cancer_type$data                       #create staging directory
+
+        sh create_relations_receptors_files  #Creates relations, receptors and receptors_expanded files
+        sh repository_check                              #Create receptors_contracted files
+
+        sh copy_genes_to_stage                           #Copy Vina pdb receptor files to the stage
+        sh create_receptor_pdbqt_files                       #Creating initial receptor pdbqt files
+        nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+        echo $nr_complexes > $WORKDIR/nr_complexes
+        sh estimate_Vina_computational_time
+        sh estimate_EB_matrices_computational_time
+
+        sh vini
+        while [ ! -f $WORKDIR/END ]
+        do
+          sleep 1
+        done
+        rm -f $WORKDIR/END                                   #End file created from vini at the end
+        end_date=`date`
+        echo "Analysis completed at"  $end_date
+    else
+        echo "Processing" $cancer_type "metabolic pathway" 
+        start_date=`date`
+        echo "Analysis of therapy level " $therapy_level "started at" $start_date
+        rm -f $WORKDIR/END
+
+        if  [ $therapy_level -eq 1 ]
+        then
+            sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
+            sh repository_check                 #Create receptors_contracted file
+            sh copy_genes_to_stage              #Copy Vina pdb receptor files to the stage
+            sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
+            nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+            echo $nr_complexes > $WORKDIR/nr_complexes
+        fi
+
+        sh estimate_Vina_computational_time
+        sh estimate_EB_matrices_computational_time
+        sh vini 
+        end_date=`date`
+        echo "Analysis completed at"  $end_date
+    fi
+done
+
+cd $WORKDIR 
+rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands dock job_status job_submit target_dir ultradock stats prediction_list analysis_type max_jobs workload_manager  max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q*  SWISS-MODEL_email SWISS-MODEL_password Drugbank_email Drugbank_password job_cancel max_nodes MD_engine tmp dock.out computed_cancer_type dock.out success Vina_run
+cd $vini_dir
+rm -f partition workdir

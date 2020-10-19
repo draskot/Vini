@@ -1,0 +1,37 @@
+
+cores=`cat $WORKDIR/max_jobs`                                     #number of cores available
+
+nr_matrices=`cat $WORKDIR/nr_ligands`                                 #number of EB matrices to create
+
+case $therapy_level in                                                #determining number of Vina tasks
+     1) nr_matrices=$ligands ;;
+     2) nr_matrices=$(( $ligands * $ligands )) ;;
+     3) nr_matrices=$(( $ligands * $ligands * $ligands )) ;;
+     4) nr_matrices=$(( $ligands * $ligands * $ligands * $ligands )) ;;
+esac
+
+
+complexes=`cat $WORKDIR/nr_complexes`                                    #number of complexes
+
+submittion_time=$(( $nr_matrices / 2 ))                                  #in seconds
+
+C=10                                                                     #estimated C value on Bura is 0.045
+
+if  [ $nr_matrices -le $cores ]
+then
+    elapsed_time=$(( $complexes * $complexes * $C ))                     #O(complexes * complexes) in seconds. 
+    elapsed_time=$(( $elapsed_time / 1000 ))
+    elapsed_time=$(( $elapsed_time + $submittion_time ))
+else
+    elapsed_time=$(( $complexes * $complexes * $C ))                     #in seconds. 
+    elapsed_time=$(( $elapsed_time * nr_matrices / $cores ))             
+    elapsed_time=$(( $elapsed_time / 1000 ))
+    elapsed_time=$(( $elapsed_time + $submittion_time ))               
+fi
+
+echo -n "Estimated time for creating energy binding matrices is "  
+printf '%dh:%dm:%ds\n' $(($elapsed_time/3600)) $(($elapsed_time%3600/60)) $(($elapsed_time%60))
+
+
+
+

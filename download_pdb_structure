@@ -1,0 +1,15 @@
+#Script downloads pdb_structure from RCSB to $vini_dir/genes/pdb_files directory
+#Input parameters: DOWNLOAD_DIR ; accession_code
+#Output parameter: pdb file in DOWNLOAD_DIR if download sucessfull, otherwise nothing
+
+DOWNLOAD_DIR=$1
+accession_code=$2 
+
+SUFFIX=.pdb.gz
+
+wget -q -P $DOWNLOAD_DIR  http://www.rcsb.org/pdb/files/$accession_code$SUFFIX #download PDB structure
+if  [ -e $DOWNLOAD_DIR/$accession_code$SUFFIX ]
+then
+    gzip -df $DOWNLOAD_DIR/$accession_code$SUFFIX
+fi
+

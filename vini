@@ -1,0 +1,220 @@
+WORKDIR=`cat workdir`
+UDIR=$WORKDIR/ultradock_data
+ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
+therapy_level=`cat $WORKDIR/therapy_level`          #Current therapy level received from Vini
+max_therapy_level=`cat $WORKDIR/max_therapy_level`  #single or multidrug (2,3,4) cancer therapy
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+workload_manager=`cat $WORKDIR/workload_manager`    
+job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
+job_submit=`cat $WORKDIR/job_submit`
+user_name=$USER
+mkdir -p $WORKDIR/cache
+
+MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs` #max. number of processor cores Vina can use
+MAX_NODES=`cat $WORKDIR/max_nodes`       #max. number of compute nodes Gromacs/g_mmpbsa can use
+nr_ligands=`cat $WORKDIR/nr_ligands` 
+nr_complexes=`cat $WORKDIR/nr_complexes`
+
+data="_data"
+PDB=.pdb
+pdbqt=.pdbqt
+NULL=0
+const=4.184 #KJoul to kcal conversion factor
+DIR=$WORKDIR/$CANCER_TYPE$data 
+lig_source=$WORKDIR
+
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE       #setting the cancer pathway
+a="_results"                               #Create directory store for results
+
+mkdir -p $WORKDIR/$CANCER_PATHWAY$a
+cd $WORKDIR
+
+L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
+case $therapy_level in
+     1) L4=$nr_ligands ;;
+     2) L3=$nr_ligands; L4=$nr_ligands ;;
+     3) L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
+     4) L1=$nr_ligands; L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
+esac
+
+ligand_number=1                #initializing ligand index
+
+for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
+do
+    for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
+    do
+         for (( L=1; L<$((L3+1)); L++ )) #3rd loop -2nd thl
+         do
+             for (( M=1; M<$((L4+1)); M++ )) #4th loop - 1st thl
+             do
+                 printf -v m "%03d" $M ; lig_index=$m
+                 case $therapy_level in
+                     1) comp_source=$DIR;          target_dir=$DIR/$M ;;
+                     2) comp_source=$DIR/$M;       target_dir=$DIR/$M/$L ;;
+                     3) comp_source=$DIR/$M/$L;    target_dir=$DIR/$M/$L/$J ;;
+                     4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
+                 esac
+                 mkdir -p $comp_source $target_dir # nr. of targeti dirs equals nr. of ligands
+
+                 for (( N=0; N<nr_complexes; N++ )) #5th loop
+       	         do
+                     printf -v n "%03d" $N ; comp_index=$n
+                     conf_index=$comp_index ; log_index=$comp_index
+
+                     cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
+
+                     line=`head -"$ligand_number" $WORKDIR/ligands_list | tail -1`
+                     flag=`echo $line | awk '{print $2}'`
+                     if  [ $flag == S ]  #if a small molecule, we are performing docking, else MD
+                     then
+                         echo "Vina" > $WORKDIR/MD_engine
+                         mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * 
+
+                         recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
+                         line=`head -$recline $WORKDIR/receptors_contracted | tail -1`
+                         flag=`echo $line | awk '{print $4}'`
+                         if  [ $flag == F ]
+                         then
+                             FBE_kcal_mol=7.0 ; echo $FBE_kcal_mol > $target_dir/log_$comp_index.txt
+                         else
+                             cp $MGLTOOLS/AD4_parameters.dat ./                                
+                             cp $vini_dir/autogrid4 ./                                         
+                             cp $comp_source/complex_$comp_index.pdbqt ./                      
+                             sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                     
+                             sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
+                             cat $WORKDIR/dock > Vina_run
+                             echo "vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_$comp_index.pdbqt --ligand $lig_source/ligand_$lig_index.pdbqt --out $target_dir/complex_$comp_index.pdbqt --log $target_dir/log_$log_index.txt " >> Vina_run
+                             sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+                             $job_submit Vina_run    
+                         fi
+                         cd $WORKDIR
+                     else
+                         echo "Gromacs" > $WORKDIR/MD_engine
+                         mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * #cleanup
+                         recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
+                         line=`head -$recline $WORKDIR/receptors_contracted | tail -1`
+                         flag=`echo $line | awk '{print $4}'`
+                         if  [ $flag == F ]
+                         then
+                             FBE_kcal_mol=7.0 ; echo $FBE_kcal_mol > $target_dir/log_$comp_index.txt
+                         else
+                             #check if FBE for this complex has been already computed
+                             line=`head -"$recline" $WORKDIR/receptors_contracted | tail -1`
+                             receptor=`echo $line | awk '{print $3}'` 
+                             already=`echo FBE for complex with $receptor is`
+                             grep "$already" $WORKDIR/debuglog > tmp; nolines=`wc -l < tmp`
+                             if [ $nolines -gt $NULL ]
+                             then
+                                  FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
+                                  echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
+                             else
+                                 cp $vini_dir/nodes_control_script ./
+                                 cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
+                                 cp $vini_dir/wait_until_jobs_finish ./
+                                 cp $vini_dir/MD_prepare $vini_dir/MD_run $vini_dir/create_index_file ./
+                                 cp $vini_dir/g_mmpbsa_potential_energy $vini_dir/g_mmpbsa_polar_energy $vini_dir/g_mmpbsa_apolar_energy $vini_dir/compute_FBE  ./
+                                 cp $vini_dir/polar.mdp $vini_dir/apolar_sasa.mdp $vini_dir/mmpbsa.mdp  $vini_dir/pbsa.mdp ./
+                                 cp $vini_dir/docking.mac ./ 
+                                 cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./ #prep protein 
+                                 cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
+                                 #cp $vini_dir/COMPLEX_clean.pdb ./receptor.pdb   #delete after debug!!!
+                                 cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
+                                 echo -n "Docking with Hex..." 
+                                 hex receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                 accession_code=COMPLEX ; ligand=BNZ #preparing the protein complex
+                                 sh chimera_script ${accession_code} ${ligand}
+                                 mv protein_clean.pdb COMPLEX.pdb
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit create_index_file
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_potential_energy
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit compute_FBE ${target_dir} ${comp_index} ${recline}
+
+                                 $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r COMPLEX_clean.pdb -o $target_dir/complex_$comp_index.pdbqt #convert COMPLEX_clean.pdb to $target_dir/complex_$comp_index.pdbqt
+                             fi
+                        fi
+                        cd $WORKDIR
+                     fi
+                     echo "brakepoint" ; sleep 10000
+    	         done # end of 5th loop
+
+                 let ligand_number++
+                 echo "Waiting for" $USER  "jobs to finish..."
+                 sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name} #slurm jobs
+                 echo "done."
+                 > $target_dir/vec                               #initialize affinity vector
+                 MD_engine=`cat $WORKDIR/MD_engine`
+                 if [ $MD_engine == Gromacs ]
+                 then
+                     ls $target_dir/log* > temp_buf
+                     nologs=`wc -l < temp_buf`
+                     for (( N=0; N<nologs; N++ ))
+                     do
+                         printf -v n "%03d" $N
+                         cat $target_dir/log_$n.txt  >> $target_dir/vec
+                     done
+                 else
+                     m=0  #creating affinity vector                                          
+                     for (( N=0; N<nr_complexes; N++ )) 
+       	             do
+                         let "m++"                                   #checking flag value
+                         line=`head -$m $WORKDIR/receptors_contracted | tail -1`            
+                         flag=`echo $line | awk '{print $4}'`
+                         if  [ $flag == F ] #or complex was not created
+                         then
+                             printf "%.1f\n" 7.0 >> $target_dir/vec 
+                         else
+                             printf -v n "%03d" $N ; log_index=$n #compute mean for 10 Vina num_modes
+                             sum=0             
+                             num_modes=10  
+                             for (( lineno=28; lineno<38; lineno++ ))
+                             do
+                                 affinity_value=`head -"$lineno" $target_dir/log_$log_index.txt | tail -1`
+                                 affinity_value=`echo $affinity_value | awk '{print $2}'`
+                                 sum=`echo $sum $affinity_value | awk '{print $1 + $2}'`
+                             done
+                             echo "$sum $num_modes" | awk '{printf "%.9f \n", $1/$2}' >> $target_dir/vec
+                         fi
+                     done
+                 fi
+
+                 echo $target_dir > target_dir
+                 if  [ $CANCER_PATHWAY == hsa05244 ] #if SARS spike qlycoprotein, do not compute SLEM
+                 then
+                     SLEM=`cat $target_dir/vec`
+                 else
+                     cat $WORKDIR/dock > create_energy_b
+                     cat $vini_dir/create_energy_binding_matrix >> create_energy_b
+                     chmod +x create_energy_b
+                     $job_submit create_energy_b 
+                     sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name} #Wait until EB matrix is created
+                     sleep 4   #allow EB matrix creation to finish
+                     /usr/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
+                     eigenvalue=`cat $target_dir/E | awk '{print $2}'`
+                     SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
+                 fi
+                 case $therapy_level in
+                     1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
+                     2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
+                     3) printf "%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=3
+                     4) printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" "." "$I" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=4
+                 esac
+                 rm -f create_energy_binding_matrix.* target_dir stats 
+             done   #end of 4thloop
+         done       #end of 3rd loop
+    done            #end of 2nd loop
+done                #end of 1st loop
+
+
+mv SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level          #data formatting
+cat $WORKDIR/dock > postproc
+cat $vini_dir/analyse_results >> postproc
+chmod u+x postproc ; $job_submit $WORKDIR/postproc
+sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
+echo $therapy_level > $WORKDIR/computed_therapy_level
+echo $CANCER_TYPE > $WORKDIR/computed_cancer_type
+echo "done. The results are in " $WORKDIR/$CANCER_PATHWAY$a "directory."
+
+touch $WORKDIR/END    #Signal to Vini

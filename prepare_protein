@@ -1,0 +1,69 @@
+#Code below uses dockprep functionality of Chimera to clean the protein and to add missing residues using Dunbrack Library
+#Water molecules are deleted but hydrogens are not added
+#input parameters: uniprot_id ; $WORKDIR/completeness_list 
+#output parameter: clean protein structure in $vini_dir/genes/pdb_files
+
+uniprot_id=$1
+download_dir=$2
+
+CLEAN=_clean
+protein_clean=protein_clean
+PDB=.pdb
+NULL=0
+ONES=1
+chim_status=0
+
+cd $WORKDIR
+
+lineno=`wc -l < completeness_list`
+for (( i=1; i<$((lineno+1)); i++ ))
+do
+    accession_code=`head -"$i" completeness_list | tail -1`
+    accession_code=`echo $accession_code | awk '{print $1}'`
+    echo "checking for ligands in" $accession_code "structure"
+    grep -w "HET" $download_dir/$accession_code$PDB > tmp #calculate the number of ligands
+    
+    noligands=`wc -l < tmp` ; let "noligands++"
+    if  [ $noligands -eq $ONES ]
+    then     
+        echo -n $accession_code "is the structure without ligand(s). Removing water molecules."
+        grep -v HOH $download_dir/$accession_code$PDB > $vini_dir/genes/pdb_files/$uniprot_id$PDB
+        break
+    else
+        echo -n $accession_code "is the structure with ligand. Cleaning with Chimera, please wait..."
+        ligand=`head -1 tmp`                         #get ligand name
+        ligand=`echo $ligand | awk '{print $2}'`
+        cp $download_dir/$accession_code$PDB ./
+        chimera --nogui --script "prep_prot_lig.py $accession_code$PDB $ligand" | tee -a log
+        grep Error log > stats 
+        chars=`wc -c < stats`
+        if  [ $chars -eq $NULL ]
+        then
+            grep -v HOH protein_clean.pdb > tmp
+            mv tmp $vini_dir/genes/pdb_files/$uniprot_id$PDB
+            rm -f ligand_wH.pdb $ligand$PDB stats log #cleanup
+            chim_status=$NULL
+            echo "success."
+            break
+        else
+            chim_status=$ONES
+            rm -f ligand_wH.pdb $ligand$PDB stats log #cleanup
+            echo "failed."
+        fi
+    fi
+done
+
+if [ $chim_status -eq $ONES ]
+then
+    echo -n "Chimera failed to clean any structure. Trying to predict protein structure ..."
+    drugname=0 ; DOWNLOAD_DIR=$WORKDIR 
+    sh predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+    if [ -e $uniprot_id$PDB ]
+    then
+        mv $uniprot_id$PDB $vini_dir/genes/pdb_files/ ; echo "success."
+    else
+       grep -v HOH $vini_dir/1aki.sav > $vini_dir/genes/pdb_files/$uniprot_id$PDB
+       echo "prediction failed. Using 1AKI protein instead."
+       echo $uniprot >> Chimera_failed_list
+    fi 
+fi

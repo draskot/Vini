@@ -1,0 +1,22 @@
+
+# wait_until_jobs_finish
+#Input parameters: job_status user_name
+#Output parameters: none
+
+job_status=$1 ; user_name=$2
+NULL=0
+
+echo $user_name "jobs remaining: "
+while true
+do
+     sleep 1
+     $job_status -u $user_name > $WORKDIR/temp2_buf
+     lines=`wc -l < $WORKDIR/temp2_buf` ; let "lines--"
+     echo -n $lines ; echo -n " "
+     if  [ $lines -eq $NULL ]
+     then
+	 break
+     fi 
+done
+rm -f $WORKDIR/temp2_buf
+echo "Done."

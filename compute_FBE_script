@@ -1,0 +1,88 @@
+
+target_dir=$1
+comp_index=$2
+recline=$3
+
+NULL=0
+THREE=3
+error=0
+const=4.184 #KJoul to kcal conversion factor
+
+date=`date` ; ligand=`basename "$PWD"`
+echo "FBE_calc job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+touch g_mmpbsa_errors g_mmpbsa_jobs gromacs_errors
+
+while true
+do
+    #waiting for Gromacs_jobs to finish
+    sleep 4
+    if [ -e energy_MM.xvg ] && [ -e polar.xvg ] && [ -e sasa.xvg ]
+    then                                       
+        #waiting for g_mmpbsa jobs to finish
+        grep Error potential.out >> g_mmpbsa_errors #exit if any of g_mmpbsa jobs failed
+        grep "Segmentation fault" potential.out >> g_mmpbsa_errors
+        grep Error polar.out >> g_mmpbsa_errors
+        grep "Segmentation fault" polar.out >> g_mmpbsa_errors
+        grep Error apolar.out >> g_mmpbsa_errors
+        grep "Segmentation fault" apolar.out >> g_mmpbsa_errors
+        nolines=`wc -l < g_mmpbsa_errors`
+        if  [ $nolines -gt $NULL ]; then
+            echo "g_mmpbsa failed. exiting loop."
+            error=1 ; break
+        fi
+        grep "Thank You" potential.out > g_mmpbsa_jobs #exit if all mmpbsa jobs succeeded
+        grep "Thank You" polar.out >> g_mmpbsa_jobs
+        grep "Thank You" apolar.out >> g_mmpbsa_jobs
+        nolines=`wc -l < g_mmpbsa_jobs`
+        if  [ $nolines -eq $THREE ]; then
+            echo " g_mmpbsa finished. exiting loop."
+            error=0 ; break
+        fi
+    else                                    
+        #echo "checking slurm out files for errors."
+       if  [ -e MD_prepare.out ]; then
+           grep Error MD_prepare.out >> gromacs_errors
+       fi
+       if  [ -e MD_run.out ]; then
+           grep Error MD_run.out >> gromacs_errors
+       fi
+       if  [ -e ndx.out ]; then
+           grep Error ndx.out >> gromacs_errors
+       fi
+       nolines=`wc -l < gromacs_errors`
+       if  [ $nolines -gt $NULL ]; then
+           echo "one of gromacs jobs failed. exiting loop."
+           error=1 ; break
+       fi
+    fi
+done
+
+if  [ $error -eq $NULL ]
+then
+    #echo "no error found"
+    python2 $MMPBSA_SCRIPTS/MmPbSaStat.py -m energy_MM.xvg -p polar.xvg -a sasa.xvg #comp FBE
+    line=`grep Binding summary_energy.dat`
+    free_binding_energy=`echo $line | awk '{print $4}'`
+    if  [ $free_binding_energy == "nan" ]
+    then
+        echo "free binding energy cannot be calculated (nan).  Setting FBE to 7.0 kcal/mol."
+        FBE_kcal_mol=7.0
+    else
+        echo -n "converting free binding energy to kcal/mol..."
+        FBE_kcal_mol=`echo $free_binding_energy $const | awk '{print $1 / $2}'`
+        echo "done."
+    fi
+else
+    echo "error found. setting free binding energy to 7.0 kcal/mol."
+    FBE_kcal_mol=7.0
+fi
+
+echo "free binding energy:" $FBE_kcal_mol
+echo "writing free binding energy value to" ${target_dir}/log_${comp_index}.txt
+echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt
+
+date=`date`
+line=`head -"$recline" $WORKDIR/receptors_contracted | tail -1`
+receptor=`echo $line | awk '{print $3}'`
+echo "FBE for complex with" $receptor "is" $FBE_kcal_mol ".Job finished on " $date >> $WORKDIR/debuglog

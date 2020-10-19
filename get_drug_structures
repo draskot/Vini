@@ -1,0 +1,42 @@
+
+
+
+#This subroutine check the entries in the list of compounds. If the structure is not found, PubChem or DrugBank are contacted."
+
+DOWNLOAD_DIR=$1
+
+pdb=.pdb
+
+while read -r line
+do
+    compound=`echo $line | awk '{print $1}'`
+    echo -n "checking if the" $compound "structure is in repo..."
+    if  [ -e $vini_dir/ligands/pdb_files/$compound$pdb ] #check if already in repo
+    then
+        echo "yes."
+    else
+        #if  [ -n "$compound" ] && [ "$compound" -eq "$compound" ] 2>/dev/null  #if number, this is PubCheM ID
+        #if    [[ -n "$compound" ]] && [[ "$compound" -eq "$compound" ]] 
+        if  [[ $compound = *[[:digit:]]* ]]; then
+            echo -n "no, trying to download it from PubChem..."
+            pubchem_id=$compound
+            sh download_substance_structure ${pubchem_id} ${DOWNLOAD_DIR} 
+            if  [ -e $DOWNLOAD_DIR/$pubchem_id$pdb ]
+            then
+                echo "success."
+            else
+                echo "unable to obtain the structure from PubChem. Check the compound name and restart!"
+                 break
+            fi
+        else
+            if  [ -e $vini_dir/Drugbank/$compound$pdb ]                
+            then
+                cp $vini_dir/Drugbank/$compound$pdb $vini_dir/ligands/pdb_files
+                echo "success."
+            else
+                echo "unable to obtain the structure from DrugBank repo. Restart and sync with the Drugbank!"
+                break 5
+            fi
+        fi
+    fi
+done < $vini_dir/ligands/ligands_list

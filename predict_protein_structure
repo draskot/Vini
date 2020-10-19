@@ -1,0 +1,61 @@
+#input parameters: uniprot_id, DOWNLOAD_DIR
+#output parameters: protein structure in DOWNLOAD_DIR if prediction was scessfull, otherwise nothing 
+
+DOWNLOAD_DIR=$1
+uniprot_id=$2
+drugname=$3
+email=`cat $WORKDIR/SWISS-MODEL_email`
+password=`cat $WORKDIR/SWISS-MODEL_password`
+dots=: 
+dash=-
+NULL=0
+PDB=.pdb
+UDIR=$WORKDIR/ultradock_data
+
+
+
+grep $uniprot_id $HOME/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
+lineno=`wc -l < $WORKDIR/swiss_repo_entry`
+
+
+if  [ $lineno -eq $NULL ]
+then
+    echo "prediction failed, exiting." ; exit
+else
+    rm -f $WORKDIR/tmp
+    for (( i=1; i<$((lineno+1)); i++ ))
+    do
+        echo -n "."
+
+        URL=`head -"$i"  $WORKDIR/swiss_repo_entry | tail -1` #download all predicted structures
+        echo $URL > $WORKDIR/url
+        URL=`grep -o "https[^[:space:]]*" $WORKDIR/url`
+        rm -f $WORKDIR/$uniprot_id$dash$i
+        curl -Lfs -o $WORKDIR/$uniprot_id$dash$i -u $email$dots$password $URL
+
+        if  [ -e $WORKDIR/$uniprot_id$dash$i ]
+        then
+            filename=`basename $WORKDIR/$uniprot_id$dash$i`
+            QMN4=`grep QMN4 $WORKDIR/$uniprot_id$dash$i | awk '{print $4}'`
+            printf "%s%s%s\n" "$filename" " " "$QMN4" >> $WORKDIR/tmp
+        else
+            break
+        fi
+    done
+    rm $WORKDIR/url
+    if [ -e $WORKDIR/tmp ]
+    then
+        sort -k2 -n -r $WORKDIR/tmp > $WORKDIR/prediction_list #we need the structure with highest QMN4
+        master=`head -1 $WORKDIR/prediction_list | awk '{print $1}'`
+
+        if [ $drugname == $NULL ]
+        then
+            mv $WORKDIR/$master $DOWNLOAD_DIR/$uniprot_id$PDB
+        else
+            mv $WORKDIR/$master $DOWNLOAD_DIR/$drugname$PDB
+        fi
+        rm $WORKDIR/tmp $WORKDIR/prediction_list
+    fi
+fi
+
+rm -f $WORKDIR/tmp   #cleanup

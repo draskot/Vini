@@ -1,0 +1,167 @@
+WORKDIR=`cat workdir`
+ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
+analysis_type=`cat $WORKDIR/analysis_type`          #getting the analysis type from the main script
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE                #setting the cancer pathway
+DOWNLOAD_DIR=$vini_dir/genes/pdb_files
+UNIPROT_ID_LIST="_uniprot_entries.txt"
+PDB=.pdb ; sdf=sdf ; two=2 ; dots=: ; ast=* ; NA=NA ; MON=monomer ; NULL=0 ;
+NULL=0
+
+
+rm -f $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+
+echo "finalizing receptor file, please wait..."
+touch $WORKDIR/receptors_contracted
+
+noentries=`wc -l < $WORKDIR/receptors_expanded`
+echo "number of entries in pathway is" $noentries
+entry=1
+
+while read -r line
+do     
+    KEGG_entry_id=`echo $line | awk '{print $1}'` #get KEGG entry ID (number) and KEGG gene name (hsa:xxxx)
+                                                  # note one KEGG entry may have several genes! 
+    KEGG_gene_name=`echo $line | awk '{print $2}'`           
+    if  [[ ${KEGG_gene_name:0:1} == "C" ]]         #checking if KEGG entry is the compound
+    then
+        pubchem_id=`curl -s http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
+
+        if  [ -e $DOWNLOAD_DIR/$pubchem_id$PDB ] 
+        then
+            grep $pubchem_id $WORKDIR/receptors_contracted > $WORKDIR/tmp
+            chars=`wc -c < $WORKDIR/tmp`
+            if  [ $chars == $NULL  ]
+            then
+                echo " yes. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with E flag."
+                printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "E" >> $WORKDIR/receptors_contracted
+            else
+                entry_flag=`head -1 $WORKDIR/tmp`
+                entry_flag=`echo $entry_flag | awk '{print $4}'`
+                if  [ $entry_flag != F ]
+                then
+                    echo " yes. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with E flag."
+                    printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "E" >> $WORKDIR/receptors_contracted
+                else
+                    echo " yes but is in error. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with F flag."
+                    printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "F" >> $WORKDIR/receptors_contracted
+                fi
+            fi
+        else
+            echo -n "no. Trying to obtain the structure from Pubchem..."
+            sh download_substance_structure ${pubchem_id} ${DOWNLOAD_DIR} #try to download structure from Pubchem
+            if  [ -e $DOWNLOAD_DIR/$pubchem_id$PDB ]
+            then
+                echo "success. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with E flag."
+                printf "%s%s%s%s%s%s%s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "E" >> $WORKDIR/receptors_contracted
+            else
+                echo "failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with F flag."
+                grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$pubchem_id$PDB #prepare faked compound
+                printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "F" >> $WORKDIR/receptors_contracted
+            fi
+        fi
+    else 
+         if [ $KEGG_gene_name == hsa:19254 ] #we have SARS COV-2 spike glycoprotein
+         then
+             uniprot_id=P59594
+         else
+             uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+             uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
+         fi
+
+
+         echo $uniprot_id >> $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+         line=`grep $uniprot_id $vini_dir/uniprot_db` #Check if pdb structure is available
+         echo -n "KEGG entry" $entry "is a protein" $uniprot_id
+         nowords=`echo $line | wc -w`
+         if  [ $nowords -eq $two ]
+         then
+             echo -n " without structure. Checking if in repo..."
+             if [ -e $DOWNLOAD_DIR/$uniprot_id$PDB ] 
+             then
+                 echo "yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "file with P flag." 
+                 printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "P" >> $WORKDIR/receptors_contracted
+             else
+                 echo -n "no. Trying to predict" $uniprot_id "structure..."
+                 drugname=0
+                 sh predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+                 if  [ -e $DOWNLOAD_DIR/$uniprot_id$PDB ] #check if the prediction was successful
+                 then
+                     echo "success. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with P flag."
+                     printf "%s%s%s%s%s%s%s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "P" >> $WORKDIR/receptors_contracted
+                 else
+                     echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
+                     printf "%s%s%s%s%s%s%s\n" "$KEGG_entry" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
+                     grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                 fi
+             fi
+         else
+             echo -n " with structure. Checking if in repo..."
+             pdb_file=$uniprot_id$PDB
+             if  [ -e $vini_dir/genes/pdb_files/$pdb_file ] #checking if the structure is in repo
+             then 
+                 grep $uniprot_id $WORKDIR/receptors_contracted > $WORKDIR/tmp
+                 chars=`wc -c < $WORKDIR/tmp`
+                 if  [ $chars == $NULL  ]
+                 then
+                     echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
+                     printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "E" >> $WORKDIR/receptors_contracted
+                 else
+                     entry_flag=`head -1 $WORKDIR/tmp`
+                     entry_flag=`echo $entry_flag | awk '{print $4}'`
+                     if  [ $entry_flag != F ]
+                     then
+                         echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
+                         printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "E" >> $WORKDIR/receptors_contracted
+                     else
+                         echo " yes but is in error. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with F flag."
+                         printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
+                     fi
+                 fi
+             else
+                 echo "no. Analyzing associated RCSB structures, may take a while... "  
+
+
+                 rm -f $WORKDIR/completeness_list
+                 sh create_completeness_list ${uniprot_id}
+                 noentries=`wc -l < $WORKDIR/completeness_list`
+
+                 if  [ $noentries -ne $NULL ]
+                 then
+                     save=$DOWNLOAD_DIR ; DOWNLOAD_DIR=$WORKDIR/RCSB_structures
+                     sh prepare_protein ${uniprot_id} ${DOWNLOAD_DIR}  #clean protein  
+                     DOWNLOAD_DIR=$save
+
+                     if  [ -e $DOWNLOAD_DIR/$uniprot_id$PDB ] #check for  success
+                     then
+                         echo "success. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with E flag."
+                         printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "E" >> $WORKDIR/receptors_contracted
+                     else
+                         echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
+                         grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                         printf "%s%s%s%s%s%s%s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
+                     fi
+                 else
+                     echo -n "no single model found. Trying to predict the protein structure..."
+                     drugname=0
+                     sh predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+                     if  [ -e $DOWNLOAD_DIR/$uniprot_id$PDB ] #check if the prediction was successful
+                     then
+                         echo "success. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with P flag."
+                         printf "%s%s%s%s%s%s%s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "P" >> $WORKDIR/receptors_contracted
+                     else
+                         echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
+                         printf "%s%s%s%s%s%s%s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
+                         echo "Adding protein 1AKI to the repo instead."
+                         grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                     fi
+                 fi
+             fi
+         fi
+    fi
+    let "entry++"
+done < $WORKDIR/receptors_expanded
+awk '!seen[$0]++' $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/temp
+mv $WORKDIR/temp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+echo "done."

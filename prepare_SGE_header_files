@@ -1,0 +1,113 @@
+cluster=`uname -n`
+echo "Available Sun Grid Engine partitions on" $cluster "are:"
+qconf -sql
+
+read -p  "enter the name of cluster partition Autodock Vina will use:" Vina
+read -p  "enter the name of cluster partition Gromacs (MD_prepare) will use:" MD_prepare
+read -p  "enter the name of cluster partition Gromacs (MD_run) will use:" MD_run
+read -p  "enter the name of cluster partition Gromacs (create_index_file) will use:" ndx
+read -p  "enter the name of cluster partition g_mmpbsa (potential) will use:" potential
+read -p  "enter the name of cluster partition g_mmpbsa (polar) will use:" polar
+read -p  "enter the name of cluster partition g_mmpbsa (apolar) will use:" apolar
+read -p  "enter the name of cluster partition g_mmpbsa (compute_FBE) will use:" FBE
+
+echo "#! /bin/bash"           > dock #prepare Vina header file
+echo "#$ -N Vina"            >> dock
+echo "#$ -o Vina.out"        >> dock
+echo "#$ -e Vina.out"        >> dock
+echo "#$ -l h_rt=1800"       >> dock
+echo "#$ -pe 3"              >> dock
+echo "#$ -l mem_free=8192"   >> dock
+echo "#$ -q" $Vina           >> dock
+
+echo "#! /bin/bash"                       > tmp  #prepare Gromacs header files
+echo "#$ -N MD_prepare"                  >> tmp
+echo "#$ -o MD_prepare.out"              >> tmp
+echo "#$ -e MD_prepare.out"              >> tmp
+echo "#$ -l h_rt=3600"                   >> tmp
+echo "#$ -pe 1"                          >> tmp
+echo "#$ -l mem_free=4096"               >> tmp
+echo "#$ -q" $MD_prepare                 >> tmp
+cat tmp > MD_prepare
+chmod u+x MD_prepare
+cat MD_prepare_script >> MD_prepare
+
+echo "#! /bin/bash"                       > tmp
+echo "#$ -N MD_run"                      >> tmp
+echo "#$ -o MD_run.out"                  >> tmp
+echo "#$ -e MD_run.out"                  >> tmp
+echo "#$ -l h_rt=43200"                  >> tmp
+echo "#$ -pe 4"                          >> tmp
+echo "#$ -l mem_free=32768"              >> tmp
+echo "#$ -q" $MD_run                     >> tmp
+cat tmp > MD_run
+chmod u+x MD_run
+cat MD_run_script >> MD_run
+
+echo "#! /bin/bash"                       > tmp
+echo "#$ -N ndx"                         >> tmp
+echo "#$ -o ndx.out"                     >> tmp
+echo "#$ -e ndx.out"                     >> tmp
+echo "#$ -l h_rt=43200"                  >> tmp
+echo "#$ -pe 1"                          >> tmp
+echo "#$ -l mem_free=4096"               >> tmp
+echo "#$ -q" $ndx                        >> tmp
+cat tmp > create_index_file
+chmod u+x create_index_file
+cat create_index_file_script >> create_index_file
+
+echo "#! /bin/bash"                       > tmp  #prepare mmpbsa header files
+echo "#$ -N potential"                   >> tmp
+echo "#$ -o potential.out"               >> tmp
+echo "#$ -e potential.out"               >> tmp
+echo "#$ -l h_rt=86400"                  >> tmp
+echo "#$ -pe 16"                         >> tmp
+echo "#$ -l mem_free=16384"              >> tmp
+echo "#$ -q" $potential                  >> tmp
+cat tmp > create_index_file
+echo "export OMP_NUM_THREADS=16"         >> tmp
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> tmp
+cat tmp > g_mmpbsa_potential_energy
+chmod u+x g_mmpbsa_potential_energy
+cat g_mmpbsa_potential_energy_script >> g_mmpbsa_potential_energy
+
+echo "#! /bin/bash"                       > tmp
+echo "#$ -N apolar"                      >> tmp
+echo "#$ -o apolar.out"                  >> tmp
+echo "#$ -e apolar.out"                  >> tmp
+echo "#$ -l h_rt=86400"                  >> tmp
+echo "#$ -pe 8"                          >> tmp
+echo "#$ -l mem_free=8192"               >> tmp
+echo "#$ -q" $apolar                     >> tmp
+echo "export OMP_NUM_THREADS=8"          >> tmp
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> tmp
+cat tmp > g_mmpbsa_apolar_energy
+chmod u+x g_mmpbsa_apolar_energy
+cat g_mmpbsa_apolar_energy_script >> g_mmpbsa_apolar_energy
+
+echo "#! /bin/bash"                      > tmp
+echo "#$ -N polar"                      >> tmp
+echo "#$ -o polar.out"                  >> tmp
+echo "#$ -e polar.out"                  >> tmp
+echo "#$ -l h_rt=86400"                 >> tmp
+echo "#$ -pe 16"                        >> tmp
+echo "#$ -l mem_free=24576"             >> tmp
+echo "#$ -q" $polar                     >> tmp
+echo "export OMP_NUM_THREADS=16"        >> tmp
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> tmp
+cat tmp > g_mmpbsa_polar_energy
+chmod u+x g_mmpbsa_polar_energy
+cat g_mmpbsa_polar_energy_script >> g_mmpbsa_polar_energy
+
+echo "#! /bin/bash"                     > tmp
+echo "#$ -N FBE_calc"                  >> tmp
+echo "#$ -o FBE_calc.out"              >> tmp
+echo "#$ -e FBE_calc.out"              >> tmp
+echo "#$ -l h_rt=86400"                >> tmp
+echo "#$ -pe 1"                        >> tmp
+echo "#$ -l mem_free=4096"             >> tmp
+echo "#$ -q" $FBE                      >> tmp
+echo "export OMP_NUM_THREADS=1"        >> tmp
+cat tmp > compute_FBE
+chmod u+x compute_FBE
+cat compute_FBE_script >> compute_FBE

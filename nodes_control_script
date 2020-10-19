@@ -1,0 +1,27 @@
+
+# nodes_control_script
+#Input parameter: MAX_NODES
+
+MAX_NODES=$1
+
+while true; do
+
+    allnodes=0
+    squeue | grep $USER > temp_buf
+    while read -r line
+    do
+        nodes=`echo $line | awk '{print $7}'`
+        allnodes=`echo $allnodes $nodes | awk '{print $1 + $2}'`
+    done < temp_buf
+
+    echo "allnodes:" $allnodes
+
+    if [ $allnodes -gt $MAX_NODES ]
+    then 
+        echo "nr. nodes exceeds limit" ; sleep 1
+    else
+        break
+    fi
+done
+
+rm temp_buf

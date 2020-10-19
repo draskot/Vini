@@ -1,0 +1,69 @@
+
+pdb=.pdb
+pdbqt=.pdbqt
+job_status=`cat $WORKDIR/job_status`
+job_submit=`cat $WORKDIR/job_submit`
+MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
+na="NA"
+
+cd $WORKDIR
+echo -n "checking for ligands_list file..."
+if [ -e $vini_dir/ligands/ligands_list ] 
+then
+    cp $vini_dir/ligands/ligands_list $WORKDIR
+    echo "present."
+else
+    echo "you must provide ligand list. Exiting..." ; exit
+fi
+
+rm -f ligands_contracted
+
+echo "yes" > $WORKDIR/success
+
+echo -n "Please wait while creating ligand pdbqt files..."
+
+
+lineno=1
+for j in $WORKDIR/ligand_*.pdb
+do
+    line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
+    flag=`echo $line | awk '{print $2}'`
+    if [ $flag == S ]  #if a drug is small molecule, we are creating pdbqt files for Vina
+    then
+        b=`basename $j .pdb`
+        cat $WORKDIR/dock > Vina_run
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $WORKDIR/$b.pdb -o $WORKDIR/$b.pdbqt"  >> Vina_run
+        chmod +x Vina_run
+        $job_submit Vina_run
+    fi
+    let "lineno++"
+    sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+done
+
+cd $vini_dir
+
+user_name=$USER
+sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
+rm -f $WORKDIR/temp_buf
+
+lineno=1
+for j in $WORKDIR/ligand_*.pdb  #final check
+do
+    line=`head -"$lineno" $WORKDIR/ligands_list | tail -1`
+    flag=`echo $line | awk '{print $2}'`
+    b=`basename $j .pdb`
+    if  [[ ! -e $WORKDIR/$b$pdbqt ]] && [[ $flag == S ]] #we delete small molecule drug from the list if pdbqt creation failed 
+    then
+        ligand=`echo $line | awk '{print $1}'`
+        echo "Warning! pdbqt file for" $ligand "was not created! Line with" $ligand "will be deleted"
+        echo "no" > $WORKDIR/success #debug
+    else
+        echo $line >> $WORKDIR/temp_buf
+    fi
+    let "lineno++"
+done
+
+echo "done."
+mv $WORKDIR/temp_buf $WORKDIR/ligands_list
+
+rm -f $WORKDIR/slurm* $WORKDIR/*.job #cleanup

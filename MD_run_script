@@ -1,0 +1,30 @@
+
+NULL=0   #checking if MD_prepare job finished or an error occured
+error=0
+
+date=`date` ; ligand=`basename "$PWD"`
+echo "MD_run job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+while [ ! -e nvt.tpr ]
+do
+    sleep 1
+    grep Error MD_prepare.out > tmp
+    if  [ -s tmp ]
+    then 
+        error=1 ; break
+    else 
+        error=0
+    fi
+done
+
+if  [ $error -eq $NULL ] #run MD_run job only if MD_prepare job finished sucesfully
+then
+    gmx mdrun -ntomp 4 -pin on -backup -deffnm nvt
+    gmx grompp -f npt.mdp -c nvt.gro -r nvt.gro -t nvt.cpt -p topol.top -o npt.tpr
+    gmx mdrun -ntomp 4 -pin on -backup -deffnm npt
+    gmx grompp -f md.mdp -c npt.gro -t npt.cpt -p topol.top -o md_0_1.tpr
+    gmx mdrun -ntomp 4 -pin on -backup -deffnm md_0_1
+fi
+
+date=`date`
+echo "MD_run job for ligand" $ligand "finished at" $date >> $WORKDIR/debuglog

@@ -1,0 +1,32 @@
+VINA_AVERAGE_EXECUTION_TIME=18                   #measured elapsed time [sec] for Vina run on Bura system
+
+therapy_level=`cat $WORKDIR/therapy_level`                                     #determining therapy level
+complexes=`cat $WORKDIR/nr_complexes`                                 #determining number of complexes
+ligands=`cat $WORKDIR/nr_ligands`                                     #determining number of ligands
+
+case $therapy_level in                                                #determining number of Vina tasks
+     1) Vina_tasks=$(( $complexes * $ligands )) ;;
+     2) Vina_tasks=$(( $complexes * $ligands * $ligands )) ;;
+     3) Vina_tasks=$(( $complexes * $ligands * $ligands * $ligands )) ;;
+     4) Vina_tasks=$(( $complexes * $ligands * $ligands * $ligands * $ligands )) ;;
+esac
+
+cores=`cat $WORKDIR/max_jobs`                        #determining number of available cores
+vina_execution_time=VINA_AVERAGE_EXECUTION_TIME          #estimated execution time in seconds of one Vina task 
+execution_time=$(( $Vina_tasks * vina_execution_time ))         #estimated total execution time on one core
+Vina_submittion_time=10                                  #estimated submition time for one Vina job is 0.45 sec
+submittion_time=$(( $Vina_tasks * $Vina_submittion_time))             #total Vina jobs submittion time
+submittion_time=$(( $submittion_time / 22 ))
+total_time=$(( $execution_time + $submittion_time ))
+
+if  [ $Vina_tasks -le $cores ]
+then
+    elapsed_time=$(( vina_execution_time + $submittion_time ))
+else
+    elapsed_time=$(( $execution_time / $cores ))                       #estimated execution time on $cores
+    elapsed_time=$(( $elapsed_time + $submittion_time ))               #estimated execution time on $cores
+fi
+
+echo "There is" $Vina_tasks "Vina tasks to be computed for" $therapy_level "- therapy_level and" $cores "processor cores available."
+echo -n "Estimated computational time for Vina is " 
+printf '%dh:%dm:%ds\n' $(($elapsed_time/3600)) $(($elapsed_time%3600/60)) $(($elapsed_time%60))

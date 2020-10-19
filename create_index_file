@@ -1,0 +1,54 @@
+#! /bin/bash
+#SBATCH --job-name=ndx
+#SBATCH --output=ndx.out
+#SBATCH --time=12:10:00
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4gb
+#SBATCH --partition=computes_thin
+#source $HOME/.bashrc
+
+NULL=0   #checking if MD_prepare and MD_run job finished or an error occured
+error=0 ; rm -f tmp
+
+date=`date` ; ligand=`basename "$PWD"`
+echo "ndx job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+while true
+do
+   sleep 1
+   if  [ -e md_0_1.log ] #exit loop if MD_run job finished
+   then
+       grep Finished md_0_1.log > tmp
+       if [ -s tmp ]
+       then
+           error=0 ; break
+       fi
+    fi
+
+    grep Error MD_run.out > tmp #exit loop if MD_run job failed
+    error=`wc -l < tmp`
+    if  [ -s tmp ]
+    then
+        error=1 ; break
+    fi
+
+    grep Error MD_prepare.out > tmp #exit loop if MD_prepare job failed
+    error=`wc -l < tmp`
+    if  [ -s tmp ]
+    then
+        error=1 ; break
+    fi
+
+done
+
+if [ $error -eq $NULL ]
+then
+    echo 1 > in.txt ; echo 13 >> in.txt ; echo q >> in.txt
+    gmx make_ndx -backup -f em.gro -o md_0_1.ndx < in.txt
+else
+    touch ndx.error
+fi
+
+date=`date`
+echo "ndx job for ligand" $ligand "finished at" $date >> $WORKDIR/debuglog

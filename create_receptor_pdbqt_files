@@ -1,0 +1,94 @@
+data="_data"
+pdb=.pdb
+pdbqt=.pdbqt
+cancer_type=`cat $WORKDIR/cancer_type`
+job_status=`cat $WORKDIR/job_status`
+job_submit=`cat $WORKDIR/job_submit`
+MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
+
+echo "Creating receptor pdbqt files..."
+cd $WORKDIR/$cancer_type$data
+
+k=1 ; l=0
+for j in receptor_*.pdb
+do
+    b=`basename $j .pdb`
+    w=${b}.job #Preparing job script
+    cat $WORKDIR/dock > $w
+    echo "obabel $j -O tmp${l}.pdb --addpolarh" >> $w #add H to polar atoms only   
+    echo "mv tmp${l}.pdb $j" >> $w
+    echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r $b.pdb -o $b.pdbqt " >> $w
+    #option -U nphs_lps_waters explained on http://mgldev.scripps.edu/pipermail/autodock/2008-April/003946.html 
+    let "k++"
+    chmod +x $w
+    $job_submit $w 2>&1 | tee -a stats    #Submitting job
+    sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+done
+
+
+user_name=$USER
+sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
+
+> linebuf
+j=0 ; k=1                             
+for i in receptor_*.pdb
+do
+    printf -v e "%03d" $j
+    line=`head -$k $WORKDIR/receptors_contracted | tail -1`
+    uniprot_id=`echo $line | awk '{print $3}'`
+    if [ ! -e receptor_$e.pdbqt  ]
+    then
+        echo -n "pdbqt file for" $uniprot_id  "was not created. Trying to predict new structure..." 
+        DOWNLOAD_DIR=$WORKDIR/$cancer_type$data
+        drugname=0
+        sh $vini_dir/predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+        if [ -e $uniprot_id$pdb ]
+        then 
+            echo -n "success. Adding hydrogens to polar atoms..."
+            obabel $uniprot_id$pdb -O receptor_$e.pdb --addpolarh 2> /dev/null   #add H to polar atoms only  
+            if [ -e receptor_$e.pdb ]
+            then
+                echo "done." 
+                $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r receptor_$e.pdb -o receptor_$e.pdbqt
+                w1=`echo $line | awk '{print $1}'` #change status flag in line to P
+                w2=`echo $line | awk '{print $2}'`
+                w3=`echo $line | awk '{print $3}'`
+                w4=P
+                printf "%s%s%s%s%s%s%s\n" "$w1" " " "$w2" " " "$w3" " " "$w4" >> linebuf 
+                cp $uniprot_id$pdb $vini_dir/genes/pdb_files/$uniprot_id$pdb #update protein structure in repo
+            else
+                echo "failed. Using 1AKI protein instead to continue processing."
+                cp $HOME/1AKI.pdb ./receptor_$e.pdb 
+                $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r receptor_$e.pdb -o receptor_$e.pdbqt
+                w1=`echo $line | awk '{print $1}'` #change status flag in line to F
+                w2=`echo $line | awk '{print $2}'`
+                w3=`echo $line | awk '{print $3}'`
+                w4=F
+                printf "%s%s%s%s%s%s%s\n" "$w1" " " "$w2" " " "$w3" " " "$w4" >> linebuf 
+            fi
+        else
+            echo "failed. Using 1AKI protein instead."
+            cp $HOME/1AKI.pdb ./receptor_$e.pdb
+            w1=`echo $line | awk '{print $1}'` #change status flag in line to F
+            w2=`echo $line | awk '{print $2}'`
+            w3=`echo $line | awk '{print $3}'`
+            w4=F
+            printf "%s%s%s%s%s%s%s\n" "$w1" " " "$w2" " " "$w3" " " "$w4" >> linebuf 
+        fi
+    else
+        echo $line >> linebuf
+    fi
+    let "j++" ; let "k++"
+done
+mv linebuf $WORKDIR/receptors_contracted
+
+
+j=0                                    #Rename receptor to complex
+for i in receptor_*.pdbqt
+do
+    printf -v e "%03d" $j
+    mv receptor_$e.pdbqt $WORKDIR/$cancer_type$data/complex_$e.pdbqt
+    let "j++"
+done
+
+cd $vini_dir

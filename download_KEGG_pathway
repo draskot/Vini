@@ -1,0 +1,43 @@
+#This subroutine is called from main program Vini and is checking for KEGG pathway updates 
+
+
+ORGANISM=`cat $WORKDIR/ORGANISM`              #getting cancer type from the main script
+c=.xml
+sav=.sav
+
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+PATHWAY_FILE=$CANCER_PATHWAY$c
+
+if [ $PATHWAY_FILE == hsa05244.xml ] 
+then
+    cp 6vxx.pdb ./genes/pdb_files/P59594.pdb
+else
+    curl -s http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml -o $vini_dir/$PATHWAY_FILE
+    sed -i.bak '/SYSTEM/d' $vini_dir/$PATHWAY_FILE #Remove the line trying to make outbound connection
+    if [ -e $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE ]   #check if cancer pathway exists
+    then
+        diff $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE > temp_buf
+        lineno=`wc -l temp_buf | awk '{ print $1 }'`    
+
+        if [ $lineno != 0 ]
+        then
+            echo "pathway file already exist, but the new version is available."
+            read -p "Do you want to permanently update KEGG pathway? (y/n)" yesno
+            if  [ $yesno == "y" ]
+            then
+                echo -n "updating KEGG pathway..." 
+                cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
+                cp $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+                echo "done."
+            else
+                echo  "no change."
+            fi     
+        fi
+    else
+        echo "KEGG pathway file does not exists, creating new one."
+        cp $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+    fi
+fi
+
+rm -f $vini_dir/*.bak $vini_dir/temp_buf $vini_dir/$PATHWAY_FILE

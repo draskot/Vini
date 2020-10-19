@@ -1,0 +1,9 @@
+accession_code=$1
+ligand=$2
+
+#Output: protein_clean.pdb file
+
+PDB=.pdb
+
+
+chimera --nogui --script "prep_prot_lig.py $accession_code$PDB $ligand" | tee -a log

@@ -1,0 +1,35 @@
+#chebi_id=`curl -s http://rest.kegg.jp/conv/chebi/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+#PREFIX=https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/
+
+#input parameter: Pubchem ID
+#output parameter: substance structure file in DOWNLOAD_DIR
+
+pubchem_id=$1
+DOWNLOAD_DIR=$2
+
+echo $pubchem_id | tr -dc '[0-9\n]' > $WORKDIR/tmp #delete pubchem: from string
+pubchem_id=`cat $WORKDIR/tmp`
+
+
+PDB=.pdb
+sdf=.sdf
+PREFIX=https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/sid/
+SUFFIX=/SDF
+ONES=1
+PUBCHEM=pubchem:
+
+
+URL=$PREFIX$pubchem_id$SUFFIX
+
+curl -Lfs -o $WORKDIR/$pubchem_id $URL
+
+obabel -isdf $WORKDIR/$pubchem_id -o pdb -O $DOWNLOAD_DIR/$PUBCHEM$pubchem_id$PDB -h 2> $WORKDIR/stats
+
+warning=`grep "Alias R was not chemically interpreted" $WORKDIR/stats`
+echo $warning > $WORKDIR/tmp
+chars=`wc -c < $WORKDIR/tmp`
+
+if  [ $chars -gt $ONES ]
+then
+    rm $DOWNLOAD_DIR/$PUBCHEM$pubchem_id$PDB
+fi

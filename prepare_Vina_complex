@@ -1,0 +1,21 @@
+#pdbqt files must have a correct format, else Vina fires Unknown error...please contact Dr. Oleg Trott ..." and stops. This script corrects format.
+
+#Input parameters: therapy level ; comp_source ; comp_index
+#Output parameters: corrected pdbqt complex file
+
+therapy_level=$1 ; comp_source=$2 ; comp_index=$3
+
+ONES=1
+
+if  [[ $therapy_level -gt  $ONES ]] 
+then              
+    cp $comp_source/complex_$comp_index.pdbqt ./ # pdbqt to pdb conversion 
+
+    cut -c-66 complex_$comp_index.pdbqt > complex_$comp_index.pdb
+
+    cp complex_$comp_index.pdb $comp_source/complex_$comp_index.pdb
+
+    $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r $comp_source/complex_$comp_index.pdb -o $comp_source/complex_$comp_index.pdbqt -A checkhydrogens
+
+    rm $comp_source/complex_$comp_index.pdb
+fi
