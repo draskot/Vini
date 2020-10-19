@@ -52,7 +52,7 @@ Note: During the installation of MGLTools, script is asking for licensing. If X 
 MGLTools by default do not work with metal ions. To enable this functionality,perform:"
 sudo chmod o+w $MGLTOOLS $MGLTOOLS/AD4_parameters.dat
 
-Python: Vini, g_mmpbsa, Chimera and MGLTools use python version 2.7. Numpy 1.14.6 module must be available onthe system. To load it, execute: module load python-Numpy/Numpy-1.14.6
+Python: Vini, g_mmpbsa, Chimera and MGLTools use python version 2.7. Numpy 1.14.6 module must be available on the system. To load it, execute: module load python-Numpy/Numpy-1.14.6
 
 Hardware prerequisites:
 -----------------------
@@ -72,8 +72,10 @@ Protein Data Bank: https://www.rcsb.org/
 PubChem: https://pubchem.ncbi.nlm.nih.gov/
 
 
-Installing and running Vini
-------------------------------
-To install Vini, go to http://fulir.irb.hr/5420/ and download gzipped 
-tar archive vini-3.1.tar.gzip. Unpack archive in your /home directoryi, cd to vini_3_1 dir, and run with
-sh vini_init. Then follow the instructions.
+Initialize VINI model:
+----------------------
+Run with:
+
+sh vini_init
+
+and then follow the instructions.
