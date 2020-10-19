@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32gb
-#SBATCH --partition=comp_gpu
+#SBATCH --partition=computes_thin
 
 NULL=0   #checking if MD_prepare job finished or an error occured
 error=0

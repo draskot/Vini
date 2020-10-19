@@ -24,7 +24,7 @@ export GMX_MAXCONSTRWARN=-1
 g_mmpbsa, available on https://rashmikumari.github.io/g_mmpbsa/
 Add the folllowing line to your .bashrc file:
 export PATH=$INSTALL_DIR/g_mmpbsa:$PATH
-export MMPBSA_SCRIPTS=/opt/g_mmpbsa/scripts
+export MMPBSA_SCRIPTS=$INSTALL_DIR/g_mmpbsa/scripts
 Note: Use precompiled Linux x86_64 (64 Bit) g_mmpbsa executable for Gromacs 5.1.x, which includes
       APBS functionality.
 
