@@ -31,7 +31,7 @@ do
     if [ $flag == S ]  #if a drug is small molecule, we are creating pdbqt files for Vina
     then
         b=`basename $j .pdb`
-        cat $WORKDIR/dock > Vina_run
+        cat Vina > Vina_run
         echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $WORKDIR/$b.pdb -o $WORKDIR/$b.pdbqt"  >> Vina_run
         chmod +x Vina_run
         $job_submit Vina_run
@@ -40,11 +40,13 @@ do
     sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
 done
 
+
 cd $vini_dir
+
 
 user_name=$USER
 sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
-rm -f $WORKDIR/temp_buf
+
 
 lineno=1
 for j in $WORKDIR/ligand_*.pdb  #final check

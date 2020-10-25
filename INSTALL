@@ -7,52 +7,53 @@ Gromacs 5.1.4, g_mmpbsa, Hex 8.0.0, Open Babel 2.4.0, Chimera-1.14, Autodock Vin
 
 Gromacs 5.1.4 installation notes:
 ---------------------------------
-Gromacs 5.1.4 is available on  www.gromacs.org. Non-GPU version of Gromacs is mandatory as g_mmpbsa
+#Gromacs 5.1.4 is available on  www.gromacs.org. Non-GPU version of Gromacs is mandatory as g_mmpbsa
 does not work with GROMACS library built for GPU cards. If GPU nodes are available, Vini can use it
 for MD simulations. In that case, GPU version of Gromacs must be installed as well.
 Higher versions of Gromacs are not supported.
 
-For Gromacs 5.1.4 non-GPU, add the following lines in $HOME/.bashrc:
+#For Gromacs 5.1.4 non-GPU, add the following lines in $HOME/.bashrc:
 source $INSTALL_DIR/gromacs_5.1.4/bin/GMXRC.bash
 export GMXLIB=$INSTALL_DIR/gromacs-5.1.4/share/top
 export GMX_MAXCONSTRWARN=-1
 
-For Gromacs 5.1.4 with GPU, add the folllowing lines in .bashrc file:
+#For Gromacs 5.1.4 with GPU, add the folllowing lines in .bashrc file:
 source $INSTALL_DIR/gromacs_5.1.4_with_GPU_CUDA_6.5/bin/GMXRC.bash
 export GMX_MAXCONSTRWARN=-1
 
-g_mmpbsa, available on https://rashmikumari.github.io/g_mmpbsa/
-Add the folllowing line to your .bashrc file:
+#g_mmpbsa, available on https://rashmikumari.github.io/g_mmpbsa/
+#Use precompiled Linux x86_64 (64 Bit) g_mmpbsa executable for Gromacs 5.1.x with included APBS functionality.
+#Add the folllowing line to your .bashrc file:
 export PATH=$INSTALL_DIR/g_mmpbsa:$PATH
 export MMPBSA_SCRIPTS=$INSTALL_DIR/g_mmpbsa/scripts
-Note: Use precompiled Linux x86_64 (64 Bit) g_mmpbsa executable for Gromacs 5.1.x, which includes
-      APBS functionality.
 
-Hex Protein docking 8.0.0, available from http://hex.loria.fr
+#Hex Protein docking 8.0.0, available from http://hex.loria.fr
 
-Open Babel 2.4.0, available from http://openbabel.org/wiki/Main_Page
+#Open Babel 2.4.0, available from http://openbabel.org/wiki/Main_Page
+#Add the following line to your .bashrc file:
+export PATH=$INSTALL_DIR/openbabel-openbabel-2-4-0/bin:$PATH
 
-Chimera-1.14, available from https://www.cgl.ucsf.edu/chimera/download.html
-Add the following line to your .bashrc file:
-export PATH=$INSTALL_DIR/chimera-1.14/bin:$PATH
+#UCSF-Chimera-1.14, available from https://www.cgl.ucsf.edu/chimera/download.html
+#Add the following line to your .bashrc file:
+export PATH=$INSTALL_DIR/UCSF-Chimera-1.14/bin:$PATH
 
-Autodock Vina 1.1.2, available from http://vina.scripps.edu/download.html
-Add the following line to your ./bashrc file:
+#Autodock Vina 1.1.2, available from http://vina.scripps.edu/download.html
+#Add the following line to your ./bashrc file:
 export PATH=$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin:$PATH
 
  
-MGLTools 1.5.6, available from http://mgltools.scripps.edu/downloads
-MGL Tools .bashrc section
+#MGLTools 1.5.6, available from http://mgltools.scripps.edu/downloads
+#Add the following line to your ./bashrc file:
+
 export MGLTOOLS=$INSTALL_DIR/mgltools_x86_64Linux2_1.5.6/MGLToolsPckgs/AutoDockTools
 export MGLUTILS=$INSTALL_DIR/mgltools_x86_64Linux2_1.5.6/MGLToolsPckgs/AutoDockTools/Utilities24
 export MGLBIN=$INSTALL_DIR/mgltools_x86_64Linux2_1.5.6/bin
 
 Note: During the installation of MGLTools, script is asking for licensing. If X terminal is not enabled, this message will not be seen and installation script will hang. To enable X terminal,execute: export DISPLAY=localhost:0
 
-MGLTools by default do not work with metal ions. To enable this functionality,perform:"
-sudo chmod o+w $MGLTOOLS $MGLTOOLS/AD4_parameters.dat
+#MGLTools by default do not work with metal ions. If MGLTools are installed outside of your $HOME, perform: sudo chmod o+w $MGLTOOLS $MGLTOOLS/AD4_parameters.dat
 
-Python: Vini, g_mmpbsa, Chimera and MGLTools use python version 2.7. Numpy 1.14.6 module must be available on the system. To load it, execute: module load python-Numpy/Numpy-1.14.6
+Python: Vini, g_mmpbsa, Chimera and MGLTools use python version 2.7. Numpy 1.14.6 module must be available on the system. For example, if numpy moduke is available, execute: module load python-Numpy/Numpy-1.14.6
 
 Hardware prerequisites:
 -----------------------

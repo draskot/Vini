@@ -7,7 +7,7 @@ DOWNLOAD_DIR=$vini_dir/genes/pdb_files
 UNIPROT_ID_LIST="_uniprot_entries.txt"
 PDB=.pdb ; sdf=sdf ; two=2 ; dots=: ; ast=* ; NA=NA ; MON=monomer ; NULL=0 ;
 NULL=0
-
+alias python=/usr/bin/python
 
 rm -f $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
 
@@ -26,6 +26,7 @@ do
     if  [[ ${KEGG_gene_name:0:1} == "C" ]]         #checking if KEGG entry is the compound
     then
         pubchem_id=`curl -s http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+   
         echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
 
         if  [ -e $DOWNLOAD_DIR/$pubchem_id$PDB ] 

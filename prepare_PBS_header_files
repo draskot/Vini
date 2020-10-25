@@ -1,8 +1,9 @@
 
 
 cluster=`uname -n`
-echo "Available Torque (PBS) partitions on" $cluster "are:"
+echo "Available job queues on" $cluster "are:"
 qstat -q
+read -p "press enter to continue:" enter
 
 read -p  "enter the name of cluster partition Autodock Vina will use:" Vina
 read -p  "enter the name of cluster partition Gromacs (MD_prepare) will use:" MD_prepare
@@ -13,16 +14,14 @@ read -p  "enter the name of cluster partition g_mmpbsa (polar) will use:" polar
 read -p  "enter the name of cluster partition g_mmpbsa (apolar) will use:" apolar
 read -p  "enter the name of cluster partition g_mmpbsa (compute_FBE) will use:" FBE
 
-echo "#! /bin/bash"               > dock #prepare Vina header file
-echo "#PBS -N Vina"              >> dock
-echo "#PBS -o MD_run.out"        >> dock
-echo "#PBS -e MD_run.out"        >> dock
-echo "#PBS -l walltime=00:30:00" >> dock
-echo "#PBS -l nodes=1:ppn=3"     >> dock         
-echo "#PBS -l mem=8gb"           >> dock
-echo "#PBS -q " $Vina            >> dock
-echo "#PBS -o Vina.out"          >> dock
-echo "#PBS -e Vina.out"          >> dock
+echo "#! /bin/bash"               > $WORKDIR/Vina #prepare Vina header file
+echo "#PBS -N Vina"              >> $WORKDIR/Vina
+echo "#PBS -o Vina.out"        >> $WORKDIR/Vina
+echo "#PBS -e Vina.out"        >> $WORKDIR/Vina
+echo "#PBS -l walltime=00:30:00" >> $WORKDIR/Vina
+echo "#PBS -l nodes=1:ppn=3"     >> $WORKDIR/Vina
+echo "#PBS -l mem=8gb"           >> $WORKDIR/Vina
+echo "#PBS -q " $Vina            >> $WORKDIR/Vina
 
 echo "#! /bin/bash"                            > tmp  #prepare Gromacs header files
 echo "#PBS -N MD_prepare"                     >> tmp

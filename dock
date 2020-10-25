@@ -1,8 +1,9 @@
 #! /bin/bash
-#SBATCH --job-name=dock
-#SBATCH --output=dock.out
-#SBATCH --time=00:30:00
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=3
-#SBATCH --mem=8gb
-#SBATCH --partition=computes_thin
+#$ -N Vina
+#$ -o Vina.out
+#$ -e Vina.out
+#$ -l h_rt=1800
+#$ -pe test 3
+#$ -l mem_free=8192
+#$ -q test.q
+echo "hello world"

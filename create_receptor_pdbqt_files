@@ -8,20 +8,19 @@ MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
 
 echo "Creating receptor pdbqt files..."
 cd $WORKDIR/$cancer_type$data
+dir=$WORKDIR/$cancer_type$data
 
 k=1 ; l=0
 for j in receptor_*.pdb
 do
     b=`basename $j .pdb`
-    w=${b}.job #Preparing job script
-    cat $WORKDIR/dock > $w
-    echo "obabel $j -O tmp${l}.pdb --addpolarh" >> $w #add H to polar atoms only   
-    echo "mv tmp${l}.pdb $j" >> $w
-    echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r $b.pdb -o $b.pdbqt " >> $w
-    #option -U nphs_lps_waters explained on http://mgldev.scripps.edu/pipermail/autodock/2008-April/003946.html 
+    cat $WORKDIR/Vina > Vina_run
+    echo "obabel $j -O tmp${l}.pdb --addpolarh" >> Vina_run #add H to polar atoms only
+    echo "mv tmp${l}.pdb $j" >> Vina_run
+    echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run #option -U nphs_lps_waters explained on http://mgldev.scripps.edu/pipermail/autodock/2008-April/003946.html 
     let "k++"
-    chmod +x $w
-    $job_submit $w 2>&1 | tee -a stats    #Submitting job
+    chmod +x Vina_run
+    $job_submit Vina_run
     sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
 done
 

@@ -26,15 +26,14 @@ then
 fi
 
 
-echo "#! /bin/bash"                           > dock       #prepare Vina header file
-echo "#SBATCH --job-name=dock"               >> dock
-echo "#SBATCH --output=dock.out"             >> dock
-echo "#SBATCH --time=00:30:00"               >> dock
-echo "#SBATCH --ntasks-per-node=1"           >> dock
-echo "#SBATCH --cpus-per-task=3"             >> dock
-echo "#SBATCH --mem=8gb"                     >> dock
-echo "#SBATCH --partition="$Vina             >> dock
-cp dock $WORKDIR/dock #for debug
+echo "#! /bin/bash"                           > $WORKDIR/Vina       #prepare Vina header file
+echo "#SBATCH --job-name=Vina"               >> $WORKDIR/Vina
+echo "#SBATCH --output=Vina.out"             >> $WORKDIR/Vina
+echo "#SBATCH --time=00:30:00"               >> $WORKDIR/Vina
+echo "#SBATCH --ntasks-per-node=1"           >> $WORKDIR/Vina
+echo "#SBATCH --cpus-per-task=3"             >> $WORKDIR/Vina
+echo "#SBATCH --mem=8gb"                     >> $WORKDIR/Vina
+echo "#SBATCH --partition="$Vina             >> $WORKDIR/Vina
 
 echo "#! /bin/bash"                            > tmp  #prepare Gromacs header files
 echo "#SBATCH --job-name=MD_prepare"          >> tmp
