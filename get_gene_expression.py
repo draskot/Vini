@@ -41,33 +41,8 @@ try:
         with open(filename, 'wb') as f:
             f.write(r.content)
 except:
-    print ('Unsuccesful download of CSV expression file for gene %s' % GENE_NAME)
+    print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
 
-""" THIS IS IN CASE WE WANT TO DOWNLOAD WHOLE GENE EXPRESSION TABLE (~1.9GB)
-# this downloads whole CSV file with all gene expressions
-url = "https://cancer.sanger.ac.uk/cosmic/file_download/GRCh37/cosmic/v92/CosmicCompleteGeneExpression.tsv.gz"
-
-
-payload = {}
-headers = {"Content-type": "application/json",
-           "Authorization": "Basic " + credentials}
-response = requests.request("GET", url, headers=headers, data = payload)
-
-# Request will return a snippet of JSON containing the link that we need to use to download your file.
-try:
-    download_url = response.json()['url']
-    print (download_url)
-except:
-    print ("JSON couldn't be parsed")
-try:
-    # Downloading CSV file with expressions and saving it to GENE_NAME_expressions.csv file
-    import wget
-    dirname = os.path.dirname(__file__)
-    filename = GENE_NAME + '_expressions.csv'
-    wget.download(download_url, out = os.path.join(dirname, filename))
-except:
-    print ("Couldn't download CSV file")
-"""
 
 # Filter CSV file and get expression average(for now)
 import csv
