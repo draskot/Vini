@@ -19,11 +19,11 @@ done
 
 if  [ $error -eq $NULL ] #run MD_run job only if MD_prepare job finished sucesfully
 then
-    gmx mdrun -ntomp 4 -pin on -backup -deffnm nvt
+    gmx mdrun -ntmpi 1 -ntomp 8 -pin on -backup -deffnm nvt
     gmx grompp -f npt.mdp -c nvt.gro -r nvt.gro -t nvt.cpt -p topol.top -o npt.tpr
-    gmx mdrun -ntomp 4 -pin on -backup -deffnm npt
+    gmx mdrun -ntmpi 1 -ntomp 8 -pin on -backup -deffnm npt
     gmx grompp -f md.mdp -c npt.gro -t npt.cpt -p topol.top -o md_0_1.tpr
-    gmx mdrun -ntomp 4 -pin on -backup -deffnm md_0_1
+    gmx mdrun -ntmpi 1 -ntomp 8 -pin on -backup -deffnm md_0_1
 fi
 
 date=`date`
