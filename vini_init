@@ -32,6 +32,8 @@ cd $vini_dir
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 cp 1aki.sav $HOME/1AKI.pdb
+mkdir -p ./ligands/pdb_files
+mkdir -p ./genes/pdb_files
 
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
