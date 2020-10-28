@@ -77,9 +77,9 @@ do
                          then
                              FBE_kcal_mol=7.0 ; echo $FBE_kcal_mol > $target_dir/log_$comp_index.txt
                          else
-                             cp ~/INSTDIR/autodock_vina_1_1_2_linux_x86/bin/vina ./ 
+                             #cp ~/INSTDIR/autodock_vina_1_1_2_linux_x86/bin/vina ./ 
                              cp $MGLTOOLS/AD4_parameters.dat ./                                
-                             cp $vini_dir/autogrid4 ./                                         
+                             cp $vini_dir/vina $vini_dir/autogrid4 ./                                         
                              cp $comp_source/complex_$comp_index.pdbqt ./                      
                              sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                     
                              sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
@@ -109,8 +109,8 @@ do
                                   FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
                                   echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
                              else
-
-                                 cp $vini_dir/nodes_control_script     ./ #prep programs and data 
+                                 cp $vini_dir/g_mmpbsa ./
+                                 cp $vini_dir/nodes_control_script ./ 
                                  cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp ./
                                  cp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
                                  cp $vini_dir/wait_until_jobs_finish ./
