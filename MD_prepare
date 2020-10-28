@@ -1,11 +1,3 @@
-#! /bin/bash
-#SBATCH --job-name=MD_prepare
-#SBATCH --output=MD_prepare.out
-#SBATCH --time=01:00:00
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=4gb
-#SBATCH --partition=computes_thin
 
 
 date=`date` ; ligand=`basename "$PWD"`
@@ -24,7 +16,7 @@ echo 13 | gmx -quiet -backup genion -s ions.tpr -o COMPLEX_solv_ions.gro -p topo
 
 gmx grompp -f minim.mdp -c COMPLEX_solv_ions.gro -p topol.top -o em.tpr    #create em.tpr
 
-gmx mdrun -ntomp 8 -v -deffnm em                                  #run energy minimization
+gmx mdrun -ntmpi 1 -ntomp 8 -v -deffnm em                             #run energy minimization
 
 gmx grompp -f nvt.mdp -c em.gro -r em.gro -p topol.top -o nvt.tpr          #create nvt.tpr
 
