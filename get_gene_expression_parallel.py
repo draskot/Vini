@@ -8,6 +8,7 @@ import base64
 import sys
 import requests
 import csv
+import multiprocessing as mp
 
 def getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER, WORKING_DIR):
     try:
@@ -49,6 +50,16 @@ def filterGeneExpressionFile(WORKING_DIR, GENE_NAME, TISSUE_NAME):
     gene_expression_filtered_file = GENE_NAME + "_expressions_filtered.csv"
 #    try:
     count = 0
+    #########################
+    ##### PARALLELIZING #####
+    #########################
+    pool = mp.Pool(mp.cpu_count())
+
+    #get how many lines are there in genes_expression CSV file
+    num_rows = 0
+    for row in open(gene_expressions_file, 'rb'):
+        num_rows += 1
+
     with open(gene_expressions_file, 'rb') as csv_gene_expressions:
         for row_gene in csv.DictReader(csv_gene_expressions, delimiter=','):
             with open(tissue_samples_file, 'rb') as csv_tissue_samples:
