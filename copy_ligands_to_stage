@@ -1,15 +1,17 @@
-na=NA
 
 j=1 ; a='.pdb';  b='ligand_'
 while  read -r line
 do
-       printf -v i "%03d" $j
-       name=`echo $line | awk '{print $1}'` #change due to the new format of ligands_list file
-       c=$name$a
-       d=$b$i$a
-
-       if  [ $name != $na ]    #do not copy if ligand structure is not available
+       process=`echo $line | cut -c1`
+       if [ $process != "#" ]               #process drug entry if not commented
        then
+           printf -v i "%03d" $j
+           drugname=`echo $line | awk -F','   '{print $1}'`
+           nowords=`echo $drugname | wc -w` #replace blank with question mark if drugname is of 2 words
+           if [ $nowords -eq 2 ] ; then
+              drugname=`echo $drugname |  tr " " "?"  `
+           fi
+           c=$drugname$a ; d=$b$i$a
 	   cp $vini_dir/ligands/pdb_files/$c $WORKDIR/$d
        fi
        let j++

@@ -77,7 +77,6 @@ do
                          then
                              FBE_kcal_mol=7.0 ; echo $FBE_kcal_mol > $target_dir/log_$comp_index.txt
                          else
-                             #cp ~/INSTDIR/autodock_vina_1_1_2_linux_x86/bin/vina ./ 
                              cp $MGLTOOLS/AD4_parameters.dat ./                                
                              cp $vini_dir/vina $vini_dir/autogrid4 ./                                         
                              cp $comp_source/complex_$comp_index.pdbqt ./                      
@@ -109,7 +108,7 @@ do
                                   FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
                                   echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
                              else
-                                 cp $vini_dir/g_mmpbsa ./
+                                 #cp $vini_dir/g_mmpbsa ./
                                  cp $vini_dir/nodes_control_script ./ 
                                  cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp ./
                                  cp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
@@ -121,8 +120,9 @@ do
                                  cp $WORKDIR/g_mmpbsa_potential_energy $WORKDIR/g_mmpbsa_polar_energy ./
                                  cp $WORKDIR/g_mmpbsa_apolar_energy $WORKDIR/compute_FBE  ./
                                  cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
-                                 cp $vini_dir/COMPLEX_clean.pdb ./receptor.pdb   #delete after debug!!!
+                                 #cp $vini_dir/COMPLEX_clean.pdb ./receptor.pdb   #delete after debug!!!
                                  cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
+                                 #echo "brakepoint" ; sleep 1000
 
                                  echo -n "Docking with Hex, please wait..." 
                                  hex receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
@@ -134,7 +134,6 @@ do
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit create_index_file
-                                 echo "brakepoint" ; sleep 1000
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_potential_energy
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy

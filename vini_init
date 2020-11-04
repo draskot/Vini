@@ -52,32 +52,37 @@ if [ $nolines -ne $NULL ]
 then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
-read -p "enter the maximum number of concurrent Autodock Vina jobs (3 cores/per job):" max_jobs
+read -p "enter the maximum number of concurrent Autodock Vina jobs (2 cores/per job):" max_jobs
 read -p "enter the maximum number of concurrent Gromacs/g_mmpbsa jobs (1 node/per job):" max_nodes
 
 echo $max_jobs > $WORKDIR/max_jobs
 echo $max_nodes > $WORKDIR/max_nodes
 
 echo ; echo "If you never signed to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
+read -p "Register (y/n)?" yesno
+if  [ $yesno == "y" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password
+    echo""
+    echo $email > $WORKDIR/SWISS-MODEL_email
+    echo $password > $WORKDIR/SWISS-MODEL_password
+    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+fi
 
-read -p "Enter email:" email
-echo -n "Enter password:"; read -s password
-echo""
-echo $email > $WORKDIR/SWISS-MODEL_email
-echo $password > $WORKDIR/SWISS-MODEL_password
-chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-
-echo ; echo "If you never signed to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_in and register. After approval, enter your registration email and password here."
-
-read -p "Enter email:" email
-echo -n "Enter password:"; read -s password
-echo ""
-echo $email > $WORKDIR/Drugbank_email
-echo $password > $WORKDIR/Drugbank_password
-chmod g-r,o-r $WORKDIR/Drugbank_password
-echo
-
+echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_in and register. After approval, enter your registration email and password."
+read -p "Register (y/n)?" yesno
+if  [ $yesno == "y" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password
+    echo ""
+    echo $email > $WORKDIR/Drugbank_email
+    echo $password > $WORKDIR/Drugbank_password
+    chmod g-r,o-r $WORKDIR/Drugbank_password
+fi
 sh download_Drugbank_structures
+
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -159,7 +164,6 @@ then
     sh copy_ligands_to_stage
     sh prepare_ligands
 fi
-
 
 if  [[ $cancer_type == $computed_cancer_type ]]
 then

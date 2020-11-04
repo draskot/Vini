@@ -3,6 +3,7 @@ dots=:
 pdb=.pdb
 #fasta=.fasta
 NULL=0
+ONES=1
 #space=\s
 #SP="'\b"
 
@@ -11,22 +12,50 @@ DOWNLOAD_DIR=$vini_dir/ligands/pdb_files
 email=`cat $WORKDIR/Drugbank_email`
 password=`cat $WORKDIR/Drugbank_password`
 
-#echo -n "downloading Drugbank vocabulary, please wait ..." #vocabulary missing
-#curl -Lfs -o vocabulary.zip https://www.drugbank.ca/releases/5-1-5/downloads/all-drugbank-vocabulary
-#echo "done." ; unzip -qn vocabulary.zip
+if [ ! -e drug?links.csv ]
+then
+    echo -n "drug?links.csv file missing, trying to download it from Drugbank, please wait... "
+    curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+    if [ -e filename.zip ]
+    then
+        echo success ; unzip -qn filename.zip ; rm filename.zip
+    else
+        echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit 
+    fi
+else
+    read -p "Do you want to update drug?links.csv file? (y/n)" yesno
+    if [ $yesno == "y" ]
+    then
+        curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+        if  [ -e filename.zip ]
+        then
+            echo success ; unzip -qn filename.zip ; rm filename.zip
+        else
+            echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
+        fi
+    fi
+fi
 
-echo -n "Getting drug?links.csv file from Drugbank, please wait... "
-curl -Lfs -o filename.zip -u drasko@irb.hr:Mojavini2011 https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links #getting drug?links.csv file
-echo success ; unzip -qn filename.zip ; rm filename.zip
 
-#echo -n "downloading Drugbank identifiers, please wait ..."
-#curl -Lfs -o polypeptides.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-biotech-polypeptide-ids
-#echo "done." ; unzip -qn polypeptides.zip
+#if  [ ! -e pharmacologically_active.csv ]
+#then
+#    echo -n "Getting pharmacologically_active.csv file from Drugbank, please wait... "
+#    curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-all-polypeptide-ids
+#    echo success ; unzip -qn filename.zip ; rm filename.zip all.csv
+#else
+#    read -p "Do you want to update pharmacologically_active.csv file? (y/n)" yesno
+#    if [ $yesno == "y" ]
+#    then
+#        curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-all-polypeptide-ids
+#        if  [ -e filename.zip ]
+#        then
+#            echo success ; unzip -qn filename.zip ; rm filename.zip
+#        else
+#            echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
+#        fi
+#    fi
+#fi
 
-
-echo -n "Getting pharmacologically_active.csv file from Drugbank, please wait... "
-curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-all-polypeptide-ids       #getting pharmacologically_active.csv file
-echo success ; unzip -qn filename.zip ; rm filename.zip all.csv
 
 lines=`wc -l < $vini_dir/ligands/ligands_list`
 let "lines++"
@@ -34,40 +63,63 @@ let "lines++"
 for (( lineno=1; lineno<$lines; lineno++ ))
 do
     line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
-    drugname=`echo $line | awk '{print $1}'`
-    echo -n "searching for" $drugname ...
-    #grep $drugname drugbank?vocabulary.csv > tmp
-    grep $drugname drug?links.csv > tmp
-    inlines=`wc -l < $vini_dir/tmp`   #there may be several lines with a same drug name
-    if  [ $inlines -gt $NULL ]
+    process=`echo $line | cut -c1`
+    if [ $process != "#" ]    #do not process drug entry if commented
     then
-        inline=`head -1 $vini_dir/tmp`
-        DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-        echo $drugname "found in Drugbank. Drugbank ID is" $DBID
-    else
-        echo $drugname "not found in drugbank vocabulary.csv file."
-    fi
-
-    if [ ! -f $vini_dir/ligands/pdb_files/$drugname$pdb ] 
-    then
-        dtype=`echo $line | awk '{print $2}'` #check if a drug is small molecule or mab
-        if [ $dtype == S ]
+        drugname=`echo $line | awk -F','   '{print $1}'`
+        echo "grep" "\"$drugname\"" "drug?links.csv" > search
+        echo -n "searching for" $drugname "in Drugbank..."
+        sh search > tmp
+        inlines=`wc -l < $vini_dir/tmp`   #there may be several lines with a same drug name
+        if  [ $inlines -gt $NULL ]
         then
-            echo $drugname "is small molecule"
-            echo -n "downloading" $drugname "pdb file from Drugbank..."
-            curl -Lfs -o $vini_dir/ligands/pdb_files/$drugname$pdb https://www.drugbank.ca/structures/small_molecule_drugs/$DBID$pdb
-            echo ""
+            inline=`head -1 $vini_dir/tmp`
+            DBID=`echo $inline | tr "," " " | awk '{print $1}'`
+            echo "success." 
         else
-            grep $DBID pharmacologically_active.csv > tmp.csv               #read Uniprot ID
-            cut -d, -f2 --complement tmp.csv > tmp #delete 2nd column
-            uniprot_id=`cat tmp | tr "," " " | awk '{print $5}'` 
-            echo $drugname "is monoclonal antibody (mab). Uniprot ID is" $uniprot_id
-            echo -n "Trying to predict its structure, please wait..."
-            sh predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+            echo -n "not found. Searching in repo..." 
         fi
-    else
-        echo "Structure found in repo." ; echo ""
+        rm tmp ; echo $drugname > test ; words=`wc -w < test` ; rm test
+        if  [ $words == "2" ] #then put ? in between
+        then
+            line=`echo $line | tr ',' ' '`
+            word1=`echo $line | awk '{print $1}'` ;  word2=`echo $line | awk '{print $2}'` 
+            drugname=`echo $word1"?"$word2`
+        fi
+        if [ ! -f $vini_dir/ligands/pdb_files/$drugname$pdb ] 
+        then
+            if  [ $words -eq $ONES ]                  #check if a drug is small molecule or biotech
+            then
+                dtype=`echo $line | awk '{print $2}'` 
+            else
+               dtype=`echo $line | awk '{print $3}'` 
+            fi
+            if [ $dtype == S ]
+            then
+                echo $drugname "is small molecule"
+                echo -n "downloading" $drugname "pdb file from Drugbank..."
+                curl -Lfs -o $vini_dir/ligands/pdb_files/$drugname$pdb https://www.drugbank.ca/structures/small_molecule_drugs/$DBID$pdb
+                echo ""
+            else
+                grep $DBID drug?links.csv > tmp.csv               #read Uniprot ID
+                cut -d, -f2 --complement tmp.csv > tmp #delete 2nd column (name)
+                uniprot_id=`cat tmp | tr "," " " | awk '{print $6}'` 
+                echo $drugname "is biotech drug. Uniprot ID is" $uniprot_id
+                echo -n "Trying to predict its structure, please wait..."
+                sh predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
+                if  [ ! -e $DOWNLOAD_DIR/$drugname$pdb ]
+                then
+                    drugname=`echo $drugname | tr "?" " " ` #comment this drug in ligands_list
+                    echo $drugname "will not be analyzed." 
+                    awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+                    mv tmp $vini_dir/ligands/ligands_list
+                else
+                    echo "success."
+                fi
+            fi
+        else
+            echo "Structure found in repo." ; echo ""
+        fi
     fi
 done
-
-rm -f tmp.csv tmp
+rm -f tmp.csv tmp search
