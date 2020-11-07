@@ -22,7 +22,8 @@ def getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER, WORKING_DIR):
             filename = os.path.join(dirname, WORKING_DIR, GENE_NAME + '_expressions.csv')    
             with open(filename, 'wb') as f:
                 f.write(r.content)
-    except:
+    except ValueError as e:
+        print e
         print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
 
 
