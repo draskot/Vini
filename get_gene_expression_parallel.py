@@ -3,6 +3,9 @@
 #GENE_NAME = "ERBB2"
 #GENE_NAME = "EGFR"
 
+# TODO define arguments and help. req: GENE_NAME, TISSUE_NAME, NPROCS
+# TODO add Uniprot -> Atlas gene name conversion
+# TODO add support for FEB matrix integration
 import os
 import time
 import base64
@@ -14,9 +17,6 @@ import numpy as np
 import csv_splitter
 
 t0 = time.time()
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-nprocs = comm.Get_size()
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def getGeneFileName(GENE_NAME):
@@ -31,7 +31,7 @@ def countLinesCSV(filename):
         num_rows += 1
     return num_rows
 
-def getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER):
+def getGeneExpressions(GENE_NAME, TOKEN_NUMBER):
     try:
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                     "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
@@ -45,9 +45,10 @@ def getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER):
                 f.write(r.content)
             return filename
     except:
+        print e
         print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
 
-def getTissueSampleFeatures(TISSUE_NAME, credentials, TOKEN_NUMBER):
+def getTissueSampleFeatures(TISSUE_NAME, TOKEN_NUMBER):
     try:
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                     "table=V92_37_SAMPLE" + "&"
@@ -62,46 +63,11 @@ def getTissueSampleFeatures(TISSUE_NAME, credentials, TOKEN_NUMBER):
     except:
         print ('Unsuccessful download of CSV sample features file for tissue %s' % TISSUE_NAME)
 
-def splitGeneExpressionCSV(GENE_NAME):
+def splitGeneExpressionCSV(GENE_NAME, nprocs):
     filename = getGeneFileName(GENE_NAME)
-    ave, res = divmod(countLinesCSV(filename), nprocs)
+    ave, res = divmod(countLinesCSV(filename), int(nprocs))
     csv_splitter.split(filehandler=open(filename), output_path=WORKING_DIR, row_limit=ave)
 
-def filterGeneExpressionFile(WORKING_DIR, GENE_NAME, TISSUE_NAME):
-    gene_expressions_file = os.path.join(WORKING_DIR, GENE_NAME + "_expressions.csv")
-    tissue_samples_file = os.path.join(WORKING_DIR, TISSUE_NAME + "_samples.csv")
-    gene_expression_filtered_file = GENE_NAME + "_expressions_filtered.csv"
-#    try:
-    count = 0
-    #########################
-    ##### PARALLELIZING #####
-    #########################
-    num_rows = countLinesCSV(gene_expressions_file,)
-
-    with open(gene_expressions_file, 'rb') as csv_gene_expressions:
-        for row_gene in csv.DictReader(csv_gene_expressions, delimiter=','):
-            with open(tissue_samples_file, 'rb') as csv_tissue_samples:
-                for row_tissue in csv.DictReader(csv_tissue_samples, delimiter=','):
-                    if row_gene['SAMPLE_ID'] == row_tissue['SAMPLE_ID']:
-                        count = count + 1
-                        print row_gene
-    print "Count %s" % count
-
-def calculateGeneExpressionAverage(filename):
-    # Filter CSV file and get expression average(for now)
-    print ('\n Starting CSV filtering')
-    sum = 0
-    count = 0
-    try:
-        with open(filename, 'rb') as csvfile:
-            for line in csv.DictReader(csvfile, delimiter=','):
-                sum = sum + float(line[' Z_SCORE'])
-                count = count + 1
-
-        average_expression = sum / count
-        print ("average: ", average_expression)
-    except:
-        print ('Couldn\'t calculate average expression for gene %s' % GENE_NAME)
 
 def main(argv):
     try:
@@ -114,6 +80,12 @@ def main(argv):
         TISSUE_NAME = sys.argv[2]
     except:
         print "Missing tissue name argument"
+        sys.exit()
+
+    try:
+        nprocs = sys.argv[3]
+    except:
+        print "Missing number of procs argument"
         sys.exit()
 
     try:
@@ -134,16 +106,15 @@ def main(argv):
 
     # get CSV with gene expressions from CosmicDB
     getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER)
-    # split CSV into N files (N number of CPU cores)
-    splitGeneExpressionCSV(GENE_NAME)
     # get CSV with tissue samples from CosmicDB
     getTissueSampleFeatures(TISSUE_NAME, credentials, TOKEN_NUMBER)
+    # split CSV into N files (N number of CPU cores)
+    splitGeneExpressionCSV(GENE_NAME, nprocs)
     # filter gene expressions from CSV for only selected tissue samples on N cores
     ##filterGeneExpressionFile(WORKING_DIR, GENE_NAME, TISSUE_NAME)
     # calculateGeneExpressionAverage(GENE_NAME + "_expressions.csv")
     
 
 if __name__ == "__main__":
-    # TODO add number of CPU cores as argument
     main(sys.argv[1:])
     print('calculated in {:.3f} sec'.format(time.time() - t0))
