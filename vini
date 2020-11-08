@@ -9,10 +9,11 @@ job_submit=`cat $WORKDIR/job_submit`
 user_name=$USER
 mkdir -p $WORKDIR/cache
 
-MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs` #max. number of processor cores Vina can use
-MAX_NODES=`cat $WORKDIR/max_nodes`       #max. number of compute nodes Gromacs/g_mmpbsa can use
+MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
+MAX_NODES=`cat $WORKDIR/max_nodes`       #maximum number of compute nodes Gromacs/g_mmpbsa can use
 nr_ligands=`cat $WORKDIR/nr_ligands` 
 nr_complexes=`cat $WORKDIR/nr_complexes`
+NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #number of OMP threads Gromacs will use
 
 data="_data"
 PDB=.pdb
@@ -108,7 +109,6 @@ do
                                   FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
                                   echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
                              else
-                                 #cp $vini_dir/g_mmpbsa ./
                                  cp $vini_dir/nodes_control_script ./ 
                                  cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp ./
                                  cp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
@@ -120,19 +120,33 @@ do
                                  cp $WORKDIR/g_mmpbsa_potential_energy $WORKDIR/g_mmpbsa_polar_energy ./
                                  cp $WORKDIR/g_mmpbsa_apolar_energy $WORKDIR/compute_FBE  ./
                                  cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
-                                 #cp $vini_dir/COMPLEX_clean.pdb ./receptor.pdb   #delete after debug!!!
                                  cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
-                                 #echo "brakepoint" ; sleep 1000
 
-                                 echo -n "Docking with Hex, please wait..." 
-                                 hex receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
-                                 echo -n "Preparing protein complex with Chimera, please wait..."
-                                 accession_code=COMPLEX ; ligand=BNZ 
-                                 sh chimera_script ${accession_code} ${ligand}
-                                 echo "done."
-                                 mv protein_clean.pdb COMPLEX.pdb
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run
+
+
+                                 if  [ $CANCER_TYPE == 05244 ] #if SARS-COV-2 spike, use complex from Haddock
+                                 then
+                                     #Using protein_10.pdb complex already obtained from Haddock server.
+                                     #pdb files 7cn9 for spike-glycoprotein ectodomain and 1au1 for human
+                                     # interferon-beta were cleaned with Chimera and docked on Haddock server
+                                     cp $vini_dir/spike_inf.pdb ./COMPLEX.pdb
+                                 else
+                                     echo -n "Generating protein complex with Hex, please wait..." 
+                                     hex receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                     echo -n "Preparing protein complex with Chimera, please wait..."
+                                     accession_code=COMPLEX ; ligand=BNZ 
+                                     sh chimera_script ${accession_code} ${ligand}
+                                     echo "done."
+                                     if [ -e protein_clean.pdb ]
+                                     then
+                                         mv protein_clean.pdb COMPLEX.pdb
+                                     else
+                                         mv COMPLEX_clean.pdb COMPLEX.pdb
+                                     fi
+                                 fi
+
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare ${NTOMP}
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run ${NTOMP}
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit create_index_file
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_potential_energy
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy

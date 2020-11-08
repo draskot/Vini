@@ -13,7 +13,7 @@ cat COPYRIGHT
 NULL=0
 HSA=hsa
 
-echo "Working directory is usually fast Lustre filesystem. It is set to" $WORKDIR "."
+echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
 then
@@ -52,15 +52,15 @@ if [ $nolines -ne $NULL ]
 then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
-read -p "enter the maximum number of concurrent Autodock Vina jobs (2 cores/per job):" max_jobs
+read -p "enter the maximum number of concurrent Autodock Vina jobs (3 cores/per job):" max_jobs
 read -p "enter the maximum number of concurrent Gromacs/g_mmpbsa jobs (1 node/per job):" max_nodes
 
 echo $max_jobs > $WORKDIR/max_jobs
 echo $max_nodes > $WORKDIR/max_nodes
 
-echo ; echo "If you never signed to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
-read -p "Register (y/n)?" yesno
-if  [ $yesno == "y" ]
+echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
+read -p "Allready registered (y/n)?" yesno
+if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
     echo -n "Enter password:"; read -s password
@@ -68,19 +68,37 @@ then
     echo $email > $WORKDIR/SWISS-MODEL_email
     echo $password > $WORKDIR/SWISS-MODEL_password
     chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+else
+    if [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ] ; then
+       echo "no registration data found. You will need to enter your registration data now. "
+       read -p "Enter your registration email:" email
+       echo -n "Enter your registration password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/SWISS-MODEL_email
+       echo $password > $WORKDIR/SWISS-MODEL_password
+       chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+    fi
 fi
 
-echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_in and register. After approval, enter your registration email and password."
-read -p "Register (y/n)?" yesno
-if  [ $yesno == "y" ]
+echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
+read -p "Allready registered (y/n)?" yesno
+if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
-    echo -n "Enter password:"; read -s password
-    echo ""
+    echo -n "Enter password:"; read -s password ; echo ""
     echo $email > $WORKDIR/Drugbank_email
     echo $password > $WORKDIR/Drugbank_password
     chmod g-r,o-r $WORKDIR/Drugbank_password
+else
+    if [ ! -e $WORKDIR/Drugbank_email ] || [ ! -e $WORKDIR/Drugbank_password ] ; then
+       echo "no data found. You will need to enter data for the first time. "
+       read -p "Enter email:" email
+       echo -n "Enter password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/Drugbank_email
+       echo $password > $WORKDIR/Drugbank_password
+       chmod g-r,o-r $WORKDIR/Drugbank_password
+    fi
 fi
+
 sh download_Drugbank_structures
 
 
@@ -196,5 +214,5 @@ nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDI
 touch $WORKDIR/debuglog
 
 
-echo "Good to go. Start Vini either in the foreground with ./Vini (output will be sent to the screen)"
-echo "or in the background with nohup ./Vini & (output will be sent to nohup.out file)"
+echo "Good to go. You may now start Vini in the foreground with <sh Vini> (output will be sent to the screen)"
+echo "or in the background with <nohup ./Vini &> (output will be sent to nohup.out file)"
