@@ -8,16 +8,16 @@
 # TODO add support for FEB matrix integration
 import os
 import time
-import base64
 import sys
 import requests
-import csv
-from mpi4py import MPI
-import numpy as np
+import getopt
 import csv_splitter
 
 t0 = time.time()
+# this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
+TOKEN_NUMBER = "93210280369111638364141311106994957"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
+
 
 def getGeneFileName(GENE_NAME):
     return os.path.join(WORKING_DIR, GENE_NAME + '_expressions.csv')
@@ -31,7 +31,7 @@ def countLinesCSV(filename):
         num_rows += 1
     return num_rows
 
-def getGeneExpressions(GENE_NAME, TOKEN_NUMBER):
+def getGeneExpressions(GENE_NAME):
     try:
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                     "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
@@ -45,10 +45,9 @@ def getGeneExpressions(GENE_NAME, TOKEN_NUMBER):
                 f.write(r.content)
             return filename
     except:
-        print e
         print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
 
-def getTissueSampleFeatures(TISSUE_NAME, TOKEN_NUMBER):
+def getTissueSampleFeatures(TISSUE_NAME):
     try:
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                     "table=V92_37_SAMPLE" + "&"
@@ -71,22 +70,20 @@ def splitGeneExpressionCSV(GENE_NAME, nprocs):
 
 def main(argv):
     try:
-        GENE_NAME = sys.argv[1]
-    except:
-        print "Missing gene name argument"
+        opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
+    except getopt.GetoptError:
+        print '-g <gene name> -t <tissue name> -n <number of cores>'
         sys.exit()
-    
-    try:
-        TISSUE_NAME = sys.argv[2]
-    except:
-        print "Missing tissue name argument"
-        sys.exit()
-
-    try:
-        nprocs = sys.argv[3]
-    except:
-        print "Missing number of procs argument"
-        sys.exit()
+    for opt, arg in opts:
+        if opt == '-h':
+            print '-g <gene name> -t <tissue name>'
+            sys.exit()
+        elif opt in ("-g", "--gene"):
+            GENE_NAME = arg
+        elif opt in ("-t", "--tissue"):
+            TISSUE_NAME = arg
+        elif opt in ("-n", "--nproc"):
+            nprocs = arg
 
     try:
         cosmicdb_user = os.environ.get('COSMICDB_USER')
@@ -94,26 +91,13 @@ def main(argv):
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
     
-    # Your first request needs to supply your registered email address and COSMIC password. 
-    # CosmicDB uses HTTP Basic Auth to check your credentials, 
-    # which requires you to combine your email address and password and then Base64 encode them.
-    credentials = base64.b64encode(cosmicdb_user + ':' + cosmicdb_pass)
-    print ('credentials: ', credentials)
-
-    # Make a request to https://cancer.sanger.ac.uk/cosmic/file_download/ with authentication string (credentials)
-    # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
-    TOKEN_NUMBER = "93210280369111638364141311106994957"
-
     # get CSV with gene expressions from CosmicDB
-    getGeneExpressions(GENE_NAME, credentials, TOKEN_NUMBER)
+    getGeneExpressions(GENE_NAME)
     # get CSV with tissue samples from CosmicDB
-    getTissueSampleFeatures(TISSUE_NAME, credentials, TOKEN_NUMBER)
+    getTissueSampleFeatures(TISSUE_NAME)
     # split CSV into N files (N number of CPU cores)
     splitGeneExpressionCSV(GENE_NAME, nprocs)
-    # filter gene expressions from CSV for only selected tissue samples on N cores
-    ##filterGeneExpressionFile(WORKING_DIR, GENE_NAME, TISSUE_NAME)
-    # calculateGeneExpressionAverage(GENE_NAME + "_expressions.csv")
-    
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

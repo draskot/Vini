@@ -4,8 +4,8 @@ import os
 import time
 import sys
 import csv
+import getopt
 from mpi4py import MPI
-from get_gene_expression_parallel import countLinesCSV
 
 t0 = time.time()
 comm = MPI.COMM_WORLD
@@ -45,28 +45,27 @@ def calculateGeneExpressionAverage(filename):
 
 def main(argv):
     try:
-        GENE_NAME = sys.argv[1]
-    except:
-        print "Missing gene name argument"
+        opts, args = getopt.getopt(argv, "hg:t:", ["gene", "tissue="])
+    except getopt.GetoptError:
+        print '-g <gene name> -t <tissue name>'
         sys.exit()
+    for opt, arg in opts:
+        if opt == '-h':
+            print '-g <gene name> -t <tissue name>'
+            sys.exit()
+        elif opt in ("-g", "--gene"):
+            GENE_NAME = arg
+        elif opt in ("-t", "--tissue"):
+            TISSUE_NAME = arg
 
-    try:
-        TISSUE_NAME = sys.argv[2]
-    except:
-        print "Missing tissue name argument"
-        sys.exit()
 
     # filter gene expressions from CSV parts for only selected tissue samples on N cores
     if rank == 0:
         data = []
         for i in range(1, nprocs + 1):
-            f = []
             csv_file = os.path.join(WORKING_DIR, 'output_{}.csv'.format(i))
             reader = csv.reader(open(csv_file), delimiter=",")
-            f = []
-            for row in reader:
-                f.append(row)
-            data.append(f)
+            data.append([row for row in reader])
     else:
         data = None
     data = comm.scatter(data, root=0)

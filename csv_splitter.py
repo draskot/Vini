@@ -1,6 +1,6 @@
 import os
 
-def split(filehandler,delimiter=',', row_limit=1500,
+def split(filehandler, delimiter=',', row_limit=1500,
     output_name_template='output_%s.csv', output_path='.', keep_headers=True):
     """
     Splits a CSV file into multiple pieces.
