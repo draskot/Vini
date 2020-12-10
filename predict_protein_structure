@@ -10,11 +10,10 @@ dots=:
 dash=-
 NULL=0
 PDB=.pdb
-UDIR=$WORKDIR/ultradock_data
 
 
 
-grep $uniprot_id $HOME/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
+grep $uniprot_id $vini_dir/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
 lineno=`wc -l < $WORKDIR/swiss_repo_entry`
 
 
@@ -55,6 +54,8 @@ else
             mv $WORKDIR/$master $DOWNLOAD_DIR/$drugname$PDB
         fi
         rm $WORKDIR/tmp $WORKDIR/prediction_list
+    #else
+    #    echo success.
     fi
 fi
 

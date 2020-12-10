@@ -8,7 +8,7 @@ while true
 do
      sleep 1
      if  [ -e MD_prepare.out ]; then
-         grep Error MD_prepare.out >> gromacs_errors
+         grep Error MD_prepare.out > gromacs_errors
      fi
 
      if  [ -e MD_run.out ]; then
@@ -45,7 +45,7 @@ then
     do
          sleep 1
     done
-    echo 1 13 | g_mmpbsa -f md_0_1.xtc -s md_0_1.tpr -n md_0_1.ndx -i polar.mdp -nomme -pbsa -decomp
+    echo 1 13 | $WORKDIR/g_mmpbsa -f md_0_1.xtc -s md_0_1.tpr -n md_0_1.ndx -i polar.mdp -nomme -pbsa -decomp
 fi
 
 date=`date`

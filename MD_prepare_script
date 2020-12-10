@@ -16,7 +16,8 @@ echo 13 | gmx -quiet -backup genion -s ions.tpr -o COMPLEX_solv_ions.gro -p topo
 
 gmx grompp -f minim.mdp -c COMPLEX_solv_ions.gro -p topol.top -o em.tpr    #create em.tpr
 
-gmx mdrun -ntmpi 1 -ntomp 8 -pin on -v -deffnm em  #run energy minimization
+#gmx mdrun -ntmpi 1 -ntomp 8 -pin on -v -deffnm em  #run energy minimization
+gmx mdrun -ntmpi 1 -ntomp $NTOMP -pin on -v -deffnm em  #run energy minimization
 
 gmx grompp -f nvt.mdp -c em.gro -r em.gro -p topol.top -o nvt.tpr          #create nvt.tpr
 
