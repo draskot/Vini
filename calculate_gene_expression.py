@@ -1,4 +1,3 @@
-# TODO brisanje CSV fileova na kraju
 import os
 import time
 import sys
