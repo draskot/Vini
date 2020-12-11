@@ -1,5 +1,4 @@
-# TODO add number of CPU cores as argument
-# TODO preimenovati csv_splitter output kako bi moglo vise procesa za razlicite gene raditi ovo isto - npr. erbb2_part1.csv
+# TODO brisanje CSV fileova na kraju
 import os
 import time
 import sys
@@ -17,13 +16,15 @@ def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
     tissue_samples_file = os.path.join(WORKING_DIR, TISSUE_NAME + "_samples.csv")
     gene_expression_filtered_file = GENE_NAME + "_expressions_filtered.csv"
     count = 0
+    expressionSum= 0
     for row_gene in data[1:]:  # ignore first line, it is CSV header
         with open(tissue_samples_file, 'rb') as csv_tissue_samples:
             for row_tissue in csv.DictReader(csv_tissue_samples, delimiter=','):
                 if row_gene[0] == row_tissue['SAMPLE_ID']:
                     print ("Process {}: ".format(rank), row_gene)
-                    count = count + 1
-    return count
+                    count += 1
+                    expressionSum += float(row_gene[4])
+    return count, expressionSum
 
 
 def calculateGeneExpressionAverage(filename):
@@ -63,19 +64,23 @@ def main(argv):
     if rank == 0:
         data = []
         for i in range(1, nprocs + 1):
-            csv_file = os.path.join(WORKING_DIR, 'output_{}.csv'.format(i))
+            csv_file = os.path.join(WORKING_DIR, GENE_NAME + '_part_{}.csv'.format(i))
             reader = csv.reader(open(csv_file), delimiter=",")
             data.append([row for row in reader])
     else:
         data = None
     data = comm.scatter(data, root=0)
-    expression_count = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
-    expression_count = comm.gather(expression_count, root=0)
+    expression_count, zscore_sum = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
+    expression_count= comm.gather(expression_count, root=0)
+    zscore_sum = comm.gather(zscore_sum, root=0)
     # calculateGeneExpressionAverage(GENE_NAME + "_expressions.csv")
 
     if rank == 0:
+        average_zscore = sum(zscore_sum)/sum(expression_count)
         print('count number is {}'.format(sum(expression_count)))
+        print('Z-score average is {}'.format(average_zscore))
         print('calculated in {:.3f} sec'.format(time.time() - t0))
+        return average_zscore
 
 if __name__ == "__main__":
     main(sys.argv[1:])

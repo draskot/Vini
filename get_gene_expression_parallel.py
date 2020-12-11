@@ -1,10 +1,9 @@
 # We have to setup COSMICDB_USER and COSMICDB_PASS environment variables
+# TODO add support gene list in file + getTissueFileName dodati ime gena u ime filea
+# TODO output file za expression average
+# TODO kakve logove treba ispisivati? debug mode?
 
-#GENE_NAME = "ERBB2"
-#GENE_NAME = "EGFR"
-
-# TODO define arguments and help. req: GENE_NAME, TISSUE_NAME, NPROCS
-# TODO add Uniprot -> Atlas gene name conversion
+# TODO add Uniprot -> Atlas gene name conversion - napraviti u uredu, tamo je Postman request
 # TODO add support for FEB matrix integration
 import os
 import time
@@ -15,15 +14,17 @@ import csv_splitter
 
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
-TOKEN_NUMBER = "93210280369111638364141311106994957"
+TOKEN_NUMBER = "98330950869072126039566353130973932"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 
 def getGeneFileName(GENE_NAME):
     return os.path.join(WORKING_DIR, GENE_NAME + '_expressions.csv')
 
+
 def getTissueFileName(TISSUE_NAME):
     return os.path.join(WORKING_DIR, TISSUE_NAME + '_samples.csv')
+
 
 def countLinesCSV(filename):
     num_rows = 0
@@ -31,15 +32,18 @@ def countLinesCSV(filename):
         num_rows += 1
     return num_rows
 
+
 def getGeneExpressions(GENE_NAME):
     try:
+        print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                    "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
-                    "genename=" + GENE_NAME + "&"
-                    "token=" + TOKEN_NUMBER)
+                        "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
+                                                                "genename=" + GENE_NAME + "&"
+                                                                                          "token=" + TOKEN_NUMBER)
+        print ('Downloading gene expressions from CosmicDB')
         r = requests.get(download_url)
-            
-        if r.text:
+        print ('Cosmic response: %s', (r.status_code))
+        if r.text and r.status_code==200:
             filename = getGeneFileName(GENE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
@@ -47,25 +51,31 @@ def getGeneExpressions(GENE_NAME):
     except:
         print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
 
+
 def getTissueSampleFeatures(TISSUE_NAME):
     try:
+        print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                    "table=V92_37_SAMPLE" + "&"
-                    "primarysite=" + TISSUE_NAME + "&"
-                    "token=" + TOKEN_NUMBER)
+                        "table=V92_37_SAMPLE" + "&"
+                                                "primarysite=" + TISSUE_NAME + "&"
+                                                                               "token=" + TOKEN_NUMBER)
+        print ('Downloading tissue samples from CosmicDB')
         r = requests.get(download_url)
-            
-        if r.text:
+
+        if r.text and r.status_code==200:
             filename = getTissueFileName(TISSUE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
+            return filename
     except:
         print ('Unsuccessful download of CSV sample features file for tissue %s' % TISSUE_NAME)
+
 
 def splitGeneExpressionCSV(GENE_NAME, nprocs):
     filename = getGeneFileName(GENE_NAME)
     ave, res = divmod(countLinesCSV(filename), int(nprocs))
-    csv_splitter.split(filehandler=open(filename), output_path=WORKING_DIR, row_limit=ave)
+    csv_splitter.split(filehandler=open(filename), output_name_template=GENE_NAME + '_part_%s.csv',
+                       output_path=WORKING_DIR, row_limit=ave)
 
 
 def main(argv):
@@ -90,11 +100,15 @@ def main(argv):
         cosmicdb_pass = os.environ.get('COSMICDB_PASS')
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
-    
+
     # get CSV with gene expressions from CosmicDB
-    getGeneExpressions(GENE_NAME)
+    geneFile = getGeneExpressions(GENE_NAME)
+    if geneFile:
+        print 'Gene expressions saved in file: %s' % geneFile
     # get CSV with tissue samples from CosmicDB
-    getTissueSampleFeatures(TISSUE_NAME)
+    tissueFile = getTissueSampleFeatures(TISSUE_NAME)
+    if tissueFile:
+        print 'All expressions for tissue saved in file: %s' % tissueFile
     # split CSV into N files (N number of CPU cores)
     splitGeneExpressionCSV(GENE_NAME, nprocs)
 
