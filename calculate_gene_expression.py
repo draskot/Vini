@@ -26,23 +26,6 @@ def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
     return count, expressionSum
 
 
-def calculateGeneExpressionAverage(filename):
-    # Filter CSV file and get expression average(for now)
-    print ('\n Starting CSV filtering')
-    sum = 0
-    count = 0
-    try:
-        with open(filename, 'rb') as csvfile:
-            for line in csv.DictReader(csvfile, delimiter=','):
-                sum = sum + float(line[' Z_SCORE'])
-                count = count + 1
-
-        average_expression = sum / count
-        print ("average: ", average_expression)
-    except:
-        print ('Couldn\'t calculate average expression for gene %s' % GENE_NAME)
-
-
 def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:", ["gene", "tissue="])
@@ -72,7 +55,6 @@ def main(argv):
     expression_count, zscore_sum = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
     expression_count= comm.gather(expression_count, root=0)
     zscore_sum = comm.gather(zscore_sum, root=0)
-    # calculateGeneExpressionAverage(GENE_NAME + "_expressions.csv")
 
     if rank == 0:
         average_zscore = sum(zscore_sum)/sum(expression_count)
