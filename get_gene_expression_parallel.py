@@ -6,8 +6,6 @@
 # TODO add Uniprot -> Atlas gene name conversion - napraviti u uredu, tamo je Postman request
 # TODO add support for FEB matrix integration
 
-# GENE_UNIPROTID - Uniprot notation
-# GENE_NAME - Cosmic notation
 
 import os
 import time
@@ -51,12 +49,12 @@ def countLinesCSV(filename):
     return num_rows
 
 
-def getGeneExpressions(GENE_NAME):
+def getGeneExpressions(GENE_NAME, COSMIC_GENE_ID):
     try:
         print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                         "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
-                                                                "genename=" + GENE_NAME + "&"
+                                                                "genename=" + COSMIC_GENE_ID + "&"
                                                                                           "token=" + TOKEN_NUMBER)
         print ('Downloading gene expressions from CosmicDB')
         r = requests.get(download_url)
@@ -108,7 +106,7 @@ def main(argv):
             print '-g <gene Uniprot ID> -t <tissue name>'
             sys.exit()
         elif opt in ("-g", "--gene"):
-            GENE_UNIPROTID = arg
+            GENE_NAME = arg
         elif opt in ("-t", "--tissue"):
             TISSUE_NAME = arg
         elif opt in ("-n", "--nproc"):
@@ -120,10 +118,14 @@ def main(argv):
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
 
-    # mapping UniprotID to CosmicDB ID
-    GENE_NAME = mapUniprotIDtoCosmicID(GENE_UNIPROTID)
+    try:
+        COSMIC_GENE_ID = mapUniprotIDtoCosmicID(GENE_NAME)
+    except:
+        print ("Unsuccessful mapping of UniprotID->CosmicID ")
+
+
     # get CSV with gene expressions from CosmicDB
-    geneFile = getGeneExpressions(GENE_NAME)
+    geneFile = getGeneExpressions(GENE_NAME, COSMIC_GENE_ID)
     if geneFile:
         print 'Gene expressions saved in file: %s' % geneFile
     # get CSV with tissue samples from CosmicDB
