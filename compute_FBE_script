@@ -11,7 +11,7 @@ const=4.184 #KJoul to kcal conversion factor
 date=`date` ; ligand=`basename "$PWD"`
 echo "FBE_calc job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
 
-touch g_mmpbsa_errors g_mmpbsa_jobs gromacs_errors
+touch g_mmpbsa_errors g_mmpbsa_jobs gromacs_errors FBE_error
 
 while true
 do
@@ -68,14 +68,19 @@ then
     then
         echo "free binding energy cannot be calculated (nan).  Setting FBE to 7.0 kcal/mol."
         FBE_kcal_mol=7.0
+        error=1
+        echo $error > FBE_error
     else
         echo -n "converting free binding energy to kcal/mol..."
         FBE_kcal_mol=`echo $free_binding_energy $const | awk '{print $1 / $2}'`
         echo "done."
+        echo $error > FBE_error
     fi
 else
     echo "error found. setting free binding energy to 7.0 kcal/mol."
     FBE_kcal_mol=7.0
+    error=1
+    echo $error > FBE_error
 fi
 
 echo "free binding energy:" $FBE_kcal_mol

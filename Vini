@@ -93,6 +93,6 @@ do
 done
 
 cd $WORKDIR 
-rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands Vina job_status job_submit target_dir ultradock stats prediction_list analysis_type max_jobs workload_manager  max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q*  SWISS-MODEL_email SWISS-MODEL_password Drugbank_email Drugbank_password job_cancel max_nodes MD_engine tmp computed_cancer_type success Vina_run
+rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands Vina target_dir ultradock stats prediction_list analysis_type max_jobs workload_manager  max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q* max_nodes MD_engine tmp computed_cancer_type success Vina_run
 cd $vini_dir
 rm -f partition workdir

@@ -13,7 +13,8 @@ MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/max_nodes`       #maximum number of compute nodes Gromacs/g_mmpbsa can use
 nr_ligands=`cat $WORKDIR/nr_ligands` 
 nr_complexes=`cat $WORKDIR/nr_complexes`
-NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #number of OMP threads Gromacs will use
+NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
+export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 
 data="_data"
 PDB=.pdb
@@ -116,6 +117,7 @@ do
                                  cp $vini_dir/polar.mdp $vini_dir/apolar_sasa.mdp $vini_dir/mmpbsa.mdp ./
                                  cp $vini_dir/pbsa.mdp $vini_dir/docking.mac ./ 
                                  cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./  
+                                 #cp $vini_dir/create_pdbqt_complex_script ./
                                  cp $WORKDIR/MD_prepare $WORKDIR/MD_run $WORKDIR/create_index_file ./
                                  cp $WORKDIR/g_mmpbsa_potential_energy $WORKDIR/g_mmpbsa_polar_energy ./
                                  cp $WORKDIR/g_mmpbsa_apolar_energy $WORKDIR/compute_FBE  ./
@@ -152,8 +154,10 @@ do
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy
                                  sh nodes_control_script ${MAX_NODES} ; $job_submit compute_FBE ${target_dir} ${comp_index} ${recline}
-
-                                 $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r COMPLEX_clean.pdb -o $target_dir/complex_$comp_index.pdbqt #convert COMPLEX_clean.pdb to $target_dir/complex_$comp_index.pdbqt
+                                 cat $WORKDIR/Vina > create_pdbqt_complex
+                                 cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
+                                 chmod u+x create_pdbqt_complex
+                                 sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
                              fi
                         fi
                         cd $WORKDIR

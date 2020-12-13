@@ -13,8 +13,8 @@ for MD simulations. In that case, GPU version of Gromacs must be installed as we
 Higher versions of Gromacs are not supported.
 
 #For Gromacs 5.1.4 non-GPU, add the following lines in $HOME/.bashrc:
-source $INSTALL_DIR/gromacs_5.1.4/bin/GMXRC.bash
-export GMXLIB=$INSTALL_DIR/gromacs-5.1.4/share/top
+source $INSTALL_DIR/gromacs_5.1.4/bin/GMXRC.bash $INSTALL_DIR is directory where Gromacs is installed
+export GMXLIB=$INSTALL_DIR/gromacs-5.1.4/share/top 
 export GMX_MAXCONSTRWARN=-1
 
 #For Gromacs 5.1.4 with GPU, add the folllowing lines in .bashrc file:
@@ -26,6 +26,7 @@ export GMX_MAXCONSTRWARN=-1
 #Add the folllowing line to your .bashrc file:
 export PATH=$INSTALL_DIR/g_mmpbsa:$PATH
 export MMPBSA_SCRIPTS=$INSTALL_DIR/g_mmpbsa/scripts
+export GMXLIB=/opt/gromacs/share/gromacs/top # /opt/gromacs is directory where Gromacs is installed
 
 #Hex Protein docking 8.0.0, available from http://hex.loria.fr
 
