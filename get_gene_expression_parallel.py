@@ -1,22 +1,40 @@
 # We have to setup COSMICDB_USER and COSMICDB_PASS environment variables
-# TODO add support gene list in file + getTissueFileName dodati ime gena u ime filea
+# TODO add support gene list in file
 # TODO output file za expression average
 # TODO kakve logove treba ispisivati? debug mode?
 
 # TODO add Uniprot -> Atlas gene name conversion - napraviti u uredu, tamo je Postman request
 # TODO add support for FEB matrix integration
+
+# GENE_UNIPROTID - Uniprot notation
+# GENE_NAME - Cosmic notation
+
 import os
 import time
 import sys
 import requests
 import getopt
 import csv_splitter
+import mapUniprotIDtoCosmic
 
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 TOKEN_NUMBER = "98330950869072126039566353130973932"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
+def mapUniprotIDtoCosmicID(UNIPROT_ID):
+    try:
+        print ("Mapping UniprotID to CosmicID")
+        download_url = ("https://www.uniprot.org/uploadlists/?from=ACC+ID&to=GENENAME&format=tab&query=" +
+                        UNIPROT_ID)
+        r = requests.get(download_url)
+        if r.status_code == 200:
+            gene_name = r.content.split('\n')[1].split('\t')[1]
+            print ("r.text: ", r.text)
+            print ("CosmicID: ", gene_name)
+            return gene_name
+    except:
+        print ('Error while contacting Uniprot service')
 
 def getGeneFileName(GENE_NAME):
     return os.path.join(WORKING_DIR, GENE_NAME + '_expressions.csv')
@@ -43,7 +61,7 @@ def getGeneExpressions(GENE_NAME):
         print ('Downloading gene expressions from CosmicDB')
         r = requests.get(download_url)
         print ('Cosmic response: %s', (r.status_code))
-        if r.text and r.status_code==200:
+        if r.text and r.status_code == 200:
             filename = getGeneFileName(GENE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
@@ -62,7 +80,7 @@ def getTissueSampleFeatures(TISSUE_NAME):
         print ('Downloading tissue samples from CosmicDB')
         r = requests.get(download_url)
 
-        if r.text and r.status_code==200:
+        if r.text and r.status_code == 200:
             filename = getTissueFileName(TISSUE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
@@ -82,14 +100,15 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
     except getopt.GetoptError:
-        print '-g <gene name> -t <tissue name> -n <number of cores>'
+        print '-g <gene Uniprot ID> -t <tissue name> -n <number of cores>'
         sys.exit()
+
     for opt, arg in opts:
         if opt == '-h':
-            print '-g <gene name> -t <tissue name>'
+            print '-g <gene Uniprot ID> -t <tissue name>'
             sys.exit()
         elif opt in ("-g", "--gene"):
-            GENE_NAME = arg
+            GENE_UNIPROTID = arg
         elif opt in ("-t", "--tissue"):
             TISSUE_NAME = arg
         elif opt in ("-n", "--nproc"):
@@ -101,6 +120,8 @@ def main(argv):
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
 
+    # mapping UniprotID to CosmicDB ID
+    GENE_NAME = mapUniprotIDtoCosmicID(GENE_UNIPROTID)
     # get CSV with gene expressions from CosmicDB
     geneFile = getGeneExpressions(GENE_NAME)
     if geneFile:

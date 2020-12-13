@@ -5,6 +5,7 @@ import csv
 import getopt
 from mpi4py import MPI
 
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 t0 = time.time()
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
