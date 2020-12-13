@@ -5,7 +5,7 @@ import csv
 import getopt
 from mpi4py import MPI
 
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+
 t0 = time.time()
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -29,19 +29,20 @@ def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "hg:t:", ["gene", "tissue="])
+        opts, args = getopt.getopt(argv, "hg:t:o:", ["gene", "tissue="])
     except getopt.GetoptError:
-        print '-g <gene name> -t <tissue name>'
+        print '-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>'
         sys.exit()
     for opt, arg in opts:
         if opt == '-h':
-            print '-g <gene name> -t <tissue name>'
+            print '-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>'
             sys.exit()
         elif opt in ("-g", "--gene"):
             GENE_NAME = arg
         elif opt in ("-t", "--tissue"):
             TISSUE_NAME = arg
-
+        elif opt in ("-o", "--output"):
+            OUTPUT_FILE = arg
 
     # filter gene expressions from CSV parts for only selected tissue samples on N cores
     if rank == 0:
@@ -50,6 +51,7 @@ def main(argv):
             csv_file = os.path.join(WORKING_DIR, GENE_NAME + '_part_{}.csv'.format(i))
             reader = csv.reader(open(csv_file), delimiter=",")
             data.append([row for row in reader])
+
     else:
         data = None
     data = comm.scatter(data, root=0)
@@ -59,9 +61,17 @@ def main(argv):
 
     if rank == 0:
         average_zscore = sum(zscore_sum)/sum(expression_count)
+        print GENE_NAME
         print('count number is {}'.format(sum(expression_count)))
         print('Z-score average is {}'.format(average_zscore))
         print('calculated in {:.3f} sec'.format(time.time() - t0))
+
+        try:
+            with open(OUTPUT_FILE, 'a+') as output_file:
+                writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                writer.writerow([GENE_NAME, average_zscore])
+        except:
+            print "Error writing expression scores to CSV"
         return average_zscore
 
 if __name__ == "__main__":

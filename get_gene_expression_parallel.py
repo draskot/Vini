@@ -1,9 +1,5 @@
 # We have to setup COSMICDB_USER and COSMICDB_PASS environment variables
-# TODO add support gene list in file
-# TODO output file za expression average
-# TODO kakve logove treba ispisivati? debug mode?
 
-# TODO add Uniprot -> Atlas gene name conversion - napraviti u uredu, tamo je Postman request
 # TODO add support for FEB matrix integration
 
 
@@ -13,11 +9,10 @@ import sys
 import requests
 import getopt
 import csv_splitter
-import mapUniprotIDtoCosmic
 
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
-TOKEN_NUMBER = "98330950869072126039566353130973932"
+TOKEN_NUMBER = "85556658146640780929547938673376802"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
@@ -28,8 +23,7 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
         r = requests.get(download_url)
         if r.status_code == 200:
             gene_name = r.content.split('\n')[1].split('\t')[1]
-            print ("r.text: ", r.text)
-            print ("CosmicID: ", gene_name)
+            print "CosmicID: % s" % gene_name
             return gene_name
     except:
         print ('Error while contacting Uniprot service')
@@ -98,15 +92,15 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
     except getopt.GetoptError:
-        print '-g <gene Uniprot ID> -t <tissue name> -n <number of cores>'
+        print '-g <gene Uniprot ID or file path> -t <tissue name> -n <number of cores>'
         sys.exit()
 
     for opt, arg in opts:
         if opt == '-h':
-            print '-g <gene Uniprot ID> -t <tissue name>'
+            print '-g <gene Uniprot ID or file path> -t <tissue name>'
             sys.exit()
         elif opt in ("-g", "--gene"):
-            GENE_NAME = arg
+            GENE_INPUT = arg
         elif opt in ("-t", "--tissue"):
             TISSUE_NAME = arg
         elif opt in ("-n", "--nproc"):
@@ -118,22 +112,36 @@ def main(argv):
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
 
-    try:
-        COSMIC_GENE_ID = mapUniprotIDtoCosmicID(GENE_NAME)
-    except:
-        print ("Unsuccessful mapping of UniprotID->CosmicID ")
 
+
+    try:
+        gene_list = []
+        # checking if GENE_INPUT is list of multiple genes
+        with open(GENE_INPUT, 'r') as genes_file:
+            for gene_name in genes_file:
+                gene_list.append(gene_name.rstrip())
+    except:
+        # if GENE_INPUT is not a list it must be a single gene name
+        gene_list = [GENE_INPUT]
 
     # get CSV with gene expressions from CosmicDB
-    geneFile = getGeneExpressions(GENE_NAME, COSMIC_GENE_ID)
-    if geneFile:
-        print 'Gene expressions saved in file: %s' % geneFile
+    for GENE_NAME in gene_list:
+        try:
+            COSMIC_GENE_ID = mapUniprotIDtoCosmicID(GENE_NAME)
+            geneFile = getGeneExpressions(GENE_NAME, COSMIC_GENE_ID)
+            if geneFile:
+                print 'Gene expressions saved in file: %s' % geneFile
+            # split CSV into N files (N number of CPU cores)
+            splitGeneExpressionCSV(GENE_NAME, nprocs)
+        except:
+            print ("Unsuccessful download of gene %s from CosmicDB." % GENE_NAME)
+
+
     # get CSV with tissue samples from CosmicDB
     tissueFile = getTissueSampleFeatures(TISSUE_NAME)
     if tissueFile:
         print 'All expressions for tissue saved in file: %s' % tissueFile
-    # split CSV into N files (N number of CPU cores)
-    splitGeneExpressionCSV(GENE_NAME, nprocs)
+
 
 
 if __name__ == "__main__":
