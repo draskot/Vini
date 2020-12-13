@@ -1,0 +1,32 @@
+
+
+if [ $job_status == squeue ]
+then
+    target_dir=$1
+    comp_index=$2
+fi
+
+NULL=0
+
+date=`date` ; ligand=`basename "$PWD"`
+echo "create_pdbqt_complex job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+while true #loop until FBE_error file is created
+do
+    if  [ ! -e FBE_error ]
+    then
+        sleep 4
+    else
+        FBE_error=`cat FBE_error`
+        if  [ $FBE_error -eq $NULL ]
+        then
+           $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r COMPLEX_clean.pdb -o $target_dir/complex_$comp_index.pdbqt -A checkhydrogens
+           echo "create_pdbqt_complex job for ligand" $ligand "finished at" $date >> $WORKDIR/debuglog
+        else
+            echo "create_pdbqt_complex job for ligand" $ligand "failed at" $date >> $WORKDIR/debuglog
+        fi
+        break
+    fi
+done
+
+
