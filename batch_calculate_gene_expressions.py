@@ -7,7 +7,7 @@ import subprocess
 
 
 t0 = time.time()
-WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
+WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions/')
 
 
 
@@ -34,14 +34,19 @@ def main(argv):
         genes = [gene.rstrip() for gene in f]
 
     for gene in genes:
-        t0 = time.time()
-        print "Calculating Z-score for gene: %s" % gene
-        command = "mpiexec -n " + N_CORES \
-                  + " python calculate_gene_expression.py -g " + gene \
-                  + " -t " + TISSUE_NAME + " -o " + OUTPUT_FILE
-        process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
-        print('calculated in {:.3f} sec'.format(time.time() - t0))
+        print WORKING_DIR + gene + '_expressions.csv'
+        if os.path.isfile(WORKING_DIR + gene + '_expressions.csv'):
+            t0 = time.time()
+            print "Calculating Z-score for gene: %s" % gene
+            command = "mpiexec -n " + N_CORES \
+                      + " python calculate_gene_expression.py -g " + gene \
+                      + " -t " + TISSUE_NAME + " -o " + OUTPUT_FILE
+            process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+            output, error = process.communicate()
+            print error
+            print('calculated in {:.3f} sec'.format(time.time() - t0))
+        else:
+            print "No expression data for gene %s" % gene
 
 
 if __name__ == "__main__":
