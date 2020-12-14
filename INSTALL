@@ -4,6 +4,7 @@ Software prerequisites for Vini:
 ---------------------------------
 
 Gromacs 5.1.4, g_mmpbsa, Hex 8.0.0, Open Babel 2.4.0, Chimera-1.14, Autodock Vina 1.1.2, MGLTools 1.5.6  
+SWISS-MODEL_Repository
 
 Gromacs 5.1.4 installation notes:
 ---------------------------------
@@ -13,8 +14,8 @@ for MD simulations. In that case, GPU version of Gromacs must be installed as we
 Higher versions of Gromacs are not supported.
 
 #For Gromacs 5.1.4 non-GPU, add the following lines in $HOME/.bashrc:
-source $INSTALL_DIR/gromacs_5.1.4/bin/GMXRC.bash
-export GMXLIB=$INSTALL_DIR/gromacs-5.1.4/share/top
+source $INSTALL_DIR/gromacs_5.1.4/bin/GMXRC.bash $INSTALL_DIR is directory where Gromacs is installed
+export GMXLIB=$INSTALL_DIR/gromacs-5.1.4/share/top 
 export GMX_MAXCONSTRWARN=-1
 
 #For Gromacs 5.1.4 with GPU, add the folllowing lines in .bashrc file:
@@ -26,6 +27,7 @@ export GMX_MAXCONSTRWARN=-1
 #Add the folllowing line to your .bashrc file:
 export PATH=$INSTALL_DIR/g_mmpbsa:$PATH
 export MMPBSA_SCRIPTS=$INSTALL_DIR/g_mmpbsa/scripts
+export GMXLIB=/opt/gromacs/share/gromacs/top # /opt/gromacs is directory where Gromacs is installed
 
 #Hex Protein docking 8.0.0, available from http://hex.loria.fr
 
@@ -53,14 +55,14 @@ Note: During the installation of MGLTools, script is asking for licensing. If X 
 
 #MGLTools by default do not work with metal ions. If MGLTools are installed outside of your $HOME, perform: sudo chmod o+w $MGLTOOLS $MGLTOOLS/AD4_parameters.dat
 
+SWISS-MODEL_Repository: Download metadata file (Homology models and experimental structures/homo sapiens) from https://swissmodel.expasy.org/repository  (filename 9606_meta.tar.gz). Copy file to your INSTALL_DIR and unpack.
+
 Python: Vini, g_mmpbsa, Chimera and MGLTools use python version 2.7. Numpy 1.14.6 module must be available on the system. For example, if numpy moduke is available, execute: module load python-Numpy/Numpy-1.14.6
 
 Hardware prerequisites:
 -----------------------
 Vini is a supercomputing applications, and needs at least 10 cluster nodes to run smoothly.
 Vini was tested on RHEL 7.0 and is expected to run on higher versions of RHEL/Centos operating systems and other Linux flavours. Supported cluster managers are SLURM, Torque (PBS), and Sun Grid Engine (Oracle Grid Engine).
-Vini is not using MPI.
-GPU nodes can significantly decrease simulation times. Vini was tested on cluster nodes with two Tesla K40 cards. 
 
 
 

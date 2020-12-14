@@ -1,0 +1,185 @@
+cluster=`uname -n`
+
+if [ -e $WORKDIR/Vina_queue ]
+then
+    Vina_queue=`cat $WORKDIR/Vina_queue`
+    #Vina_pe=`cat $WORKDIR/Vina_pe`
+    Gromacs_queue=`cat $WORKDIR/Gromacs_queue`
+    #Gromacs_pe=`cat $WORKDIR/Gromacs_pe`
+    g_mmpbsa_queue=`cat $WORKDIR/g_mmpbsa_queue`
+    #g_mmpbsa_pe=`cat $WORKDIR/g_mmpbsa_pe`
+    echo "The current mapping of Vini tasks on" $cluster "partitions is:"
+    echo "Vina_queue:" $Vina_queue "Gromacs_queue:" $Gromacs_queue "g_mmpbsa_queue:" $g_mmpbsa_queue
+else
+    echo "no mapping of my jobs on" $cluster "You will need to set it up now."
+    echo "" ; echo "Available queues on" $cluster "are:"
+    sinfo
+    read -p  "enter the name of queue Vina will use:" Vina_queue
+    echo $Vina_queue > $WORKDIR/Vina_queue
+    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    echo $Gromacs_queue > $WORKDIR/Gromacs_queue
+    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+fi
+
+read -p "accept the current mapping (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    echo "" ; echo "Available queues on" $cluster "are:"
+    sinfo
+    read -p  "enter the name of queue Vina will use:" Vina_queue
+    echo $Vina_queue > $WORKDIR/Vina_queue
+    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    echo $Gromacs_queue > $WORKDIR/Gromacs_queue
+    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+fi
+sleep 2
+
+echo ""
+echo "Vina, Gromacs and g_mmpbsa jobs can use several OMP threads on compute nodes."
+echo "If you already used Vini on this system, you may use the number of threads from the previous Vini run."
+echo "Alternativelly, you may enter new values."
+
+if  [ -e $WORKDIR/Vina_threads ] ; then
+    Vina_threads=`cat $WORKDIR/Vina_threads`
+    echo "The number of Vina threads is currently set to" $Vina_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each Vina job will use:" Vina_threads
+       echo $Vina_threads > $WORKDIR/Vina_threads
+    fi
+else
+    read -p "Please enter the number of threads each Vina job will use:" Vina_threads
+    echo $Vina_threads > $WORKDIR/Vina_threads
+fi
+
+if  [ -e $WORKDIR/Gromacs_threads ] ; then
+    Gromacs_threads=`cat $WORKDIR/Gromacs_threads`
+    echo "The number of Gromacs threads is currently set to" $Gromacs_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+       echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+    fi
+else
+    read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+    echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+fi
+
+if  [ -e $WORKDIR/g_mmpbsa_threads ] ; then
+    g_mmpbsa_threads=`cat $WORKDIR/g_mmpbsa_threads`
+    echo "The number of g_mmpbsa_threads is currently set to" $g_mmpbsa_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+       echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+    fi
+else
+    read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+    echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+fi
+
+echo "#! /bin/bash"                           > $WORKDIR/Vina       #prepare Vina header file
+echo "#SBATCH --job-name=Vina"               >> $WORKDIR/Vina
+echo "#SBATCH --output=Vina.out"             >> $WORKDIR/Vina
+echo "#SBATCH --time=00:30:00"               >> $WORKDIR/Vina
+echo "#SBATCH --ntasks-per-node=1"           >> $WORKDIR/Vina
+echo "#SBATCH --cpus-per-task=3"             >> $WORKDIR/Vina
+echo "#SBATCH --mem=8gb"                     >> $WORKDIR/Vina
+echo "#SBATCH --partition="$Vina_queue       >> $WORKDIR/Vina
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/Vina
+echo "source $HOME/.bashrc"                  >> $WORKDIR/Vina
+
+echo "#! /bin/bash"                           > $WORKDIR/MD_prepare  #prep Gromacs header files
+echo "#SBATCH --job-name=MD_prepare"         >> $WORKDIR/MD_prepare
+echo "#SBATCH --output=MD_prepare.out"       >> $WORKDIR/MD_prepare
+echo "#SBATCH --time=48:00:00"               >> $WORKDIR/MD_prepare
+echo "#SBATCH --ntasks-per-node=4"           >> $WORKDIR/MD_prepare
+echo "#SBATCH --cpus-per-task=6"             >> $WORKDIR/MD_prepare
+echo "#SBATCH --mem=32gb"                    >> $WORKDIR/MD_prepare
+echo "#SBATCH --partition="$Gromacs_queue    >> $WORKDIR/MD_prepare
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/MD_prepare
+echo "source $HOME/.bashrc"                  >> $WORKDIR/MD_prepare
+cat MD_prepare_script                        >> $WORKDIR/MD_prepare
+chmod u+x                                       $WORKDIR/MD_prepare
+
+echo "#! /bin/bash"                           > $WORKDIR/MD_run
+echo "#SBATCH --job-name=MD_run"             >> $WORKDIR/MD_run
+echo "#SBATCH --output=MD_run.out"           >> $WORKDIR/MD_run
+echo "#SBATCH --time=48:00:00"               >> $WORKDIR/MD_run
+echo "#SBATCH --nodes=1"                     >> $WORKDIR/MD_run
+echo "#SBATCH --ntasks-per-node=4"           >> $WORKDIR/MD_run
+echo "#SBATCH --cpus-per-task=6"             >> $WORKDIR/MD_run
+echo "#SBATCH --mem=32gb"                    >> $WORKDIR/MD_run
+echo "#SBATCH --partition="$Gromacs_queue    >> $WORKDIR/MD_run
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/MD_run
+echo "source $HOME/.bashrc"                  >> $WORKDIR/MD_run
+cat MD_run_script                            >> $WORKDIR/MD_run
+chmod u+x                                       $WORKDIR/MD_run
+
+echo "#! /bin/bash"                           > $WORKDIR/create_index_file
+echo "#SBATCH --job-name=ndx"                >> $WORKDIR/create_index_file
+echo "#SBATCH --output=ndx.out"              >> $WORKDIR/create_index_file
+echo "#SBATCH --time=48:00:00"               >> $WORKDIR/create_index_file
+echo "#SBATCH --ntasks-per-node=1"           >> $WORKDIR/create_index_file
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/create_index_file
+echo "#SBATCH --mem=32gb"                    >> $WORKDIR/create_index_file
+echo "#SBATCH --partition="$Gromacs_queue    >> $WORKDIR/create_index_file
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/create_index_file
+echo "source $HOME/.bashrc"                  >> $WORKDIR/create_index_file
+cat create_index_file_script                 >> $WORKDIR/create_index_file
+chmod u+x                                       $WORKDIR/create_index_file
+
+echo "#! /bin/bash"                            > $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --job-name=potential"           >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --output=potential.out"         >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --time=48:00:00"                >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --ntasks-per-node=1"            >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --cpus-per-task=16"             >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --mem=32gb"                     >> $WORKDIR/g_mmpbsa_potential_energy
+echo "#SBATCH --partition="$g_mmpbsa_queue    >> $WORKDIR/g_mmpbsa_potential_energy
+echo "export OMP_NUM_THREADS=16"              >> $WORKDIR/g_mmpbsa_potential_energy
+echo "source $HOME/.bashrc"                   >> $WORKDIR/g_mmpbsa_potential_energy
+cat g_mmpbsa_potential_energy_script          >> $WORKDIR/g_mmpbsa_potential_energy
+chmod u+x                                        $WORKDIR/g_mmpbsa_potential_energy
+
+echo "#! /bin/bash"                            > $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --job-name=apolar"              >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --output=apolar.out"            >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --time=48:00:00"                >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --ntasks-per-node=1"            >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --cpus-per-task=16"             >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --mem=32gb"                     >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --partition="$g_mmpbsa_queue    >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "export OMP_NUM_THREADS=16"              >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "source $HOME/.bashrc"                   >> $WORKDIR/g_mmpbsa_apolar_energy
+cat g_mmpbsa_apolar_energy_script             >> $WORKDIR/g_mmpbsa_apolar_energy
+chmod u+x                                        $WORKDIR/g_mmpbsa_apolar_energy
+
+echo "#! /bin/bash"                            > $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --job-name=polar"               >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --output=polar.out"             >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --time=48:00:00"                >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --nodes=1"                      >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --ntasks-per-node=1"            >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --cpus-per-task=16"             >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --mem=32gb"                     >> $WORKDIR/g_mmpbsa_polar_energy
+echo "#SBATCH --partition="$g_mmpbsa_queue    >> $WORKDIR/g_mmpbsa_polar_energy
+echo "export OMP_NUM_THREADS=16"              >> $WORKDIR/g_mmpbsa_polar_energy
+echo "source $HOME/.bashrc"                   >> $WORKDIR/g_mmpbsa_polar_energy
+cat g_mmpbsa_polar_energy_script              >> $WORKDIR/g_mmpbsa_polar_energy
+chmod u+x                                        $WORKDIR/g_mmpbsa_polar_energy
+
+echo "#! /bin/bash"                            > $WORKDIR/compute_FBE
+echo "#SBATCH --job-name=FBE_calc"            >> $WORKDIR/compute_FBE
+echo "#SBATCH --output=FBE_calc.out"          >> $WORKDIR/compute_FBE
+echo "#SBATCH --time=48:00:00"                >> $WORKDIR/compute_FBE
+echo "#SBATCH --ntasks-per-node=1"            >> $WORKDIR/compute_FBE
+echo "#SBATCH --cpus-per-task=16"             >> $WORKDIR/compute_FBE
+echo "#SBATCH --mem=32gb"                     >> $WORKDIR/compute_FBE
+echo "#SBATCH --partition="$g_mmpbsa_queue    >> $WORKDIR/compute_FBE
+echo "export OMP_NUM_THREADS=16"              >> $WORKDIR/compute_FBE
+echo "source $HOME/.bashrc"                   >> $WORKDIR/compute_FBE
+cat compute_FBE_script                        >> $WORKDIR/compute_FBE
+chmod u+x                                        $WORKDIR/compute_FBE
