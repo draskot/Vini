@@ -16,7 +16,7 @@ WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
     tissue_samples_file = os.path.join(WORKING_DIR, TISSUE_NAME + "_samples.csv")
     gene_expression_filtered_file = GENE_NAME + "_expressions_filtered.csv"
-    df = pd.read_csv(tissue_samples_file,sep=',',header=0)
+    df = pd.read_csv(tissue_samples_file, sep=',', header=0, usecols=['SAMPLE_ID'])
 
     count = 0
     expressionSum= 0
@@ -67,19 +67,20 @@ def main(argv):
     zscore_sum = comm.gather(zscore_sum, root=0)
 
     if rank == 0:
-        average_zscore = sum(zscore_sum)/sum(expression_count)
-        print GENE_NAME
-        print('count number is {}'.format(sum(expression_count)))
-        print('Z-score average is {}'.format(average_zscore))
-        print('calculated in {:.3f} sec'.format(time.time() - t0))
-
         try:
+            average_zscore = sum(zscore_sum)/sum(expression_count)
+            print GENE_NAME
+            print('count number is {}'.format(sum(expression_count)))
+            print('Z-score average is {}'.format(average_zscore))
+            print('calculated in {:.3f} sec'.format(time.time() - t0))
             with open(OUTPUT_FILE, 'a+') as output_file:
                 writer = csv.writer(output_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 writer.writerow([GENE_NAME, average_zscore])
+            return average_zscore
         except:
             print "Error writing expression scores to CSV"
-        return average_zscore
+            sys.exit()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

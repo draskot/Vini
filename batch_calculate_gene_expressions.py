@@ -33,21 +33,24 @@ def main(argv):
     with open(GENE_LIST, 'r') as f:
         genes = [gene.rstrip() for gene in f]
 
+    gene_count = 0
     for gene in genes:
-        print WORKING_DIR + gene + '_expressions.csv'
-        if os.path.isfile(WORKING_DIR + gene + '_expressions.csv'):
-            t0 = time.time()
+        if os.path.isfile(WORKING_DIR + gene + '_expressions.csv') and \
+                os.path.isfile(WORKING_DIR + TISSUE_NAME + '_samples.csv'):
+            t1 = time.time()
             print "Calculating Z-score for gene: %s" % gene
             command = "mpiexec -n " + N_CORES \
                       + " python calculate_gene_expression.py -g " + gene \
                       + " -t " + TISSUE_NAME + " -o " + OUTPUT_FILE
             process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
             output, error = process.communicate()
-            print error
-            print('calculated in {:.3f} sec'.format(time.time() - t0))
+            # print error
+            gene_count += 1
+            print('calculated in {:.3f} sec'.format(time.time() - t1))
         else:
             print "No expression data for gene %s" % gene
 
-
+    print "Calculated %s out of %s genes." % (gene_count, len(genes))
+    print('calculated in {:.3f} sec'.format(time.time() - t0))
 if __name__ == "__main__":
     main(sys.argv[1:])
