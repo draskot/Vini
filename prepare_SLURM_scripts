@@ -3,11 +3,11 @@ cluster=`uname -n`
 if [ -e $WORKDIR/Vina_queue ]
 then
     Vina_queue=`cat $WORKDIR/Vina_queue`
-    Vina_pe=`cat $WORKDIR/Vina_pe`
+    #Vina_pe=`cat $WORKDIR/Vina_pe`
     Gromacs_queue=`cat $WORKDIR/Gromacs_queue`
-    Gromacs_pe=`cat $WORKDIR/Gromacs_pe`
+    #Gromacs_pe=`cat $WORKDIR/Gromacs_pe`
     g_mmpbsa_queue=`cat $WORKDIR/g_mmpbsa_queue`
-    g_mmpbsa_pe=`cat $WORKDIR/g_mmpbsa_pe`
+    #g_mmpbsa_pe=`cat $WORKDIR/g_mmpbsa_pe`
     echo "The current mapping of Vini tasks on" $cluster "partitions is:"
     echo "Vina_queue:" $Vina_queue "Gromacs_queue:" $Gromacs_queue "g_mmpbsa_queue:" $g_mmpbsa_queue
 else
@@ -151,7 +151,7 @@ echo "#SBATCH --time=48:00:00"                >> $WORKDIR/g_mmpbsa_apolar_energy
 echo "#SBATCH --ntasks-per-node=1"            >> $WORKDIR/g_mmpbsa_apolar_energy
 echo "#SBATCH --cpus-per-task=16"             >> $WORKDIR/g_mmpbsa_apolar_energy
 echo "#SBATCH --mem=32gb"                     >> $WORKDIR/g_mmpbsa_apolar_energy
-echo "#SBATCH --partition="$apolar            >> $WORKDIR/g_mmpbsa_apolar_energy
+echo "#SBATCH --partition="$g_mmpbsa_queue    >> $WORKDIR/g_mmpbsa_apolar_energy
 echo "export OMP_NUM_THREADS=16"              >> $WORKDIR/g_mmpbsa_apolar_energy
 echo "source $HOME/.bashrc"                   >> $WORKDIR/g_mmpbsa_apolar_energy
 cat g_mmpbsa_apolar_energy_script             >> $WORKDIR/g_mmpbsa_apolar_energy

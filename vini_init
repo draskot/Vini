@@ -11,6 +11,7 @@ fi
 cat COPYRIGHT
 
 NULL=0
+ONES=1
 HSA=hsa
 
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
@@ -39,7 +40,14 @@ echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of hom
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
 #read -p "which job submission system are you using? Enter 1 for SLURM, 2 for PBS/Torque, 3 for SGE:" JSS
-read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS
+read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS #PBS not tested
+read -p "run Ambertools instead Gromacs/g_mmpbsa? (y/n)" amber
+if [ $amber == y ]
+then
+    echo $ONES > $WORKDIR/amber
+else
+    echo $NULL > $WORKDIR/amber
+fi
 
 case $JSS in
      1) echo "SLURM" > $WORKDIR/workload_manager; echo "squeue" > $WORKDIR/job_status; echo "sbatch" > $WORKDIR/job_submit; echo "scancel" > $WORKDIR/job_cancel ; sh prepare_SLURM_scripts ;;

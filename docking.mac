@@ -8,10 +8,10 @@ LIGAND_RANGE_ANGLE        180
 TWIST_RANGE_ANGLE         360
 R12_RANGE                  21
 R12_STEP                 0.75
-GRID_SIZE                 0.6
+GRID_SIZE                 2.0
 DOCKING_MAIN_SCAN          16
 DOCKING_MAIN_SEARCH        25
 ACTIVATE_DOCKING
-#SAVE_RECEPTOR protein1_out
-#SAVE_LIGAND protein2_out
-SAVE_BOTH COMPLEX.pdb
+SAVE_LIGAND ligand.pdb
+SAVE_RECEPTOR receptor.pdb
+SAVE_BOTH complex.pdb

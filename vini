@@ -15,6 +15,7 @@ nr_ligands=`cat $WORKDIR/nr_ligands`
 nr_complexes=`cat $WORKDIR/nr_complexes`
 NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
+amber=`cat $WORKDIR/amber` 
 
 data="_data"
 PDB=.pdb
@@ -124,40 +125,51 @@ do
                                  cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
                                  cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
 
-
-
-                                 if  [ $CANCER_TYPE == 05244 ] #if SARS-COV-2 spike, use complex from Haddock
+                                 
+                                 if [ $amber -eq $NULL ]
                                  then
-                                     #Using protein_10.pdb complex already obtained from Haddock server.
-                                     #pdb files 7cn9 for spike-glycoprotein ectodomain and 1au1 for human
-                                     # interferon-beta were cleaned with Chimera and docked on Haddock server
-                                     cp $vini_dir/spike_inf.pdb ./COMPLEX.pdb
-                                 else
                                      echo -n "Generating protein complex with Hex, please wait..." 
-                                     hex receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                     hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
                                      echo -n "Preparing protein complex with Chimera, please wait..."
-                                     accession_code=COMPLEX ; ligand=BNZ 
+                                     accession_code=complex ; ligand=BNZ 
                                      sh chimera_script ${accession_code} ${ligand}
                                      echo "done."
-                                     if [ -e protein_clean.pdb ]
+                                     if  [ -e protein_clean.pdb ]
                                      then
-                                         mv protein_clean.pdb COMPLEX.pdb
+                                         mv protein_clean.pdb complex.pdb
                                      else
-                                         mv COMPLEX_clean.pdb COMPLEX.pdb
+                                         mv complex_clean.pdb complex.pdb
                                      fi
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare ${NTOMP}
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run ${NTOMP}
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit create_index_file
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_potential_energy
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit compute_FBE ${target_dir} ${comp_index} ${recline}
+                                     cat $WORKDIR/Vina > create_pdbqt_complex
+                                     cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
+                                     chmod u+x create_pdbqt_complex
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
+                                 else
+                                     echo -n "Generating protein complex with Hex, please wait..." 
+                                     hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                     #pdb4amber -i receptor.pdb -o tmp.pdb ; mv tmp.pdb receptor.pdb
+                                     #pdb4amber -i ligand.pdb -o tmp.pdb ; mv tmp.pdb ligand.pdb
+                                     #pdb4amber -i complex.pdb -o tmp.pdb ; mv tmp.pdb complex.pdb
+                                     reduce -Trim receptor.pdb > tmp ; mv tmp receptor.pdb
+                                     reduce -Trim ligand.pdb > tmp ; mv tmp ligand.pdb
+                                     reduce -Trim complex.pdb > tmp ; mv tmp complex.pdb
+                                     cp  $vini_dir/amber20/MDrun $vini_dir/amber20/process_mdout.pl  $vini_dir/amber20/*in ./
+                           
+                                     tleap -s -f tleap.in
+                                     echo "running Amber" ; sleep 100000
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit MDrun
+                                     cat $WORKDIR/Vina > create_pdbqt_complex
+                                     cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
+                                     chmod u+x create_pdbqt_complex
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
                                  fi
-
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_prepare ${NTOMP}
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit MD_run ${NTOMP}
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit create_index_file
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_potential_energy
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit compute_FBE ${target_dir} ${comp_index} ${recline}
-                                 cat $WORKDIR/Vina > create_pdbqt_complex
-                                 cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
-                                 chmod u+x create_pdbqt_complex
-                                 sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
                              fi
                         fi
                         cd $WORKDIR
