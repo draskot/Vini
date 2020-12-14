@@ -61,10 +61,14 @@ def main(argv):
     else:
         data = None
 
-    data = comm.scatter(data, root=0)
-    expression_count, zscore_sum = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
-    expression_count= comm.gather(expression_count, root=0)
-    zscore_sum = comm.gather(zscore_sum, root=0)
+    try:
+        data = comm.scatter(data, root=0)
+        expression_count, zscore_sum = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
+        expression_count= comm.gather(expression_count, root=0)
+        zscore_sum = comm.gather(zscore_sum, root=0)
+    except:
+        print "Error in MPI scatter or gather process"
+        sys.exit()
 
     if rank == 0:
         try:
@@ -79,7 +83,7 @@ def main(argv):
             return average_zscore
         except:
             print "Error writing expression scores to CSV"
-            sys.exit()
+            sys.exit(0)
 
 
 if __name__ == "__main__":

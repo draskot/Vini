@@ -37,29 +37,30 @@ def getTissueFileName(TISSUE_NAME):
 
 
 def countLinesCSV(filename):
-    num_rows = 0
-    for row in open(filename, 'rb'):
-        num_rows += 1
-    return num_rows
+    with open(filename) as f:
+        row_count = sum(1 for line in f)
+    return row_count
 
 
 def getGeneExpressions(GENE_NAME, COSMIC_GENE_ID):
     try:
-        print ('Connecting to CosmicDB')
+        # print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
                         "table=V92_37_COMPLETEGENEEXPRESSION" + "&"
                                                                 "genename=" + COSMIC_GENE_ID + "&"
                                                                                           "token=" + TOKEN_NUMBER)
         print ('Downloading gene expressions from CosmicDB')
         r = requests.get(download_url)
-        print ('Cosmic response: %s', (r.status_code))
-        if r.text and r.status_code == 200:
+        #print ('Cosmic response: %s', (r.status_code))
+        if r.text != "No data available." and r.status_code == 200:
             filename = getGeneFileName(GENE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
             return filename
+        else:
+            print "Unsuccessful download from CosmicDB for gene % s" % GENE_NAME
     except:
-        print ('Unsuccessful download of CSV expression file for gene %s' % GENE_NAME)
+        return False
 
 
 def getTissueSampleFeatures(TISSUE_NAME):
@@ -78,12 +79,13 @@ def getTissueSampleFeatures(TISSUE_NAME):
                 f.write(r.content)
             return filename
     except:
-        print ('Unsuccessful download of CSV sample features file for tissue %s' % TISSUE_NAME)
+        return False
 
 
 def splitGeneExpressionCSV(GENE_NAME, nprocs):
     filename = getGeneFileName(GENE_NAME)
     ave, res = divmod(countLinesCSV(filename), int(nprocs))
+    print 'Splitting file %s ' % filename
     csv_splitter.split(filehandler=open(filename), output_name_template=GENE_NAME + '_part_%s.csv',
                        output_path=WORKING_DIR, row_limit=ave)
 
@@ -112,8 +114,6 @@ def main(argv):
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
 
-
-
     try:
         gene_list = []
         # checking if GENE_INPUT is list of multiple genes
@@ -138,10 +138,14 @@ def main(argv):
 
 
     # get CSV with tissue samples from CosmicDB
-    tissueFile = getTissueSampleFeatures(TISSUE_NAME)
-    if tissueFile:
-        print 'All expressions for tissue saved in file: %s' % tissueFile
-
+    try:
+        tissueFile = getTissueSampleFeatures(TISSUE_NAME)
+        if tissueFile:
+            print 'All expressions for tissue saved in file: %s' % tissueFile
+        else:
+            print 'Unsuccessful download of %s tissue samples file.' % TISSUE_NAME
+    except:
+        print ("Unsuccessful download of tissue samples %s from CosmicDB." % TISSUE_NAME)
 
 
 if __name__ == "__main__":
