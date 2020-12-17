@@ -1,9 +1,0 @@
-#! /bin/bash
-#$ -N Vina
-#$ -o Vina.out
-#$ -e Vina.out
-#$ -l h_rt=1800
-#$ -pe test 3
-#$ -l mem_free=8192
-#$ -q test.q
-echo "hello world"

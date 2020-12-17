@@ -17,6 +17,9 @@ NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
 
+export COSMICDB_USER=`cat $WORKDIR/COSMIC_email`
+export COSMICDB_PASS=`cat $WORKDIR/COSMIC_password`
+
 data="_data"
 PDB=.pdb
 pdbqt=.pdbqt
@@ -228,6 +231,7 @@ do
                      sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name} #Wait until EB matrix is created
                      sleep 4   #allow EB matrix creation to finish
                      /usr/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
+                     echo "processing data from COSMIC" ; sleep 10000
                      eigenvalue=`cat $target_dir/E | awk '{print $2}'`
                      SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
                  fi

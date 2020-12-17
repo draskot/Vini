@@ -14,6 +14,21 @@ NULL=0
 ONES=1
 HSA=hsa
 
+conda --version 2&> tmp #checking if conda is already installed
+grep "command not found" tmp > tmp2 ; mv tmp2 tmp
+nolines=`wc -l < tmp` ; rm tmp
+if  [ $nolines -eq $NULL ]
+then
+    eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
+    conda activate  Vini 
+else 
+    echo "Miniconda not found. Vini will install Miniconda and requested packages in its local directory."
+    echo "Important: When asked, set installation path to" $vini_dir/miniconda3
+    read -p "Press any key to cont." key 
+    wget https://docs.conda.io/en/latest/miniconda.html
+    sh Miniconda3-latest-Linux-x86_64.sh 
+fi
+
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
@@ -61,8 +76,11 @@ if [ $nolines -ne $NULL ]
 then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
-read -p "enter the maximum number of concurrent Autodock Vina jobs (3 cores/per job):" max_jobs
-read -p "enter the maximum number of concurrent Gromacs/g_mmpbsa jobs (1 node/per job):" max_nodes
+read -p "enter max number of concurrent Autodock Vina jobs (each Vina job runs on  3 CPU cores):" max_jobs
+
+echo "if there are biotech drugs to analyse, Vini needs to perform MD (Molecular Dynamics) simulation jobs."
+echo "each MD simulations uses whole compute node to run."
+read -p "enter max number of concurrent MD jobs:" max_nodes
 
 echo $max_jobs > $WORKDIR/max_jobs
 echo $max_nodes > $WORKDIR/max_nodes
@@ -109,6 +127,27 @@ else
 fi
 
 sh download_Drugbank_structures
+
+echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
+read -p "Allready registered (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password ; echo ""
+    echo $email > $WORKDIR/COSMIC_email
+    echo $password > $WORKDIR/COSMIC_password
+    chmod g-r,o-r $WORKDIR/COSMIC_password
+else
+    if [ ! -e $WORKDIR/COSMIC_email ] || [ ! -e $WORKDIR/COSMIC_password ] ; then
+       echo "no data found. You will need to enter data for the first time. "
+       read -p "Enter email:" email
+       echo -n "Enter password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/COSMIC_email
+       echo $password > $WORKDIR/COSMIC_password
+       chmod g-r,o-r $WORKDIR/COSMIC_password
+    fi
+fi
+
 
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
