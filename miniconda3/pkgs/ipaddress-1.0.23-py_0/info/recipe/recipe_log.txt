@@ -1,0 +1,249 @@
+commit 5d86bd54184e367209de86aa32e3bac0feaea5a4
+Author: Nehal J Wani <nehaljw.kkd1@gmail.com>
+Date:   Sun Jul 30 14:43:25 2017 +0000
+
+    Update about section
+
+commit 3c74a13f03ab5c06140fbc6b54e936357ab7e02c
+Author: Nehal J Wani <nehaljw.kkd1@gmail.com>
+Date:   Sun Jul 30 14:42:01 2017 +0000
+
+    build -> host
+
+commit e79b7e7cd838bcdd0cc825123e2c97453ba33d1b
+Merge: ead9037 54eac2c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu Oct 17 22:33:39 2019 -0400
+
+    Merge pull request #12 from regro-cf-autotick-bot/1.0.23
+    
+    ipaddress v1.0.23
+
+commit 54eac2c811b9159237ac0875ddfd2b71b852d686
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Fri Oct 18 02:18:48 2019 +0000
+
+    MNT: Re-rendered with conda-build 3.18.10, conda-smithy 3.6.0, and conda-forge-pinning 2019.10.11
+
+commit 0e25716be6055f6c090c26d2cc78421f96cfc0c8
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Fri Oct 18 02:18:33 2019 +0000
+
+    updated v1.0.23
+
+commit ead9037ef62e47685c35346b6d531003a18f78c9
+Author: Travis CI User <travis@example.org>
+Date:   Sat Aug 4 17:25:10 2018 +0000
+
+    [ci skip] [skip ci] Update anaconda token
+
+commit b5f26e7e38c127aa025edbae2b47f0fd1a77d35f
+Merge: 6394882 8d1cb0a
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Apr 18 13:21:45 2018 -0400
+
+    Merge pull request #11 from jjhelmus/fix_py_ver
+    
+    correct python version constraint
+
+commit 8d1cb0a8b5cd6ee95db13eb1953a0e25b7538f0e
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Apr 17 19:03:21 2018 -0400
+
+    MNT: Re-rendered with conda-smithy 3.0.0 and pinning 2018.04.16
+
+commit 891d0002d9c284769afb97bd0ec3a521c7154953
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Apr 17 16:02:31 2018 -0400
+
+    Constrain build `python` to pre-3.4
+
+commit 223644ce52a022673c727f56c06982766b285ae5
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Apr 17 09:36:34 2018 -0500
+
+    build with any python version
+
+commit e07e717de0b6dde07ece15990acbff5bd1341dbe
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Apr 17 09:29:08 2018 -0500
+
+    correct python version constraint
+    
+    ipaddress is a backport of the Python 3.3+ ipaddress module, it should require
+    python <=3.3
+    
+    closes #10
+
+commit 6394882a91abf8ea079fc4ddd538c2e0918ebbff
+Merge: 5ba9704 3e9e6bd
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Apr 16 14:53:36 2018 -0400
+
+    Merge pull request #9 from regro-cf-autotick-bot/1.0.22
+    
+    ipaddress v1.0.22
+
+commit 3e9e6bd5be6ace45816354d6537dcbc101090e39
+Author: Travis CI User <travis@example.org>
+Date:   Mon Apr 16 17:17:23 2018 +0000
+
+    updated v1.0.22
+
+commit 5ba97043b26e992b2ed956395bde5a6101dbe190
+Merge: c6b5fac 59e60cc
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun Apr 15 00:48:49 2018 -0400
+
+    Merge pull request #8 from regro-cf-autotick-bot/1.0.21
+    
+    ipaddress v1.0.21
+
+commit 59e60cc129851c49b4888cf562742196f143b5f4
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sun Apr 15 00:43:42 2018 -0400
+
+    Drop `skip`
+    
+    As this is a `noarch` package, it shouldn't use selectors. The version
+    constraints already handle this as well. So drop the `skip`.
+
+commit 30c379fa21dc9e451edc101f79fe9029b3c362fc
+Author: Travis CI User <travis@example.org>
+Date:   Sat Apr 14 22:50:44 2018 +0000
+
+    updated v1.0.21
+
+commit c6b5fac060d20221c25544b25d72b9313d7045c6
+Merge: 6c1ed17 7892eaa
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu Mar 1 15:53:29 2018 -0300
+
+    Merge pull request #7 from regro-cf-autotick-bot/1.0.19
+    
+    ipaddress v1.0.19
+
+commit 7892eaab8b6bd16ec43fbdf321bafee773700e84
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu Mar 1 16:53:57 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 2.4.5
+
+commit 54282ff625d166fb82c39961e96376df3c86cc9f
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu Mar 1 13:53:06 2018 -0300
+
+    Update meta.yaml
+
+commit 667732ec1edc7c72d512eadaf0e1ce4dc709a2d6
+Author: Travis CI User <travis@example.org>
+Date:   Thu Mar 1 16:50:47 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 2.4.5
+
+commit 9b6442f83a7cc45db9a85a5c31c0ec932b73d1d9
+Author: Travis CI User <travis@example.org>
+Date:   Thu Mar 1 16:49:14 2018 +0000
+
+    updated v1.0.19
+
+commit 6c1ed171b6f279fc32a42292adf791ed596921e5
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Sat Aug 26 20:11:54 2017 +0000
+
+    [ci skip] [skip ci] Update anaconda token
+
+commit 07fcd0ee3a1b416b0877ac4150174eb987defec5
+Merge: bfe36eb 2a94f5d
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Mon Jun 5 15:07:21 2017 -0300
+
+    Merge pull request #6 from ocefpaf/update_to_1.0.18
+    
+    Update to 1.0.18
+
+commit 2a94f5d9786ae67cc8ff792fb401498597bb37f2
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Mon Jun 5 14:01:42 2017 -0300
+
+    Update to 1.0.18
+
+commit eb79e25ca1defec24f3b2e04cfa6e6e309414863
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Mon Jun 5 14:01:32 2017 -0300
+
+    rerender with auto
+
+commit bfe36eb1bf9bd72546e4958f125243ff76ffbd1a
+Merge: 4c08ccd 4fc4b2d
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat Feb 25 12:08:59 2017 -0500
+
+    Merge pull request #4 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit 4fc4b2d3ada818cb72a39587e05f0dfd824a26f0
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Fri Feb 24 01:40:09 2017 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 2.1.0.
+
+commit 4c08ccdd389c92c1ebc5ee27a620f7d6dae28458
+Merge: e27fc4d 18d5006
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun Dec 18 00:09:00 2016 -0500
+
+    Merge pull request #3 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit 18d5006905fe9e8f1ecc9214b4e6e1154b99186f
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Sun Dec 11 01:36:35 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.6.1.
+
+commit e27fc4dee06e21525627f80d46ee3670570eb4fc
+Merge: 62a6e17 81286d0
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun Nov 6 19:17:37 2016 -0500
+
+    Merge pull request #2 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit 81286d0bb4f0b32b79c7ce46c8f8b5974cdc33eb
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Fri Nov 4 01:46:44 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.4.6.
+
+commit 62a6e17045041619c0a4a9edd8da21876d39395e
+Merge: 15b6e1c 65543be
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Aug 29 22:00:29 2016 -0400
+
+    Merge pull request #1 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock
+
+commit 65543be334a2c1136439fc3e648f6328ec0b6cc9
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Tue Aug 30 01:34:38 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.1.2.
+    
+    [ci skip]
+
+commit 15b6e1c1bb3b9940960d54161eb976c1e7136421
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Thu Aug 11 14:09:54 2016 +0000
+
+    Re-render the feedstock after CI registration.
+
+commit 9fcf1c7e24613f87a816e25cef7d5999abe3a531
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Thu Aug 11 14:08:11 2016 +0000
+
+    Initial commit of the ipaddress feedstock.

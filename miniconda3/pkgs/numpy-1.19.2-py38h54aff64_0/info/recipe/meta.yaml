@@ -1,0 +1,97 @@
+# This file created by conda-build 3.20.4
+# ------------------------------------------------
+
+package:
+    name: numpy
+    version: 1.19.2
+source:
+    patches:
+        - 0001-Obtain-and-prefer-custom-gfortran-from-env-variable.patch
+        - 0002-intel_mkl-version.patch
+        - 0003-intel_init_mkl.patch
+    sha256: 74d0cf50aa28af81874aca3e67560945afd783b2a006913577d6cddc35a824a6
+    url: https://github.com/numpy/numpy/releases/download/v1.19.2/numpy-1.19.2.tar.gz
+build:
+    force_use_keys:
+        - python
+    noarch: false
+    number: '0'
+    string: py38h54aff64_0
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+    host:
+        - _libgcc_mutex 0.1 main
+        - blas 1.0 mkl
+        - ca-certificates 2020.10.14 0
+        - intel-openmp 2019.4 243
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20191231 h14c3975_1
+        - libffi 3.3 he6710b0_2
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - mkl 2019.4 243
+        - mkl-devel 2019.4 243
+        - mkl-include 2019.4 243
+        - ncurses 6.2 he6710b0_1
+        - openssl 1.1.1h h7b6447c_0
+        - python 3.8.5 h7579374_1
+        - readline 8.0 h7b6447c_0
+        - sqlite 3.33.0 h62c20be_0
+        - tk 8.6.10 hbc83047_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - blas 1.0 mkl
+        - libgcc-ng >=7.3.0
+        - mkl >=2019.4,<2020.0a0
+        - mkl-service >=2,<3.0a0
+        - mkl_fft
+        - mkl_random
+        - numpy-base 1.19.2 py38hfa32c7d_0
+        - python >=3.8,<3.9.0a0
+test:
+    commands:
+        - f2py -h
+        - python -c "import numpy; numpy.show_config()"
+        - export OPENBLAS_NUM_THREADS=1
+        - pytest --verbose --pyargs numpy -k "not (_not_a_real_test or test_sincos_float32
+            or test_overrides)" --durations=0
+    imports:
+        - numpy
+        - numpy.linalg.lapack_lite
+    requires:
+        - gcc_linux-64 7.3.0.*
+        - gfortran_linux-64 7.3.0.*
+        - hypothesis
+        - pip
+        - pytest
+about:
+    description: 'NumPy is the fundamental package needed for scientific computing
+        with Python.
+
+        '
+    dev_source_url: https://github.com/numpy/numpy/tree/master/doc
+    dev_url: https://github.com/numpy/numpy
+    doc_url: https://docs.scipy.org/doc/numpy/reference/
+    home: http://numpy.scipy.org/
+    license: BSD 3-Clause
+    license_file: LICENSE.txt
+    summary: Array processing for numbers, strings, records, and objects.
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - chenghlee
+        - jakirkham
+        - msarahan
+        - ocefpaf
+        - pelson
+        - rgommers

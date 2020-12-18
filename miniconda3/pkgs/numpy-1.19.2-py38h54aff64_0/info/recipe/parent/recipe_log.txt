@@ -1,0 +1,1595 @@
+commit 999916d844504a178709f28fcf9efcb2953c1746
+Author: Cheng H. Lee <clee@anaconda.com>
+Date:   Fri Oct 23 13:56:01 2020 -0500
+
+    Initial build of numpy 1.19.2
+    
+    In addition to the version bump:
+    
+    - Modify source URL to better align with what conda-forge's recipe.
+      (The source archives we were using the same contents, but were in a
+      different format and hosting location.)
+    
+    - Add `pip` as a test dependency to avoid breaking tests when the build
+      system has `add_pip_as_python_dependency` set to `false`
+    
+    - Patch `check_nt` so broken cmd autorun entries do not break tests.
+
+commit e7a8df364d005a4f6aa775d02fec3cff3535ac5a
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Jul 31 17:32:57 2020 -0500
+
+    do not require compilers on osx for tests
+
+commit 8e8ce9c71ff3cfbf79443554aa2918011c99f1bb
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Jul 31 16:42:03 2020 -0500
+
+    KLUDGE pin libllvm10 10.0.0 build 0
+    
+    libllvm10 10.0.0 build 1 produces a compiler error and should be avoid.
+
+commit a6fb15d9afeb823e4654f08f8c9ef3af84df32ac
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Fri Jul 31 11:51:45 2020 -0700
+
+    add entry point on windows
+
+commit c10e594111dc0c54add24955165cf35c230076e0
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Jul 31 11:59:04 2020 -0400
+
+    skip test_loss_of_precision on ppc64le
+
+commit 28610cc77ad685d055f7f3444769c8bf71a0e882
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Jul 31 09:57:40 2020 -0500
+
+    skip flawed test_overrides test with mkl
+
+commit 9f49878d5ce0dd160eecbf010ab12d3641c49b2f
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 16:03:55 2020 -0500
+
+    adjust bootstrap jinja
+
+commit 5670a0efcf8304e5c1e99c24cb4b72814c129015
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 15:55:16 2020 -0500
+
+    remove numpy-devel
+    
+    Use pin_compatible in the run section when using the numpy C API
+
+commit 3d22d4ff34015380d04bfa3d0cf2356dd5f1fef0
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 14:41:10 2020 -0500
+
+    remove unused test files
+
+commit 846ef745dbce7567f19694b051dfc1231dd77ec8
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 14:33:54 2020 -0500
+
+    rebase and clean up patches
+
+commit 791fd14b6843d0b80340b3be83f4cc7c02d1d7fe
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 14:25:28 2020 -0500
+
+    cleanup
+
+commit 115a06183469b9378059564937a83a5d6bfb747c
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 14:08:12 2020 -0500
+
+    clean up install_base.sh, recipe and tests
+
+commit af0e4b6ccac09530684b25c1bccf4e9176e41bc4
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 13:45:51 2020 -0500
+
+    install using pip, remove fortran build requirement
+
+commit 4119632849333b09f4859397b8fdbaf4a37031a4
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jul 30 13:01:00 2020 -0500
+
+    initial working version
+
+commit 7f9927309701cf72ccfcc873438371357b529ea6
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Jun 24 11:28:35 2020 -0500
+
+    reset build number
+
+commit d1210f0b279579a89814a541da839db1c77d05b9
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Jan 22 16:01:18 2020 -0600
+
+    do not apply mkl_fft nor mkl_random patches
+
+commit a0637efc6908f1152df01d9b479180e17731aa1b
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jan 16 09:42:47 2020 -0600
+
+    refresh patches
+    
+    * Drop non-essential patches including those from Intel which modify umath
+      and memory allocation.
+    * Re-base other patches on v1.18.1 git repository.
+
+commit 0fd7d1343c1690fc206636147fb49d971f4c1c9c
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jan 16 09:41:23 2020 -0600
+
+    remove 0923_oldpatches directory
+
+commit c5f3ed7824708a023f819e745cbe113271e453ad
+Merge: f01176d f9bb1bc
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Fri Nov 1 15:53:08 2019 -0500
+
+    Merge pull request #18 from jjhelmus/jjh_npy117
+    
+    NumPy 1.17.2
+
+commit f9bb1bce556d5da147db7c7db09d4cc4512ffd49
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Nov 1 15:39:59 2019 -0500
+
+    do not apply patches on Windows
+
+commit d04be1c88c3b615d3fc7e41f71b09faeae810cd7
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Nov 1 15:39:19 2019 -0500
+
+    fixup _Pragma call in patch
+
+commit cfb8c5004911b8e6b7fb2908eaf5dcedcd12fe8e
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 25 17:41:53 2019 -0500
+
+    add line continuation backslash after _Pragma(vector)
+
+commit 321b060425a93a1dbf4e4c0722f2a529df5a3223
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 25 13:25:56 2019 -0500
+
+    update mkl-version patch to use mkl-service; move metapkg to separate recipe
+
+commit efcb13375c7c858fcae912d2e03a7ddf516bf29c
+Author: Forrest Waters <fwaters@anaconda.com>
+Date:   Wed Sep 25 10:58:03 2019 -0400
+
+    patch updates from intel
+
+commit faec64538758fd88e6232b66c97b598ce0d78a13
+Author: Forrest Waters <fwaters@anaconda.com>
+Date:   Mon Sep 23 08:35:44 2019 -0500
+
+    numpy 1.17.2 patch updates
+
+commit 3c23aed75ff206d8255016a48fc309eb939e499a
+Author: Sophia Castellarin <scastellarin@anaconda.com>
+Date:   Wed Aug 7 16:09:02 2019 -0500
+
+    Add patches from intel
+
+commit 4db4a4923a30fe69c7a45775783227fe1309e61d
+Author: Sophia Castellarin <scastellarin@anaconda.com>
+Date:   Mon Aug 5 16:46:18 2019 -0500
+
+    1.17.0
+
+commit f01176d2ede51c7ba81b58ddf8c1f956f1820c4f
+Author: Forrest Waters <fwaters@0609.local>
+Date:   Fri Sep 13 07:04:50 2019 -0500
+
+    numpy 1.16.5
+
+commit 860d4bf4baa1f3e04a4336ec9f6dd82518ef0493
+Author: Sophia Castellarin <scastellarin@anaconda.com>
+Date:   Wed May 29 10:10:07 2019 -0500
+
+    1.16.4
+
+commit e41a8a518fb7c6890b77905f483b231bde72caa6
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Mon Apr 22 11:54:50 2019 -0500
+
+    1.16.3
+
+commit 1cf1476a891964d2c90817faad6ac1a72770a35c
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Mar 1 11:05:55 2019 -0600
+
+    update numpy to 1.16.2
+
+commit 316994be0a2b7009050af6c37bb154b7fa3412f4
+Merge: 928c9ff d47d4f4
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Fri Mar 1 13:16:19 2019 -0600
+
+    Merge pull request #14 from jjhelmus/warn_fix
+    
+    Fix warning when mkl_fft is imported
+
+commit d47d4f4a6b7bdc4738a5fd1d91bd883b6baa0a26
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Mar 1 13:13:02 2019 -0600
+
+    bump build number
+
+commit c6d3d9fcefa3a56fc347064eb6b8a5af5515c294
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Mar 1 13:08:56 2019 -0600
+
+    add patch to filter mkl_fft warnings
+
+commit 928c9ff87165bb0e171124cd5da641a3fd335be2
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Fri Mar 1 10:12:05 2019 -0600
+
+    update to 1.16.1
+
+commit a68d28717c9fccab2fc38e5c94c5e8a1de05fe0d
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Feb 28 17:48:45 2019 -0600
+
+    mark failing ppc64le tests
+
+commit 8030cccd91b3d682a690245e586f0ce499612b9f
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Feb 28 16:59:28 2019 -0600
+
+    detect MKLFFT version using __version__
+
+commit 91b216a5f87ea0b7332ab57a3222d33002ab9495
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Feb 28 16:59:09 2019 -0600
+
+    add patch for missing definition of __THRESHOLD
+
+commit e7e8474b98daf404cefbb8e6ca6f15271b278fb4
+Merge: e386e0c db555d5
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Wed Feb 27 12:17:10 2019 -0600
+
+    Merge pull request #12 from stuartarchibald/np116
+    
+    Update to NumPy 1.16
+
+commit db555d57e89dc18ca6f8892f3b948222a8b79b6c
+Author: Stuart Archibald <stuart.archibald@googlemail.com>
+Date:   Fri Feb 22 13:05:33 2019 +0000
+
+    Update to NumPy 1.16
+    
+    This updates the build to accommodate NumPy 1.16 and corresponding
+    performance patches from Intel.
+
+commit e386e0ce8ec2c49a773f37a9a519e15907fc583e
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Dec 13 17:23:11 2018 -0600
+
+    include mkl_fft and mkl_random recipes due to circular deps
+
+commit 2545c533bd0e693844376aa84b85d6b889598129
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Nov 6 09:22:53 2018 -0600
+
+    1.15.4
+
+commit f9ec7035a03717409b6bdc80b1b4bf5e3e86f746
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Oct 23 12:42:22 2018 -0500
+
+    update to 1.15.3
+    
+    * Update recipe to version 1.15.3
+    * Refresh patches, drop those not used or no longer needed
+    * Use PyPI sdist for source rather than git repo
+
+commit e27b80d5ccc69c59683942d87479462b87f732d8
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Oct 3 11:10:52 2018 -0500
+
+    apply py37 OBJECT_TO check for errors patch from upstream
+
+commit 400dabe3d2f8d44087c4a3616fa2f9c74f282f89
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 27 13:23:17 2018 -0500
+
+    1.15.2
+
+commit 37d7d7dca28424cc7086faab9bf07b9510d3b2ef
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 13 08:56:20 2018 -0500
+
+    fix tests for being run by pytest (no longer returns testResult object)
+
+commit 01873e481dd544dbfcbc7ed8c14037e5b95fe005
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 4 12:21:12 2018 -0500
+
+    update to 1.15.1; add blas devel pkgs to numpy metapkg to ensure it appears in hash
+
+commit 4bbc105c3c923e10001b0fa8d6e6cc73c74151fd
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Thu Aug 30 21:41:55 2018 -0400
+
+    Add debug build support
+
+commit eca1b9eb3b853a6e640c062f6f46982f1f20f4db
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Wed Aug 29 13:27:46 2018 -0400
+
+    Re-enable tests on python 3.7
+
+commit 48b9f0c76402190c82ed4f8b0bc1e1b40fa78cba
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Aug 15 10:46:13 2018 -0500
+
+    add patch for string problems on ppc64le
+
+commit 21c3ae904481a24e8b32ff70199408f026707b7e
+Merge: e1f9f08 8cd7f1d
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Mon Aug 6 13:32:43 2018 -0500
+
+    Merge pull request #11 from AnacondaRecipes/1.15_update
+    
+    WIP: rework patches for 1.15 update
+
+commit 8cd7f1d6596b8737efe1204cc5a5ad00b6925cb5
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Aug 6 13:32:10 2018 -0500
+
+    add lower bound on mkl_fft dependency to avoid py27 incompatibility
+
+commit 9b7fde661d04cd6f0f54deeb7708a1451b640311
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Jul 25 15:59:02 2018 -0500
+
+    rework patches for 1.15 update
+
+commit e1f9f08687099e1b6cda73d027e15660e2deb4b3
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Wed Jul 11 17:16:08 2018 +0100
+
+    Bump build number
+
+commit a6389a6191fe5c310430fb382f45e7961a2c6598
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Jul 3 16:28:56 2018 +0100
+
+    revert site.cfg changes (should come from blas package)
+
+commit b968df21da8b1500c72e722d855b14cf0838e707
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Sat Jun 30 15:35:10 2018 +0100
+
+    comment on use of blas packages in numpy-devel
+
+commit e78c24cee9af8f15d6e3bc4350c3258912329154
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Sat Jun 30 10:41:51 2018 +0100
+
+    fix setup script duplication confusion
+
+commit f254126cfa3bae07e4460ab649d5d0aa87999901
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Thu Jun 28 23:36:37 2018 +0000
+
+    Ignore test failures on Python 3.7
+    
+    test_clear_and_catch_warnings, test_suppress_warnings_module and test_suppress_warnings_type fail.
+    
+    TODO :: Investigate and fix this
+
+commit 876cbccfd40479854100d9fcdd132297a3b4a356
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Jun 21 13:29:54 2018 -0500
+
+    update to 1.14.5
+
+commit 211f8914f85df1fe337a3aa81cff94ec7a3e3b62
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Jun 13 08:17:53 2018 -0500
+
+    update to 1.14.4; clean up patches
+
+commit 4b0624a58d15cdc379410bef327fb5c3964c1f27
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu May 10 16:14:51 2018 -0500
+
+    fix copy f2py.bat, update, add force_use_keys to loop earlier
+
+commit 194ffc23eaae765304c2fb9f6d6a59ab58639666
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri May 4 09:12:02 2018 -0500
+
+    split package into multiple outputs to break cycles and allow run_exports
+
+commit bf67009c7c54268018d531db8312a88c03224fd8
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu May 3 15:15:47 2018 -0500
+
+    reinstate Ray's patches from merge.  bump version
+
+commit bb77f60a572e89554a2ece30576cdc93cdc9a8e0
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Apr 23 15:55:33 2018 -0500
+
+    MNT: Re-rendered with conda-smithy 3.1.2 and pinning 2018.04.19
+
+commit 113468f09cdf1ea41325d9259ef1cf9151ef82c4
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Jan 25 11:10:59 2018 -0600
+
+    change to pypi as src; skip memmap path test causing issues on CI
+
+commit 87b0ae00072a8627b7d5f40f383248373ae50fd8
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Jan 24 14:10:55 2018 -0600
+
+    add show_config command to test commands
+
+commit 8471c5d6a295bfd337d9316cf1449099a8707875
+Author: Nehal J Wani <nehaljw.kkd1@gmail.com>
+Date:   Sat Jan 13 11:30:35 2018 -0500
+
+    Update selector for nomkl
+
+commit f2478474e1e770e18b29d9ddee6c7705e0859fe3
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Mon Jan 8 17:14:29 2018 -0600
+
+    refresh patches for 1.14.0 release
+
+commit ea8c44c36e21a710d1bfdc6dd235559710b05c9e
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 09:50:19 2017 -0500
+
+    include nomkl in openblas tests
+
+commit f3a2ce524a9c5c9b9c85738804ef3aa514611a8f
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Oct 31 15:52:33 2017 -0500
+
+    require openblas-devel for OpenBLAS build
+
+commit 4a0bb68badb1b5d934ab32a7717514724d7cb8a4
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri Oct 6 14:13:58 2017 -0500
+
+    set git_depth to 10 for faster builds
+
+commit c55ac7effc2078bc7ec5e932bb072b17977c6552
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Oct 5 12:03:34 2017 -0500
+
+    update to 1.13.3; switch to git commit
+
+commit e40ebceb71a63d020727cf8205acf2d04d42ef14
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 14 10:44:51 2017 -0500
+
+    remove msinttyptes - it's scipy that actually needs it
+
+commit e2c0f3c75c410c352a218a2e3a36b6557b8bf2a4
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 13 15:55:24 2017 -0500
+
+    add msinttypes dep on win vc<14; patch over some dumb tests
+
+commit 4c9c860661a064853505d8e578fa0f91402ffdc9
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 13 11:23:21 2017 -0500
+
+    add missing setuptools dep
+
+commit b3b1d3905f533512f262f1af50f5b03d32685c06
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 11:38:21 2017 -0500
+
+    fix tests in many ways
+
+commit 9e1caf1d8c6f71e117457bbcb55ba8adf28b67cc
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 09:32:29 2017 -0500
+
+    remove complex input to rfft test; add GFORTRAN exe finding, fix setuptools entry points
+
+commit b4216ec57954c3e6138f632ba3267a9aa0aad355
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Aug 28 11:52:47 2017 -0500
+
+    graft mkl onto conda-forge recipe.  Use cb3.
+
+commit f0465b310e59a93e9f07e423ae7ee2ccbd4236ee
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri Aug 25 09:24:40 2017 -0500
+
+    simplify recipe for cb3
+
+commit 1f37c88267f0707176681cee89ac68bae0414c2d
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Mon Aug 7 13:25:23 2017 -0300
+
+    force adding py34
+
+commit b330c668d4fb2c30b209a69f515a2a4d76f43243
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Thu Jul 27 17:31:15 2017 -0300
+
+    np18
+
+commit 1bb6b0ec64ffbb85938e7f6db42e14346432702c
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Mon Mar 12 15:31:02 2018 -0300
+
+    update to 1.14.2
+
+commit c350c7dcdf29966c53d48312173ce8f8da3348ee
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Feb 21 09:29:09 2018 -0300
+
+    remove patches
+
+commit f7d89ea6979f8ef46a717a4bcd8896dc06838b00
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Feb 21 09:29:04 2018 -0300
+
+    all pip
+
+commit f27da66d2291939de9c0967a80b1d26826f4d704
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Feb 21 09:15:34 2018 -0300
+
+    try pip
+
+commit ea9a48710deff3c3ca306a5d8900b394fee57f80
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Feb 21 09:03:04 2018 -0300
+
+    update to 1.14.1
+
+commit 33413026fd7ff4ebba43df28693e2f854c1f422b
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Fri Feb 2 11:32:50 2018 -0200
+
+    Update meta.yaml
+
+commit d8fd735cc591e9ed62b3e326e67eaf5e65fb3bf1
+Author: xoviat <xoviat@users.noreply.github.com>
+Date:   Sat Jan 20 19:29:32 2018 -0600
+
+    Add bld.bat
+
+commit dc6a419873f2b686e2709f486e4a0cad82fec1b4
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Sun Jan 21 01:27:41 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 2.4.5
+
+commit 406eb3279fac31884207163ed9d4509673d8665d
+Author: xoviat <xoviat@users.noreply.github.com>
+Date:   Sat Jan 20 19:26:21 2018 -0600
+
+    skip win/py27
+
+commit 665b83b34590e0eb4f24890983561b5e29bf52a6
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Sun Jan 21 01:24:57 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 2.4.5
+
+commit 7143195f4085724b663597e31050355871a34afc
+Author: xoviat <xoviat@users.noreply.github.com>
+Date:   Sat Jan 20 19:22:37 2018 -0600
+
+    Skip win32
+
+commit b3e419504367a004dcc89b15f780abb69e40560a
+Author: Max Linke <max_linke@gmx.de>
+Date:   Mon Jan 15 22:12:14 2018 +0100
+
+    build numpy 1.14 on python3.4
+
+commit 9ddcbb9dfa00b7770ff2024dcdd6ef2b233c52af
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Sun Jan 7 19:22:40 2018 -0300
+
+    update to 1.14.0
+
+commit d1d21635c73685d8f618f809c61544e1de955c22
+Author: Naoya Kanai <naopon@gmail.com>
+Date:   Tue Nov 14 17:20:12 2017 -0800
+
+    Build with OpenBLAS 0.2.20
+
+commit c7ab998aa27f86b0fee3d5dc73827567ccd238d6
+Author: Max Linke <max_linke@gmx.de>
+Date:   Sat Sep 30 17:12:19 2017 +0200
+
+    remove version bump
+
+commit 51b9d9afae7b4ab57043c240bae42c5ed6a81919
+Author: Max Linke <max_linke@gmx.de>
+Date:   Sat Sep 30 17:07:57 2017 +0200
+
+    update to version 1.13.3
+
+commit 09ed10cf12d73ce736e148355c5e74fac7df56b5
+Author: Max Linke <max_linke@gmx.de>
+Date:   Sat Sep 30 16:59:47 2017 +0200
+
+    build with openblas 0.2.19
+    
+    packages depending on numpy cannot be build with 0.2.20 which can lead
+    to the conda package manager installing mkl and programs crashing
+    randomly trying to load the mkl and failing.
+    
+    Fix #64
+
+commit b5da7f89b46b89e8c6e3d0b40640c095a3d5c80c
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Thu Sep 28 07:28:18 2017 -0300
+
+    rerender
+
+commit fc72d5f6a699169c21c7dadea5b92173e1e7f1de
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Thu Sep 28 07:26:38 2017 -0300
+
+    update 1.13.2
+
+commit e401d92fdff27ec8f37bceaa07fbf486e98fe1a1
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Sat Aug 26 19:41:38 2017 +0000
+
+    [ci skip] [skip ci] Update anaconda token
+
+commit d9cd7ff4680d34c41b1537984135bc2e2ca1847a
+Merge: a9b5e6c 117deef
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Mon Apr 30 08:54:53 2018 -0500
+
+    Merge pull request #10 from AnacondaRecipes/master-use-git
+    
+    Use git for patches
+
+commit 117deefa3700c8cb062296356d51cf2a177642dd
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sat Apr 28 10:00:55 2018 -0700
+
+    Use git for patches
+
+commit a9b5e6c4dba3098a895f3210b9faa59a35070fe4
+Merge: 0a65e45 8ac2ad3
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Tue Mar 27 13:18:12 2018 -0500
+
+    Merge pull request #8 from stuartarchibald/upstream_np1142_intel_2
+    
+    [WIP] Upstream np1142 intel 2
+
+commit 8ac2ad322f6cd8da0d6ed1a3fc9b9d9cccef2649
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri Mar 23 09:07:16 2018 -0500
+
+    build serially to avoid race conditions.  Fix win ifort vers detection
+
+commit f33e3989be48879f2c4749d5a04397be1d2545e8
+Author: Stuart Archibald <sarchibald@anaconda.com>
+Date:   Thu Mar 22 15:09:26 2018 +0000
+
+    Update selectors
+
+commit 1187ca0fdd2e8a874a2ccf967bfb7db81861ee20
+Author: Stuart Archibald <sarchibald@anaconda.com>
+Date:   Thu Mar 22 13:16:10 2018 +0000
+
+    1.14.2 works on linux
+
+commit 39ead1fab55843000e7c9cd5dfd9f44108d2e8d0
+Author: Stuart Archibald <sarchibald@anaconda.com>
+Date:   Thu Mar 22 11:40:38 2018 +0000
+
+    Intel patches apply cleanly
+
+commit 0a65e45e02131b014afe4ff95aad8bbd8c54805b
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Mar 13 14:24:38 2018 -0500
+
+    update to version 1.14.2
+
+commit d15010269b214345e730ff7331873cd3afa2b368
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Mar 7 13:52:41 2018 -0600
+
+    fix application of vc selector to be only on win; apply mkl patch on unix
+
+commit 3e36cd2276f428ebee380f2a2ffb06616b78cb82
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Feb 21 09:46:25 2018 -0600
+
+    update to version 1.14.1
+
+commit c1a991b072612f477dd7e84df1b77252ef634b33
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Jan 25 11:10:59 2018 -0600
+
+    change to pypi as src; skip memmap path test causing issues on CI
+
+commit d5c7b85a8cc6cf6e3788e000e03f3730e7ac967e
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Jan 24 14:11:58 2018 -0600
+
+    enable parallel builds
+
+commit 4ef2bb9b428994dbe3868d12a3bf3915debc0513
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Jan 24 14:10:55 2018 -0600
+
+    add show_config command to test commands
+
+commit 784e5ec43424f2c05a873623e77340421350c319
+Merge: a280fa5 fb21557
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Tue Jan 23 13:42:17 2018 -0600
+
+    Merge pull request #5 from oleksandr-pavlyk/feature/mkl-init
+    
+    ENH: Adding dummy module `_mklinit` to initialized MKL RT
+
+commit fb215579f1258f870a2f323407c0a3676ae07f9a
+Author: Oleksandr Pavlyk <oleksandr.pavlyk@intel.com>
+Date:   Tue Jan 23 12:30:08 2018 -0600
+
+    Using context manager to ensure setting of setdlopenflags around loading of MKL in a fail-safe way
+
+commit 9a3ad672b7300d24356f48c0ebfdeffe25689715
+Author: Oleksandr Pavlyk <oleksandr.pavlyk@intel.com>
+Date:   Thu Jan 18 14:06:22 2018 -0600
+
+    ENH: Adding dummy module _mklinit to initialized MKL RT
+    
+    When using mkl_rt (single dynamic library linkage), NumPy should use MKL only with LP64
+    interface, since NumPy's BLAS code is written with BLAS length parameters being
+    32-bit integers.
+    
+    During the initialization, the threading layer is also initialized to alter MKL's
+    default choice.
+    
+    If Gnu OpenMP library is detected as already loaded, the unset MKL_THREADING_LAYER is
+    interpreted as a liberal license to use Gnu OMP.
+    
+    Vanilla Intel(R) MKL interprets that as use Intel(R) OpenMP*, resulting in erratic results
+    from MKL's threaded function called, like sgemm.
+
+commit a280fa56115881a4ab3aba9d4dfe0c0a5fe71ea1
+Author: Nehal J Wani <nehaljw.kkd1@gmail.com>
+Date:   Sat Jan 13 11:30:35 2018 -0500
+
+    Update selector for nomkl
+
+commit cf1fec1c0f420a7f39320c194e0ee6c31aa73160
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Jan 9 11:37:31 2018 -0600
+
+    libgcc-ng as build req until fixed in conda-build
+
+commit 3854ea98687d877979073fcd2151eeb920b35487
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Mon Jan 8 17:14:29 2018 -0600
+
+    refresh patches for 1.14.0 release
+
+commit 456a7c346b837cebcedcfbb420cb7cdfbc0bb7ce
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Mon Jan 8 17:13:43 2018 -0600
+
+    update to version 1.14.0
+
+commit a93e4d1783f172878debbb4f71586aac4af04f71
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 11:23:42 2017 -0500
+
+    fix skip test logic, should run on 64-bit systems
+
+commit 4b2efc7985786a096679bc97dfe30615840f929a
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 09:50:50 2017 -0500
+
+    remove git_depth
+    
+    Perform a full clone. It is not possible to predict the depth required to
+    ensure that the given commit is included.
+
+commit f443980e04c393c0fa96e570d88884684ecc535c
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 09:50:36 2017 -0500
+
+    skip unit tests on all 32-bit platforms
+
+commit 6d9dbd7f665bf831eee1743e13e8588e1e4df1c6
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 09:50:19 2017 -0500
+
+    include nomkl in openblas tests
+
+commit 151064b03a6c6102778fdb6a95bc604665f15068
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 1 09:47:04 2017 -0500
+
+    disable openblas build on windows
+
+commit 64aa15b80f11f31a5a73a0aa28f1c77b48de0d15
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Oct 31 15:52:33 2017 -0500
+
+    require openblas-devel for OpenBLAS build
+
+commit 5d1c864401e02f7f95d5769c995100aae1c337db
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri Oct 6 14:13:58 2017 -0500
+
+    set git_depth to 10 for faster builds
+
+commit 5075ad0cab3e91e3e74f34a3953b6d0b6323707f
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Oct 5 12:26:33 2017 -0500
+
+    remove fortran regex patch, it is upstream in 1.13.3
+
+commit e4a55cec848d678fa6db84f39a9dca82a0e463ed
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Oct 5 12:03:34 2017 -0500
+
+    update to 1.13.3; switch to git commit
+
+commit 2a7ba46189954b461dbe4f278e578582080c9ef1
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 21 11:46:13 2017 -0500
+
+    bump build number for fortran fix
+
+commit a895fd01b260255887622183cc17774083df7d7a
+Merge: f12d657 5149231
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 21 11:29:11 2017 -0500
+
+    Merge pull request #3 from jjhelmus/regex_fix_master
+    
+    add fortran_regex.patch
+
+commit 514923182f3b434f736357ca88c5c80d6d82fa28
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Sep 20 15:47:14 2017 -0500
+
+    add fortran_regex.patch
+
+commit f12d6579c8ecf7519f721b665e9f43f21a5529d1
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Sep 14 10:44:51 2017 -0500
+
+    remove msinttyptes - it's scipy that actually needs it
+
+commit f6fe4ae1cf51c707e8123a356a7b37e7a5679a95
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 13 15:55:24 2017 -0500
+
+    add msinttypes dep on win vc<14; patch over some dumb tests
+
+commit 6ef2a3f3a0d2d1fa84e1bb303c6bd8e9a5e77319
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Wed Sep 13 11:23:21 2017 -0500
+
+    add missing setuptools dep
+
+commit e524103db67865261098ea705a143b23e8e075cc
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 12 22:05:53 2017 -0500
+
+    remove site.cfg stuff - copy one provided by blas impl (only done in mkl so far)
+
+commit b74c91aed1a34373713ca3c0f651c327abd0e1d4
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Sep 11 22:42:48 2017 -0500
+
+    remove unnecessary site.cfg stuff and intel compiler detection patch
+
+commit c8355dd0c25366b6d7740d71ff0621a277fe9cea
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sun Sep 10 23:55:13 2017 +0000
+
+    No tests for 32-bit and MKL
+
+commit 247650bf443d1d0faf5f11545553ae24198177ff
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 17:05:06 2017 -0500
+
+    allow intel fortran test compile to fail before determining version
+
+commit 9114b322dd1701bc7404ae80f390c17c6ad10a3f
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 16:33:18 2017 -0500
+
+    allow intel fortran test compile to fail before determining version
+
+commit 1c7ecc5e31ec67cc93f48baefddb7d0a940fe929
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 12:02:26 2017 -0500
+
+    add f2py .bat entry point for win
+
+commit 4567bdba1215cf0335fdadd34810eb8a5a504ec5
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 11:38:21 2017 -0500
+
+    fix tests in many ways
+
+commit 6a28115b0d3da929b915c7efd7c9026522f85d27
+Merge: bd801fc 7877330
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 11:01:34 2017 -0500
+
+    Merge pull request #1 from AnacondaRecipes/Maggie-M-patch-1
+    
+    Update meta.yaml
+
+commit bd801fcd8a3361ff454829ec669c0a35d1ada06c
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Tue Sep 5 09:32:29 2017 -0500
+
+    remove complex input to rfft test; add GFORTRAN exe finding, fix setuptools entry points
+
+commit 7877330bc769c4da12efdb09b043e3a79d90cb8a
+Author: Maggie-M <maggie.mari@continuum.io>
+Date:   Thu Aug 31 21:05:15 2017 -0500
+
+    Update meta.yaml
+
+commit c23457411fd54054f9e6eba56cc48c09a04ba858
+Merge: 83fe5f7 0299ced
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Aug 28 12:14:01 2017 -0500
+
+    bring in mkl fixes from numpy18 branch
+
+commit 0299ced42a3589d87613f53fce299ba5b09d8f39
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Aug 28 11:52:47 2017 -0500
+
+    graft mkl onto conda-forge recipe.  Use cb3.
+
+commit 83fe5f7ced345a964362afc1f83d9c3de4545fa4
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Fri Aug 25 09:24:40 2017 -0500
+
+    simplify recipe for cb3
+
+commit 408b020c60eb7c06b7fe22cef9c9db99fdfe4e9b
+Merge: 6e49051 f42aa91
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Mon Aug 7 13:33:09 2017 -0300
+
+    Merge pull request #59 from ocefpaf/py34
+    
+    force add PY34
+
+commit d09c44c9fbf4660b567b8be04db85bcfb23ac9cf
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Mon Aug 7 13:25:23 2017 -0300
+
+    force adding py34
+
+commit f42aa9199cc45c66275cfbbb7d2112bdec17c585
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Mon Aug 7 11:55:22 2017 -0300
+
+    force add PY34
+
+commit 1bcabe0f2e6d4292a78f1bc6995a4653954dc1d8
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Thu Jul 27 17:31:15 2017 -0300
+
+    np18
+
+commit 6e49051d1494430ee33da1664f0b154277000262
+Merge: e0c277d d580990
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jul 26 08:39:49 2017 -0300
+
+    Merge pull request #53 from ocefpaf/update_pin
+    
+    update openblas pin
+
+commit d580990eca6e41a5314e41c44517fb3ebb18e1d6
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Jul 26 07:57:13 2017 -0300
+
+    rerender
+
+commit 45b13652a10c76ad1d293b0c1f8a24d8f04ec7ca
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Tue Jul 25 19:04:47 2017 -0300
+
+    update openblas pin
+
+commit e0c277db234aa4780f7532b449f6ffc7fac6e1e5
+Merge: 6b1e01b 5f7ffd9
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Fri Jul 7 06:26:42 2017 -0300
+
+    Merge pull request #52 from ocefpaf/update_to_1.13.1
+    
+    update to 1.13.1
+
+commit 5f7ffd978950d0eb2c64c2055b94c1589304136f
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Fri Jul 7 05:31:35 2017 -0300
+
+    update to 1.13.1
+
+commit 6b1e01b7ac4ddc522be538e5aeb7f4df77a3966b
+Merge: 2cbe057 972aa3d
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jun 21 11:44:25 2017 -0300
+
+    Merge pull request #51 from kmuehlbauer/fix-mingw-py27
+    
+    FIX: add mingw_py27 patch
+
+commit 972aa3d4fa456b3c703418042b27079dafad36eb
+Author: Kai Muehlbauer <kai.muehlbauer@uni-bonn.de>
+Date:   Wed Jun 21 14:39:05 2017 +0200
+
+    DOC: add comment for mingw_py27.patch
+
+commit caf6902a16026335dc030016db0e1bdfd84ad405
+Author: Kai Muehlbauer <kai.muehlbauer@uni-bonn.de>
+Date:   Wed Jun 21 13:26:18 2017 +0200
+
+    FIX: add mingw_py27 patch
+
+commit 2cbe0571da6d2f155d59ef027a4fef250583b678
+Merge: e73d85c 2dcaa55
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jun 7 22:27:16 2017 -0300
+
+    Merge pull request #50 from ocefpaf/update_to_1.13
+    
+    Update to 1.13.0
+
+commit 2dcaa554673aa38eaffd93e903a771b41520baef
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Fri May 12 17:12:43 2017 -0300
+
+    Update to 1.13.0
+
+commit e73d85c82776b3a7f0b8aa9b275e26420ce14527
+Merge: ba5bc15 e1f0b8c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Mar 21 00:02:25 2017 -0400
+
+    Merge pull request #49 from jakirkham/cleanup_1_10_x
+    
+    Cleanup 1_10_x
+
+commit e1f0b8c270a69d866bc8d139ee4c77cbd0b2bd66
+Merge: 3cddc3c ba5bc15
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Mon Mar 20 14:18:33 2017 -0400
+
+    Merge branch conda-forge/1_10_x into conda-forge/master
+    
+    [ci skip]
+
+commit ba5bc15248738a196636ddf2c0300cfb88126f56
+Merge: 814013a 5fe3cc3
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Sat Mar 18 19:44:38 2017 -0300
+
+    Merge pull request #48 from ocefpaf/update_to_1.12.1
+    
+    Update to 1.12.1
+
+commit 5fe3cc327ef8959fb19675be66c22b5a4965d9b7
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Sat Mar 18 18:17:25 2017 -0300
+
+    Update to 1.12.1
+
+commit 814013a90d67f386d726fe12dcf0a60840de66ef
+Merge: 3cb580b 5840174
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Mon Jan 16 07:52:14 2017 -0300
+
+    Merge pull request #45 from ocefpaf/update
+    
+    Update to 1.12.0
+
+commit 58401742b4b2b96d3abac54c9ca5f3a912ceaf89
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Mon Jan 16 07:34:06 2017 -0300
+
+    Update to 1.12.0
+
+commit 3cddc3c24c27e038fdb44ff122da48f6c9e4c64b
+Merge: 6fea5bf 644ef4a
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Jan 2 22:43:18 2017 -0500
+
+    Merge pull request #44 from jakirkham/re-render_py36
+    
+    MNT: Re-rendered with conda-smithy 1.7.0
+
+commit 644ef4a0afbe01620d935852f894703dc52c2b42
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Mon Jan 2 22:14:02 2017 -0500
+
+    MNT: Re-rendered with conda-smithy 1.7.0
+
+commit 3cb580bb55626caaf8f8a0211d568a896de5a1dd
+Merge: 3ae35d2 98c7646
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Sun Dec 25 14:45:26 2016 -0300
+
+    Merge pull request #43 from ocefpaf/py36
+    
+    py36
+
+commit 98c7646a60c83712043d0f7bea60af28c828cc08
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Sun Dec 25 09:53:41 2016 -0300
+
+    py36
+
+commit 3ae35d2b1da84255077e659ac3a3b8ab876ea395
+Merge: 541380d a4e7f5a
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Mon Dec 19 09:11:02 2016 -0300
+
+    Merge pull request #41 from ocefpaf/update_to_1.11.3
+    
+    Update to 1.11.3
+
+commit a4e7f5a9c84e0a0e4b4adc5b7873d8a4f62eaa3b
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Mon Dec 19 08:40:51 2016 -0300
+
+    Update to 1.11.3
+
+commit 6fea5bfabdc5ff208149518162a9424736dc6757
+Merge: 8309944 7dd3cd2
+Author: Ralf Gommers <ralf.gommers@gmail.com>
+Date:   Thu Nov 17 20:11:58 2016 +1300
+
+    Merge pull request #39 from conda-forge-admin/feedstock_version_pin_1_10_x
+    
+    MNT: Update pinned versions.
+
+commit 541380dda306045ffafc5a9f210538cfb109210e
+Merge: 9349501 7c4070c
+Author: Ralf Gommers <ralf.gommers@gmail.com>
+Date:   Thu Nov 17 20:11:17 2016 +1300
+
+    Merge pull request #40 from conda-forge-admin/feedstock_version_pin_master
+    
+    MNT: Update pinned versions.
+
+commit 7c4070c8d0c1074a02fce66006d43bad4d6cdfbb
+Author: conda-forge-admin <conda-forge@googlegroups.com>
+Date:   Thu Nov 17 02:06:45 2016 +0000
+
+    MNT: Updated some of the pinned versions
+
+commit 7dd3cd278eb47eead127845951696f170d161212
+Author: conda-forge-admin <conda-forge@googlegroups.com>
+Date:   Thu Nov 17 02:06:40 2016 +0000
+
+    MNT: Updated some of the pinned versions
+
+commit 9349501ddeab7502350d944535b015e1a50d06c1
+Merge: 654db6e d200195
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Nov 14 04:05:02 2016 -0500
+
+    Merge pull request #38 from jakirkham/use_toolchain_master
+    
+    Use the toolchain
+
+commit 83099449552900581060f7eacbb55e615d318ba2
+Merge: a4398b0 2c964bb
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Nov 14 04:04:48 2016 -0500
+
+    Merge pull request #37 from jakirkham/use_toolchain_1_10_x
+    
+    Use the toolchain
+
+commit 2c964bbd82c505afc1de344c92f99e68cf01877f
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Nov 2 11:30:40 2016 -0400
+
+    recipe: Use `toolchain`.
+
+commit d200195336a1579896780c1ce3e8afdfac08bfee
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Nov 2 11:28:28 2016 -0400
+
+    recipe: Use `toolchain`.
+
+commit 654db6e3ca60a137611a2b2ab86391c7e09807a3
+Merge: 71badf9 3435930
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Nov 2 23:39:01 2016 -0400
+
+    Merge pull request #35 from jakirkham/re-render_master_1.4.6
+    
+    MNT: Re-rendered with conda-smithy 1.4.6 [ci skip]
+
+commit a4398b0b1d764552cedbb7c1bbb9b97bb35baeea
+Merge: a4374df bc82072
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Nov 2 23:38:27 2016 -0400
+
+    Merge pull request #36 from jakirkham/re-render_1_10_x_1.4.6
+    
+    MNT: Re-rendered with conda-smithy 1.4.6 [ci skip]
+
+commit bc82072fd43462f0ccad6987a4f636d8cc0df69a
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Nov 2 11:26:50 2016 -0400
+
+    MNT: Re-rendered with conda-smithy 1.4.6
+
+commit 3435930f25c8beb601ac8aa6af4899c2f6d1f4e9
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Nov 2 11:25:16 2016 -0400
+
+    MNT: Re-rendered with conda-smithy 1.4.6
+
+commit a4374dfba8f27ab0eaa93d97d8a507b40ccb1b53
+Merge: fe65523 ab237ee
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Oct 25 02:54:30 2016 -0400
+
+    Merge pull request #33 from conda-forge-admin/feedstock_rerender_1_10_x
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit 71badf915e14098f808f096853737496f533c426
+Merge: 290e29b e9589f0
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Oct 25 02:54:00 2016 -0400
+
+    Merge pull request #34 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit e9589f0f4d553ae8467c5e3b4b62b80e565feac9
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Sat Oct 22 01:27:57 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.3.3.
+
+commit ab237eef7e8a36772d76fca80942b95724577e10
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Sat Oct 22 01:27:35 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.3.3.
+
+commit 290e29b98463db7587761c02ea48ded6d7c6ca92
+Merge: f17d215 95f75e3
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Tue Oct 4 07:04:34 2016 -0300
+
+    Merge pull request #32 from ocefpaf/bump
+    
+    Bump
+
+commit 95f75e310ba1f450586f8f75c534271d5b377813
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Tue Oct 4 06:48:20 2016 -0300
+
+    Bump to 1.11.2
+
+commit 36df4eaa28e0524145b66427728915d059d2d7a4
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Tue Oct 4 06:48:02 2016 -0300
+
+    rerender
+
+commit fe655236abda6888d1e956cb2d9c228c388ac3cf
+Merge: adecb03 79b0677
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Oct 3 00:05:57 2016 -0400
+
+    Merge pull request #27 from conda-forge-admin/feedstock_version_pin_1_10_x
+    
+    MNT: Update pinned versions.
+
+commit f17d215bf7adba4c16832ff13c440db96ac8b710
+Merge: 7b3eca3 6b3cb98
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Oct 3 00:05:47 2016 -0400
+
+    Merge pull request #28 from conda-forge-admin/feedstock_version_pin_master
+    
+    MNT: Update pinned versions.
+
+commit 6b3cb985f04470f4bdf2d5227f32a54ed7099312
+Author: conda-forge-admin <conda-forge@googlegroups.com>
+Date:   Mon Oct 3 03:33:12 2016 +0000
+
+    MNT: Updated some of the pinned versions
+
+commit 79b0677e389e0bceec7e5bd621eb2afe96d1eb37
+Author: conda-forge-admin <conda-forge@googlegroups.com>
+Date:   Mon Oct 3 03:33:07 2016 +0000
+
+    MNT: Updated some of the pinned versions
+
+commit 7b3eca3b8f4c2667acd6548324c7c6dc958528a8
+Merge: 4a7436d 391efc6
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri Sep 30 20:13:01 2016 -0400
+
+    Merge pull request #30 from jakirkham/re-render_1.3.0_master
+    
+    MNT: rerender with conda-smithy 1.3.0
+
+commit adecb038449f3e4e47df1f26c1296f772326674a
+Merge: 3ef060d 315457c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri Sep 30 20:11:43 2016 -0400
+
+    Merge pull request #31 from jakirkham/re-render_1.3.0_1_10_x
+    
+    MNT: rerender with conda-smithy 1.3.0
+
+commit 315457ce39bb11cad4c09b21c9b13427ce5cee72
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri Sep 30 19:58:20 2016 -0400
+
+    MNT: rerender with conda-smithy 1.3.0
+
+commit 391efc64e2e703b434c36df1f8287e77019ae644
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri Sep 30 19:50:11 2016 -0400
+
+    MNT: rerender with conda-smithy 1.3.0
+
+commit 4a7436d363562e8b9c9afa786f4456b0af39f060
+Merge: c01758d 5ce2817
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Jul 26 11:15:01 2016 -0400
+
+    Merge pull request #23 from jakirkham/rebuild_openblas
+    
+    Rebuild with parallel OpenBLAS
+
+commit 3ef060d9531008bc268e957a261c7b2fc3a71e46
+Merge: 907ef0c 8a72ab3
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Jul 26 11:14:53 2016 -0400
+
+    Merge pull request #24 from jakirkham/rebuild_1_10_openblas
+    
+    Rebuild with parallel OpenBLAS
+
+commit 8a72ab3cf90b2b42d2a3021f9d6fdf6b5edceb5d
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Jul 26 10:53:06 2016 -0400
+
+    recipe: Bump build number and rebuild with new OpenBLAS.
+
+commit 5ce2817f2024ef315d74aa08c14d45436bb6d7a3
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Jul 26 10:53:06 2016 -0400
+
+    recipe: Bump build number and rebuild with new OpenBLAS.
+
+commit c01758dac8f95d3696da0031f422574656beb483
+Merge: f505227 3d5a787
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri Jul 8 00:11:45 2016 -0400
+
+    Merge pull request #17 from jakirkham/bump_1_11_1
+    
+    Bump to version 1.11.1
+
+commit 3d5a78707421c1c87ddc1eeceb8bac3cc2f59f59
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Jun 29 16:03:53 2016 -0400
+
+    recipe: Bump to version 1.11.1.
+
+commit f50522752d15087939a61c61b9401d5e14903ad7
+Merge: 719388a 9a28dfa
+Author: Phil Elson <pelson.pub@gmail.com>
+Date:   Mon Jun 27 16:59:03 2016 +0100
+
+    Merge pull request #16 from ocefpaf/rebuild
+    
+    Rebuild for @ocefpaf's tracking
+
+commit 9a28dfa6fb5db2e2832658d6dbbf8717fc4c7047
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Mon Jun 27 09:34:10 2016 -0300
+
+    rebuild
+
+commit 719388aa537b8f40a5b7984e23d031a446fe1e85
+Merge: b5a622a bdc1989
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed May 25 23:20:49 2016 -0400
+
+    Merge pull request #14 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock
+
+commit 907ef0c8c1c7797cfc9e76ec0ff936cfdd5813bf
+Merge: 1b007dd 7cdc132
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed May 25 23:20:37 2016 -0400
+
+    Merge pull request #13 from conda-forge-admin/feedstock_rerender_1_10_x
+    
+    MNT: Re-render the feedstock
+
+commit bdc1989fe432d92e5ee8c633c044b320939a1c87
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu May 26 01:42:00 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 0.10.3.
+    
+    [ci skip]
+
+commit 7cdc132d152e0f65119bb0d5d268c059c0a0a3fc
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu May 26 01:41:56 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 0.10.3.
+    
+    [ci skip]
+
+commit b5a622a3b4ec10089463ef7afcf180fa38ffeec9
+Merge: d21e1f3 e578841
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed May 25 15:42:41 2016 -0300
+
+    Merge pull request #12 from rgommers/add-self
+    
+    Add @rgommers as maintainer.
+
+commit e578841615940adab6576133706287a23edf70d6
+Author: Ralf Gommers <ralf.gommers@gmail.com>
+Date:   Wed May 25 20:14:49 2016 +0200
+
+    Add @rgommers as maintainer.
+
+commit 1b007dde0d885a0b430df9999a40010b9c72a2a5
+Merge: 3edf831 5f6a1dc
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun May 22 18:50:55 2016 -0400
+
+    Merge pull request #11 from jakirkham/update_patch
+    
+    Update Backport 6975 Patch
+
+commit 5f6a1dca39994eeba9541672707501bec01aece2
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sun May 22 18:07:21 2016 -0400
+
+    recipe: Update patch to reflect the one accepted in 1.10.x.
+
+commit d21e1f3a06e492d2ae6172ec2ce2d8bcfe77b4b5
+Merge: cb14623 80dd8db
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 20 23:05:39 2016 -0400
+
+    Merge pull request #8 from jakirkham/recipe_cleanup
+    
+    Minor formatting cleanup
+
+commit 3edf831fcd670a39831e771c708e1a08f7cfb65a
+Merge: 01cd1ab 0e5674c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 20 23:04:57 2016 -0400
+
+    Merge pull request #9 from jakirkham/recipe_cleanup_2
+    
+    Minor formatting cleanup
+
+commit 0e5674c0684f29aadda93cd055e07712aed6ea9d
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 22:48:39 2016 -0400
+
+    recipe: Minor cleanup.
+
+commit 80dd8db6fffee17320b20f50c12fedfaba1aa35c
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 22:48:39 2016 -0400
+
+    recipe: Minor cleanup.
+
+commit 01cd1ab16147ad4d4f1d6c2c010dc2845dcaf559
+Merge: cb14623 9202621
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 20 20:19:38 2016 -0400
+
+    Merge pull request #5 from jakirkham/add_1_10_x
+    
+    Add NumPy 1.10.4
+
+commit 9202621a91b9002611e1e9ec3ec11ebf88d9b5c4
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 19:46:29 2016 -0400
+
+    recipe: Add a patch for the Linux test failure.
+
+commit d5dc1b9111f2a4ed2539d7b85a82b9690ee643dd
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 16:35:05 2016 -0400
+
+    recipe: Add a 1.10.4 build of NumPy.
+
+commit cb146233a746848c520f6d57e3d2c76098e93c3f
+Merge: 1bdacdd a50337c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 20 19:33:04 2016 -0400
+
+    Merge pull request #7 from jakirkham/test_exit_code
+    
+    Set exit code based on test result
+
+commit a50337c5215aed9a04f6f982f59b6cf21eeddc3b
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 18:55:26 2016 -0400
+
+    run_test: Set exit code based on test result.
+
+commit 1bdacdd951457e09e3c9585a392b65b59feaf20c
+Merge: 1370443 ecbe811
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 20 18:24:22 2016 -0400
+
+    Merge pull request #6 from jakirkham/fix_pinning_and_misc
+    
+    Pin OpenBLAS to 0.2.18
+
+commit ecbe811918477c167f47c6693e80cb5c5f6bf87e
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 16:52:26 2016 -0400
+
+    recipe: Switch to the 200 build number range.
+
+commit 292dc287df9dd7276c65b0b2912f1e2ce4910aa4
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 17:01:48 2016 -0400
+
+    recipe: Drop use of `CPU_COUNT`.
+
+commit a4d181b77da5b3bceda910d5d9c5d69d9ea78fda
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Fri May 20 16:52:26 2016 -0400
+
+    recipe: Pin OpenBLAS to 0.2.18.
+
+commit 1370443234325be85c6181625b34d9084dd0669a
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Fri May 20 11:53:30 2016 +0000
+
+    Re-render the feedstock after CI registration.
+
+commit 2ff8d84e8301c7a0b4ddc258a601db0495e96acb
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Fri May 20 11:52:34 2016 +0000
+
+    Initial commit of the numpy feedstock.

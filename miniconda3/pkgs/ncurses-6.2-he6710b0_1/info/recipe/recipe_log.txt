@@ -1,0 +1,517 @@
+commit 23ada0dff04c86acae6d2e6b73184fdace240de4
+Author: Kai Tietz <ktietz@anaconda.com>
+Date:   Mon Feb 24 12:02:12 2020 +0100
+
+    Update recipe for version 6.2
+
+commit 9d3b556b5c243a97be68f79e0494ec2aade2746c
+Merge: 21fa169 ab825ed
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Wed Nov 28 16:27:35 2018 -0600
+
+    Merge pull request #3 from jjhelmus/versioned_dylibs
+    
+    create versioned symlinks for non-wide libs
+
+commit ab825edcd51ab69275f1a001b30698534c34a27b
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 28 15:54:33 2018 -0600
+
+    create versioned symlinks for non-wide libs
+    
+    Create symlinks from the versioned and un-versioned wide libraries to the
+    non-wide libraries.
+    
+    Previously only un-versioned symlinks were created.
+
+commit 21fa16904796dda2e24733fec314575a289408c2
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Wed May 9 13:07:49 2018 +0100
+
+    Add make (deja-vu)
+
+commit 5aca5e9c02539f2b82436dd52fbb4e866a5880e1
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Wed May 9 12:53:22 2018 +0100
+
+    Remove unneeded patch
+
+commit 027e7a901642fa32c885b8f28798be2eb79ee360
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Tue May 8 12:43:15 2018 +0100
+
+    Update to 6.1
+
+commit c7df951a18e5b5c84c5ee6fb6e326ccb4bf03fe7
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sun Dec 3 12:24:10 2017 -0500
+
+    Ensure .pc files contain -ltinfo
+    
+    .. since adding -Wl,-rpath, -L${PREFIX}/lib to LDFLAGS it misses
+    -ltinfo due to some bugs in the ncurses build system.
+    
+    We work around this as best we can. There were two options:
+    
+    1. Moving all LDFLAGS to EXTRA_LDFLAGS but that means the .pc
+    files ended up containing all of our flags and we do not want
+    that.
+    
+    2. Stripping out -Wl,-rpath,* and -L${PREFIX}/lib from LDFLAGS
+    which has no downsides here.
+
+commit 6c476eadd463b0985f2af97655b166163683dde9
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Mon Oct 9 11:41:24 2017 -0500
+
+    add run_exports
+
+commit 2f00a8346cb55d132e11b98e238525f090d80341
+Merge: d0857cc 085bada
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Thu Aug 31 01:33:43 2017 +0100
+
+    Merge pull request #1 from Maggie-M/patch-1
+    
+    Update meta.yaml
+
+commit 085badaaed297d12e75bcc4c883f36ed32227d7d
+Author: Maggie-M <maggie.mari@continuum.io>
+Date:   Wed Aug 30 16:40:24 2017 -0500
+
+    Update meta.yaml
+
+commit d0857cc483adae2ed424fed84572315d2a592381
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sat Aug 19 17:31:20 2017 +0100
+
+    Fix odd macOS-only recursive call of run_test.sh
+
+commit 6d2c0f091a1104bddde382bc09ea0cd5e6d97f29
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sun Aug 27 17:29:35 2017 +0100
+
+    Generalize logging
+
+commit b6f8ef658d4ae2efdd98fad67cc05ca8fa873f41
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Mon Apr 3 11:45:59 2017 +0100
+
+    cross: Disable pkg-config tests as we need seperate test/requires_build and test/requires_host (or just a pkg-config for this machine)
+
+commit df98e32c854655892bc2ecfe67ce97e4d8a19b68
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sat Jun 3 10:16:28 2017 +0100
+
+    Only build the wide libraries
+    
+    .. then symlink the non-wide filenames to them.
+    
+    From:
+    
+    http://www.linuxfromscratch.org/lfs/view/development/chapter06/ncurses.html
+    
+    "These wide-character libraries are usable in both multibyte and traditional
+     8-bit locales, while normal libraries work properly only in 8-bit locales"
+    
+    LFS use linker scripts instead of symlinks. Both work fine on Linux while
+    symlinks also work on Darwin.
+
+commit 6ac026ebda31b2a9d5b1bacf5f7a131c60ad45ce
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Sat Jun 3 10:02:25 2017 +0100
+
+    Update to 6.0 and fix for C++1z compat.
+
+commit edc8901018b1e462eaf3c569d48030c7fcdcaece
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Mon Apr 3 11:41:05 2017 +0100
+
+    Add cross-compilation support
+
+commit cd65cb4d53b74854f9d47f792226b9765ddb0e4a
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Mon Apr 3 11:37:05 2017 +0100
+
+    remove run_test.py, it creates a circular dependency when bootstrapping Python
+
+commit fe190535baa514c538a9db4a44f9e8a67c402ef3
+Author: lexual <lex.hider@bom.gov.au>
+Date:   Tue Mar 7 23:39:50 2017 +1100
+
+    MNT: Re-rendered with conda-smithy 2.1.1
+
+commit 86b441943d05011fdc510d53502b9bb3aae1c73e
+Author: lexual <lex@jbadigital.com>
+Date:   Thu Jan 12 15:38:40 2017 +1100
+
+    pkg-config tests were failing due to no trailing space.
+
+commit f237aeb75040ab5895699144a28104398174329e
+Merge: 24d23b1 b3065da
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Wed Nov 30 19:54:46 2016 -0600
+
+    Merge pull request #26 from jjhelmus/long_prefix
+    
+    Build long prefix package using conda-build 2.x
+
+commit b3065da76047ba466a3e849383c2c474ec483d1a
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Nov 29 10:22:36 2016 -0600
+
+    Increment build number
+
+commit 468ef987e833489790ac82a8afc5fa1e71054b35
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Tue Nov 29 10:15:31 2016 -0600
+
+    Build long prefix package using conda-build 2.xi
+    
+    Use defaults channel as provider of long prefix packages in build environment
+
+commit 277da7c02808131cbc4a19f9b30f2c3a30e7a2b8
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Nov 29 11:22:59 2016 -0500
+
+    MNT: Re-rendered with conda-smithy 1.6.1
+    
+    Re-render to propagate license metadata changes.
+
+commit cc8a4a51c5e998431e2e3fa1ae992dc718bc6905
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Nov 29 11:22:21 2016 -0500
+
+    recipe: Drop "License" from `license`.
+
+commit e81dcff2cbb0f82d1463451715bc932341b63a17
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Nov 29 11:21:44 2016 -0500
+
+    MNT: Re-rendered with conda-smithy 1.6.1
+
+commit 24d23b114faea8ad7738da10dda3baf12592a99e
+Merge: de88e91 2ec1f81
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Sep 7 00:39:19 2016 -0400
+
+    Merge pull request #22 from jakirkham/re_render_1.2.0
+    
+    Re-render with `conda-smithy` version `1.2.0`
+
+commit 2ec1f81d25ac6c728aa83f7e9cccd036d94f08fe
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Sep 7 00:23:52 2016 -0400
+
+    Re-render with `conda-smithy` version `1.2.0`.
+
+commit de88e911d21ab8d44545a33bab3357b350582e23
+Merge: f2c5caf d231a02
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Sep 7 00:14:14 2016 -0400
+
+    Merge pull request #19 from jakirkham/drop_with-terminfo-dirs
+    
+    Drop `with-terminfo-dirs`
+
+commit d231a0291a4a481e7cbf578d3df5766809ae5118
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Aug 23 03:18:27 2016 -0400
+
+    recipe: Drop `with-terminfo-dirs`.
+
+commit f2c5cafeaac66cd35ce7a4c55b68098800a2d925
+Merge: 27ea892 a03ea33
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Wed Jul 27 12:02:16 2016 -0500
+
+    Merge pull request #15 from jakirkham/use_toolchain
+    
+    Use the `toolchain` to build
+
+commit a03ea33d55e4939c9df4b007c507fbc046127cf5
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Jun 28 20:08:07 2016 -0400
+
+    recipe: Use the `toolchain` to build.
+
+commit 27ea8925269a483bc57bd2aaa2af03f05980c488
+Merge: 98809e3 6c7f027
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Jul 25 01:16:01 2016 -0400
+
+    Merge pull request #16 from jakirkham/re_render_1_0_3
+    
+    Re-render with `conda-smithy` version `1.0.3`
+
+commit 6c7f027b431fb44b3ba9c6848b82347a1ebb7423
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Mon Jul 25 01:07:37 2016 -0400
+
+    Re-render with `conda-smithy` version `1.0.3`.
+
+commit 98809e33908def3499e958729a51fefeb32dda60
+Merge: 2cefc3a 7e0692c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun May 15 21:13:21 2016 -0400
+
+    Merge pull request #13 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock
+
+commit 7e0692c28081f39187c8229e636a0d6abdc33891
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Mon May 16 00:43:59 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 0.10.3.
+    
+    [ci skip]
+
+commit 2cefc3a89535c9d26b129ea1bb652674a8ddb464
+Merge: 693a1d9 2e0023b
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sun May 8 21:18:03 2016 -0400
+
+    Merge pull request #11 from jakirkham/use_pkg-config
+    
+    Install pkg-config files
+
+commit 2e0023bea65c1b58e2067c204c26274974d27228
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat May 7 16:17:39 2016 -0400
+
+    recipe: Use pkg-config to ensure it is easy to link against ncurses.
+
+commit 693a1d90508c22c6ddf296c335c963a32dbd3ed0
+Merge: 6c628d1 f2fe6f3
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat May 7 19:22:08 2016 -0400
+
+    Merge pull request #12 from jakirkham/cleanup_recipe
+    
+    Cleanup recipe
+
+commit f2fe6f30db80fd74bd1309678d77f9657210fdc7
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat May 7 18:55:52 2016 -0400
+
+    recipe: Run a clean step after each build.
+
+commit 6f376764215d928e23a5014eccc3bff3d93876a2
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat May 7 18:54:33 2016 -0400
+
+    recipe: Simplify library file verification by testing widec in the loop.
+
+commit 6c628d1bd50639ae49f22a33ece6b252fb48d462
+Merge: a9e57a6 4dd637a
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat Apr 16 19:38:04 2016 -0400
+
+    Merge pull request #8 from jakirkham/symlink_includes
+    
+    Symlink includes
+
+commit 4dd637a90f75935b81690023d46ec233c76706df
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 14:19:35 2016 -0400
+
+    recipe: Bump build number to 5.
+
+commit 8077f72033a1cfa9274b8252051b6aad7043bf6b
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 14:18:52 2016 -0400
+
+    recipe: Test all shared libraries as well.
+
+commit 2681e2ec6f98b8d30dcd2c2e5b0e20cf90815fc3
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 14:14:19 2016 -0400
+
+    recipe: Test all headers are in place.
+
+commit beab718e2b80c6aa59fcceb9093066a74eacb44d
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 13:41:14 2016 -0400
+
+    recipe: Drop creation of `lib` directory. Not needed.
+
+commit cee8bd740def04785e1ed8f42621529233f8a34a
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 13:37:17 2016 -0400
+
+    recipe: Provide `ncurses` in `include` and in subdirectories.
+
+commit f964a6eb5d20e8dc1ed5238dabe8a0e5031d5b8e
+Merge: a9c9d75 a9e57a6
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 13:22:36 2016 -0400
+
+    Merge branch 'conda-forge/master' into 'include_fix'
+
+commit a9e57a66e471fc0e1847d0b738553d63c4eb1cb5
+Merge: 1ea4507 11e829c
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat Apr 16 13:04:28 2016 -0400
+
+    Merge pull request #7 from jakirkham/widec_and_no_widec
+    
+    Build both widec and non-widec
+
+commit 11e829c9d295f2e931d29677398ae1ebe65b94e8
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:58:33 2016 -0400
+
+    recipe: Bump the build number.
+
+commit 39033367cb10f0d89863b320d24e116fde41164c
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:50:32 2016 -0400
+
+    recipe: Test both widec and non-widec support.
+
+commit 100ba97bf98f62e4ac2f23068eb0f09e1e55f271
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:48:21 2016 -0400
+
+    recipe: Build with and without widec support.
+
+commit b02d0170c8307efbcff5b4b5f5dd48a94e11bd86
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:44:47 2016 -0400
+
+    recipe: Disable parallel builds.
+
+commit 1ea4507abbad5ad0706d68c00bc44fd9a4375f7b
+Merge: bf1083b 9b4a174
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat Apr 16 12:34:22 2016 -0400
+
+    Merge pull request #6 from jakirkham/use_symlinks
+    
+    Use symlinks
+
+commit 9b4a174ae366331b773237710c44ab86c501a978
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:26:48 2016 -0400
+
+    recipe: Bump build number to 3.
+
+commit 4645968575b1e610ce35979dbaed64c5600a6f77
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:25:21 2016 -0400
+
+    recipe: Enable symlinks as hardlinks were used.
+
+commit cde0cb91a5c1278fd058e3a9d0643974a3d0017b
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:25:02 2016 -0400
+
+    recipe: Clean up options so they are nicely formatted.
+
+commit bf1083b6868c4d827521739a3b486b3a8c043d14
+Merge: eebf1ab ae72335
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Sat Apr 16 12:01:00 2016 -0400
+
+    Merge pull request #5 from jakirkham/rebuild_linux_pkg
+    
+    Bump build number to rebuild Linux
+
+commit ae7233577c88b4dfd20a513b0b6fe126b7f0fc75
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Sat Apr 16 12:00:25 2016 -0400
+
+    recipe: Bump build number to rebuild Linux. [ci skip]
+
+commit a9c9d75d1af0f983d388877de57882d67dd12716
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Sat Apr 16 07:55:53 2016 -0500
+
+    Add jjhelmus to list of maintainers
+
+commit d06f7f9b023174db1d3a6cb551a37efecf75e193
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Sat Apr 16 07:48:20 2016 -0500
+
+    Do not place header files in subdirectory
+    
+    Use the --includedir flag in configure to specify that the headers should be
+    installed in $PREFIX/include not the default $PREFIX/include/ncursesw/
+    
+    closes #3
+
+commit eebf1abeb5830a5f3d0506b21346ae695b0ffcbc
+Merge: 4a00fca 4dc811d
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu Apr 14 15:22:09 2016 -0400
+
+    Merge pull request #2 from jakirkham/fixes_from_MaxNoe
+    
+    Fixes from MaxNoe
+
+commit 4dc811d8da67f2e1aaa745ebf22da154bd13eb81
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Apr 14 15:11:35 2016 -0400
+
+    Re-render the feedstock with conda-smithy 0.8.4.
+
+commit f90b5e8940a8c4e1cbdce9a56b901f3f138b4e3f
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Apr 14 15:07:49 2016 -0400
+
+    recipe: Fix tests to not use `exit`.
+
+commit 90cf5d69f639972f0932d834941a3153d2eb956b
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Apr 14 15:07:34 2016 -0400
+
+    recipe: Fix library name in test.
+
+commit e7499ee0e4a65f9a273aac8513b657bc207c53c4
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Apr 14 15:00:47 2016 -0400
+
+    recipe: Mention upstream patch submitted for the `gcc` fix.
+
+commit cee8de35f43cce395a912abe634d66d1a0a947a8
+Author: Maximilian Nöthe <maximilian.noethe@tu-dortmund.de>
+Date:   Mon Apr 11 09:20:43 2016 +0200
+
+    Adapt all names to widec
+
+commit 2c43995ad2b45abc6a7cf2adbe4cd27a0160e0fa
+Author: Maximilian Nöthe <maximilian.noethe@tu-dortmund.de>
+Date:   Sun Apr 10 20:20:54 2016 +0200
+
+    Addapt library name to widec option
+
+commit bdc56aed350af7b97379d324bd47beb137d9b59a
+Author: Maximilian Nöthe <maximilian.noethe@tu-dortmund.de>
+Date:   Sun Apr 10 20:04:24 2016 +0200
+
+    Just use one build number
+
+commit 69ac8bca0a0c0bf0efd1ca2d1a300441360001f5
+Author: Maximilian Nöthe <maximilian.noethe@tu-dortmund.de>
+Date:   Sun Apr 10 19:50:53 2016 +0200
+
+    Add fix for gcc 5
+
+commit e2362678a128fe030d664a1ab02283501232d77e
+Author: Maximilian Nöthe <maximilian.noethe@tu-dortmund.de>
+Date:   Sun Apr 10 19:49:07 2016 +0200
+
+    Build with terminfo and widec support
+
+commit 4a00fca8b515dcf07a7b44f1f6ef82b9a255e734
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Fri Mar 18 23:08:04 2016 +0000
+
+    Re-render the feedstock after CI registration.
+
+commit 1b649c01cd20c3908f648d4e9221dc8576a1c3c4
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Fri Mar 18 23:07:36 2016 +0000
+
+    Initial commit of the ncurses feedstock.

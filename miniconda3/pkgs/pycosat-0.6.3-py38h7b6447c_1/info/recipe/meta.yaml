@@ -1,0 +1,78 @@
+# This file created by conda-build 3.18.11
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/pycosat-0.6.3-python_3.8-on-linux_canary, last modified Tue Apr 28 23:27:25 2020
+# ------------------------------------------------
+
+package:
+    name: pycosat
+    version: 0.6.3
+source:
+    git_rev: 0.6.3
+    git_url: https://github.com/mingwandroid/pycosat.git
+build:
+    number: '1'
+    string: py38h7b6447c_1
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+    host:
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2020.1.1 0
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20181209 hc058e9b_0
+        - libffi 3.2.1 hd88cf55_4
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_0
+        - openssl 1.1.1g h7b6447c_0
+        - python 3.8.2 hcf32534_0
+        - readline 8.0 h7b6447c_0
+        - sqlite 3.31.1 h62c20be_1
+        - tk 8.6.8 hbc83047_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - libgcc-ng >=7.3.0
+        - python >=3.8,<3.9.0a0
+test:
+    files:
+        - qg3-08.cnf
+        - sudoku.py
+        - uf20-098.cnf
+    imports:
+        - pycosat
+about:
+    description: 'PicoSAT is a popular SAT solver written by Armin Biere in pure C.
+        This
+
+        package provides efficient Python bindings to picosat on the C level, i.e.
+
+        when importing pycosat, the picosat solver becomes part of the Python
+
+        process itself.
+
+        '
+    dev_url: https://github.com/ContinuumIO/pycosat
+    doc_source_url: https://github.com/ContinuumIO/pycosat/blob/master/README.rst
+    doc_url: https://pypi.python.org/pypi/pycosat
+    home: https://github.com/ContinuumIO/pycosat
+    license: MIT
+    summary: Bindings to picosat (a SAT solver)
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jakirkham
+        - kalefranz
+        - mcg1969
+        - mingwandroid
+        - msarahan
+        - nehaljwani
+        - pelson

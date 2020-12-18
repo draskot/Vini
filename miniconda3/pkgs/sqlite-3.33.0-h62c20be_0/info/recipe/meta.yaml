@@ -1,0 +1,79 @@
+# This file created by conda-build 3.18.11
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/sqlite-3.33.0-on-linux_64, last modified Thu Aug 20 14:57:11 2020
+# ------------------------------------------------
+
+package:
+    name: sqlite
+    version: 3.33.0
+source:
+    -   folder: amalgamated
+        patches:
+            - patches/applicable-to-amalgamated/0001-expose_symbols.patch
+        sha256: 106a2c48c7f75a298a7557bcc0d5f4f454e5b43811cc738b7ca294d6956bbb15
+        url: https://www.sqlite.org/2020/sqlite-autoconf-3330000.tar.gz
+build:
+    number: '0'
+    run_exports:
+        - sqlite >=3.33.0,<4.0a0
+    string: h62c20be_0
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - autoconf 2.69 pl526hebd4dad_5
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - libtool 2.4.6 h7b6447c_5
+        - m4 1.4.18 h4e445db_0
+        - make 4.2.1 h1bed415_1
+        - patch 2.7.6 h7b6447c_1001
+        - perl 5.26.2 h14c3975_0
+        - tk 8.6.10 hbc83047_0
+        - zlib 1.2.11 h7b6447c_3
+    host:
+        - _libgcc_mutex 0.1 main
+        - libedit 3.1.20191231 h14c3975_1
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - libedit >=3.1.20191231,<3.2.0a0
+        - libgcc-ng >=7.3.0
+        - ncurses >=6.2,<7.0a0
+        - zlib >=1.2.11,<1.3.0a0
+test:
+    commands:
+        - sqlite3 --version
+        - test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}
+        - test -f $PREFIX/include/sqlite3.h
+about:
+    description: 'SQLite is a self-contained, high-reliability, embedded, full-featured,
+
+        public-domain, SQL database engine.It is the most used database engine
+
+        in the world.
+
+        '
+    dev_url: https://github.com/mackyle/sqlite
+    doc_source_url: https://github.com/mackyle/sqlite/tree/master/doc
+    doc_url: http://www.sqlite.org/docs.html
+    home: http://www.sqlite.org/
+    license: Public-Domain (http://www.sqlite.org/copyright.html)
+    license_url: http://www.sqlite.org/copyright.html
+    summary: Implements a self-contained, zero-configuration, SQL database engine
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jakirkham
+        - jjhelmus
+        - mingwandroid
+        - msarahan
+        - ocefpaf
+        - snorfalorpagus

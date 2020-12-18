@@ -1,0 +1,13 @@
+# See: man pkg-config
+prefix=/tmp/build/80754af9/python_1599203911753/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeho
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: Python
+Description: Build a C extension for Python
+Requires:
+Version: 3.8
+Libs.private: -lcrypt -lpthread -ldl  -lutil -lrt -lm
+Libs:
+Cflags: -I${includedir}/python3.8

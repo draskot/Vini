@@ -1,0 +1,70 @@
+# This file created by conda-build 3.20.3+89.gdde58498.dirty
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/certifi-2020.6.20--target_noarch-on-linux_64, last modified Fri Oct 30 04:47:04 2020
+# ------------------------------------------------
+
+package:
+    name: certifi
+    version: 2020.6.20
+source:
+    -   folder: certifi
+        sha256: 5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3
+        url: https://pypi.io/packages/source/c/certifi/certifi-2020.6.20.tar.gz
+    -   folder: pip_wheel
+        sha256: 0f35d63b7245205f4060efe1982f5ea2196aa6e5b26c07669adcf800e2542026
+        url: https://pypi.io/packages/py2.py3/p/pip/pip-20.2.3-py2.py3-none-any.whl
+    -   folder: setuptools_wheel
+        sha256: 4dd5bb0a0a0cff77b46ca5dd3a84857ee48c83e8223886b556613c724994073f
+        url: https://pypi.io/packages/py3/s/setuptools/setuptools-49.6.0-py3-none-any.whl
+build:
+    noarch: python
+    number: '3'
+    string: pyhd3eb1b0_3
+requirements:
+    host:
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2020.10.14 0
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20191231 h14c3975_1
+        - libffi 3.3 he6710b0_2
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+        - openssl 1.1.1h h7b6447c_0
+        - python 3.6.12 hcff3b4d_2
+        - readline 8.0 h7b6447c_0
+        - sqlite 3.33.0 h62c20be_0
+        - tk 8.6.10 hbc83047_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - python
+test:
+    imports:
+        - certifi
+about:
+    description: 'Certifi is a curated collection of Root Certificates for validating
+        the
+
+        trustworthiness of SSL certificates while verifying the identity of TLS
+
+        hosts.
+
+        '
+    dev_url: https://github.com/certifi/python-certifi
+    doc_source_url: https://github.com/certifi/certifi.io/blob/master/README.rst
+    doc_url: https://pypi.python.org/pypi/certifi
+    home: http://certifi.io/
+    license: ISC
+    license_file: certifi/LICENSE
+    summary: Python package for providing Mozilla's CA Bundle.
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jakirkham
+        - jjhelmus
+        - mingwandroid
+        - ocefpaf
+        - pelson
+        - sigmavirus24

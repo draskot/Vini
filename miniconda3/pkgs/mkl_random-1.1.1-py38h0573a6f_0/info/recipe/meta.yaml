@@ -1,0 +1,89 @@
+# This file created by conda-build 3.18.11
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/mkl_random-1.1.1-python_3.8-on-linux_64, last modified Tue May 26 22:10:10 2020
+# ------------------------------------------------
+
+package:
+    name: mkl_random
+    version: 1.1.1
+source:
+    sha256: e57d2d57e2796f408fd64fd723bf14259537965af50dd92be049417edfba8816
+    url: https://github.com/IntelPython/mkl_random/archive/v1.1.1.tar.gz
+build:
+    ignore_run_exports:
+        - blas
+        - libgcc-ng
+    number: '0'
+    script: /tmp/build/80754af9/mkl_random_1590531432233/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_pla/bin/python
+        -m pip install . --no-deps -vv
+    string: py38h0573a6f_0
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - gxx_impl_linux-64 7.3.0 hdf63c60_1
+        - gxx_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+    host:
+        - _libgcc_mutex 0.1 main
+        - blas 1.0 mkl
+        - ca-certificates 2020.1.1 0
+        - certifi 2020.4.5.1 py38_0
+        - cython 0.29.17 py38he6710b0_0
+        - intel-openmp 2020.1 217
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20181209 hc058e9b_0
+        - libffi 3.3 he6710b0_1
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libgfortran-ng 7.3.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - mkl 2020.1 217
+        - mkl-devel 2020.1 218
+        - mkl-include 2020.1 217
+        - mkl-service 2.3.0 py38he904b0f_0
+        - ncurses 6.2 he6710b0_1
+        - numpy-base 1.14.6 py38hde5b4d6_4
+        - openssl 1.1.1g h7b6447c_0
+        - pip 20.0.2 py38_3
+        - python 3.8.3 hcff3b4d_0
+        - readline 8.0 h7b6447c_0
+        - setuptools 46.4.0 py38_0
+        - six 1.14.0 py38_0
+        - sqlite 3.31.1 h62c20be_1
+        - tk 8.6.8 hbc83047_0
+        - wheel 0.34.2 py38_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - libgcc-ng >=7.3.0
+        - libstdcxx-ng >=7.3.0
+        - mkl >=2020.1,<2021.0a0
+        - numpy >=1.14,<2.0a0
+        - python >=3.8,<3.9.0a0
+test:
+    commands:
+        - nosetests -v mkl_random
+    imports:
+        - mkl_random
+        - mkl_random.mklrand
+    requires:
+        - nose
+about:
+    description: NumPy-based implementation of random number generation sampling using
+        Intel (R) Math Kernel Library, mirroring numpy.random, but exposing all choices
+        of sampling algorithms available in MKL.
+    home: http://github.com/IntelPython/mkl_random
+    license: BSD 3-Clause
+    license_file: LICENSE.txt
+    summary: Intel (R) MKL-powered package for sampling from common probability distributions
+        into NumPy arrays.
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - oleksandr-pavlyk

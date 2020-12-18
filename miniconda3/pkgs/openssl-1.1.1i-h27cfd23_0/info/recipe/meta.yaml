@@ -1,0 +1,75 @@
+# This file created by conda-build 3.20.5
+# meta.yaml template originally from:
+# /tmp/build/80754af9/combined_recipe, last modified Wed Dec  9 17:51:18 2020
+# ------------------------------------------------
+
+package:
+    name: openssl
+    version: 1.1.1i
+source:
+    fn: openssl-1.1.1i.tar.gz
+    patches:
+        - 0001-Don-t-use-USE_BCRYPTGENRANDOM-for-VS-older-than-2015.patch
+    sha256: e8be6a35fe41d10603c3cc635e93289ed00bf34b79671a3a4de64fcee00d5242
+    url: http://www.openssl.org/source/openssl-1.1.1i.tar.gz
+build:
+    binary_has_prefix_files:
+        - lib/libcrypto.a
+        - lib/libcrypto.so.1.1
+    detect_binary_files_with_prefix: true
+    has_prefix_files:
+        - bin/c_rehash
+        - lib/pkgconfig/libcrypto.pc
+        - lib/pkgconfig/libssl.pc
+        - lib/pkgconfig/openssl.pc
+    no_link: lib/libcrypto.so.1.1
+    number: '0'
+    run_exports:
+        - openssl >=1.1.1i,<1.1.2a
+    string: h27cfd23_0
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - make 4.2.1 h1bed415_1
+        - patch 2.7.6 h7b6447c_1001
+    host:
+        - _libgcc_mutex 0.1 main
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - perl 5.26.2 h14c3975_0
+    run:
+        - ca-certificates
+        - libgcc-ng >=7.3.0
+test:
+    commands:
+        - touch checksum.txt
+        - openssl sha256 checksum.txt
+        - python -c "from six.moves import urllib; urllib.request.urlopen('https://pypi.org')"
+    requires:
+        - python 3.7.*
+        - six
+about:
+    dev_url: https://github.com/openssl/openssl
+    doc_url: https://www.openssl.org/docs/man1.1.1/
+    home: http://www.openssl.org/
+    license: OpenSSL
+    license_family: Apache
+    license_file: LICENSE
+    summary: OpenSSL is an open-source implementation of the SSL and TLS protocols
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - carlodri
+        - chenghlee
+        - jakirkham
+        - jjhelmus
+        - msarahan
+        - ocefpaf
+        - pelson

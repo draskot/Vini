@@ -1,0 +1,871 @@
+commit af5676472882ee28e09417e54755454ae984e546
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Mon Jun 22 12:35:43 2020 -0500
+
+    3.32.3
+
+commit 590f1606ef69f799f0de40ca535d19f1854d8f22
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jun 18 15:13:21 2020 -0500
+
+    remove patches which have been merged upstream
+
+commit f364087a32496de7e7f04dac0e4cb49f54ece5b3
+Author: Jonathan Helmus <jjhelmus@gmail.com>
+Date:   Thu Jun 18 13:19:48 2020 -0500
+
+    3.32.2
+
+commit 638c7d3a68fc578caca6387e2a5873f162bc4baf
+Author: Ray Donnelly <mingw.android@gmail.com>
+Date:   Tue Apr 21 14:41:49 2020 +0200
+
+    Fixes for 0001-CVE-2020-9327, 0003-CVE-2020-11655 and 0005-CVE-2020-11656
+    
+    Now we have a way to build sqlite from actual sources which means we
+    can patch them.
+    
+    Please see the pathset jinja2 variable at the top of the file.
+    
+    Although it looks a lot more complicated, if you use patchset=amalgamated
+    then the actual rendered recipe is just as simple as the old one!
+    
+    Also, we swap now drop readline and use libedit instead.
+    
+    Finally, the also fixes expose_symbols.patch so it works on other OSes too
+    and does not need to be skipped.
+
+commit 4ff1bc6e14f16b7a50575eb1b3555b6683755586
+Author: conda-forge-admin <conda-forge-admin@email.com>
+Date:   Wed May 20 01:42:56 2020 +0000
+
+    [ci skip] [skip ci] [cf admin skip] ***NO_CI*** admin migration CFEP13TokensAndConfig
+
+commit add4c6937eded8dc6b3f56a600e7d34803944cbd
+Author: conda-forge-admin <conda-forge-admin@email.com>
+Date:   Mon May 18 10:04:44 2020 +0000
+
+    [ci skip] [skip ci] [cf admin skip] ***NO_CI*** admin migration CondaForgeAutomerge
+
+commit 7e3d2cf143b55f27c3eefe226186702d80760e96
+Author: conda-forge-admin <conda-forge-admin@email.com>
+Date:   Wed May 13 01:18:47 2020 +0000
+
+    [ci skip] [skip ci] [cf admin skip] ***NO_CI*** admin migration CFEP13TurnOff
+
+commit 50de51f3c861d2f3d45ac6a508ddccbeafbbb906
+Author: conda-forge-admin <conda-forge-admin@email.com>
+Date:   Tue May 12 09:34:18 2020 +0000
+
+    [ci skip] [skip ci] [cf admin skip] ***NO_CI*** admin migration CFEP13TokensAndConfig
+
+commit fd80af61060969e68f042232fa11618d82bf4d44
+Author: conda-forge-admin <conda-forge-admin@email.com>
+Date:   Tue Mar 3 05:16:50 2020 +0000
+
+    [ci skip] [skip ci] [cf admin skip] ***NO_CI*** admin migration AutomergeAndRerender
+
+commit 3f3ed21fff001d12754a29fd6702f4c1fe547e6e
+Merge: 019dea7 4c1820f
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Fri Oct 11 08:35:25 2019 -0500
+
+    Merge pull request #50 from regro-cf-autotick-bot/3.30.1
+    
+    sqlite v3.30.1
+
+commit 4c1820fc08c91a51f716f6271c27c4d42cb699b3
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Fri Oct 11 12:17:29 2019 +0000
+
+    updated v3.30.1
+
+commit 019dea7b2a473bb246e507fbb5cb314293cf751a
+Merge: 48d25e9 ca9ec05
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Fri Oct 4 19:15:31 2019 -0300
+
+    sqlite v3.30.0 (#49)
+    
+    sqlite v3.30.0
+
+commit ca9ec05cfa3844b81a93593104348e7aac891230
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Fri Oct 4 19:16:37 2019 +0000
+
+    MNT: Re-rendered with conda-build 3.18.9, conda-smithy 3.5.0, and conda-forge-pinning 2019.10.01
+
+commit 6c9f3a8fe4ecc09a6a80f7b4fe1f3d36b0966734
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Fri Oct 4 19:16:22 2019 +0000
+
+    updated v3.30.0
+
+commit 48d25e90787ce3af9c725ebdfdec6a28b11b4371
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Fri Sep 6 18:33:36 2019 -0500
+
+    [ci skip] ***NO_CI*** Move from appveyor to azure.
+    
+    See https://github.com/conda-forge/conda-forge.github.io/issues/857
+
+commit 363353ce2a78721f39a6d55ad07a1c1e5d2f0081
+Merge: 16a4165 ba61245
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Wed Aug 28 15:57:01 2019 -0500
+
+    Merge pull request #48 from JakaKokosar/master
+    
+    [ENH] enable additional extensions
+
+commit ba61245f9901a5e631a8db8f679fcbc27aba0be9
+Author: jakakokosar <jaka.kokosar@gmail.com>
+Date:   Wed Aug 28 09:07:41 2019 +0200
+
+    enable additional extensions
+
+commit 16a41656c4e2792a0ae04415d6e9dee8b1b5d265
+Merge: 2afe65b 9a538c7
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jul 10 16:56:56 2019 -0500
+
+    sqlite v3.29.0 (#47)
+    
+    sqlite v3.29.0
+
+commit 9a538c7533a7aafef2366d36e43812c8903fad37
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Wed Jul 10 19:25:22 2019 +0000
+
+    updated v3.29.0
+
+commit 2afe65bfaf91417e18c6e60092824a4459358b9e
+Merge: 3d01c23 c11420c
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Mon Jul 1 14:32:20 2019 -0300
+
+    Rebuild for readline-8.0 (#46)
+    
+    Rebuild for readline-8.0
+
+commit c11420cb36426a6d97da60f6220658dd3652e17c
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Jul 1 16:30:35 2019 +0000
+
+    MNT: Re-rendered with conda-build 3.18.6, conda-smithy 3.4.0, and conda-forge-pinning 2019.07.01
+
+commit ae149d03f9cbfe70d790fd4ca69f1dffbb83678e
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Jul 1 16:30:23 2019 +0000
+
+    bump build number
+
+commit 3d01c2308d89a3933cf08eee037130d09c0f2fb8
+Merge: 00a5cb6 c9153a4
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu May 23 09:47:17 2019 -0300
+
+    Sqlitev3.28.0 (#45)
+    
+    Sqlitev3.28.0
+
+commit c9153a48ffa63ec3b9e9527c3dfad2299dc244e6
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu May 23 11:31:06 2019 +0000
+
+    MNT: Re-rendered with conda-build 3.17.8, conda-smithy 3.3.4, and conda-forge-pinning 2019.05.21
+
+commit 04c12cf1264a9876493b4180ff0e2085af8218ee
+Author: Sangram Gaikwad <sangramga@users.noreply.github.com>
+Date:   Thu May 23 10:27:17 2019 +0530
+
+    Updated build number to 0
+
+commit df0ccba4677885cd450247e21ec8f2573566b575
+Author: Sangram Gaikwad <sangramga@users.noreply.github.com>
+Date:   Thu May 23 10:17:34 2019 +0530
+
+    Updated recipe to Sqlite 3.28.0. Solves #44
+    
+    Upgrade sqlite version in conda-forge from 3.26.0 to 3.28.0. Changed version and sha256.
+
+commit 00a5cb6d7913d388d3814f344d424bbc732d7c5d
+Merge: 972ca3f efad58c
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Thu Mar 7 08:31:21 2019 -0600
+
+    Merge pull request #43 from ceholden/enable_column_metadata
+    
+    Enable column metadata on Windows builds
+
+commit efad58c9fc582a31272ef6385e877d2141144abd
+Author: Chris Holden <ceholden@gmail.com>
+Date:   Thu Feb 28 00:28:05 2019 -0800
+
+    Build with SQLITE_ENABLE_COLUMN_METADATA on all platforms
+
+commit 36a32b03f7c86442cc2573f0d1527d7c57327f04
+Author: Chris Holden <ceholden@gmail.com>
+Date:   Thu Feb 28 00:20:43 2019 -0800
+
+    MNT: Re-rendered with conda-build 3.17.8, conda-smithy 3.2.14, and conda-forge-pinning 2019.02.24
+
+commit 972ca3fe526e554515ea634e03f3be99adb9de33
+Merge: b9f426e 73c4e76
+Author: Marius van Niekerk <marius.v.niekerk@gmail.com>
+Date:   Mon Feb 18 12:12:16 2019 -0500
+
+    Merge pull request #42 from regro-cf-autotick-bot/rebuildaarch64_and_ppc64le_addition_arch
+    
+    Arch Migrator
+
+commit 73c4e767f43786f14977860c9f52ccbfa612f874
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Feb 18 16:19:03 2019 +0000
+
+    MNT: Re-rendered with conda-build 3.15.1, conda-smithy 3.2.13, and conda-forge-pinning 2019.02.15
+
+commit 0983ce2b11c2ef9489b77917836be36ed0e80740
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Feb 18 16:18:51 2019 +0000
+
+    bump build number
+
+commit b9f426e2a8f2023fbeed1b68b927fe19d1dbb791
+Merge: c4f618e d4cc016
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Sun Dec 2 17:02:22 2018 -0200
+
+    Merge pull request #41 from regro-cf-autotick-bot/3.26.0
+    
+    sqlite v3.26.0
+
+commit d4cc01605d469d585235370b7e2c140f96fe139e
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Sat Dec 1 16:13:29 2018 +0000
+
+    updated v3.26.0
+
+commit c4f618ed684fc72c0cac94dac56c290a1938db6b
+Merge: 7b46542 5372c01
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Tue Nov 6 14:14:32 2018 -0600
+
+    Merge pull request #40 from regro-cf-autotick-bot/3.25.3
+    
+    sqlite v3.25.3
+
+commit 5372c019252be23b4cbe10a6e48510d0efb49dd4
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Nov 5 21:16:15 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 3.1.12 and pinning 2018.11.3
+
+commit ce7f0a944ca1c023012376b372a4c2b18608033a
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Mon Nov 5 21:16:10 2018 +0000
+
+    updated v3.25.3
+
+commit 7b4654258f5c4667ad4fe88d7b8dbc3c01f68f60
+Merge: d5633d3 304619a
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Sep 26 10:28:03 2018 -0300
+
+    Merge pull request #39 from regro-cf-autotick-bot/3.25.2
+    
+    sqlite v3.25.2
+
+commit 304619a17cf7cd0f009662ee4d605e0c8fdc28ca
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Tue Sep 25 17:13:18 2018 -0300
+
+    Update meta.yaml
+
+commit 9d2145ee79f362a77be0d6ef8a7d19e733b7f8f2
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Tue Sep 25 20:11:19 2018 +0000
+
+    updated v3.25.2
+
+commit d5633d3563039e4daddbba4895d345dafd56ada7
+Merge: e9dae81 80d0de0
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Sep 19 12:01:59 2018 -0300
+
+    Merge pull request #38 from ocefpaf/3.25.1
+    
+    Update to 3.25.1...
+
+commit 80d0de0b6a5f3a0aabb306cefe98382bb10c2f92
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:54:15 2018 -0300
+
+    remove inspect
+
+commit da700df69772902f28aaf015ac827ca86b9da958
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:53:52 2018 -0300
+
+    fix editline option
+
+commit d54bed28459295a1d932c9bf2387fa26a0f3380d
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:50:47 2018 -0300
+
+    fix lints
+
+commit b7fc00ee1fa9af09b1acca7501bdda951fbeefe2
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:47:33 2018 -0300
+
+    MNT: Re-rendered with conda-smithy 3.1.12 and pinning 2018.09.11
+
+commit 81f5ae3081a50d63c5a060cd751cbb0e472cb118
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:47:30 2018 -0300
+
+    remove execatable bits
+
+commit c61491ebf15d8e05bab238b6fbcaee32996973c8
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:47:17 2018 -0300
+
+    add SQLITE_ENABLE_GEOPOLY and sync with AR
+
+commit 34cd8c4d1ca9d54208242e49953461b58280ce25
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:47:08 2018 -0300
+
+    add SQLITE_ENABLE_GEOPOLY support
+
+commit 9b4efaf5d43acdf1f7e1a489b188a1eb14ca3228
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Sep 19 10:46:33 2018 -0300
+
+    sync with AR
+
+commit e9dae81c56b58ea2f8b7cf128f7dd67d1f8b2380
+Merge: 907149e 0e3d025
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Fri Sep 14 10:01:26 2018 -0300
+
+    Merge pull request #35 from regro-cf-autotick-bot/rebuild
+    
+    Rebuild for Python 3.7, GCC 7, R 3.5.1, openBLAS 0.3.2
+
+commit 0e3d02561afc5ed8d97414da608ae624f86aef99
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Thu Sep 13 21:10:48 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 3.1.12 and pinning 2018.09.11
+
+commit 5f2cb923ec8e7ee5d1c80a1eab4912a2e3c728d6
+Author: regro-cf-autotick-bot <circleci@cf-graph.regro.github.com>
+Date:   Thu Sep 13 21:10:41 2018 +0000
+
+    bump build number
+
+commit 907149e3fe39c1db111317ea7309161dbe26a93e
+Merge: b4befe4 6d22b27
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Sun Sep 2 22:03:58 2018 -0300
+
+    Merge pull request #33 from ocefpaf/remove_la
+    
+    Remove la
+
+commit 6d22b270bf0df67f1b78007201a8c432458c3140
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Sun Sep 2 21:21:08 2018 -0300
+
+    MNT: Re-rendered with conda-smithy 3.1.12.post.dev2 and pinning 2018.08.31
+
+commit 140bf40deaeadb08619a5db376e15f0b0b529aa3
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Sun Sep 2 21:21:04 2018 -0300
+
+    remove .la
+
+commit b4befe4b9b156aa1b30750931f40d3d1f2f8799a
+Author: Travis CI User <travis@example.org>
+Date:   Sat Aug 4 17:14:19 2018 +0000
+
+    [ci skip] [skip ci] Update anaconda token
+
+commit 7eaf1bd2e1245db0271513606d7112343357e5e5
+Merge: f40584c bbf7e2f
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu Jun 28 14:15:30 2018 -0400
+
+    Merge pull request #28 from regro-cf-autotick-bot/3.24.0
+    
+    sqlite v3.24.0
+
+commit bbf7e2f6c63652f4ecf23ff1484e2b807c51511e
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Jun 28 10:29:00 2018 -0400
+
+    Release 3.24.0
+
+commit a43c5f4bb4273853f32a8d9fc1e03d841afeebe5
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu Jun 28 14:24:02 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 3.1.6 and pinning 2018.06.19
+
+commit 66f56d827a1ef44ded7eb9aeefc7ec021d63d3d9
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Jun 28 10:21:38 2018 -0400
+
+    Drop explicit pinnings
+    
+    These pinnings will now be picked up by `conda-smithy` 3 and
+    `conda-build` 3 in the form of variant files added to the feedstock that
+    use pinnings from `conda-forge-pinning`.
+
+commit 7c54a323c2dbec28830dfd3860ff15074a6a0b64
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Jun 28 10:20:53 2018 -0400
+
+    Move `pkg-config` to `build`
+    
+    As `pkg-config` is only needed for building packages and does not need
+    to be linked to, move it to `build` instead of `host`.
+
+commit 3a008095a01e919b1810d40027bc9506b3ea1e6f
+Merge: 03e6b56 f40584c
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Thu Jun 28 10:17:24 2018 -0400
+
+    Merge branch 'conda-forge/master' into 'regro-cf-autotick-bot/3.24.0'
+
+commit f40584c0943eed4ed8a43f97f5405632dd6ea523
+Merge: 88cc0da 7e5c108
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu Jun 28 10:06:46 2018 -0400
+
+    Merge pull request #27 from chambbj/sqlite-3.23.1
+    
+    Bump to version 3.23.1
+
+commit 7e5c10807ab955a2f25f41200636162065671113
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Thu Jun 28 05:11:32 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 3.1.6 and pinning 2018.06.19
+
+commit d27d6022376d446edaa121f3c19fcb83eff48261
+Author: Bradley J Chambers <brad.chambers@gmail.com>
+Date:   Mon Jun 4 21:48:42 2018 -0400
+
+    Remove conda inspect and rename variable
+
+commit 03e6b56931dc7acdc3af974aac7d134a0d1e0a14
+Author: Travis CI User <travis@example.org>
+Date:   Mon Jun 4 23:22:02 2018 +0000
+
+    MNT: Re-rendered with conda-smithy 3.1.5 and pinning 2018.05.22
+
+commit ddc96aa647e42edf76b15b9d5eaa2572455c5fee
+Author: Bradley J Chambers <brad.chambers@gmail.com>
+Date:   Thu May 31 16:16:29 2018 -0400
+
+    Ran conda smithy in the wrong directory, resulting in extra files
+
+commit 7d84247c8d5564df78f874d955fca8af81fc673c
+Author: Bradley J Chambers <brad.chambers@gmail.com>
+Date:   Thu May 31 13:55:31 2018 -0400
+
+    Attempt to "modernize" the recipe without breaking anything
+
+commit fc76600986249b3051a8f12e86718135a2f9176a
+Author: Bradley J Chambers <brad.chambers@gmail.com>
+Date:   Thu May 31 12:04:35 2018 -0400
+
+    Bump to version 3.23.1
+
+commit 88cc0dac2916a27425e9100b96cc06e62dc0c43c
+Merge: 5dc35c4 5ae8cf1
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu Mar 1 08:37:48 2018 -0300
+
+    Merge pull request #26 from ocefpaf/update_to_3.22.0
+    
+    update_to_3.22.0
+
+commit 5ae8cf100304a00dc6ed0e445ccbe8077ebe7a68
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Feb 28 18:55:38 2018 -0300
+
+    update_to_3.22.0
+
+commit 5dc35c47747a9740beaac14fffd2ccd8994ed427
+Merge: f02d797 72cfbca
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:32:24 2017 -0800
+
+    Merge pull request #24 from jakirkham-feedstocks/fix_macos_ncurses
+    
+    Fix macOS ncurses
+
+commit 72cfbca418077fe0ba6751e14319e63154da2bfa
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:24:34 2017 -0800
+
+    Bump build number to 2
+    
+    Rebuild to pick up our `ncurses` instead of the system one on macOS.
+
+commit ec7c6279b4b40d0acb0e82935678435174a094b0
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:23:16 2017 -0800
+
+    No `readline.pc`
+    
+    Drops `readline` from `pkg-config` calls as there is no `readline.pc`.
+    Having it included doesn't seem to be particularly important with the
+    correct flag though. So it should be safe to drop.
+
+commit f02d7975a7dd58857ebca8d80751c80ee5a877c5
+Merge: 284d94e 4ab1643
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:15:25 2017 -0800
+
+    Merge pull request #23 from jakirkham-feedstocks/fix_macos_readline
+    
+    Fix macOS readline support
+
+commit 4ab1643c80e6e62f28a52ee6fc141b61bfd16d27
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:07:05 2017 -0800
+
+    Bump build number to 1
+    
+    Rebuild `sqlite` for macOS to get correct linkage to `readline` and not
+    the system `editline`.
+
+commit 5a1c18887acc3dc5e745e2c4b3736e24946c3046
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:06:13 2017 -0800
+
+    Use `pkg-config` to get header include paths too
+
+commit 83800a21c8756522db111fe734603339372cb202
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:05:21 2017 -0800
+
+    Use `pkg-config` to get `readline` libraries too
+    
+    Not strictly necessary to fix the macOS linkage issue with `ncurses`.
+    Still this should ensure the right `readline` (or potentially `editline`)
+    is used and not some system or other package manager's copy.
+
+commit 7b5df7e2eca4a410c39e762065f7e5129e84696b
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 19:04:37 2017 -0800
+
+    Specify `ncurses` libraries with `pkg-config`
+    
+    Fixes an issue where macOS picks up the system `ncurses` instead.
+
+commit 2fc447bda29d2ef9f761db579f20c2c478d88c9e
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 18:23:08 2017 -0800
+
+    Add ncurses headers to the search path
+
+commit c2f4f2dfda51d35460e3cddf3b3520a229bb8f04
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 18:13:49 2017 -0800
+
+    Drop unneeded compiler settings
+    
+    These are all now basically handled by the `toolchain`.
+
+commit 763faeedc9e8035d800c7b8fbfcca43c2530f8c4
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:51:31 2017 -0800
+
+    Require the `toolchain`
+    
+    Should hopefully fix some path searching so as to pick up the right
+    `ncurses` on macOS.
+
+commit 30cf67dbac0aac935cb7fc3a7c1461b007d164be
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:50:47 2017 -0800
+
+    Require `ncurses` explicitly
+    
+    As `sqlite` appears to be linking to `ncurses`, it only makes sense to
+    ensure that we include our own.
+
+commit 00e554dea91126c79ba1ae8e20395f477df5ac55
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:49:24 2017 -0800
+
+    Explicitly disable `editline`
+    
+    For some reason the `sqlite` build like to pick up the system `editline`
+    on macOS. To fix this, we explicitly disable `editline` in addition to
+    enabling `readline`.
+
+commit bc8ef4710bb865cf287e5e27a1b25f17d7f0224a
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:48:29 2017 -0800
+
+    Quote `PREFIX` passed to `configure`
+
+commit de8a749f323d2515b8ec397032f5f1aa78e71b88
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:47:33 2017 -0800
+
+    Align selectors
+
+commit 12a28a99926a5e71b9d515e9fda7552d1f30d4be
+Author: John Kirkham <jakirkham@gmail.com>
+Date:   Mon Dec 25 17:46:39 2017 -0800
+
+    MNT: Re-rendered with conda-smithy 2.4.5
+
+commit 284d94e3dd34ad91d991f0b12f3033b2a79b2a0f
+Merge: 9791626 77c1410
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu Dec 7 09:56:30 2017 -0200
+
+    Merge pull request #21 from ocefpaf/update_to_3.20.1
+    
+    Update to 3.20.1
+
+commit 77c1410a3fcdf6679ef5ef017f2bfc257ccec74b
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Dec 6 10:26:08 2017 -0200
+
+    update to 3.20.1
+
+commit 9b18223f64128ad3e5fdbb82c097bb81754c06a2
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Dec 6 10:26:02 2017 -0200
+
+    rerender
+
+commit 9791626203b111c16273bbf3801591c678606dca
+Merge: 84ead85 db54c9b
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Sat Nov 4 14:42:50 2017 -0200
+
+    Merge pull request #20 from snorfalorpagus/sqlite_rtree
+    
+    Build SQLite with rtree support
+
+commit db54c9b049d85c2aa2dcca3d30b1e28cfe3f6f81
+Author: Joshua Arnott <josh@snorfalorpagus.net>
+Date:   Sat Nov 4 15:29:03 2017 +0000
+
+    Build SQLite with rtree support
+
+commit 84ead8506721a8b10124b58cadee9e8361c24952
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Sat Aug 26 19:38:43 2017 +0000
+
+    [ci skip] [skip ci] Update anaconda token
+
+commit e0ad45363a6eac0ac50667fbc5a7abe3b10a5d9e
+Merge: 75294c3 968c371
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Thu Jul 27 09:41:14 2017 -0300
+
+    Merge pull request #19 from ocefpaf/update
+    
+    update to 3.19.3
+
+commit 968c371b2a3dab3b757c590ce5fdf87b0d11261a
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Jul 26 13:27:22 2017 -0300
+
+    update to 3.19.3
+
+commit 75294c390f1b02273bee04e21958d964fc1e4a8a
+Merge: 70dca39 586f80e
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jul 26 09:54:31 2017 -0300
+
+    Merge pull request #18 from ocefpaf/rerender
+    
+    rerender with auto
+
+commit 586f80eabfeee3c8e865fcbda4f2a9e822995caa
+Author: Filipe Fernandes <ocefpaf@gmail.com>
+Date:   Wed Jul 26 09:23:39 2017 -0300
+
+    rerender with auto
+
+commit 70dca39ffb79eeedf3e2e724a381bb0c52977809
+Merge: 90630d4 56922bf
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jul 26 09:22:35 2017 -0300
+
+    Merge pull request #17 from johanfforsberg/enable-json1-extension
+    
+    Build with the JSON1 extension
+
+commit 56922bfe6dd47d9d545a2077f097d03e507cc826
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Jul 26 09:11:39 2017 -0300
+
+    Update meta.yaml
+
+commit e9c2b15b7f40f5b6d3dafde5bacadf76e795f099
+Author: Johan Forsberg <johan.forsberg@maxiv.lu.se>
+Date:   Thu Jun 1 22:41:48 2017 +0200
+
+    bump build number
+
+commit 9371de6ca90b4d71ebdc04afb9423f739dfe1ee6
+Author: Johan Forsberg <johan.forsberg@maxiv.lu.se>
+Date:   Tue May 23 14:53:55 2017 +0200
+
+    Build with the JSON1 extension
+
+commit 90630d4ba7984ce546a4dabf502a0e6784834658
+Merge: b5f4429 9f36c71
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu Mar 16 14:10:18 2017 -0400
+
+    Merge pull request #16 from jakirkham/drop_license_family
+    
+    Drop license_family
+
+commit 9f36c719e68acb4d1c832e78a705719594d203f6
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Wed Mar 15 14:48:32 2017 -0400
+
+    Drop license_family as it is unneeded
+
+commit b5f44292f4a7ab68bd7c3e1631f324e59792e803
+Merge: 62ea5af 1549bd7
+Author: Jonathan J. Helmus <jjhelmus@gmail.com>
+Date:   Mon Jan 16 16:13:56 2017 -0600
+
+    Merge pull request #14 from lexual/issue013_v3.16.2
+    
+    bump version to v3.16.2
+
+commit 1549bd7be99166693f54620822dea72974c0692a
+Author: lexual <lex@jbadigital.com>
+Date:   Mon Jan 16 12:33:58 2017 +1100
+
+    bump version to v3.16.2
+    
+    ref #conda-forge/sqlite-feedstock#13
+
+commit 62ea5af281f1fb77485b330076b2fc956a34d590
+Merge: f07bc01 5194958
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Tue Nov 29 01:03:39 2016 -0500
+
+    Merge pull request #11 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock [ci skip]
+
+commit 5194958cc475fb2aceb11ad17b92e811b9b0ac4b
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Tue Nov 29 01:34:56 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 1.6.0.
+
+commit f07bc01dc1655b05049d6b992e065376ee30b38a
+Merge: 3778a05 9a79299
+Author: Filipe <ocefpaf@gmail.com>
+Date:   Wed Oct 26 07:41:48 2016 -0300
+
+    Merge pull request #10 from ocefpaf/update
+    
+    Update to 3.15.0
+
+commit 9a792997fc33fddcadb4eb74573e8151b8c841f5
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Tue Oct 25 20:28:16 2016 -0300
+
+    Add myself
+
+commit 4a6809d1102a48fb24b920fa5fb8780e925aaf0a
+Author: ocefpaf <ocefpaf@gmail.com>
+Date:   Tue Oct 25 10:51:07 2016 -0300
+
+    Update to 3.15.0
+
+commit 3778a05299753e5500db62698120baa04c72ea2a
+Merge: b263127 0599974
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Wed Oct 19 08:49:21 2016 -0400
+
+    Merge pull request #9 from jakirkham/re-render_master_1.3.3
+    
+    MNT: Re-rendered with conda-smithy 1.3.3 [ci skip]
+
+commit 0599974360cd9ed1e98ff0b27a8877ba0c8418dd
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue Oct 18 23:26:51 2016 -0400
+
+    MNT: Re-rendered with conda-smithy 1.3.3
+
+commit b263127bfc1519a8eacf76197b2235d14681f7c2
+Merge: 3e6fe4f fab376c
+Author: Mike Sarahan <msarahan@gmail.com>
+Date:   Wed Jun 8 09:58:26 2016 -0500
+
+    Merge pull request #4 from conda-forge/win_symbol_update
+    
+    revise export of win symbols; update to 3.13
+
+commit fab376ca5a01afee090f485d478669245951b790
+Author: Michael Sarahan <msarahan@gmail.com>
+Date:   Thu Jun 2 19:18:48 2016 -0500
+
+    revise export of win symbols; update to 3.13
+
+commit 3e6fe4f6cfe09d6693a33b897767d46ad05006cb
+Merge: 0f52cdb 5a076e5
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Thu May 19 13:53:43 2016 -0400
+
+    Merge pull request #2 from jakirkham/tmplt_release_year
+    
+    Fix-up jinja
+
+commit 5a076e5aadb32076c7b8beac937d0f0e8f06f2fc
+Author: John Kirkham <kirkhamj@janelia.hhmi.org>
+Date:   Tue May 17 14:25:20 2016 -0400
+
+    recipe: Use jinja template for the release year too.
+
+commit 0f52cdb0050a51e707632653fd4d87486bc51944
+Merge: 6ef2826 cf65233
+Author: jakirkham <jakirkham@gmail.com>
+Date:   Fri May 13 09:48:29 2016 -0400
+
+    Merge pull request #1 from conda-forge-admin/feedstock_rerender_master
+    
+    MNT: Re-render the feedstock
+
+commit cf65233ffa12cecc453683f7118d4915334c8329
+Author: conda-forge-admin <pelson.pub+conda-forge@gmail.com>
+Date:   Fri May 13 07:44:24 2016 +0000
+
+    MNT: Updated the feedstock for conda-smithy version 0.10.3.
+    
+    [ci skip]
+
+commit 6ef2826350129dc014ee9c0b0b3844a38590f736
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Wed May 11 07:55:54 2016 +0000
+
+    Re-render the feedstock after CI registration.
+
+commit 579a7498e8ed504214c6c0826a4a8269a1b5c1d8
+Author: Travis-CI on github.com/conda-forge/staged-recipes <conda-forge@googlegroups.com>
+Date:   Wed May 11 07:55:11 2016 +0000
+
+    Initial commit of the sqlite feedstock.

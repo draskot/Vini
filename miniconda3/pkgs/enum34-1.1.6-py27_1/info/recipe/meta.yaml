@@ -1,0 +1,58 @@
+# This file created by conda-build 3.10.9+36.gd10dbde.dirty
+# meta.yaml template originally from:
+# /home/rdonnelly/conda/aggregate/enum34-feedstock/recipe, last modified Sun Sep 17 15:38:09 2017
+# ------------------------------------------------
+
+package:
+    name: enum34
+    version: 1.1.6
+source:
+    fn: enum34-1.1.6.tar.gz
+    sha256: 8ad8c4783bf61ded74527bffb48ed9b54166685e4230386a9ed9b1279e2df5b1
+    url: https://pypi.io/packages/source/e/enum34/enum34-1.1.6.tar.gz
+build:
+    number: '1'
+    script: python setup.py install --single-version-externally-managed --record record.txt
+    string: py27_1
+requirements:
+    host:
+        - ca-certificates 2018.03.07 0
+        - certifi 2018.4.16 py27_0
+        - libedit 3.1.20170329 h6b74fdf_2
+        - libffi 3.2.1 hd88cf55_4
+        - libgcc-ng 7.2.0 hdf63c60_3
+        - libstdcxx-ng 7.2.0 hdf63c60_3
+        - ncurses 6.1 hf484d3e_0
+        - openssl 1.0.2o h20670df_0
+        - python 2.7.15 h1571d57_0
+        - readline 7.0 ha6073c6_4
+        - setuptools 39.2.0 py27_0
+        - sqlite 3.24.0 h84994c4_0
+        - tk 8.6.7 hc745277_3
+        - zlib 1.2.11 ha838bed_2
+    run:
+        - python >=2.7,<2.8.0a0
+test:
+    imports:
+        - enum
+about:
+    description: 'enumeration is a set of symbolic names bound to unique, constant
+        values.
+
+        Within it, the members can be compared by identity and the enumeration
+
+        itself can be iterated over.
+
+        '
+    dev_url: https://bitbucket.org/stoneleaf/enum34
+    doc_source_url: https://bitbucket.org/stoneleaf/enum34/src/default/enum/doc/enum.rst
+    doc_url: https://pypi.python.org/pypi/enum34
+    home: https://bitbucket.org/stoneleaf/enum34
+    license: BSD 3-Clause
+    summary: Python 3.4 Enum backported to 3.3, 3.2, 3.1, 2.7, 2.6, 2.5, and 2.4
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jakirkham
+        - ocefpaf

@@ -1,0 +1,120 @@
+{% set version = "1.19.2" %}
+
+package:
+  name: numpy_and_numpy_base
+  version: {{ version }}
+
+source:
+  url: https://github.com/numpy/numpy/releases/download/v{{ version }}/numpy-{{ version }}.tar.gz
+  sha256: 74d0cf50aa28af81874aca3e67560945afd783b2a006913577d6cddc35a824a6
+  patches:
+    - 0001-Obtain-and-prefer-custom-gfortran-from-env-variable.patch
+    - 0002-intel_mkl-version.patch  # [blas_impl == "mkl"]
+    - 0003-intel_init_mkl.patch  # [blas_impl == "mkl"]
+    - 0004-disable-autorun-for-cmd-test.patch   # [win]
+
+build:
+  number: 0
+  skip: True  # [(blas_impl == 'openblas' and win) or py2k]
+  force_use_keys:
+    - python
+
+outputs:
+  # this one has all the actual contents
+  - name: numpy-base
+    script: install_base.sh   # [unix]
+    script: install_base.bat  # [win]
+    build:
+      entry_points:
+        - f2py = numpy.f2py.f2py2e:main  # [win]
+    requirements:
+      build:
+        - {{ compiler("c") }}
+        # libllvm10 10.0.0 build 1 has an issue building numpy, use build 0
+        - libllvm10 10.0.0 h21ff451_0  # [osx]
+      host:
+        - python
+        - pip
+        - cython
+        - mkl-devel  {{ mkl }}  # [blas_impl == "mkl"]
+        - openblas-devel {{ openblas }}  # [blas_impl == "openblas"]
+      run:
+        - python
+    # When building out the initial package set for a new Python version the
+    # recommendataion is to build numpy-base but not numpy, then build
+    # mkl_fft and mkl_random, and then numpy.
+    # The false line will build numpy-base only
+    # {% if false %}
+    # The true line will build numpy-base and numpy
+    {% if true %}
+    test:
+      commands:
+        - test -e $SP_DIR/numpy/distutils/site.cfg     # [unix]
+        - IF NOT EXIST %SP_DIR%\numpy\distutils\site.cfg exit 1  # [win]
+
+  # numpy is a metapackage that may include mkl_fft and mkl_random both of
+  # which require numpy-base to build
+  - name: numpy
+    requirements:
+      build:
+        # for runtime alignment
+        - {{ compiler('c') }}
+      host:
+        - python
+        # these import blas metapackages to ensure consistency with downstream libs that also use blas
+        - mkl-devel  {{ mkl }}  # [blas_impl == 'mkl']
+        - openblas-devel {{ openblas }}  # [blas_impl == 'openblas']
+      run:
+        - python
+        - {{ pin_subpackage('numpy-base', exact=True) }}
+        # openblas or mkl runtime included with run_exports
+        - mkl_fft  # [blas_impl == 'mkl']
+        - mkl_random # [blas_impl == 'mkl' and (not win or vc>=14)]
+    {% endif %}
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # Seems to fail with current version of blas for large numbers
+    # https://github.com/conda-forge/numpy-feedstock/pull/179#issuecomment-569591828
+    {% set tests_to_skip = tests_to_skip + " or test_sincos_float32" %}  # [linux64]
+    # Flawed test when using MKL
+    # https://github.com/numpy/numpy/issues/16769
+    {% set tests_to_skip = tests_to_skip + " or test_overrides" %}  # [blas_impl == 'mkl']
+    # Only the complex256 system is failing, but I don't know how to skip it on its own
+    # https://github.com/numpy/numpy/issues/15243
+    {% set tests_to_skip = tests_to_skip + " or test_loss_of_precision" %}  # [ppc64le or aarch64]
+    test:
+      requires:
+        - pip     # force installation or `test_api_importable` will fail
+        - pytest
+        - hypothesis
+        - {{ compiler('c') }}  # [not osx]
+        - {{ compiler('fortran') }}  # [not osx]
+        - nomkl  # [x86 and blas_impl != 'mkl']
+      commands:
+        - f2py -h
+        - python -c "import numpy; numpy.show_config()"
+        - export OPENBLAS_NUM_THREADS=1  # [unix]
+        - set OPENBLAS_NUM_THREADS=1  # [win]
+        - pytest --verbose --pyargs numpy -k "not ({{ tests_to_skip }})" --durations=0
+      imports:
+        - numpy
+        - numpy.linalg.lapack_lite
+
+about:
+  home: http://numpy.scipy.org/
+  license: BSD 3-Clause
+  license_file: LICENSE.txt
+  summary: Array processing for numbers, strings, records, and objects.
+  description: |
+    NumPy is the fundamental package needed for scientific computing with Python.
+  doc_url: https://docs.scipy.org/doc/numpy/reference/
+  dev_url: https://github.com/numpy/numpy
+  dev_source_url: https://github.com/numpy/numpy/tree/master/doc
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - pelson
+    - rgommers
+    - ocefpaf
+    - chenghlee

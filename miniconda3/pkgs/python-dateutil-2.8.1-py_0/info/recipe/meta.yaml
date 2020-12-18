@@ -1,0 +1,68 @@
+# This file created by conda-build 3.18.11
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/python-dateutil-2.8.1-on-linux_64, last modified Fri Nov  8 14:42:02 2019
+# ------------------------------------------------
+
+package:
+    name: python-dateutil
+    version: 2.8.1
+source:
+    sha256: 73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c
+    url: https://pypi.io/packages/source/p/python-dateutil/python-dateutil-2.8.1.tar.gz
+build:
+    noarch: python
+    number: '0'
+    script: /tmp/build/80754af9/python-dateutil_1573224248383/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehol/bin/python
+        -m pip install . --no-deps -vv
+    string: py_0
+requirements:
+    host:
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2019.10.16 0
+        - certifi 2019.9.11 py27_0
+        - libedit 3.1.20181209 hc058e9b_0
+        - libffi 3.2.1 hd88cf55_4
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.1 he6710b0_1
+        - openssl 1.1.1d h7b6447c_3
+        - pip 19.3.1 py27_0
+        - python 2.7.17 h9bab390_0
+        - readline 7.0 h7b6447c_5
+        - setuptools 41.6.0 py27_0
+        - setuptools_scm 3.3.3 py_0
+        - sqlite 3.30.1 h7b6447c_0
+        - tk 8.6.8 hbc83047_0
+        - wheel 0.33.6 py27_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - python
+        - six >=1.5
+test:
+    imports:
+        - dateutil
+        - dateutil.parser
+        - dateutil.rrule
+        - dateutil.tz
+        - dateutil.zoneinfo
+about:
+    description: 'The dateutil module provides powerful extensions to the standard
+        datetime
+
+        module, available in Python.
+
+        '
+    dev_url: https://github.com/dateutil/dateutil/
+    doc_source_url: https://github.com/dateutil/dateutil/blob/master/docs/index.rst
+    doc_url: https://dateutil.readthedocs.org/en/latest/
+    home: https://dateutil.readthedocs.org/
+    license: BSD 3 Clause
+    license_file: LICENSE
+    summary: Extensions to the standard Python datetime module.
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - msarahan
+        - ocefpaf
+        - pganssle

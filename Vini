@@ -78,6 +78,7 @@ do
         then
             sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
             sh repository_check                 #Create receptors_contracted file
+            echo "brakepoint" ; sleep 1000
             sh copy_genes_to_stage              #Copy Vina pdb receptor files to the stage
             sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
             nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`

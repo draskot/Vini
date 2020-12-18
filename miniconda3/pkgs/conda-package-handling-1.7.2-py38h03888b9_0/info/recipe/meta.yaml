@@ -1,0 +1,88 @@
+# This file created by conda-build 3.20.3+43.g2909b0ff.dirty
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/conda-package-handling-1.7.2-python_3.8-on-linux_64, last modified Sun Oct 18 09:26:32 2020
+# ------------------------------------------------
+
+package:
+    name: conda-package-handling
+    version: 1.7.2
+source:
+    fn: conda-package-handling-1.7.2.tar.gz
+    sha256: 1d68ca635a159d0cf8aa1247375a23cfaf37de86518f1aebdbfe96be1d9598b3
+    url: https://github.com/conda/conda-package-handling/releases/download/1.7.2/conda-package-handling-1.7.2.tar.gz
+build:
+    entry_points:
+        - cph = conda_package_handling.cli:main
+    missing_dso_whitelist: null
+    number: '0'
+    script: /tmp/build/80754af9/conda-package-handling_1603018141399/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_p/bin/python
+        -m pip install . --no-deps -vv
+    string: py38h03888b9_0
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+    host:
+        - _libarchive_static_for_cph 3.4.3 h14c3975_2
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2020.10.14 0
+        - certifi 2020.6.20 py38_0
+        - cython 0.29.21 py38he6710b0_0
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20191231 h14c3975_1
+        - libffi 3.3 he6710b0_2
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+        - openssl 1.1.1h h7b6447c_0
+        - pip 20.2.3 py38_0
+        - python 3.8.5 h7579374_1
+        - readline 8.0 h7b6447c_0
+        - setuptools 50.3.0 py38hb0f4dca_1
+        - sqlite 3.33.0 h62c20be_0
+        - tk 8.6.10 hbc83047_0
+        - wheel 0.35.1 py_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - libgcc-ng >=7.3.0
+        - python >=3.8,<3.9.0a0
+        - six
+        - tqdm
+test:
+    commands:
+        - pytest tests
+    imports:
+        - conda_package_handling
+        - conda_package_handling.archive_utils_cy
+    requires:
+        - mock
+        - pytest
+        - pytest-cov
+        - pytest-mock
+    source_files:
+        - tests
+about:
+    home: https://github.com/conda/conda-package-handling
+    license: BSD-3-Clause
+    license_family: BSD
+    license_file:
+        - LICENSE
+        - static_deps_licenses/bzip2.txt
+        - static_deps_licenses/libarchive.txt
+        - static_deps_licenses/zlib.txt
+        - static_deps_licenses/zstd.txt
+    summary: Create and extract conda packages of various formats
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jjhelmus
+        - mingwandroid
+        - msarahan

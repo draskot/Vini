@@ -1,0 +1,63 @@
+# This file created by conda-build 3.20.5
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/tqdm-4.51.0-on-linux_64, last modified Fri Nov 13 21:39:21 2020
+# ------------------------------------------------
+
+package:
+    name: tqdm
+    version: 4.51.0
+source:
+    sha256: ef54779f1c09f346b2b5a8e5c61f96fbcb639929e640e59f8cf810794f406432
+    url: https://pypi.io/packages/source/t/tqdm/tqdm-4.51.0.tar.gz
+build:
+    entry_points:
+        - tqdm = tqdm.cli:main
+    noarch: python
+    number: '0'
+    script: /tmp/build/80754af9/tqdm_1605303662894/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold/bin/python
+        -m pip install . --no-deps -vv
+    string: pyhd3eb1b0_0
+requirements:
+    host:
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2020.10.14 0
+        - certifi 2020.6.20 pyhd3eb1b0_3
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20191231 h14c3975_1
+        - libffi 3.3 he6710b0_2
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+        - openssl 1.1.1h h7b6447c_0
+        - pip 20.2.4 py36h06a4308_0
+        - python 3.6.12 hcff3b4d_2
+        - readline 8.0 h7b6447c_0
+        - setuptools 50.3.1 py36h06a4308_1
+        - sqlite 3.33.0 h62c20be_0
+        - tk 8.6.10 hbc83047_0
+        - wheel 0.35.1 pyhd3eb1b0_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - python
+test:
+    commands:
+        - tqdm --help
+        - tqdm -v
+    imports:
+        - tqdm
+about:
+    dev_url: https://github.com/tqdm/tqdm
+    doc_url: https://github.com/tqdm/tqdm
+    home: https://pypi.python.org/pypi/tqdm
+    license: MPLv2.0, MIT
+    license_family: MIT
+    license_file: LICENCE
+    summary: A Fast, Extensible Progress Meter
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - casperdcl
+        - ericdill
+        - pmlandwehr

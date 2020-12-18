@@ -1,0 +1,69 @@
+# This file created by conda-build 3.18.11
+# meta.yaml template originally from:
+# /tmp/build/80754af9/pull-recipes-libedit/recipe, last modified Fri Jul 10 07:51:24 2020
+# ------------------------------------------------
+
+package:
+    name: libedit
+    version: 3.1.20191231
+source:
+    fn: libedit-20191231-3.1.tar.gz
+    patches:
+        - 0001-prefer-tinfo-over-curses-and-termcap.patch
+    sha256: dbb82cb7e116a5f8025d35ef5b4f7d4a3cdd0a3909a146a39112095a2d229071
+    url: https://github.com/AnacondaRecipes/libedit-feedstock/releases/download/source/libedit-20191231-3.1.tar.gz
+build:
+    number: '1'
+    run_exports:
+        - libedit >=3.1.20191231,<3.2.0a0
+    string: h14c3975_1
+requirements:
+    build:
+        - _libgcc_mutex 0.1 main
+        - autoconf 2.69 pl526hebd4dad_5
+        - automake 1.16.2 pl526_0
+        - binutils_impl_linux-64 2.33.1 he6710b0_7
+        - binutils_linux-64 2.33.1 h9595d00_15
+        - gcc_impl_linux-64 7.3.0 habb00fd_1
+        - gcc_linux-64 7.3.0 h553295d_15
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - m4 1.4.18 h4e445db_0
+        - make 4.2.1 h1bed415_1
+        - perl 5.26.0 hae598fd_0
+    host:
+        - _libgcc_mutex 0.1 main
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+    run:
+        - libgcc-ng >=7.3.0
+        - ncurses >=6.2,<7.0a0
+test:
+    commands:
+        - test -f $PREFIX/lib/libedit.so
+        - test ! -f $PREFIX/lib/libedit.a
+about:
+    description: 'This is an autotool- and libtoolized port of the NetBSD Editline
+        library
+
+        (libedit). This Berkeley-style licensed command line editor library provides
+
+        generic line editing, history, and tokenization functions, similar to those
+
+        found in GNU Readline
+
+        '
+    home: http://thrysoee.dk/editline/
+    license: BSD-2-Clause
+    license_family: BSD
+    license_file: COPYING
+    summary: Editline Library (libedit)
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - djsutherland
+        - mingwandroid
+        - scopatz

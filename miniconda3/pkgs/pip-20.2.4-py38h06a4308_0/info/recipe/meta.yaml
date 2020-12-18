@@ -1,0 +1,67 @@
+# This file created by conda-build 3.20.5
+# meta.yaml template originally from:
+# /tmp/build/80754af9/rsync-recipes/pip-20.2.4-python_3.8-on-linux_64, last modified Tue Nov  3 19:41:57 2020
+# ------------------------------------------------
+
+package:
+    name: pip
+    version: 20.2.4
+source:
+    patches:
+        - 0001-Win32-Fix-Py_DEBUG-determination-in-_derive_abi-in-w.patch
+    sha256: 85c99a857ea0fb0aedf23833d9be5c40cf253fe24443f0829c7b472e23c364a1
+    url: https://pypi.io/packages/source/p/pip/pip-20.2.4.tar.gz
+build:
+    disable_pip: true
+    entry_points:
+        - pip = pip._internal.cli.main:main
+        - pip3 = pip._internal.cli.main:main
+    number: '0'
+    string: py38h06a4308_0
+requirements:
+    host:
+        - _libgcc_mutex 0.1 main
+        - ca-certificates 2020.10.14 0
+        - certifi 2020.6.20 pyhd3eb1b0_3
+        - ld_impl_linux-64 2.33.1 h53a641e_7
+        - libedit 3.1.20191231 h14c3975_1
+        - libffi 3.3 he6710b0_2
+        - libgcc-ng 9.1.0 hdf63c60_0
+        - libstdcxx-ng 9.1.0 hdf63c60_0
+        - ncurses 6.2 he6710b0_1
+        - openssl 1.1.1h h7b6447c_0
+        - python 3.8.5 h7579374_1
+        - readline 8.0 h7b6447c_0
+        - setuptools 50.3.0 py38h06a4308_1
+        - sqlite 3.33.0 h62c20be_0
+        - tk 8.6.10 hbc83047_0
+        - xz 5.2.5 h7b6447c_0
+        - zlib 1.2.11 h7b6447c_3
+    run:
+        - python >=3.8,<3.9.0a0
+        - setuptools
+        - wheel
+test:
+    commands:
+        - pip -h
+        - pip list
+    imports:
+        - pip
+about:
+    dev_url: https://github.com/pypa/pip
+    doc_url: https://pip.pypa.io/en/stable/
+    home: https://pip.pypa.io/en/stable/
+    license: MIT
+    license_family: MIT
+    license_file: LICENSE.txt
+    summary: PyPA recommended tool for installing Python packages
+extra:
+    copy_test_source_files: true
+    final: true
+    recipe-maintainers:
+        - jakirkham
+        - jjhelmus
+        - mingwandroid
+        - msarahan
+        - ocefpaf
+        - pelson

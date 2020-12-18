@@ -1,0 +1,53 @@
+pushd amalgamated
+
+if "%ARCH%"=="32" (
+set PLATFORM=x86
+) else (
+set PLATFORM=x64
+)
+
+:: build the shell
+cl ^
+    /DSQLITE_ENABLE_COLUMN_METADATA=1 ^
+    /DSQLITE_ENABLE_UNLOCK_NOTIFY ^
+    /DSQLITE_ENABLE_GEOPOLY ^
+    /DSQLITE_ENABLE_DBSTAT_VTAB=1 ^
+    /DSQLITE_ENABLE_FTS3_TOKENIZER=1 ^
+    -DSQLITE_SECURE_DELETE ^
+    /DSQLITE_MAX_VARIABLE_NUMBER=250000 ^
+    /DSQLITE_MAX_DEFAULT_PAGE_SIZE=32768 ^
+    /DSQLITE_ENABLE_JSON1 ^
+    /DSQLITE_ENABLE_FTS3 ^
+    /DSQLITE_ENABLE_FTS4 ^
+    /DSQLITE_ENABLE_FTS5 ^
+    /DSQLITE_ENABLE_RTREE ^
+    /DSQLITE_EXPORTS ^
+    shell.c sqlite3.c -Fesqlite3.exe
+
+:: build the dll and import lib
+cl ^
+    /DSQLITE_ENABLE_COLUMN_METADATA=1 ^
+    /DSQLITE_ENABLE_UNLOCK_NOTIFY ^
+    /DSQLITE_ENABLE_GEOPOLY ^
+    /DSQLITE_ENABLE_DBSTAT_VTAB=1 ^
+    /DSQLITE_ENABLE_FTS3_TOKENIZER=1 ^
+    -DSQLITE_SECURE_DELETE ^
+    /DSQLITE_MAX_VARIABLE_NUMBER=250000 ^
+    /DSQLITE_MAX_DEFAULT_PAGE_SIZE=32768 ^
+    /DSQLITE_ENABLE_JSON1 ^
+    /DSQLITE_ENABLE_FTS3 ^
+    /DSQLITE_ENABLE_FTS4 ^
+    /DSQLITE_ENABLE_FTS5 ^
+    /DSQLITE_ENABLE_RTREE ^
+    sqlite3.c -link -dll -out:sqlite3.dll -implib:sqlite3.lib
+
+if not exist %LIBRARY_BIN% mkdir %LIBRARY_BIN%
+if not exist %LIBRARY_INC% mkdir %LIBRARY_INC%
+if not exist %LIBRARY_LIB% mkdir %LIBRARY_LIB%
+
+COPY sqlite3.exe %LIBRARY_BIN% || exit 1
+COPY sqlite3.dll %LIBRARY_BIN% || exit 1
+COPY sqlite3.lib %LIBRARY_LIB% || exit 1
+COPY sqlite3.h   %LIBRARY_INC% || exit 1
+
+popd

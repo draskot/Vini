@@ -1,0 +1,25 @@
+
+COSMIC_PASS=`cat $WORKDIR/COSMIC_password` ; export COSMIC_PASS
+COSMICDB_USER=`cat $WORKDIR/COSMIC_email` ; export COSMICDB_USER
+
+
+#eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+
+#cp $WORKDIR/receptors_contracted ./
+
+cancer_type=`cat $WORKDIR/cancer_type`
+
+grep $cancer_type cross_references > tmp
+
+    
+tissue=`cat tmp | awk '{print $2}'`
+
+
+while read -r line
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    #python $vini_dir/get_gene_expression_parallel.py -g $Uniprot_ID -t $tissue -n 2
+done < receptors_contracted
+
+
+
