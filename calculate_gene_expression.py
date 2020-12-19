@@ -34,11 +34,11 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:o:", ["gene", "tissue="])
     except getopt.GetoptError:
-        print '-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>'
+        print ('-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>')
         sys.exit()
     for opt, arg in opts:
         if opt == '-h':
-            print '-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>'
+            print ('-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>')
             sys.exit()
         elif opt in ("-g", "--gene"):
             GENE_NAME = arg
@@ -57,7 +57,7 @@ def main(argv):
                 reader = csv.reader(open(csv_file), delimiter=",")
                 data.append([row for row in reader])
         except:
-            print "Z-score calculation for %s failed." % GENE_NAME
+            print ("Z-score calculation for %s failed." % GENE_NAME)
     else:
         data = None
 
@@ -67,13 +67,13 @@ def main(argv):
         expression_count= comm.gather(expression_count, root=0)
         zscore_sum = comm.gather(zscore_sum, root=0)
     except:
-        print "Error in MPI scatter or gather process"
+        print ("Error in MPI scatter or gather process")
         sys.exit()
 
     if rank == 0:
         try:
             average_zscore = sum(zscore_sum)/sum(expression_count)
-            print GENE_NAME
+            print (GENE_NAME)
             print('count number is {}'.format(sum(expression_count)))
             print('Z-score average is {}'.format(average_zscore))
             print('calculated in {:.3f} sec'.format(time.time() - t0))
@@ -82,7 +82,7 @@ def main(argv):
                 writer.writerow([GENE_NAME, average_zscore])
             return average_zscore
         except:
-            print "Error writing expression scores to CSV"
+            print ("Error writing expression scores to CSV")
             sys.exit(0)
 
 
