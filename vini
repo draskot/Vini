@@ -17,8 +17,6 @@ NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
 
-export COSMICDB_USER=`cat $WORKDIR/COSMIC_email`
-export COSMICDB_PASS=`cat $WORKDIR/COSMIC_password`
 
 data="_data"
 PDB=.pdb
@@ -166,7 +164,6 @@ do
                                      cp  $vini_dir/amber20/MDrun $vini_dir/amber20/process_mdout.pl  $vini_dir/amber20/*in ./
                            
                                      tleap -s -f tleap.in
-                                     echo "running Amber" ; sleep 100000
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit MDrun
                                      cat $WORKDIR/Vina > create_pdbqt_complex
                                      cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
@@ -181,7 +178,7 @@ do
 
                  let ligand_number++
                  echo "Waiting for" $USER "jobs to finish..."
-                 sh $vini_dir/wait_until_jobs_finish ${job_status} ${USER}
+                 sh $vini_dir/wait_until_jobs_finish
                  echo "done."
                  > $target_dir/vec                               #initialize affinity vector
                  MD_engine=`cat $WORKDIR/MD_engine`
@@ -220,21 +217,15 @@ do
                  fi
 
                  echo $target_dir > target_dir
-                 if  [ $CANCER_PATHWAY == hsa05244 ] #if SARS spike qlycoprotein, do not compute SLEM
-                 then
-                     SLEM=`cat $target_dir/vec`
-                 else
-                     cat Vina > create_energy_b
-                     cat $vini_dir/create_energy_binding_matrix >> create_energy_b
-                     chmod +x create_energy_b
-                     $job_submit create_energy_b 
-                     sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name} #Wait until EB matrix is created
-                     sleep 4   #allow EB matrix creation to finish
-                     /usr/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
-                     echo "processing data from COSMIC" ; sleep 10000
-                     eigenvalue=`cat $target_dir/E | awk '{print $2}'`
-                     SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
-                 fi
+                 cat Vina > create_energy_b
+                 cat $vini_dir/create_energy_binding_matrix >> create_energy_b
+                 chmod +x create_energy_b
+                 $job_submit create_energy_b 
+                 sh $vini_dir/wait_until_jobs_finish #Wait until EB matrix is created
+                 sleep 4   #allow EB matrix creation to finish
+                 /usr/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
+                 eigenvalue=`cat $target_dir/E | awk '{print $2}'`
+                 SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
                  case $therapy_level in
                      1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
                      2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
@@ -252,7 +243,7 @@ mv SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level          #data 
 cat $WORKDIR/Vina > postproc
 cat $vini_dir/analyse_results >> postproc
 chmod u+x postproc ; $job_submit $WORKDIR/postproc
-sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
+sh $vini_dir/wait_until_jobs_finish
 echo $therapy_level > $WORKDIR/computed_therapy_level
 echo $CANCER_TYPE > $WORKDIR/computed_cancer_type
 echo "done. The results are in " $WORKDIR/$CANCER_PATHWAY$a "directory."

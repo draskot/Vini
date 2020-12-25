@@ -76,11 +76,12 @@ if [ $nolines -ne $NULL ]
 then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
-read -p "enter max number of concurrent Autodock Vina jobs (each Vina job runs on  3 CPU cores):" max_jobs
 
-echo "if there are biotech drugs to analyse, Vini needs to perform MD (Molecular Dynamics) simulation jobs."
-echo "each MD simulations uses whole compute node to run."
-read -p "enter max number of concurrent MD jobs:" max_nodes
+read -p "enter maximum number of concurrent compute nodes Vini may use :" concurrent_nodes
+
+
+max_jobs=44 #for Autodock Vina
+max_nodes=4 #for Amber
 
 echo $max_jobs > $WORKDIR/max_jobs
 echo $max_nodes > $WORKDIR/max_nodes

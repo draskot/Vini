@@ -7,19 +7,19 @@ then
     Gromacs_queue=`cat $WORKDIR/Gromacs_queue`
     #Gromacs_pe=`cat $WORKDIR/Gromacs_pe`
     g_mmpbsa_queue=`cat $WORKDIR/g_mmpbsa_queue`
-    #g_mmpbsa_pe=`cat $WORKDIR/g_mmpbsa_pe`
     echo "The current mapping of Vini tasks on" $cluster "partitions is:"
-    echo "Vina_queue:" $Vina_queue "Gromacs_queue:" $Gromacs_queue "g_mmpbsa_queue:" $g_mmpbsa_queue
+    #echo "Queue for Autodock Vina:" $Vina_queue "Queue for MD simulations:" $Gromacs_queue "g_mmpbsa_queue:" $g_mmpbsa_queue
+    echo "Queue for Autodock Vina:" $Vina_queue "Queue for MD simulations:" $Gromacs_queue
 else
     echo "no mapping of my jobs on" $cluster "You will need to set it up now."
     echo "" ; echo "Available queues on" $cluster "are:"
     sinfo
-    read -p  "enter the name of queue Vina will use:" Vina_queue
+    read -p  "enter the name of queue Autodock Vina will use:" Vina_queue
     echo $Vina_queue > $WORKDIR/Vina_queue
-    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    read -p  "enter the name of queue for MD simulations:" Gromacs_queue
     echo $Gromacs_queue > $WORKDIR/Gromacs_queue
-    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
-    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+    #read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    #echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
 fi
 
 read -p "accept the current mapping (y/n)?" yesno
@@ -27,19 +27,19 @@ if  [ $yesno == "n" ]
 then
     echo "" ; echo "Available queues on" $cluster "are:"
     sinfo
-    read -p  "enter the name of queue Vina will use:" Vina_queue
+    read -p  "enter the name of queue Autodock Vina will use:" Vina_queue
     echo $Vina_queue > $WORKDIR/Vina_queue
-    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    read -p  "enter the name of queue for MD simulations:" Gromacs_queue
     echo $Gromacs_queue > $WORKDIR/Gromacs_queue
-    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
-    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+    #read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    #echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
 fi
 sleep 2
 
 echo ""
-echo "Vina, Gromacs and g_mmpbsa jobs can use several OMP threads on compute nodes."
+echo "Autodock Vina and other MD tools can use several OMP threads on compute nodes."
 echo "If you already used Vini on this system, you may use the number of threads from the previous Vini run."
-echo "Alternativelly, you may enter new values."
+echo "Otherwise you will need to  enter new values."
 
 if  [ -e $WORKDIR/Vina_threads ] ; then
     Vina_threads=`cat $WORKDIR/Vina_threads`
@@ -56,29 +56,29 @@ fi
 
 if  [ -e $WORKDIR/Gromacs_threads ] ; then
     Gromacs_threads=`cat $WORKDIR/Gromacs_threads`
-    echo "The number of Gromacs threads is currently set to" $Gromacs_threads
+    echo "The number of threads for MD on a certain compute node is currently set to" $Gromacs_threads
     read -p "accept or change (a/c)?" yesno
     if [ $yesno == c ] ; then
-       read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+       read -p "Please enter a new number of threads:" Gromacs_threads
        echo $Gromacs_threads > $WORKDIR/Gromacs_threads
     fi
 else
-    read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+    read -p "Please enter a new number of threads:" Gromacs_threads
     echo $Gromacs_threads > $WORKDIR/Gromacs_threads
 fi
 
-if  [ -e $WORKDIR/g_mmpbsa_threads ] ; then
-    g_mmpbsa_threads=`cat $WORKDIR/g_mmpbsa_threads`
-    echo "The number of g_mmpbsa_threads is currently set to" $g_mmpbsa_threads
-    read -p "accept or change (a/c)?" yesno
-    if [ $yesno == c ] ; then
-       read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
-       echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
-    fi
-else
-    read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
-    echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
-fi
+#if  [ -e $WORKDIR/g_mmpbsa_threads ] ; then
+#    g_mmpbsa_threads=`cat $WORKDIR/g_mmpbsa_threads`
+#    echo "The number of g_mmpbsa_threads is currently set to" $g_mmpbsa_threads
+#    read -p "accept or change (a/c)?" yesno
+#    if [ $yesno == c ] ; then
+#       read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+#       echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+#    fi
+#else
+#    read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+#    echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+#fi
 
 echo "#! /bin/bash"                           > $WORKDIR/Vina       #prepare Vina header file
 echo "#SBATCH --job-name=Vina"               >> $WORKDIR/Vina

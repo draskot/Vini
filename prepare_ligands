@@ -47,7 +47,7 @@ done
 cd $vini_dir
 
 user_name=$USER
-sh $vini_dir/wait_until_jobs_finish ${job_status} ${user_name}
+sh $vini_dir/wait_until_jobs_finish
 
 
 lineno=1
