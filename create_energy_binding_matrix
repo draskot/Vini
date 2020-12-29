@@ -16,14 +16,13 @@ do
             then
                  k=$(( $i + 1 ))
                  affinity_value=`sed -n ${k}p $target_dir/vec`
-                 printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #print affinity value into energy binding matrix
+                 printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #print affinity value into EB matrix
             else
                      if  [[ $therapy_level -eq 1 ]]
                      then
                          NUM=${i} ; let NUM++                                   #fetch receptor ID
                          line=`sed "${NUM}q;d" $WORKDIR/receptors_contracted`                 
                          receptor_ID=`echo "${line}" | awk '{print $1;}'`             
-                         #cat $vini_dir/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
                          cat $WORKDIR/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
                          while read -r line  #break when first word in line matches receptor_ID
                          do
@@ -33,20 +32,17 @@ do
                                  break
                              fi
                          done < $WORKDIR/temp_buf
+
                          target_ID=`echo "${line}" | awk '{print $2;}'`             
-                         relation_type=1                                          #Assuming all relations are the same 
+                         relation_type=1                    #Assuming all relations are the same 
                          target_ID1=${target_ID/.*}
                      fi
-                     if   [ "$target_ID1" = "$j" ]                                # if target ID and jth index loop are equal 
-                     then                                  
-                          if  [[ $therapy_level -eq 1 ]]                                     #compute relations only for the first run
-                          then
-                               printf "%s" ${relation_type}  " " >> $target_dir/EB_matrix  #write relation type
-                          else
-                               printf "%s" "0" " " >> $target_dir/EB_matrix
-                          fi
-                     else 
-                          printf "%s" "0" " " >> $target_dir/EB_matrix                     #else write 0 into energy binding matrix
+
+                     if  [[ "$target_ID1" = "$j"  ]] && [[ $therapy_level -eq 1 ]]
+                     then
+                         printf "%s" ${relation_type} " " >> $target_dir/EB_matrix #write relation type
+                     else
+                         printf "%s" "0" " " >> $target_dir/EB_matrix  #else write 0 into EB matrix
                      fi
             fi
       let "j++"

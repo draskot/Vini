@@ -26,19 +26,20 @@ b=`basename $PATHWAY_FILE`
 
 echo -n "Preparing initial receptor / relation files..."
 
-
-
 grep -P '^(?=.*entry)(?=.*gene)' $PATHWAY_FILE | sed 's/type=\"gene\"//'  | sed 's/\"//;s/\"//;s/\"//;s/\"//'  | sed 's/<entry//' | sed 's/id=//' | sed 's/name=//' > $WORKDIR/receptors
-
 
 grep -P '^(?=.*entry)(?=.*compound)' $PATHWAY_FILE | sed 's/type=\"compound\"//' | sed 's/\"//;s/\"//;s/\"//;s/\"//'  | sed 's/<entry//' | sed 's/id=//' | sed 's/name=//' | sed 's/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://'>> $WORKDIR/receptors
 
-
 grep -P '^(?=.*entry)(?=.*relation)' $PATHWAY_FILE | sed 's/<relation entry1=//;s/entry2=//;s/type=//;s/>//;s/\"//;s/\"//;s/\"//;s/\"//;s/\"//;s/\"//' | sed 's/rel//'  > $WORKDIR/relations #Create relations file
-
 
 rm -f $PATHWAY_FILE
 
+#KEGG entry and relation types: https://www.genome.jp/kegg/xml/docs/
+#PPrel 	protein-protein interaction, such as binding and modification
+#GErel 	gene expression interaction, indicating relation of transcription factor and target gene product
+#ECrel 	enzyme-enzyme relation, indicating two enzymes catalyzing successive reaction steps
+#PCrel 	protein-compound interaction
+#maplink 	link to another map
 
 while read -r line_relations                                #we will keep only relations within given pathway
 do
