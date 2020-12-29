@@ -12,7 +12,7 @@ import csv_splitter
 
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
-TOKEN_NUMBER = "85556658146640780929547938673376802"
+TOKEN_NUMBER = "572750707965995749895797144042780707"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
@@ -51,13 +51,13 @@ def getGeneExpressions(GENE_NAME, COSMIC_GENE_ID):
                                                                                           "token=" + TOKEN_NUMBER)
         print ('Downloading gene expressions from CosmicDB')
         r = requests.get(download_url)
-        #print ('Cosmic response: %s', (r.status_code))
         if r.text != "No data available." and r.status_code == 200:
             filename = getGeneFileName(GENE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
             return filename
         else:
+            print ('Cosmic response: %s', (r.status_code))
             print "Unsuccessful download from CosmicDB for gene % s" % GENE_NAME
     except:
         return False
@@ -73,7 +73,7 @@ def getTissueSampleFeatures(TISSUE_NAME):
         print ('Downloading tissue samples from CosmicDB')
         r = requests.get(download_url)
 
-        if r.text and r.status_code == 200:
+        if r.text != "No data available." and r.status_code == 200:
             filename = getTissueFileName(TISSUE_NAME)
             with open(filename, 'wb') as f:
                 f.write(r.content)
@@ -131,8 +131,8 @@ def main(argv):
             geneFile = getGeneExpressions(GENE_NAME, COSMIC_GENE_ID)
             if geneFile:
                 print 'Gene expressions saved in file: %s' % geneFile
-            # split CSV into N files (N number of CPU cores)
-            splitGeneExpressionCSV(GENE_NAME, nprocs)
+                # split CSV into N files (N number of CPU cores)
+                splitGeneExpressionCSV(GENE_NAME, nprocs)
         except:
             print ("Unsuccessful download of gene %s from CosmicDB." % GENE_NAME)
 
