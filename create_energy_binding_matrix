@@ -11,41 +11,41 @@ while [ $i -lt $Dim ]
 do
       j=0                                                                         #j is the column index
       while [ $j -lt $Dim ]    
-	      do
-            if   [ $i -eq $j ]
-            then
-                 k=$(( $i + 1 ))
-                 affinity_value=`sed -n ${k}p $target_dir/vec`
-                 printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #print affinity value into EB matrix
-            else
-                     if  [[ $therapy_level -eq 1 ]]
-                     then
-                         NUM=${i} ; let NUM++                                   #fetch receptor ID
-                         line=`sed "${NUM}q;d" $WORKDIR/receptors_contracted`                 
-                         receptor_ID=`echo "${line}" | awk '{print $1;}'`             
-                         cat $WORKDIR/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
-                         while read -r line  #break when first word in line matches receptor_ID
-                         do
-                             first_word=`echo "${line}" | awk '{print $1;}'`             
-                             if  [ $first_word -eq $receptor_ID ]  
-                             then
-                                 break
-                             fi
-                         done < $WORKDIR/temp_buf
+      do
+          if   [ $i -eq $j ]
+          then
+              k=$(( $i + 1 ))
+              affinity_value=`sed -n ${k}p $target_dir/vec`
+              printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #print affinity value into EB matrix
+          else
+              if  [[ $therapy_level -eq 1 ]]
+              then
+                  NUM=${i} ; let NUM++                                   #fetch receptor ID
+                  line=`sed "${NUM}q;d" $WORKDIR/receptors_contracted`                 
+                  receptor_ID=`echo "${line}" | awk '{print $1;}'`             
+                  cat $WORKDIR/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
+                  while read -r line  #break when first word in line matches receptor_ID
+                  do
+                      first_word=`echo "${line}" | awk '{print $1;}'`             
+                      if  [ $first_word -eq $receptor_ID ]  
+                      then
+                          break
+                      fi
+                  done < $WORKDIR/temp_buf
 
-                         target_ID=`echo "${line}" | awk '{print $2;}'`             
-                         relation_type=1                    #Assuming all relations are the same 
-                         target_ID1=${target_ID/.*}
-                     fi
+                  target_ID=`echo "${line}" | awk '{print $2;}'`             
+                  genex=`echo "${line}" | awk '{print $4;}'`
+                  target_ID1=${target_ID/.*}
+              fi
 
-                     if  [[ "$target_ID1" = "$j"  ]] && [[ $therapy_level -eq 1 ]]
-                     then
-                         printf "%s" ${relation_type} " " >> $target_dir/EB_matrix #write relation type
-                     else
-                         printf "%s" "0" " " >> $target_dir/EB_matrix  #else write 0 into EB matrix
-                     fi
-            fi
-      let "j++"
+              if  [[ "$target_ID1" = "$j"  ]] && [[ $therapy_level -eq 1 ]]
+              then
+                  printf "%s" ${genex} " " >> $target_dir/EB_matrix #write expression
+              else
+                  printf "%s" "0" " " >> $target_dir/EB_matrix  #else write 0 into EB matrix
+              fi
+          fi
+          let "j++"
       done
 printf '%s\n' >> $target_dir/EB_matrix
 echo -n "$i "

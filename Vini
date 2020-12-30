@@ -6,6 +6,9 @@ echo ; sleep 1
 
 WORKDIR=`cat workdir`
 max_therapy_level=`cat $WORKDIR/max_therapy_level`
+cores=`cat $WORKDIR/cores`
+job_submit=`cat $WORKDIR/job_submit`
+
 
 data="_data"
 
@@ -31,6 +34,11 @@ do
 
             sh create_relations_receptors_files   #Creates relations, receptors and receptors_expanded files
             sh repository_check          #Create receptors_contracted file
+            sh get_gene_expressions_from_CosmicDB ${cores}
+            eval $job_submit calculate_z_scores
+            sh wait_until_jobs_finish
+            sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
+            sh add_expressions_to_relations     #add gene expressions to relations file
 
             sh copy_genes_to_stage                   #Copy Vina pdb receptor files to the stage
             sh create_receptor_pdbqt_files                  #Creating initial receptor pdbqt files
@@ -52,6 +60,11 @@ do
 
         sh create_relations_receptors_files  #Creates relations, receptors and receptors_expanded files
         sh repository_check                              #Create receptors_contracted files
+        sh get_gene_expressions_from_CosmicDB ${cores}
+        eval $job_submit calculate_z_scores
+        sh wait_until_jobs_finish
+        sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
+        sh add_expressions_to_relations     #add gene expressions to relations file
 
         sh copy_genes_to_stage                           #Copy Vina pdb receptor files to the stage
         sh create_receptor_pdbqt_files                       #Creating initial receptor pdbqt files
@@ -78,9 +91,12 @@ do
         then
             sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
             sh repository_check                 #Create receptors_contracted file
-            cores=24 ; sh get_gene_expressions ${cores}
-            sbatch calculate_z_scores
+
+            STORE1=$PYTHONPATH ; unset PYTHONPATH
+            sh get_gene_expressions_from_CosmicDB ${cores}
+            $job_submit calculate_z_scores
             sh wait_until_jobs_finish
+            export PYTHONPATH=$STORE1 ; rm genex.out
             sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
             sh add_expressions_to_relations     #add gene expressions to relations file
             sh copy_genes_to_stage              #Copy Vina pdb receptor files to the stage
@@ -97,7 +113,9 @@ do
     fi
 done
 
+mv $vini_dir/ligands/ligands_list.sav $vini_dir/ligands/ligands_list
+
 cd $WORKDIR 
-rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands Vina target_dir ultradock stats prediction_list analysis_type max_jobs workload_manager  max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q* max_nodes MD_engine tmp computed_cancer_type success Vina_run
+rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands Vina target_dir ultradock stats prediction_list analysis_type max_jobs workload_manager  max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q* nodes MD_engine tmp computed_cancer_type success Vina_run rm complex_*
 cd $vini_dir
 rm -f partition workdir

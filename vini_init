@@ -8,11 +8,37 @@ else
     #!/bin/bash
 fi
 
+
+echo "Vini needs to cancel all" $USER "jobs running on compute nodes."
+read -p "ok to continue? (y/n)" yesno
+if  [ $yesno == y ]
+then
+    scancel -u $USER
+else
+    exit
+fi 
+
+cd $WORKDIR #Cleanup
+rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type GIBBS Gibbs_values job_submit ligands_list max_therapy_level nr_complexes nr_ligands PYTHON_HOME job_status receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level workload_manager Vina complex_???.jo* nohup.out temp_buf debuglog
+cd $vini_dir
+
 cat COPYRIGHT
 
 NULL=0
 ONES=1
+THREE=3
 HSA=hsa
+
+read -p "Enter the number of cpu cores per compute node:" cores
+echo $cores > $WORKDIR/cores
+read -p "enter maximum number of compute nodes Vini may use concurrently:" nodes
+echo $nodes > $WORKDIR/nodes
+max_jobs=`echo $nodes $cores | awk '{print $1 * $2}'` #max nr of jobs Autodock Vina can use
+max_jobs=`echo $max_jobs $THREE | awk '{print $1 / $2}'` #max nr of jobs Autodock Vina can use
+echo $max_jobs > $WORKDIR/max_jobs
+echo "Maximum number of Autodock Vina jobs allowed is" $max_jobs
+
+sleep 2
 
 conda --version 2&> tmp #checking if conda is already installed
 grep "command not found" tmp > tmp2 ; mv tmp2 tmp
@@ -42,9 +68,6 @@ else
     echo $WORKDIR > workdir
 fi 
 
-cd $WORKDIR #Cleanup
-rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type GIBBS Gibbs_values job_submit ligands_list max_therapy_level nr_complexes nr_ligands max_jobs  PYTHON_HOME job_status receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level workload_manager Vina complex_???.jo* nohup.out temp_buf debuglog
-cd $vini_dir
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 cp 1aki.sav $HOME/1AKI.pdb
@@ -55,7 +78,21 @@ echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of hom
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
 #read -p "which job submission system are you using? Enter 1 for SLURM, 2 for PBS/Torque, 3 for SGE:" JSS
-read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS #PBS not tested
+sinfo | grep "command not found" > tmp #try to find which workload manager is running
+nolines=`wc -l < tmp`
+if  [ $nolines -eq $NULL ]
+then
+    JSS=1 #SLURM is running
+else
+    if [ -d /opt/sge ]
+    then
+        JSS=3 # SGE is running
+    else
+        JSS=2 # PBS is running
+    fi
+fi
+
+#read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS #PBS not tested
 read -p "run Ambertools instead Gromacs/g_mmpbsa? (y/n)" amber
 if [ $amber == y ]
 then
@@ -77,14 +114,6 @@ then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
 
-read -p "enter maximum number of concurrent compute nodes Vini may use :" concurrent_nodes
-
-
-max_jobs=44 #for Autodock Vina
-max_nodes=4 #for Amber
-
-echo $max_jobs > $WORKDIR/max_jobs
-echo $max_nodes > $WORKDIR/max_nodes
 
 echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
 read -p "Allready registered (y/n)?" yesno
@@ -127,7 +156,9 @@ else
     fi
 fi
 
+cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
 sh download_Drugbank_structures
+
 
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
 read -p "Allready registered (y/n)?" yesno
