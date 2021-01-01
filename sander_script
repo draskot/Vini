@@ -1,0 +1,58 @@
+target_dir=$1
+comp_index=$2
+recline=$3
+date=`date` ; ligand=`basename "$PWD"`
+echo "FBE_calc job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+STOREPATH=$PYTHONPATH
+source /scratch/opt2/amber20/amber.sh
+module load python-Numpy/Numpy-1.14.6
+
+#MD prep ************************************************************************************
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i min.in -o min.out -p COMP_solvated.prmtop -c COMP_solvated.inpcrd -r min.rst -ref COMP_solvated.inpcrd
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i heat.in -o heat.out -p COMP_solvated.prmtop -c min.rst -r heat.rst -x heat.mdcrd -ref min.rst
+
+gzip -d heat.mdcrd.gz
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i density.in -o density.out -p COMP_solvated.prmtop -c heat.rst -r density.rst -x density.mdcrd -ref heat.rst
+
+gzip -d density.mdcrd.gz
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i equil.in -o equil.out -p COMP_solvated.prmtop -c density.rst -r equil.rst -x equil.mdcrd
+
+gzip -d equil.mdcrd.gz
+
+./process_mdout.pl heat.out density.out equil.out
+cat summary.DENSITY | awk 'NR > 50 { print }' > tmp ; mv tmp summary.DENSITY
+
+#MD prod ************************************************************************************
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod1.out -p COMP_solvated.prmtop -c equil.rst -r prod1.rst -x prod1.mdcrd
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod2.out -p COMP_solvated.prmtop -c prod1.rst -r prod2.rst -x prod2.mdcrd
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod3.out -p COMP_solvated.prmtop -c prod2.rst -r prod3.rst -x prod3.mdcrd
+
+mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod4.out -p COMP_solvated.prmtop -c prod3.rst -r prod4.rst -x prod4.mdcrd
+
+
+#MMPBSA *************************************************************************************
+
+$AMBERHOME/bin/MMPBSA.py -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd
+if [ -f FINAL_RESULTS_MMPBSA.dat ]
+then
+    line=`head -100 FINAL_RESULTS_MMPBSA.dat | grep "DELTA TOTAL"`
+    DG=`echo $line | awk '{print $3}'`
+else
+    DG=-7.0 #free binding energy computation failed, setting -7.0 kcal/mol value
+fi
+echo ${DG} > ${target_dir}/log_${comp_index}.txt
+
+date=`date`
+line=`head -"$recline" $WORKDIR/receptors_contracted | tail -1`
+receptor=`echo $line | awk '{print $3}'`
+echo "dG for complex with" $receptor "is" dG ".Job finished on " $date >> $WORKDIR/debuglog
+module unload python-Numpy/Numpy-1.14.6
+export PYTHONPATH=$STOREPATH
