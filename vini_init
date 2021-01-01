@@ -77,7 +77,7 @@ mkdir -p ./genes/pdb_files
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
-#read -p "which job submission system are you using? Enter 1 for SLURM, 2 for PBS/Torque, 3 for SGE:" JSS
+read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS
 sinfo | grep "command not found" > tmp #try to find which workload manager is running
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
@@ -86,13 +86,12 @@ then
 else
     if [ -d /opt/sge ]
     then
-        JSS=3 # SGE is running
+        JSS=2 # SGE is running
     else
-        JSS=2 # PBS is running
+        echo "not supported, exiting" ; exit
     fi
 fi
 
-#read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS #PBS not tested
 read -p "run Ambertools instead Gromacs/g_mmpbsa? (y/n)" amber
 if [ $amber == y ]
 then
@@ -104,7 +103,7 @@ fi
 case $JSS in
      1) echo "SLURM" > $WORKDIR/workload_manager; echo "squeue" > $WORKDIR/job_status; echo "sbatch" > $WORKDIR/job_submit; echo "scancel" > $WORKDIR/job_cancel ; sh prepare_SLURM_scripts ;;
      2) echo "SGE" > $WORKDIR/workload_manager;  echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_SGE_scripts ;;
-     3) echo "PBS" > $WORKDIR/workload_manager;  echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
+#     3) echo "PBS" > $WORKDIR/workload_manager;  echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
 esac
 
 $job_status > tmp
@@ -159,7 +158,6 @@ fi
 cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
 sh download_Drugbank_structures
 
-
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
 read -p "Allready registered (y/n)?" yesno
 if  [ $yesno == "n" ]
@@ -180,8 +178,6 @@ else
     fi
 fi
 
-
-
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
 #easy_install --user pip
@@ -192,7 +188,6 @@ fi
 touch -a $WORKDIR/computed_therapy_level
 touch -a $WORKDIR/computed_cancer_type
 computed_therapy_level=`cat $WORKDIR/computed_therapy_level`
-
 
 echo -n "delete all data previously created by Vini)? (y/n)"
 read erase
