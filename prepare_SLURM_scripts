@@ -126,7 +126,7 @@ cat $vini_dir/g_mmpbsa_polar_energy_script      >> g_mmpbsa_polar_energy
 chmod u+x                                          g_mmpbsa_polar_energy
 
 cp g_mmpbsa_slurm_script                           g_mmpbsa_apolar_energy
-cat $vini_dir/g_mmpbsa_apolar_energy_script               >> g_mmpbsa_apolar_energy
+cat $vini_dir/g_mmpbsa_apolar_energy_script     >> g_mmpbsa_apolar_energy
 chmod u+x                                          g_mmpbsa_apolar_energy
 
 cp g_mmpbsa_slurm_script                           compute_FBE
