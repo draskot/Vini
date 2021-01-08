@@ -46,12 +46,11 @@ do
         echo "entry" $line "will be not analysed. Original list will be saved to $vini_dir/ligands/ligands_list.sav"
     fi
 done < $vini_dir/ligands/ligands_list
-
 mv $WORKDIR/ligands_list.tmp $vini_dir/ligands/ligands_list
 
+lineno=1
 while read -r line
 do
-    line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1` #get drugname
     drugname=`echo $line | awk -F','   '{print $1}'`
     echo $drugname > test ; words=`wc -w < test` ; rm test          #put a question mark if 2 words
     if  [ $words -eq 2 ] #then put ? in between
@@ -66,7 +65,8 @@ do
         echo $drugname "already in repo."
     else
         echo -n "searching for" $drugname "in Drugbank..."
-        echo "grep" "\"$drugname\"" "drug?links.csv" > search
+         
+        echo "grep -w" "\"$drugname\"" "drug?links.csv" > search
         sh search > tmp
         inlines=`wc -l < $vini_dir/tmp`   #there may be several lines with a same drug name
         if  [ $inlines -gt $NULL ]
@@ -104,10 +104,12 @@ do
                 fi
             fi
         else
-            echo -n "drug not found. Entry will be deleted from the list..." 
+            echo -n "drug not found. Entry will be commented." 
             awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
             mv tmp $vini_dir/ligands/ligands_list
         fi
     fi
+    let "lineno++"
 done < $vini_dir/ligands/ligands_list
+
 rm -f tmp.csv tmp search

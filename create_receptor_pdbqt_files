@@ -4,7 +4,7 @@ pdbqt=.pdbqt
 cancer_type=`cat $WORKDIR/cancer_type`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
-MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
+max_jobs=`cat $WORKDIR/max_jobs`
 
 echo "Creating receptor pdbqt files..."
 cd $WORKDIR/$cancer_type$data
@@ -21,7 +21,7 @@ do
     let "k++"
     chmod +x Vina_run
     $job_submit Vina_run
-    sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+    sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
 done
 
 

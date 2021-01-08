@@ -3,18 +3,8 @@ pdb=.pdb
 pdbqt=.pdbqt
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
-MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
+max_jobs=`cat $WORKDIR/max_jobs`
 na="NA"
-
-cd $WORKDIR
-echo -n "checking for ligands_list file..."
-if [ -e $vini_dir/ligands/ligands_list ] 
-then
-    cp $vini_dir/ligands/ligands_list $WORKDIR
-    echo "present."
-else
-    echo "you must provide ligand list. Exiting..." ; exit
-fi
 
 rm -f ligands_contracted
 
@@ -27,28 +17,18 @@ for j in $WORKDIR/ligand_*.pdb
 do
     line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
     process=`echo $line | cut -c1`
-    if [ $process != "#" ]               #process drug entry if not commented
+    flag=`echo $line | awk -F',' '{print $2}'`
+    if [ $process != "#" ] && [ $flag == S ] #process drug if not commented and small molecule
     then
-        flag=`echo $line | awk -F',' '{print $2}'`
-        if [ $flag == S ]  #if a drug is small molecule, we are creating pdbqt files for Vina
-        then
-            b=`basename $j .pdb`
-            cat Vina > Vina_run
-            echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $WORKDIR/$b.pdb -o $WORKDIR/$b.pdbqt"  >> Vina_run
-            chmod +x Vina_run
-            $job_submit Vina_run
-        fi
-        let "lineno++"
-        sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+        b=`basename $j .pdb`
+        cat Vina > Vina_run
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $WORKDIR/$b.pdb -o $WORKDIR/$b.pdbqt"  >> Vina_run
+        chmod +x Vina_run
+        $job_submit Vina_run
     fi
+    let "lineno++"
+    sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
 done
-
-
-cd $vini_dir
-
-user_name=$USER
-sh $vini_dir/wait_until_jobs_finish
-
 
 lineno=1
 for j in $WORKDIR/ligand_*.pdb  #final check

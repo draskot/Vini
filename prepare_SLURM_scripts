@@ -25,16 +25,15 @@ fi
 
 cd $WORKDIR
 
-echo "#! /bin/bash"                           > Vina       #prepare Vina header file
+echo "#! /bin/bash"                           > Vina  #prepare header file for Autodock Vina related jobs
 echo "#SBATCH --job-name=Vina"               >> Vina
 echo "#SBATCH --output=Vina.out"             >> Vina
 echo "#SBATCH --time=24:00:00"               >> Vina
-echo "#SBATCH --ntasks-per-node=1"           >> Vina
 echo "#SBATCH --cpus-per-task=3"             >> Vina
 echo "#SBATCH --mem=4gb"                     >> Vina
 echo "#SBATCH --partition="$Vini_queue       >> Vina
 echo "WORKDIR=$WORKDIR"                      >> Vina
-echo "source $HOME/.bashrc"                  >> Vina
+chmod u+x                                       Vina
 
 
 echo "#! /bin/bash"                           > $vini_dir/calculate_z_scores #prep calculate_z_scores script
@@ -75,7 +74,7 @@ echo "#SBATCH --mem=48gb"                    >> MD_prepare
 echo "#SBATCH --partition="$Vini_queue       >> MD_prepare
 echo "WORKDIR=$WORKDIR"                      >> MD_prepare
 echo "source $HOME/.bashrc"                  >> MD_prepare
-cat MD_prepare_script                        >> MD_prepare
+cat $vini_dir/MD_prepare_script              >> MD_prepare
 chmod u+x                                       MD_prepare
 
 echo "#! /bin/bash"                           > MD_run
@@ -89,7 +88,7 @@ echo "#SBATCH --mem=48gb"                    >> MD_run
 echo "#SBATCH --partition="$Vini_queue       >> MD_run
 echo "WORKDIR=$WORKDIR"                      >> MD_run
 echo "source $HOME/.bashrc"                  >> MD_run
-cat MD_run_script                            >> MD_run
+cat $vini_dir/MD_run_script                  >> MD_run
 chmod u+x                                       MD_run
 
 echo "#! /bin/bash"                           > create_index_file
@@ -102,7 +101,7 @@ echo "#SBATCH --mem=48gb"                    >> create_index_file
 echo "#SBATCH --partition="$Vini_queue       >> create_index_file
 echo "WORKDIR=$WORKDIR"                      >> create_index_file
 echo "source $HOME/.bashrc"                  >> create_index_file
-cat create_index_file_script                 >> create_index_file
+cat $vini_dir/create_index_file_script       >> create_index_file
 chmod u+x                                       create_index_file
 
 echo "#! /bin/bash"                            > g_mmpbsa_slurm_script

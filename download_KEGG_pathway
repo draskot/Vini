@@ -29,6 +29,7 @@ else
                 echo -n "updating KEGG pathway..." 
                 cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
                 cp $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+                rm -f $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
                 echo "done."
             else
                 echo  "no change."

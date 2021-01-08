@@ -8,7 +8,7 @@ echo $USER "jobs remaining: "
 while true
 do
      sleep 1
-     eval $job_status -u $USER > $WORKDIR/temp2_buf
+     $job_status -u $USER > $WORKDIR/temp2_buf
      grep $USER $WORKDIR/temp2_buf > $WORKDIR/tmp
      lines=`wc -l < $WORKDIR/tmp`
      echo -n $lines ; echo -n " "
