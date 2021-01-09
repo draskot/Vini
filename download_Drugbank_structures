@@ -39,13 +39,14 @@ fi
 while read -r line #remove from the ligands list any entry starting with #
 do
     process=`echo $line | cut -c1`
-    if [ $process != "#" ]    #proceed if entry not commented
+    if [ $process != "#" ]    #process drug if not commented
     then
         echo $line >> $WORKDIR/ligands_list.tmp
     else
-        echo "entry" $line "will be not analysed. Original list will be saved to $vini_dir/ligands/ligands_list.sav"
+        echo "drug" $line "will be not analysed."
     fi
 done < $vini_dir/ligands/ligands_list
+#cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav #saving original ligands list
 mv $WORKDIR/ligands_list.tmp $vini_dir/ligands/ligands_list
 
 lineno=1

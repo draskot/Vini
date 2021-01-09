@@ -22,6 +22,15 @@ else
     echo "you must provide ligand list. Exiting..." ; exit
 fi
 
+echo "Vini needs to cancel all previous jobs from user" $USER
+read -p "ok to continue? (y/n)" yesno
+if  [ $yesno == y ]
+then
+    scancel -u $USER
+else
+    exit
+fi 
+
 echo -n "Trying to determine which job submission system is running..."
 sinfo | grep "command not found" > tmp #try to find which workload manager is running
 nolines=`wc -l < tmp`
@@ -50,14 +59,6 @@ grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | a
 cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
 echo "found" $cores "per compute node." ; rm find_nr_cores *out
 
-echo "Vini needs to cancel all previous jobs from user" $USER
-read -p "ok to continue? (y/n)" yesno
-if  [ $yesno == y ]
-then
-    scancel -u $USER
-else
-    exit
-fi 
 
 cd $WORKDIR #Cleanup
 rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type max_therapy_level nr_complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf debuglog
@@ -165,9 +166,8 @@ else
 fi
 
 cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
+
 sh download_Drugbank_structures
-
-
 
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
 read -p "Allready registered (y/n)?" yesno
@@ -251,11 +251,7 @@ echo -n "Choose therapy level (1 for single drug therapy, 2 for two drugs therap
 read max_therapy_level
 echo $max_therapy_level > $WORKDIR/max_therapy_level
 
-#DIR=$vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
-#mkdir -p $DIR
-#sh download_KEGG_pathway  
-
-sh copy_ligands_to_stage 
+sh prepare_ligands 
 
 stop=`cat $WORKDIR/stop`
 if [ $stop == $ONES ]

@@ -1,14 +1,14 @@
 target_dir=$1
 comp_index=$2
 recline=$3
-date=`date` ; ligand=`basename "$PWD"`
-echo "FBE_calc job for ligand" $ligand "started at" $date >> $WORKDIR/debuglog
+
+date=`date` ; echo "DG calculation started at" $date >> $WORKDIR/debuglog
 
 STOREPATH=$PYTHONPATH
 source /scratch/opt2/amber20/amber.sh
 module load python-Numpy/Numpy-1.14.6
 
-#MD prep ************************************************************************************
+#step 1) equilibration and heating ******************************************************
 
 mpirun -np $SLURM_NTASKS sander.MPI -O -i min.in -o min.out -p COMP_solvated.prmtop -c COMP_solvated.inpcrd -r min.rst -ref COMP_solvated.inpcrd
 
@@ -27,7 +27,7 @@ gzip -d equil.mdcrd.gz
 ./process_mdout.pl heat.out density.out equil.out
 cat summary.DENSITY | awk 'NR > 50 { print }' > tmp ; mv tmp summary.DENSITY
 
-#MD prod ************************************************************************************
+#step 2) Molecular dynamics *****************************************************************************
 
 mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod1.out -p COMP_solvated.prmtop -c equil.rst -r prod1.rst -x prod1.mdcrd
 
@@ -37,8 +37,7 @@ mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod3.out -p COMP_solvated.
 
 mpirun -np $SLURM_NTASKS sander.MPI -O -i prod.in -o prod4.out -p COMP_solvated.prmtop -c prod3.rst -r prod4.rst -x prod4.mdcrd
 
-
-#MMPBSA *************************************************************************************
+#free binding energy calculation **********************************************************
 
 $AMBERHOME/bin/MMPBSA.py -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd
 if [ -f FINAL_RESULTS_MMPBSA.dat ]
@@ -53,6 +52,6 @@ echo ${DG} > ${target_dir}/log_${comp_index}.txt
 date=`date`
 line=`head -"$recline" $WORKDIR/receptors_contracted | tail -1`
 receptor=`echo $line | awk '{print $3}'`
-echo "dG for complex with" $receptor "is" dG ".Job finished on " $date >> $WORKDIR/debuglog
+echo "DG computed for complex with" $receptor "is" $dG ".Job finished on " $date >> $WORKDIR/debuglog
 module unload python-Numpy/Numpy-1.14.6
 export PYTHONPATH=$STOREPATH

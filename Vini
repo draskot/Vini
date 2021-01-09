@@ -112,6 +112,7 @@ do
         end_date=`date`
         echo "Analysis completed at"  $end_date
     else
+
         echo $cancer_type > $WORKDIR/cancer_type
         CANCER_PATHWAY=$ORGANISM$cancer_type
         mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type

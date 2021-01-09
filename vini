@@ -3,6 +3,7 @@ ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type f
 therapy_level=`cat $WORKDIR/therapy_level`          #Current therapy level received from Vini
 max_therapy_level=`cat $WORKDIR/max_therapy_level`  #single or multidrug (2,3,4) cancer therapy
 CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE       #setting the cancer pathway
 job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
 job_submit=`cat $WORKDIR/job_submit`
 user_name=$USER
@@ -17,15 +18,13 @@ export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
 
 data="_data"
+a="_results"                               #Create directory store for results
 PDB=.pdb
 pdbqt=.pdbqt
 NULL=0
-const=4.184 #KJoul to kcal conversion factor
 DIR=$WORKDIR/$CANCER_TYPE$data 
 lig_source=$WORKDIR
 
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE       #setting the cancer pathway
-a="_results"                               #Create directory store for results
 
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 cd $WORKDIR
@@ -149,9 +148,8 @@ do
                                  else #calculate protein-protein DG with Amber
                                      cp $vini_dir/nodes_control_script $vini_dir/docking.mac ./
                                      cp $vini_dir/amber20/* $WORKDIR/sander ./
-
-                                     #cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
-                                     cp $vini_dir/1aki.pdb ./receptor.pdb #DELETE AFTER DEBUG!!!
+                                     cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
+                                     #cp $vini_dir/1aki.pdb ./receptor.pdb #DELETE AFTER DEBUG!!!
                                      cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
                                      grep -v HETATM receptor.pdb > tmp ; mv tmp receptor.pdb
                                      grep -v HETATM ligand.pdb > tmp ; mv tmp ligand.pdb
@@ -164,17 +162,17 @@ do
 
                                      echo -n "Generating protein complex with Hex, please wait..." 
                                      hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                     cat $WORKDIR/Vina > create_pdbqt_complex #create pdbqt for the next run
+                                     cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
+                                     chmod u+x create_pdbqt_complex
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
+
                                      reduce -Trim receptor.pdb > tmp ; mv tmp receptor.pdb
                                      reduce -Trim ligand.pdb > tmp ; mv tmp ligand.pdb
                                      reduce -Trim complex.pdb > tmp ; mv tmp complex.pdb
-
                                      tleap -s -f tleap.in
-
+                                     #echo "brakepoint" ; sleep 100000
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit sander
-                                     #cat $WORKDIR/Vina > create_pdbqt_complex
-                                     #cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
-                                     #chmod u+x create_pdbqt_complex
-                                     #sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
                                  fi
                              fi
                         fi

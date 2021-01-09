@@ -22,18 +22,19 @@ else
 
         if [ $lineno != 0 ]
         then
-            echo "pathway file already exist, but the new version is available."
-            read -p "Do you want to permanently update KEGG pathway? (y/n)" yesno
-            if  [ $yesno == "y" ]
-            then
-                echo -n "updating KEGG pathway..." 
-                cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
-                cp $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
-                rm -f $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
-                echo "done."
-            else
-                echo  "no change."
-            fi     
+            echo "Newer version of KEGG pathway found. Old KEGG pathway will be replaced by new one."
+            #read -p "Do you want to permanently update KEGG pathway? (y/n)" yesno
+            #if  [ $yesno == "y" ]
+            #then
+             echo -n "updating KEGG pathway..." 
+             cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
+             cp $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+             echo "done."
+             echo "Existing gene expression values will be deleted."
+             rm -f $vini_dir/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
+            #else
+            #    echo  "no change."
+            #fi     
         fi
     else
         echo "KEGG pathway file does not exists, creating new one."
