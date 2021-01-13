@@ -1,78 +1,64 @@
 
-pdb=.pdb
-pdbqt=.pdbqt
+NULL=0
+ONES=1
+HASH="#"
+
+
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
-MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs`
-na="NA"
+max_jobs=`cat $WORKDIR/max_jobs`
 
 cd $WORKDIR
-echo -n "checking for ligands_list file..."
-if [ -e $vini_dir/ligands/ligands_list ] 
-then
-    cp $vini_dir/ligands/ligands_list $WORKDIR
-    echo "present."
-else
-    echo "you must provide ligand list. Exiting..." ; exit
-fi
 
-rm -f ligands_contracted
 
-echo "yes" > $WORKDIR/success
-
-echo -n "Please wait while creating ligand pdbqt files..."
-
-lineno=1
-for j in $WORKDIR/ligand_*.pdb
+j=1 ; b='ligand_'
+while  read -r line
 do
-    line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
-    process=`echo $line | cut -c1`
-    if [ $process != "#" ]               #process drug entry if not commented
+    printf -v i "%03d" $j
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    flag=`echo $line | awk -F',' '{print $2}'`
+
+    echo $drugname > test ; words=`wc -w < test` ; rm test          #put a question mark if 2 words
+    if  [ $words -eq 2 ] #then put ? in between
     then
-        flag=`echo $line | awk -F',' '{print $2}'`
-        if [ $flag == S ]  #if a drug is small molecule, we are creating pdbqt files for Vina
-        then
-            b=`basename $j .pdb`
-            cat Vina > Vina_run
-            echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $WORKDIR/$b.pdb -o $WORKDIR/$b.pdbqt"  >> Vina_run
-            chmod +x Vina_run
-            $job_submit Vina_run
-        fi
-        let "lineno++"
-        sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+        line=`echo $line | tr ',' ' '`
+        word1=`echo $line | awk '{print $1}'` ;  word2=`echo $line | awk '{print $2}'`
+        drugname=`echo $word1"?"$word2`
     fi
-done
 
+    cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR/${b}${i}.pdb
+    if [ $flag == S ] # if small molecule, create pdbqt file for Vina
+    then
+        cat Vina > Vina_run
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/${b}${i}.pdbqt"  >> Vina_run
+        chmod +x Vina_run
+        sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+        $job_submit Vina_run
+    fi
+    let j++
+done < $vini_dir/ligands/ligands_list
 
-cd $vini_dir
+sh $vini_dir/wait_until_jobs_finish #wait until all jobs finish
 
-user_name=$USER
-sh $vini_dir/wait_until_jobs_finish
-
-
-lineno=1
+> $WORKDIR/tmp ; echo $NULL > $WORKDIR/stop ; lineno=1
 for j in $WORKDIR/ligand_*.pdb  #final check
 do
     line=`head -"$lineno" $WORKDIR/ligands_list | tail -1`
-    process=`echo $line | cut -c1`
-    if [ $process != "#" ]               #check if drug entry is not commented
+    flag=`echo $line | awk -F','  '{print $2}'`
+    b=`basename $j .pdb`
+    if  [[ ! -e $WORKDIR/$b$pdbqt ]] && [[ $flag == S ]] #delete drug if pdbqt creation failed
     then
-        flag=`echo $line | awk -F','  '{print $2}'`
-        b=`basename $j .pdb`
-        if  [[ ! -e $WORKDIR/$b$pdbqt ]] && [[ $flag == S ]] #delete drug if pdbqt creation failed 
-        then
-            ligand=`echo $line | awk -F','  '{print $1}'`
-            echo "Warning! pdbqt file for" $ligand "was not created! Drug will be not processed."
-            awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
-            mv tmp $vini_dir/ligands/ligands_list
+        drugname=`echo $line | awk -F','  '{print $1}'`
+        echo "Warning! pdbqt file for" $drugname "was not created! Vini is not able to analyze" $drugname
+        read -p "Proceed without analyzing this drug? (y/n)" proceed
+        if [ $proceed != y ]
+        then  
+            echo $ONES > $WORKDIR/stop ; break
+        else
+            echo $NULL > $WORKDIR/stop
         fi
-        let "lineno++"
+    else
+        echo $line >> $WORKDIR/tmp
     fi
+    let "lineno++"
 done
-
-grep -v "#" $vini_dir/ligands/ligands_list > tmp #Not analysing commented entries
-mv tmp $vini_dir/ligands/ligands_list
-
-echo "done."
-
-rm -f $WORKDIR/slurm* $WORKDIR/*.job #cleanup

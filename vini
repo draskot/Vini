@@ -3,31 +3,28 @@ ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type f
 therapy_level=`cat $WORKDIR/therapy_level`          #Current therapy level received from Vini
 max_therapy_level=`cat $WORKDIR/max_therapy_level`  #single or multidrug (2,3,4) cancer therapy
 CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
-workload_manager=`cat $WORKDIR/workload_manager`    
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE       #setting the cancer pathway
 job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
 job_submit=`cat $WORKDIR/job_submit`
 user_name=$USER
 mkdir -p $WORKDIR/cache
 
-MAX_RUNNING_JOBS=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
-MAX_NODES=`cat $WORKDIR/max_nodes`       #maximum number of compute nodes Gromacs/g_mmpbsa can use
+max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
+MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 nr_ligands=`cat $WORKDIR/nr_ligands` 
 nr_complexes=`cat $WORKDIR/nr_complexes`
 NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
 
-
 data="_data"
+a="_results"                               #Create directory store for results
 PDB=.pdb
 pdbqt=.pdbqt
 NULL=0
-const=4.184 #KJoul to kcal conversion factor
 DIR=$WORKDIR/$CANCER_TYPE$data 
 lig_source=$WORKDIR
 
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE       #setting the cancer pathway
-a="_results"                               #Create directory store for results
 
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 cd $WORKDIR
@@ -58,22 +55,18 @@ do
                      3) comp_source=$DIR/$M/$L;    target_dir=$DIR/$M/$L/$J ;;
                      4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
                  esac
-                 mkdir -p $comp_source $target_dir # nr. of targeti dirs equals nr. of ligands
-
+                 mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
                  for (( N=0; N<nr_complexes; N++ )) #5th loop
        	         do
                      printf -v n "%03d" $N ; comp_index=$n
                      conf_index=$comp_index ; log_index=$comp_index
-
                      cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
-
                      line=`head -"$ligand_number" $WORKDIR/ligands_list | tail -1`
                      flag=`echo $line | awk '{print $2}'`
                      if  [ $flag == S ]  #if a small molecule, we are performing docking, else MD
                      then
                          echo "Vina" > $WORKDIR/MD_engine
                          mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * 
-
                          recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
                          line=`head -$recline $WORKDIR/receptors_contracted | tail -1`
                          flag=`echo $line | awk '{print $4}'`
@@ -87,8 +80,9 @@ do
                              sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                     
                              sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
                              cat $WORKDIR/Vina > Vina_run
+                             #$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $lig_source/ligand_$lig_index.pdb -o $lig_source/ligand_$lig_index.pdbqt #Preparing pdbqt file
                              echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_$comp_index.pdbqt --ligand $lig_source/ligand_$lig_index.pdbqt --out $target_dir/complex_$comp_index.pdbqt --log $target_dir/log_$log_index.txt " >> Vina_run
-                             sh $vini_dir/jobs_control_script ${job_status} ${MAX_RUNNING_JOBS}
+                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              $job_submit Vina_run    
                          fi
                          cd $WORKDIR
@@ -112,23 +106,22 @@ do
                                   FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
                                   echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
                              else
-                                 cp $vini_dir/nodes_control_script ./ 
-                                 cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp ./
-                                 cp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
-                                 cp $vini_dir/wait_until_jobs_finish ./
-                                 cp $vini_dir/polar.mdp $vini_dir/apolar_sasa.mdp $vini_dir/mmpbsa.mdp ./
-                                 cp $vini_dir/pbsa.mdp $vini_dir/docking.mac ./ 
-                                 cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./  
-                                 #cp $vini_dir/create_pdbqt_complex_script ./
-                                 cp $WORKDIR/MD_prepare $WORKDIR/MD_run $WORKDIR/create_index_file ./
-                                 cp $WORKDIR/g_mmpbsa_potential_energy $WORKDIR/g_mmpbsa_polar_energy ./
-                                 cp $WORKDIR/g_mmpbsa_apolar_energy $WORKDIR/compute_FBE  ./
-                                 cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
-                                 cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
 
-                                 
                                  if [ $amber -eq $NULL ]
-                                 then
+                                 then #calculate protein-protein DG with g_mmpbsa
+                                     cp $vini_dir/nodes_control_script ./ 
+                                     cp $vini_dir/ions.mdp $vini_dir/md.mdp $vini_dir/minim.mdp ./
+                                     cp $vini_dir/nvt.mdp $vini_dir/npt.mdp ./ 
+                                     cp $vini_dir/wait_until_jobs_finish ./
+                                     cp $vini_dir/polar.mdp $vini_dir/apolar_sasa.mdp $vini_dir/mmpbsa.mdp ./
+                                     cp $vini_dir/pbsa.mdp $vini_dir/docking.mac ./ 
+                                     cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./  
+                                     #cp $vini_dir/create_pdbqt_complex_script ./
+                                     cp $WORKDIR/MD_prepare $WORKDIR/MD_run $WORKDIR/create_index_file ./
+                                     cp $WORKDIR/g_mmpbsa_potential_energy $WORKDIR/g_mmpbsa_polar_energy ./
+                                     cp $WORKDIR/g_mmpbsa_apolar_energy $WORKDIR/compute_FBE  ./
+                                     cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
+                                     cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
                                      echo -n "Generating protein complex with Hex, please wait..." 
                                      hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
                                      echo -n "Preparing protein complex with Chimera, please wait..."
@@ -148,27 +141,38 @@ do
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_polar_energy
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit g_mmpbsa_apolar_energy
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit compute_FBE ${target_dir} ${comp_index} ${recline}
-                                     cat $WORKDIR/Vina > create_pdbqt_complex
+                                     #cat $WORKDIR/Vina > create_pdbqt_complex
+                                     #cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
+                                     #chmod u+x create_pdbqt_complex
+                                     #sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
+                                 else #calculate protein-protein DG with Amber
+                                     cp $vini_dir/nodes_control_script $vini_dir/docking.mac ./
+                                     cp $vini_dir/amber20/* $WORKDIR/sander ./
+                                     cut -c-66 $comp_source/complex_$comp_index$pdbqt > receptor.pdb
+                                     #cp $vini_dir/1aki.pdb ./receptor.pdb #DELETE AFTER DEBUG!!!
+                                     cp $lig_source/ligand_$lig_index.pdb ./ligand.pdb #get ligand
+                                     grep -v HETATM receptor.pdb > tmp ; mv tmp receptor.pdb
+                                     grep -v HETATM ligand.pdb > tmp ; mv tmp ligand.pdb
+                                     STOREPATH=$PYTHONPATH #for pdb4amber                                    
+                                     source /scratch/opt2/amber20/amber.sh
+                                     export PYTHONPATH=$PYTHONPATH:$AMBERHOME/lib/python3.8/site-packages/pdb4amber-1.7.dev0-py3.8.egg/
+                                     pdb4amber -i receptor.pdb -o tmp.pdb ; mv tmp.pdb receptor.pdb
+                                     pdb4amber -i ligand.pdb -o tmp.pdb ; mv tmp.pdb ligand.pdb
+                                     export PYTHONPATH=$STOREPATH
+
+                                     echo -n "Generating protein complex with Hex, please wait..." 
+                                     hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
+                                     cat $WORKDIR/Vina > create_pdbqt_complex #create pdbqt for the next run
                                      cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
                                      chmod u+x create_pdbqt_complex
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
-                                 else
-                                     echo -n "Generating protein complex with Hex, please wait..." 
-                                     hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log ; echo "done."
-                                     #pdb4amber -i receptor.pdb -o tmp.pdb ; mv tmp.pdb receptor.pdb
-                                     #pdb4amber -i ligand.pdb -o tmp.pdb ; mv tmp.pdb ligand.pdb
-                                     #pdb4amber -i complex.pdb -o tmp.pdb ; mv tmp.pdb complex.pdb
+
                                      reduce -Trim receptor.pdb > tmp ; mv tmp receptor.pdb
                                      reduce -Trim ligand.pdb > tmp ; mv tmp ligand.pdb
                                      reduce -Trim complex.pdb > tmp ; mv tmp complex.pdb
-                                     cp  $vini_dir/amber20/MDrun $vini_dir/amber20/process_mdout.pl  $vini_dir/amber20/*in ./
-                           
                                      tleap -s -f tleap.in
-                                     sh nodes_control_script ${MAX_NODES} ; $job_submit MDrun
-                                     cat $WORKDIR/Vina > create_pdbqt_complex
-                                     cat $vini_dir/create_pdbqt_complex_script >> create_pdbqt_complex
-                                     chmod u+x create_pdbqt_complex
-                                     sh nodes_control_script ${MAX_NODES} ; $job_submit create_pdbqt_complex ${target_dir} ${comp_index}
+                                     #echo "brakepoint" ; sleep 100000
+                                     sh nodes_control_script ${MAX_NODES} ; $job_submit sander
                                  fi
                              fi
                         fi
@@ -215,7 +219,7 @@ do
                          fi
                      done
                  fi
-
+                 sh $vini_dir/update_affinity_vec_with_genex_values ${target_dir}
                  echo $target_dir > target_dir
                  cat Vina > create_energy_b
                  cat $vini_dir/create_energy_binding_matrix >> create_energy_b
@@ -223,7 +227,7 @@ do
                  $job_submit create_energy_b 
                  sh $vini_dir/wait_until_jobs_finish #Wait until EB matrix is created
                  sleep 4   #allow EB matrix creation to finish
-                 /usr/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
+                 python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
                  eigenvalue=`cat $target_dir/E | awk '{print $2}'`
                  SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
                  case $therapy_level in

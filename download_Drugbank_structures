@@ -1,11 +1,7 @@
 dots=:
-#zip=.zip
 pdb=.pdb
-#fasta=.fasta
 NULL=0
 ONES=1
-#space=\s
-#SP="'\b"
 
 DOWNLOAD_DIR=$vini_dir/ligands/pdb_files
 
@@ -23,80 +19,71 @@ then
         echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit 
     fi
 else
-    read -p "Do you want to update drug?links.csv file? (y/n)" yesno
-    if [ $yesno == "y" ]
+    filename=drug?links.csv     #update drug?links.csv file if older than 7 days.
+    hundred_days_ago=$(date -d 'now - 7 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
+    file_time=$(date -r $filename +%s)
+    if (( file_time <= hundred_days_ago ))
     then
-        curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
-        if  [ -e filename.zip ]
-        then
-            echo success ; unzip -qn filename.zip ; rm filename.zip
-        else
-            echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
-        fi
+      echo -n "drug?links.csv file is more than 7 days old, updating..."
+      curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+      if  [ -e filename.zip ]
+      then
+          echo success ; rm drug?links.csv ; unzip -qn filename.zip ; rm filename.zip ; touch drug?links.csv
+      else
+          echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
+      fi
     fi
 fi
 
-
-#if  [ ! -e pharmacologically_active.csv ]
-#then
-#    echo -n "Getting pharmacologically_active.csv file from Drugbank, please wait... "
-#    curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-all-polypeptide-ids
-#    echo success ; unzip -qn filename.zip ; rm filename.zip all.csv
-#else
-#    read -p "Do you want to update pharmacologically_active.csv file? (y/n)" yesno
-#    if [ $yesno == "y" ]
-#    then
-#        curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/target-all-polypeptide-ids
-#        if  [ -e filename.zip ]
-#        then
-#            echo success ; unzip -qn filename.zip ; rm filename.zip
-#        else
-#            echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
-#        fi
-#    fi
-#fi
-
-
-lines=`wc -l < $vini_dir/ligands/ligands_list`
-let "lines++"
-
-for (( lineno=1; lineno<$lines; lineno++ ))
+> $WORKDIR/ligands_list.tmp
+while read -r line #remove from the ligands list any entry starting with #
 do
-    line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
     process=`echo $line | cut -c1`
-    if [ $process != "#" ]    #do not process drug entry if commented
+    if [ $process != "#" ]    #process drug if not commented
     then
-        drugname=`echo $line | awk -F','   '{print $1}'`
-        echo "grep" "\"$drugname\"" "drug?links.csv" > search
+        echo $line >> $WORKDIR/ligands_list.tmp
+    else
+        echo "drug" $line "will be not analysed."
+    fi
+done < $vini_dir/ligands/ligands_list
+#cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav #saving original ligands list
+mv $WORKDIR/ligands_list.tmp $vini_dir/ligands/ligands_list
+
+lineno=1
+while read -r line
+do
+    drugname=`echo $line | awk -F','   '{print $1}'`
+    echo $drugname > test ; words=`wc -w < test` ; rm test          #put a question mark if 2 words
+    if  [ $words -eq 2 ] #then put ? in between
+    then
+        line=`echo $line | tr ',' ' '`
+        word1=`echo $line | awk '{print $1}'` ;  word2=`echo $line | awk '{print $2}'` 
+        drugname=`echo $word1"?"$word2`
+    fi
+
+    if  [ -e $vini_dir/ligands/pdb_files/$drugname$pdb ] #check if drug is in repo
+    then
+        echo $drugname "already in repo."
+    else
         echo -n "searching for" $drugname "in Drugbank..."
+         
+        echo "grep -w" "\"$drugname\"" "drug?links.csv" > search
         sh search > tmp
         inlines=`wc -l < $vini_dir/tmp`   #there may be several lines with a same drug name
         if  [ $inlines -gt $NULL ]
-        then
+        then   
+            echo "drug found." 
             inline=`head -1 $vini_dir/tmp`
             DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-            echo "success." 
-        else
-            echo -n "not found. Searching in repo..." 
-        fi
-        rm tmp ; echo $drugname > test ; words=`wc -w < test` ; rm test
-        if  [ $words == "2" ] #then put ? in between
-        then
-            line=`echo $line | tr ',' ' '`
-            word1=`echo $line | awk '{print $1}'` ;  word2=`echo $line | awk '{print $2}'` 
-            drugname=`echo $word1"?"$word2`
-        fi
-        if [ ! -f $vini_dir/ligands/pdb_files/$drugname$pdb ] 
-        then
             if  [ $words -eq $ONES ]                  #check if a drug is small molecule or biotech
             then
                 dtype=`echo $line | awk '{print $2}'` 
             else
-               dtype=`echo $line | awk '{print $3}'` 
+                dtype=`echo $line | awk '{print $3}'` 
             fi
             if [ $dtype == S ]
             then
-                echo $drugname "is small molecule"
+                echo $drugname "is a small molecule drug"
                 echo -n "downloading" $drugname "pdb file from Drugbank..."
                 curl -Lfs -o $vini_dir/ligands/pdb_files/$drugname$pdb https://www.drugbank.ca/structures/small_molecule_drugs/$DBID$pdb
                 echo ""
@@ -110,7 +97,7 @@ do
                 if  [ ! -e $DOWNLOAD_DIR/$drugname$pdb ]
                 then
                     drugname=`echo $drugname | tr "?" " " ` #comment this drug in ligands_list
-                    echo $drugname "will not be analyzed." 
+                    echo "prediction failed." $drugname "will be not analyzed." 
                     awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
                     mv tmp $vini_dir/ligands/ligands_list
                 else
@@ -118,8 +105,12 @@ do
                 fi
             fi
         else
-            echo "Structure found in repo." ; echo ""
+            echo -n "drug not found. Entry will be commented." 
+            awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+            mv tmp $vini_dir/ligands/ligands_list
         fi
     fi
-done
+    let "lineno++"
+done < $vini_dir/ligands/ligands_list
+
 rm -f tmp.csv tmp search

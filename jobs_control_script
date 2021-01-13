@@ -1,13 +1,14 @@
 
 # jobs_control_script
-# input parameters: job_status MAX_RUNNING_JOBS
+# input parameters: job_status max_jobs
 
-job_status=$1 ; MAX_RUNNING_JOBS=$2
+job_status=$1 ; max_jobs=$2
 
 $job_status | grep $USER > $WORKDIR/temp_buf #control the max number of concurrent jobs allowed
 JOBS=`wc -l $WORKDIR/temp_buf | awk '{print $1}'`
 
-while [ $JOBS -gt $MAX_RUNNING_JOBS  ]
+
+while [ $JOBS -gt $max_jobs  ]
 do
     echo "treshold of concurrent jobs exceeded, waiting before new job submission"
     $job_status | grep $USER > $WORKDIR/temp_buf 

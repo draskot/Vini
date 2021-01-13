@@ -1,18 +1,70 @@
+NULL=0
+ONES=1
+THREE=3
+HSA=hsa
+
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
 then
     echo "Please run Vini as an ordinary user, not as a root! Exiting..."
     exit
 else
-    echo "passed."
-    #!/bin/bash
+    echo passed.
 fi
 
-cat COPYRIGHT
+echo -n "checking for ligands_list file..."
+if [ -e $vini_dir/ligands/ligands_list ]
+then
+    cp $vini_dir/ligands/ligands_list $WORKDIR
+    nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDIR/nr_ligands
+    echo passed.
+else
+    echo "you must provide ligand list. Exiting..." ; exit
+fi
 
-NULL=0
-ONES=1
-HSA=hsa
+echo "Vini needs to cancel all previous jobs from user" $USER
+read -p "ok to continue? (y/n)" yesno
+if  [ $yesno == y ]
+then
+    scancel -u $USER
+else
+    exit
+fi 
+
+echo -n "Trying to determine which job submission system is running..."
+sinfo | grep "command not found" > tmp #try to find which workload manager is running
+nolines=`wc -l < tmp`
+if  [ $nolines -eq $NULL ]
+then
+    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel 
+else
+    if [ -d /opt/sge ]
+    then
+        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel
+    else
+        echo "not supported, exiting" ; exit
+    fi
+fi
+
+echo -n "Trying to determine number of cores per compute node..."
+rm -f *.out 
+echo "#! /bin/bash" > find_nr_cores
+echo "lscpu" >> find_nr_cores
+chmod u+x find_nr_cores
+job_submit=`cat $WORKDIR/job_submit`
+$job_submit find_nr_cores
+sh wait_until_jobs_finish
+grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
+grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
+cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
+echo "found" $cores "per compute node." ; rm find_nr_cores *out
+
+
+cd $WORKDIR #Cleanup
+rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type max_therapy_level nr_complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf debuglog
+cd $vini_dir
+
+cat COPYRIGHT
 
 conda --version 2&> tmp #checking if conda is already installed
 grep "command not found" tmp > tmp2 ; mv tmp2 tmp
@@ -42,10 +94,6 @@ else
     echo $WORKDIR > workdir
 fi 
 
-cd $WORKDIR #Cleanup
-rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type GIBBS Gibbs_values job_submit ligands_list max_therapy_level nr_complexes nr_ligands max_jobs  PYTHON_HOME job_status receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level workload_manager Vina complex_???.jo* nohup.out temp_buf debuglog
-cd $vini_dir
-
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 cp 1aki.sav $HOME/1AKI.pdb
 mkdir -p ./ligands/pdb_files
@@ -54,20 +102,19 @@ mkdir -p ./genes/pdb_files
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
-#read -p "which job submission system are you using? Enter 1 for SLURM, 2 for PBS/Torque, 3 for SGE:" JSS
-read -p "which job submission system are you using? Enter 1 for SLURM, 2 for SGE:" JSS #PBS not tested
-read -p "run Ambertools instead Gromacs/g_mmpbsa? (y/n)" amber
-if [ $amber == y ]
-then
-    echo $ONES > $WORKDIR/amber
-else
-    echo $NULL > $WORKDIR/amber
-fi
+read -p "enter maximum number of compute nodes Vini may use concurrently:" nodes
+echo $nodes > $WORKDIR/nodes
+max_jobs=`echo $nodes $cores | awk '{print $1 * $2}'` #max nr of jobs Autodock Vina can use
+max_jobs=`echo $max_jobs $THREE | awk '{print $1 / $2}'` #max nr of jobs Autodock Vina can use
+echo $max_jobs > $WORKDIR/max_jobs
+
+#echo $NULL > $WORKDIR/amber
+echo $ONES > $WORKDIR/amber #amber is active
 
 case $JSS in
-     1) echo "SLURM" > $WORKDIR/workload_manager; echo "squeue" > $WORKDIR/job_status; echo "sbatch" > $WORKDIR/job_submit; echo "scancel" > $WORKDIR/job_cancel ; sh prepare_SLURM_scripts ;;
-     2) echo "SGE" > $WORKDIR/workload_manager;  echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_SGE_scripts ;;
-     3) echo "PBS" > $WORKDIR/workload_manager;  echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
+     1) sh prepare_SLURM_scripts ;;
+     2) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_SGE_scripts ;;
+#    3) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
 esac
 
 $job_status > tmp
@@ -76,15 +123,6 @@ if [ $nolines -ne $NULL ]
 then
     job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
 fi
-
-read -p "enter maximum number of concurrent compute nodes Vini may use :" concurrent_nodes
-
-
-max_jobs=44 #for Autodock Vina
-max_nodes=4 #for Amber
-
-echo $max_jobs > $WORKDIR/max_jobs
-echo $max_nodes > $WORKDIR/max_nodes
 
 echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
 read -p "Allready registered (y/n)?" yesno
@@ -127,6 +165,8 @@ else
     fi
 fi
 
+cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
+
 sh download_Drugbank_structures
 
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
@@ -149,8 +189,6 @@ else
     fi
 fi
 
-
-
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
 #easy_install --user pip
@@ -161,7 +199,6 @@ fi
 touch -a $WORKDIR/computed_therapy_level
 touch -a $WORKDIR/computed_cancer_type
 computed_therapy_level=`cat $WORKDIR/computed_therapy_level`
-
 
 echo -n "delete all data previously created by Vini)? (y/n)"
 read erase
@@ -176,9 +213,7 @@ computed_cancer_type=`cat $WORKDIR/computed_cancer_type`
 echo "full" > $WORKDIR/analysis_type
 
 curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
-
-cat tmp | sed "s/path:hsa//g" > pathways ; rm tmp #add SARS-CoV-2 pathway
-echo "05244 SARS-CoV-2 Spike Glycoprotein" >> pathways
+cat tmp | sed "s/path:hsa//g" > pathways ; rm tmp
 
 echo "Next will be shown the scrolling list of all pathways available for virtual drug screening ( <q> to exit )."
 echo "Then choose the pathway number and press <enter>. Example: For screening collorectal cancer, enter 05210 ."
@@ -216,20 +251,12 @@ echo -n "Choose therapy level (1 for single drug therapy, 2 for two drugs therap
 read max_therapy_level
 echo $max_therapy_level > $WORKDIR/max_therapy_level
 
-DIR=$vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
-mkdir -p $DIR
-sh download_KEGG_pathway  
+sh prepare_ligands 
 
-sh copy_ligands_to_stage 
-
-sh prepare_ligands  
-
-success=`cat $WORKDIR/success`
-if [[ $success == no ]]     #if pdbqt files for some drugs are not created, cont. without them
+stop=`cat $WORKDIR/stop`
+if [ $stop == $ONES ]
 then
-    mv $WORKDIR/ligands_list $vini_dir/ligands/ligands_list
-    sh copy_ligands_to_stage
-    sh prepare_ligands
+    exit #pdbqt creation failed
 fi
 
 if  [[ $cancer_type == $computed_cancer_type ]]
@@ -255,13 +282,9 @@ a="_results"                                                     #Create directo
 rm -rf $WORKDIR/$CANCER_PATHWAY$a
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 
-
 cp $vini_dir/prep_prot_lig.py $WORKDIR
 
-cd $WORKDIR
-nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDIR/nr_ligands
 touch $WORKDIR/debuglog
-
 
 echo "Good to go. You may now start Vini in the foreground with <sh Vini> (output will be sent to the screen)"
 echo "or in the background with <nohup ./Vini &> (output will be sent to nohup.out file)"
