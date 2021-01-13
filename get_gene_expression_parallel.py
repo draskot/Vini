@@ -1,7 +1,7 @@
 # We have to setup COSMICDB_USER and COSMICDB_PASS environment variables
 
 # TODO add support for FEB matrix integration
-
+# TODO add while loop with number_of_attempts in getGeneExpression method
 
 import os
 import time
@@ -95,7 +95,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
     except getopt.GetoptError:
-        print '-g <gene Uniprot ID or file path> -t <tissue name> -n <number of cores>'
+        print 'Usage: -g <gene Uniprot ID or file path> -t <tissue name> -n <number of cores>'
         sys.exit()
 
     for opt, arg in opts:
@@ -135,7 +135,7 @@ def main(argv):
                 # split CSV into N files (N number of CPU cores)
                 splitGeneExpressionCSV(GENE_NAME, nprocs)
         except:
-            print ("Unsuccessful download of gene %s from CosmicDB." % GENE_NAME)
+            print ("Unsuccessful download of gene %s expressions from CosmicDB." % GENE_NAME)
 
 
     # get CSV with tissue samples from CosmicDB

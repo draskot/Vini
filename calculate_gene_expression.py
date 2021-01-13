@@ -15,7 +15,6 @@ WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
     tissue_samples_file = os.path.join(WORKING_DIR, TISSUE_NAME + "_samples.csv")
-    gene_expression_filtered_file = GENE_NAME + "_expressions_filtered.csv"
     df = pd.read_csv(tissue_samples_file, sep=',', header=0, usecols=['SAMPLE_ID'])
 
     count = 0
