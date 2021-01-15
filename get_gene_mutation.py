@@ -2,14 +2,15 @@
 
 # TODO - TOKEN_NUMBER should be in separate file or env variable so this script and get_gene_expression_parallel.py
 #  can both access it from same place
-# TODO create working directory if it doesn't exist already
+# TODO create working directory if it doesn't exist alread
+# TODO enforce input of command line arguments before execution, ATM user is not alerted when tissue or gene arg is omitted
 
 import os
 import time
 import sys
 import requests
 import getopt
-import pandas
+
 
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
