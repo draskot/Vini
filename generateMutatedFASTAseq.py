@@ -37,28 +37,45 @@ def applyMutationsToFASTA(mutations, FASTAfile):
     with open(FASTAfile) as csvfile:
         reader = csv.reader(csvfile, delimiter='\n')
         header = next(reader)
-        sequence = next(reader)[0]
-        #print sequence
+        sequence = list(next(reader)[0])
     # saving deletions for last
     deletions = []
     # iterate through mutations and apply it to FASTA sequence
     for mutation in mutations[' MUTATION_CDS']:
+        mutation = mutation.split('.')[1]
+        # print "mutation %s" % mutation
         if 'dup' in mutation:
             print mutation
+        elif 'ins' in mutation:
+            print mutation
         elif 'del' in mutation:
-            deletions.append(mutation)
+            deletions.append(mutation.replace('del', ''))
         else:
             # only covering substitution case here
-            gene_index = mutation.split('>')[0][0:-1]
-            print "gene index: %s" % gene_index
-            gene_before = mutation.split('>')[0][-1]
-            print "gene before: %s" % gene_before
-            gene_after = mutation.split('>')[1]
-            print "gene after: %s" % gene_after
+            nucleotide_index = int(mutation.split('>')[0][0:-1]) - 1
+            nucleotide_before = mutation.split('>')[0][-1].lower()
+            nucleotide_after = mutation.split('>')[1].lower()
+            # applying mutation to sequence
+            if sequence[nucleotide_index] == nucleotide_before:
+                sequence[nucleotide_index] = nucleotide_after
+            else:
+                print "No nucleotide match on given index. Expected %s but received %s" \
+                      % (nucleotide_before, sequence[nucleotide_index])
     for mutation in deletions:
+        range = mutation.split("_")
+        start = range[0]
+        finish = range[0] if len(range) == 1 else range[1]
+        del sequence[int(start):int(finish)+1]
         print mutation
     # save FASTA sequence from memory to .FASTA file
-    pass
+    return ''.join(sequence)
+
+def saveSequenceToFASTA(GENE_NAME, sequence):
+    try:
+        with open(os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '.fasta'), 'w') as fasta_file:
+            fasta_file.write(sequence)
+    except:
+        print "Unsuccessful writing to FASTA file"
 
 def main(argv):
     try:
@@ -77,8 +94,10 @@ def main(argv):
 
     for mutation_file in os.listdir(WORKING_DIR_MUTATIONS):
         try:
+            GENE_NAME = mutation_file.split('.')[0].split('_')[0]
             mutations = filterMutations(mutation_file)
-            applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, mutation_file.split('.')[0].split('_')[0] + '_sequence.csv'))
+            new_sequence = applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
+            saveSequenceToFASTA(GENE_NAME, new_sequence)
         except ValueError as e:
             print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
 
