@@ -71,7 +71,7 @@ def getGeneMutations(GENE_NAME, COSMIC_GENE_ID, TISSUE_NAME):
             elif r.status_code == 401:
                 # trying again, Cosmic sometimes randomly responds with 401 Unauthorized
                 print "Unsuccessful download of mutations from CosmicDB for gene % s" % GENE_NAME
-                time.sleep(2)
+                time.sleep(3)
             else:
                 print ("No mutation for gene under such name in CosmicDB: %s" % GENE_NAME)
                 global failed_downloads
@@ -102,7 +102,7 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
             elif r.status_code == 401:
                 # trying again, Cosmic sometimes randomly responds with 401 Unauthorized
                 print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
-                time.sleep(2)
+                time.sleep(3)
             else:
                 print ("No FASTA for gene under such name in CosmicDB: %s" % GENE_NAME)
                 global failed_downloads
