@@ -93,13 +93,13 @@ def main(argv):
             OUTPUT_FILE = arg
 
     for mutation_file in os.listdir(WORKING_DIR_MUTATIONS):
-        try:
-            GENE_NAME = mutation_file.split('.')[0].split('_')[0]
-            mutations = filterMutations(mutation_file)
-            new_sequence = applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
-            saveSequenceToFASTA(GENE_NAME, new_sequence)
-        except ValueError as e:
-            print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
+        #try:
+        GENE_NAME = mutation_file.split('.')[0].split('_')[0]
+        mutations = filterMutations(mutation_file)
+        new_sequence = applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
+        saveSequenceToFASTA(GENE_NAME, new_sequence)
+        #except ValueError as e:
+        #    print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
 
 
 if __name__ == "__main__":
