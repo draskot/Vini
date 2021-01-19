@@ -62,11 +62,15 @@ def applyMutationsToFASTA(mutations, FASTAfile):
                 print "No nucleotide match on given index. Expected %s but received %s" \
                       % (nucleotide_before, sequence[nucleotide_index])
     for mutation in deletions:
-        range = mutation.split("_")
-        start = range[0]
-        finish = range[0] if len(range) == 1 else range[1]
-        del sequence[int(start):int(finish)+1]
-        print mutation
+        try:
+            range = mutation.split("_")
+            start = range[0]
+            finish = range[0] if len(range) == 1 else range[1]
+            del sequence[int(start):int(finish)+1]
+            print mutation
+        except:
+            # mutation format is probably not as expected
+            pass
     # save FASTA sequence from memory to .FASTA file
     return ''.join(sequence)
 
@@ -93,13 +97,13 @@ def main(argv):
             OUTPUT_FILE = arg
 
     for mutation_file in os.listdir(WORKING_DIR_MUTATIONS):
-        #try:
-        GENE_NAME = mutation_file.split('.')[0].split('_')[0]
-        mutations = filterMutations(mutation_file)
-        new_sequence = applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
-        saveSequenceToFASTA(GENE_NAME, new_sequence)
-        #except ValueError as e:
-        #    print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
+        try:
+            GENE_NAME = mutation_file.split('.')[0].split('_')[0]
+            mutations = filterMutations(mutation_file)
+            new_sequence = applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
+            saveSequenceToFASTA(GENE_NAME, new_sequence)
+        except ValueError as e:
+            print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
 
 
 if __name__ == "__main__":

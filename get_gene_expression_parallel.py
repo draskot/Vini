@@ -79,6 +79,9 @@ def getTissueSampleFeatures(TISSUE_NAME):
             with open(filename, 'wb') as f:
                 f.write(r.content)
             return filename
+        else:
+            print ('Cosmic response: %s', (r.status_code))
+            print "Unsuccessful download from CosmicDB for tissue % s" % TISSUE_NAME
     except:
         return False
 
@@ -92,6 +95,7 @@ def splitGeneExpressionCSV(GENE_NAME, nprocs):
 
 
 def main(argv):
+    print argv
     try:
         opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
     except getopt.GetoptError:
