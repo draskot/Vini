@@ -13,7 +13,7 @@ rank = comm.Get_rank()
 nprocs = comm.Get_size()
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
-def filterGeneExpressionFile (GENE_NAME, TISSUE_NAME, data):
+def filterGeneExpressionFile (TISSUE_NAME, data):
     tissue_samples_file = os.path.join(WORKING_DIR, TISSUE_NAME + "_samples.csv")
     df = pd.read_csv(tissue_samples_file, sep=',', header=0, usecols=['SAMPLE_ID'])
 
@@ -46,6 +46,7 @@ def main(argv):
         elif opt in ("-o", "--output"):
             OUTPUT_FILE = arg
 
+    # TODO - add cosmicTools.checkCosmicEnvironment()
 
     # filter gene expressions from CSV parts for only selected tissue samples on N cores
     if rank == 0:
@@ -62,7 +63,7 @@ def main(argv):
 
     try:
         data = comm.scatter(data, root=0)
-        expression_count, zscore_sum = filterGeneExpressionFile(GENE_NAME, TISSUE_NAME, data)
+        expression_count, zscore_sum = filterGeneExpressionFile(TISSUE_NAME, data)
         expression_count= comm.gather(expression_count, root=0)
         zscore_sum = comm.gather(zscore_sum, root=0)
     except:
