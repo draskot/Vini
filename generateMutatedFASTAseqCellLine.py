@@ -4,29 +4,27 @@ import sys
 import getopt
 import pandas as pd
 import cosmicTools
+import csv
 
 t0 = time.time()
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 
 def filterMutationsForGeneList(filename, genes_list):
-    genes_list_cosmicIDs = [cosmicTools.mapUniprotIDtoCosmicID(gene) for gene in genes_list]
-    # mutations_samples_file = os.path.join(WORKING_DIR_MUTATIONS, GENE_NAME + "_mutations.csv")
+    gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapUniprotIDtoCosmicID(gene), gene) for gene in genes_list)
     mutation_samples_file = os.path.join(WORKING_DIR_MUTATIONS, filename)
-    df = pd.read_csv(mutation_samples_file, sep=',', header=0, usecols=['GENE_NAME', ' MUTATION_CDS', ' MUTATION_DESCRIPTION'])
+    df = pd.read_csv(mutation_samples_file, sep=',', header=0, usecols=['GENE_NAME', ' ACCESSION_NUMBER',
+                                                                        ' MUTATION_CDS', ' MUTATION_DESCRIPTION'])
     # cleaning data
     df = df[df[' MUTATION_CDS'] != 'c.?']
     df = df[df[' MUTATION_DESCRIPTION'] != 'Unknown']
     df = df[~df['GENE_NAME'].str.contains('_ENS', regex=False)]
-
-    df = df[df['GENE_NAME'].isin({'GENE_NAME':genes_list})]
-    df1 = pd.DataFrame({'GENE_NAME': genes_list_cosmicIDs})
-    #df = df[df['GENE_NAME'].isin(df1['GENE_NAME'])]
-
-
-    # TODO add uvjet da izbacuje duplikate istog GENE_NAME i MUTATION_CDS
+    df = df[df['GENE_NAME'].isin(gene_list_cosmic_uniprot_dict.keys())]
+    # TODO add uvjet da izbacuje duplikate istog GENE_NAME i MUTATION_CDS, tj. po  ACCESSION_NUMBER
     df = df.drop_duplicates()
-    print('df sorted: \n{}'.format(df))
+    # mapping list of gene UNIPROT IDs to Cosmic IDs
+    df['GENE_NAME'] = df['GENE_NAME'].apply(lambda name: gene_list_cosmic_uniprot_dict[name])
+    #print('df sorted: \n{}'.format(df))
     return df
 
 
@@ -48,15 +46,17 @@ def main(argv):
 
     genes_list = cosmicTools.makeGeneListFromInput(GENE_NAME)
 
-    # there should be only single file in working dir if working with cell lines
-    for mutation_file in os.listdir(WORKING_DIR_MUTATIONS):
-        #try:
-        CELL_LINE_NAME = mutation_file.split('.')[0].split('_')[0]
-        mutations = filterMutationsForGeneList(mutation_file, genes_list)
-        new_sequence = cosmicTools.applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES, GENE_NAME + '_sequence.csv'))
-        cosmicTools.saveSequenceToFASTA(GENE_NAME, new_sequence, WORKING_DIR_SEQUENCES)
-        #except ValueError as e:
-         #   print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
+    mutation_file = os.listdir(WORKING_DIR_MUTATIONS)[0] # there should be only single file in working dir if working with cell lines
+    mutations_df = filterMutationsForGeneList(mutation_file, genes_list)
+    for gene in genes_list:
+        try:
+            sequence_filename = os.path.join(WORKING_DIR_SEQUENCES, gene + '_sequence.csv')
+            mutations = mutations_df[mutations_df['GENE_NAME'] == gene]
+            if not mutations.empty:
+                new_sequence = cosmicTools.applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES,sequence_filename))
+                cosmicTools.saveSequenceToFASTA(gene, new_sequence, WORKING_DIR_SEQUENCES)
+        except ValueError as e:
+            print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
 
 
 if __name__ == "__main__":

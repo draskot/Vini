@@ -7,6 +7,8 @@ import csv
 TOKEN_NUMBER = "822239706399298093099245485975646525"
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
+    # TODO if unsuccessful try again after sleep(3)
+    # TODO save already retrieved key in local storage
     try:
         download_url = ("https://www.uniprot.org/uploadlists/?from=ACC+ID&to=GENENAME&format=tab&query=" +
                         UNIPROT_ID)
@@ -99,26 +101,31 @@ def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
 
 def saveSequenceToFASTA(GENE_NAME, sequence, WORKING_DIR):
     try:
-        with open(os.path.join(WORKING_DIR, GENE_NAME + '.fasta'), 'w') as fasta_file:
+        file_path = os.path.join(WORKING_DIR, GENE_NAME + '.fasta')
+        with open(file_path, 'w') as fasta_file:
             fasta_file.write(sequence)
+            print "Mutated sequence saved to %s" %file_path
             return True
     except:
-        print "Unsuccessful saving of FASTA file for gene %" % GENE_NAME
+        print "Unsuccessful saving of FASTA file for gene %s" % GENE_NAME
         return False
 
 
 def applyMutationsToFASTA(mutations, FASTAfile):
     # mutations are expected as pandas dataframe output
-    with open(FASTAfile) as csvfile:
-        reader = csv.reader(csvfile, delimiter='\n')
-        header = next(reader)
-        sequence = list(next(reader)[0])
+    try:
+        with open(FASTAfile) as csvfile:
+            reader = csv.reader(csvfile, delimiter='\n')
+            header = next(reader)
+            sequence = list(next(reader)[0])
+    except:
+        print "Can't open file with FASTA sequence"
+        return False
     # saving deletions for last
     deletions = []
     # iterate through mutations and apply it to FASTA sequence
     for mutation in mutations[' MUTATION_CDS']:
         mutation = mutation.split('.')[1]
-        # print "mutation %s" % mutation
         if 'dup' in mutation:
             print mutation
         elif 'ins' in mutation:
@@ -133,6 +140,7 @@ def applyMutationsToFASTA(mutations, FASTAfile):
             # applying mutation to sequence
             if sequence[nucleotide_index] == nucleotide_before:
                 sequence[nucleotide_index] = nucleotide_after
+                print "Mutation applied: %s" % mutation
             else:
                 print "No nucleotide match on given index. Expected %s but received %s" \
                       % (nucleotide_before, sequence[nucleotide_index])
@@ -142,9 +150,8 @@ def applyMutationsToFASTA(mutations, FASTAfile):
             start = range[0]
             finish = range[0] if len(range) == 1 else range[1]
             del sequence[int(start):int(finish)+1]
-            print mutation
+            print "Mutation applied: %s" % mutation
         except:
             # mutation format is probably not as expected
             pass
-    # save FASTA sequence from memory to .FASTA file
     return ''.join(sequence)

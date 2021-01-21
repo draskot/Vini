@@ -24,12 +24,11 @@ def getCellLineMutations(TISSUE_NAME, CELL_LINE):
                         "table=V92_38_MUTANT" + "&primarysite=" + TISSUE_NAME + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
         number_of_attempts = 10
         current_attempt = 0
+        print ('Downloading gene mutations for cell line %s' % CELL_LINE)
         while current_attempt < number_of_attempts:
             current_attempt += 1
-            print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
-            print ('Downloading gene mutations from CosmicDB')
+            #print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
             r = requests.get(download_url)
-            print ('Cosmic response: %s', (r.status_code))
             if r.text != "No data available." and r.status_code == 200:
                 filename = cosmicTools.getMutationsFileName(CELL_LINE, WORKING_DIR_MUTATIONS)
                 print filename
@@ -38,14 +37,14 @@ def getCellLineMutations(TISSUE_NAME, CELL_LINE):
                 return filename
             elif r.status_code == 401:
                 # trying again, Cosmic sometimes randomly responds with 401 Unauthorized
-                print "Unsuccessful download of mutations from CosmicDB for cell line % s" % CELL_LINE
+                #print "Unsuccessful download of mutations from CosmicDB for cell line % s" % CELL_LINE
                 time.sleep(3)
             else:
                 print ("No mutation for cell line under such name in CosmicDB: %s" % CELL_LINE)
                 global failed_downloads
                 failed_downloads.append("%s" % CELL_LINE)
                 return False
-
+        print "Unsuccessful download of mutations for cell line %s" % CELL_LINE
     except:
         return False
 
@@ -57,12 +56,12 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
                         "table=V92_38_ALLGENES" + "&" + "genename=" + COSMIC_GENE_ID + "&" + "token=" + TOKEN_NUMBER)
         number_of_attempts = 10
         current_attempt = 0
+        print ('Downloading FASTA sequence from CosmicDB for gene %s' % GENE_NAME)
         while current_attempt < number_of_attempts:
             current_attempt += 1
-            print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
-            print ('Downloading FASTA sequence from CosmicDB')
+            #print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
             r = requests.get(download_url)
-            print ('Cosmic response: %s', (r.status_code))
+            #print ('Cosmic response: %s', (r.status_code))
             if r.text != "No data available." and r.status_code == 200:
                 filename = cosmicTools.getSequenceFileName(GENE_NAME, WORKING_DIR_SEQUENCES)
                 with open(filename, 'wb') as f:
@@ -70,14 +69,14 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
                 return filename
             elif r.status_code == 401:
                 # trying again, Cosmic sometimes randomly responds with 401 Unauthorized
-                print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
+                #print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
                 time.sleep(3)
             else:
                 print ("No FASTA for gene under such name in CosmicDB: %s" % GENE_NAME)
                 global failed_downloads
                 failed_downloads.append("%s-%s" % (GENE_NAME, COSMIC_GENE_ID))
                 return False
-
+        print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
     except:
         return False
 
@@ -109,7 +108,7 @@ def main(argv):
     except:
         print "Unable to download gene mutations for %s cell line." % CELL_LINE
 
-    # get CSV with gene expressions from CosmicDB
+    # get CSV with wild type FASTA sequence from CosmicDB
     num_successful_downloads = 0
     for GENE_NAME in gene_list:
         try:
@@ -122,7 +121,7 @@ def main(argv):
             pass
     print ("Downloaded %s of %s FASTA dequences from list." % (num_successful_downloads, len(gene_list)))
     if failed_downloads:
-        print ("These genes were not downloaded: %s" % ','.join(failed_downloads))
+        print ("These genes/cell-lines were not downloaded: %s" % ','.join(failed_downloads))
 
 
 if __name__ == "__main__":
