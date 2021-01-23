@@ -10,7 +10,7 @@ t0 = time.time()
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 
-def filterMutationsForGeneList(filename, genes_list):
+def filterMutations(filename, genes_list):
     gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapUniprotIDtoCosmicID(gene), gene) for gene in genes_list)
     mutation_samples_file = os.path.join(WORKING_DIR_MUTATIONS, filename)
     df = pd.read_csv(mutation_samples_file, sep=',', header=0, usecols=['GENE_NAME', ' ACCESSION_NUMBER',
@@ -47,7 +47,7 @@ def main(argv):
     genes_list = cosmicTools.makeGeneListFromInput(GENE_NAME)
 
     mutation_file = os.listdir(WORKING_DIR_MUTATIONS)[0] # there should be only single file in working dir if working with cell lines
-    mutations_df = filterMutationsForGeneList(mutation_file, genes_list)
+    mutations_df = filterMutations(mutation_file, genes_list)
     for gene in genes_list:
         try:
             sequence_filename = os.path.join(WORKING_DIR_SEQUENCES, gene + '_sequence.csv')

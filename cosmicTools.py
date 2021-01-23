@@ -5,23 +5,47 @@ import time
 import csv
 
 TOKEN_NUMBER = "822239706399298093099245485975646525"
+WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
+    dict_path = os.path.join(WORKING_DIR, 'cosmic_ids.csv')
+    if not os.path.exists(dict_path):
+        with open(dict_path, 'a+') as dict_csv:
+            writer = csv.writer(dict_csv)
+            writer.writerow(["UNIPROT_ID", "COSMIC_ID"])
+
+
+    with open(dict_path, "a+") as f:
+        csv_reader = csv.reader(f)
+        # Iterate over each row in the csv using reader object
+        next(f)  # Skip the header
+        reader = csv.reader(f, skipinitialspace=True)
+        id_dict = dict(reader)
+        if UNIPROT_ID in id_dict.keys():
+            return id_dict[UNIPROT_ID]
+        else:
+            try:
+                download_url = ("https://www.uniprot.org/uploadlists/?from=ACC+ID&to=GENENAME&format=tab&query=" +
+                                UNIPROT_ID)
+                r = requests.get(download_url)
+                if r.status_code == 200:
+                    COSMIC_ID = r.content.split('\n')[1].split('\t')[1]
+                    print "Mapped Uniprot ID %s to CosmicID: % s" % (UNIPROT_ID, COSMIC_ID)
+                    writer = csv.writer(f)
+                    writer.writerow([UNIPROT_ID, COSMIC_ID])
+                    return COSMIC_ID
+            except:
+                print ('Error while contacting Uniprot service')
+                return False
+
+
     # TODO if unsuccessful try again after sleep(3)
     # TODO save already retrieved key in local storage
-    try:
-        download_url = ("https://www.uniprot.org/uploadlists/?from=ACC+ID&to=GENENAME&format=tab&query=" +
-                        UNIPROT_ID)
-        r = requests.get(download_url)
-        if r.status_code == 200:
-            gene_name = r.content.split('\n')[1].split('\t')[1]
-            print "Mapped Uniprot ID %s to CosmicID: % s" % (UNIPROT_ID, gene_name)
-            return gene_name
-    except:
-        print ('Error while contacting Uniprot service')
 
 
-def getMutationsFileName(GENE_NAME, WORKING_DIR):
+
+
+def getMutationFileName(GENE_NAME, WORKING_DIR):
     return os.path.join(WORKING_DIR, GENE_NAME + '_mutations.csv')
 
 def getSequenceFileName(GENE_NAME, WORKING_DIR):

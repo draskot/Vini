@@ -30,7 +30,7 @@ def getCellLineMutations(TISSUE_NAME, CELL_LINE):
             #print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
             r = requests.get(download_url)
             if r.text != "No data available." and r.status_code == 200:
-                filename = cosmicTools.getMutationsFileName(CELL_LINE, WORKING_DIR_MUTATIONS)
+                filename = cosmicTools.getMutationFileName(CELL_LINE, WORKING_DIR_MUTATIONS)
                 print filename
                 with open(filename, 'wb') as f:
                     f.write(r.content)

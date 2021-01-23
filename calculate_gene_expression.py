@@ -46,7 +46,6 @@ def main(argv):
         elif opt in ("-o", "--output"):
             OUTPUT_FILE = arg
 
-    # TODO - add cosmicTools.checkCosmicEnvironment()
 
     # filter gene expressions from CSV parts for only selected tissue samples on N cores
     if rank == 0:
