@@ -13,7 +13,7 @@ import csv_splitter
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "822239706399298093099245485975646525"
+TOKEN_NUMBER = "599861173371417244329540575874769875"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
@@ -79,9 +79,6 @@ def getTissueSampleFeatures(TISSUE_NAME):
             with open(filename, 'wb') as f:
                 f.write(r.content)
             return filename
-        else:
-            print ('Cosmic response: %s', (r.status_code))
-            print "Unsuccessful download from CosmicDB for tissue % s" % TISSUE_NAME
     except:
         return False
 
@@ -95,7 +92,6 @@ def splitGeneExpressionCSV(GENE_NAME, nprocs):
 
 
 def main(argv):
-    print argv
     try:
         opts, args = getopt.getopt(argv, "hg:t:n:", ["gene", "tissue=", "nproc="])
     except getopt.GetoptError:

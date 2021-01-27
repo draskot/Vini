@@ -2,6 +2,8 @@ NULL=0
 ONES=1
 THREE=3
 HSA=hsa
+TRUE=1
+FALSE=0
 
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -31,7 +33,7 @@ else
     exit
 fi 
 
-echo -n "Trying to determine which job submission system is running..."
+echo -n "Trying to determine which workload manager is running..."
 sinfo | grep "command not found" > tmp #try to find which workload manager is running
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
@@ -49,6 +51,8 @@ fi
 echo -n "Trying to determine number of cores per compute node..."
 rm -f *.out 
 echo "#! /bin/bash" > find_nr_cores
+echo "#SBATCH --cpus-per-task=1" >> find_nr_cores
+echo "#SBATCH --mem=4gb"  >> find_nr_cores
 echo "lscpu" >> find_nr_cores
 chmod u+x find_nr_cores
 job_submit=`cat $WORKDIR/job_submit`
@@ -66,15 +70,17 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-conda --version 2&> tmp #checking if conda is already installed
+echo -n "Vini is using Miniconda. Checking if t is already installed..."
+conda --version 2&> tmp 
 grep "command not found" tmp > tmp2 ; mv tmp2 tmp
 nolines=`wc -l < tmp` ; rm tmp
 if  [ $nolines -eq $NULL ]
 then
+    echo "yes, continuing."
     eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
     conda activate  Vini 
 else 
-    echo "Miniconda not found. Vini will install Miniconda and requested packages in its local directory."
+    echo "is not. Vini will install Miniconda and requested packages in its local directory."
     echo "Important: When asked, set installation path to" $vini_dir/miniconda3
     read -p "Press any key to cont." key 
     wget https://docs.conda.io/en/latest/miniconda.html
@@ -85,9 +91,9 @@ echo "Working directory is usually fast shared filesystem. It is set to" $WORKDI
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
 then
-    read -p "enter the name of new working directory:" newdir
-    mkdir -p $HOME/$newdir
-    WORKDIR=$HOME/$newdir
+    read -p "enter the full path name of new working directoryi (e.g. /home/foo/workdir):" newdir
+    mkdir -p $newdir
+    WORKDIR=$newdir
     echo $WORKDIR > workdir
     echo "WORKDIR changed to" $WORKDIR 
 else 
@@ -229,6 +235,26 @@ echo "" ; rm pathways
 read -p "Please enter the pathway number:" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
+
+read -p "cancer cell lines analysis (y/n)?" yesno #here we check if cell line analysis will be performed
+if [ $yesno == y ]
+then
+    read -p "Please enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_name
+    echo $cell_name > $WORKDIR/cell_name
+    if [ ! -f $vini_dir/genes/expressions/${cell_name}.csv ]
+    then
+        echo "WARNING: File with expressions for" ${cell_name} "cell line not found!"
+        echo -n "Obtain this file manually from COSMIC database "
+        echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_name}.csv 
+        read -p "Press enter when done." enter
+        compute_cell_lines=$TRUE
+    else
+        echo ${cell_name} "cell line will be processed."    
+    fi
+else
+    compute_cell_lines=$FALSE
+fi
+echo $compute_cell_lines > $WORKDIR/compute_cell_lines
 
 #Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
 #We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat

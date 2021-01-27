@@ -171,7 +171,6 @@ do
                                      reduce -Trim ligand.pdb > tmp ; mv tmp ligand.pdb
                                      reduce -Trim complex.pdb > tmp ; mv tmp complex.pdb
                                      tleap -s -f tleap.in
-                                     #echo "brakepoint" ; sleep 100000
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit sander
                                  fi
                              fi
