@@ -241,18 +241,18 @@ if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     echo "Before proceeding, ensure that file with cell expression data exists in" $vini_dir/genes/expressions "directory!"
-    read -p "Please enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_name
-    echo $cell_name > $WORKDIR/cell_name
-    if [ ! -f $vini_dir/genes/expressions/${cell_name}.csv ]
+    read -p "Please enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
+    echo $cell_line > $WORKDIR/cell_line
+    if [ ! -f $vini_dir/genes/expressions/${cell_line}.csv ]
     then
-        echo "WARNING: File with expressions for" ${cell_name} "cell line not found!"
-        echo -n "Obtain this file manually from COSMIC database "
-        echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_name}.csv 
+        echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
+        echo -n "Obtain this file manually from COSMIC DB "
+        echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_line}.csv 
         read -p "Press enter when done." enter
     else
-        echo ${cell_name} "cell line will be processed."    
+        echo ${cell_line} "cell line will be processed."    
     fi
-    echo $cell_name > $WORKDIR/cell_name
+    echo $cell_line > $WORKDIR/cell_line
 else
     compute_cell_line=$FALSE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
 fi

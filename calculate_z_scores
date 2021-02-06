@@ -15,8 +15,9 @@ grep $cancer_type cross_references > $WORKDIR/tmp
 tissue=`cat $WORKDIR/tmp | awk '{print $2}'`
 rm $WORKDIR/tmp 
 
-cores=24
+#cores=24
 
+> ./genes/Uniprot_ID_list
 while read -r line                                                    #create Uniprot ID list
 do
     Uniprot_ID=`echo $line | awk '{print $3}'`
