@@ -70,7 +70,7 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-echo -n "Vini is using Miniconda. Checking if t is already installed..."
+echo -n "Vini is using Miniconda. Checking if it is already installed..."
 conda --version 2&> tmp 
 grep "command not found" tmp > tmp2 ; mv tmp2 tmp
 nolines=`wc -l < tmp` ; rm tmp
@@ -91,7 +91,7 @@ echo "Working directory is usually fast shared filesystem. It is set to" $WORKDI
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
 then
-    read -p "enter the full path name of new working directoryi (e.g. /home/foo/workdir):" newdir
+    read -p "enter the full path name of new working directory (e.g. /home/foo/workdir):" newdir
     mkdir -p $newdir
     WORKDIR=$newdir
     echo $WORKDIR > workdir
@@ -108,7 +108,7 @@ mkdir -p ./genes/pdb_files
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
-read -p "enter maximum number of compute nodes Vini may use concurrently:" nodes
+read -p "Enter the maximum number of compute nodes Vini is allowed to use concurrently:" nodes
 echo $nodes > $WORKDIR/nodes
 max_jobs=`echo $nodes $cores | awk '{print $1 * $2}'` #max nr of jobs Autodock Vina can use
 max_jobs=`echo $max_jobs $THREE | awk '{print $1 / $2}'` #max nr of jobs Autodock Vina can use
@@ -236,9 +236,11 @@ read -p "Please enter the pathway number:" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
 
-read -p "cancer cell lines analysis (y/n)?" yesno #here we check if cell line analysis will be performed
+read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #here we check if cell line analysis will be performed
 if [ $yesno == y ]
 then
+    compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
+    echo "Before proceeding, ensure that file with cell expression data exists in" $vini_dir/genes/expressions "directory!"
     read -p "Please enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_name
     echo $cell_name > $WORKDIR/cell_name
     if [ ! -f $vini_dir/genes/expressions/${cell_name}.csv ]
@@ -247,14 +249,13 @@ then
         echo -n "Obtain this file manually from COSMIC database "
         echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_name}.csv 
         read -p "Press enter when done." enter
-        compute_cell_lines=$TRUE
     else
         echo ${cell_name} "cell line will be processed."    
     fi
+    echo $cell_name > $WORKDIR/cell_name
 else
-    compute_cell_lines=$FALSE
+    compute_cell_line=$FALSE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
 fi
-echo $compute_cell_lines > $WORKDIR/compute_cell_lines
 
 #Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
 #We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat

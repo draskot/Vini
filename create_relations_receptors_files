@@ -11,18 +11,13 @@ PATHWAY_FILE=$CANCER_PATHWAY$c
 PWD=`pwd`
 
 
-cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $WORKDIR
+cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $WORKDIR
 
 
 
 cd $WORKDIR
 
 b=`basename $PATHWAY_FILE`
-
-
-#sed -i.bak '/SYSTEM/d' $PATHWAY_FILE #Remove the line trying to make outbound connection
-#rm -f *.bak
-#echo -n "KEGG cancer pathway ${b} downloaded. Preparing initial receptor / relation files..."
 
 echo -n "Preparing initial receptor / relation files..."
 
@@ -74,8 +69,6 @@ do
 
 done < $WORKDIR/relations
 
-#cat $WORKDIR/temp_buf > $WORKDIR/relations
-#rm $WORKDIR/temp_buf
 mv $WORKDIR/temp_buf $WORKDIR/relations
 echo "done."
 

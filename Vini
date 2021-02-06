@@ -10,10 +10,11 @@ ORGANISM=`cat $WORKDIR/ORGANISM`
 max_therapy_level=`cat $WORKDIR/max_therapy_level`
 cores=`cat $WORKDIR/cores`
 job_submit=`cat $WORKDIR/job_submit`
-compute_cell_lines=`cat $WORKDIR/compute_cell_lines`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cell_name=`cat $WORKDIR/cell_name`
 FALSE=0
-
 data="_data"
+mkdir -p $WORKDIR/KEGG_cancer_pathways
 
 for (( therapy_level=1; therapy_level<=max_therapy_level; therapy_level++ ))
 do
@@ -31,7 +32,8 @@ do
             cancer_type=$i$j
             echo $cancer_type > $WORKDIR/cancer_type
             CANCER_PATHWAY=$ORGANISM$cancer_type
-            mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
+            #mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
+            mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
             sh download_KEGG_pathway
             echo "Processing" $CANCER_PATHWAY "metabolic pathway"
             mkdir -p $WORKDIR/$cancer_type$data              #create staging directory
@@ -42,16 +44,18 @@ do
             grep $cancer_type $vini_dir/cross_references > tmp
             line=`cat tmp`
             tissue=`echo $line | awk '{print $3}'`
-            if [ ! -e $vini_dir//KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+            if [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
             then
                  STORE1=$PYTHONPATH ; unset PYTHONPATH
                  sh get_gene_expressions_from_CosmicDB ${cores}
                  $job_submit calculate_z_scores
                  sh wait_until_jobs_finish
                  export PYTHONPATH=$STORE1 ; rm genex.out
-                 cp $vini_dir/genes/expression_scores.csv $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+                 #cp $vini_dir/genes/expression_scores.csv $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+                 cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
             else
-                cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+                #cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+                cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
             fi
 
             sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
@@ -72,7 +76,7 @@ do
         cancer_type=05200                                     #Processing pathways in cancer 05200
         echo $cancer_type > $WORKDIR/cancer_type
         CANCER_PATHWAY=$ORGANISM$cancer_type
-        mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
+        mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
         sh download_KEGG_pathway
         echo "Processing" $CANCER_PATHWAY "metabolic pathway"
         mkdir -p $WORKDIR/$cancer_type$data                       #create staging directory
@@ -84,16 +88,16 @@ do
         grep $cancer_type $vini_dir/cross_references > tmp
         line=`cat tmp`
         tissue=`echo $line | awk '{print $3}'`
-        if  [ ! -e $vini_dir//KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+        if  [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
         then
             STORE1=$PYTHONPATH ; unset PYTHONPATH
             sh get_gene_expressions_from_CosmicDB ${cores}
             $job_submit calculate_z_scores
             sh wait_until_jobs_finish
             export PYTHONPATH=$STORE1 ; rm genex.out
-            cp $vini_dir/genes/expression_scores.csv $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+            cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
         else
-            cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+            cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
         fi
 
         sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
@@ -117,7 +121,7 @@ do
 
         echo $cancer_type > $WORKDIR/cancer_type
         CANCER_PATHWAY=$ORGANISM$cancer_type
-        mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
+        mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
         sh download_KEGG_pathway
         echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
         start_date=`date`
@@ -129,43 +133,45 @@ do
             sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
             sh repository_check                 #Create receptors_contracted file
             STORE1=$PYTHONPATH ; unset PYTHONPATH            #calculation of gene expressions
-            if  [ $compute_cell_lines -eq $FALSE ]
+            if  [ $compute_cell_line -eq $FALSE ]
             then
-                if  [ ! -e $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+                if  [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
                 then
-                    sh get_gene_expressions_from_CosmicDB ${cores} ${compute_cell_lines}
+                    sh get_gene_expressions_from_CosmicDB ${cores} ${compute_cell_line}
                     $job_submit calculate_z_scores
                     sh wait_until_jobs_finish
                     export PYTHONPATH=$STORE1 ; rm genex.out
-                    cp $vini_dir/genes/expression_scores.csv $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
+                    cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
                 else
-                    cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
                 fi
             else
                 STORE1=$PYTHONPATH ; unset PYTHONPATH            #calculation of cell lines gene expressions
-                sh calculate_gene_expression_cell_line
+                #sh calculate_gene_expression_cell_line    #TO DO!
+
                 eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
                 conda activate Vini
-                python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -t thyroid -c MDA-MB-231
-                cobda deactivate
+
+                echo "brakepoint! tissue:" $tissue ; sleep 1000
+                python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -t $tissue -c $cell_name
+                conda deactivate
             fi
             export PYTHONPATH=$STORE1 ; rm -f genex.out
 
-            echo "brakepoint" ; sleep 10000
             
 
-            if  [ ! -d $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations ]
+            if  [ ! -d $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations ]
             then
-                 mkdir -p $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
-                 mkdir -p $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
+                 mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
+                 mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
                  sh get_gene_mutations_from_CosmicDB
-                 cp $vini_dir/genes/mutations/* $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
-                 cp $vini_dir/genes/sequences/* $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
+                 cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
+                 cp $vini_dir/genes/sequences/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
                  sh generate_mutated_fasta_sequences
             else
                  rm -f $vini_dir/genes/mutations/* $vini_dir/genes/sequences/*
-                 cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations/* $vini_dir/genes/mutations
-                 cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences/* $vini_dir/genes/sequences
+                 cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations/* $vini_dir/genes/mutations
+                 cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences/* $vini_dir/genes/sequences
                  echo "gene mutations already in repo."
             fi
 

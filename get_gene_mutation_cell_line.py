@@ -106,7 +106,7 @@ def main(argv):
         if mutationsFile:
             print 'Gene mutations saved in file: %s' % mutationsFile
     except:
-        print "Unable to download gene mutations for %s cell line." % CELL_LINE
+        print "Unable to download gene mutations for %s cell line."
 
     # get CSV with wild type FASTA sequence from CosmicDB
     num_successful_downloads = 0
