@@ -1,0 +1,12 @@
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+conda activate Vini
+
+> ./genes/Uniprot_ID_list                                             #create Uniprot ID list
+while read -r line       
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    echo $Uniprot_ID >> ./genes/Uniprot_ID_list
+done < $WORKDIR/receptors_contracted
+
+python calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list #this python script is empty
+conda deactivate

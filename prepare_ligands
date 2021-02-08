@@ -18,7 +18,7 @@ do
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
 
-    echo $drugname > test ; words=`wc -w < test` ; rm test          #put a question mark if 2 words
+    echo $drugname > tmp ; words=`wc -w < tmp` ; rm tmp          #put a question mark if 2 words
     if  [ $words -eq 2 ] #then put ? in between
     then
         line=`echo $line | tr ',' ' '`
@@ -62,3 +62,4 @@ do
     fi
     let "lineno++"
 done
+rm -f tmp

@@ -1,0 +1,16 @@
+
+tissue=$1
+cell_line=$2
+
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+conda activate Vini
+
+> ./genes/Uniprot_ID_list                                             #prepare Uniprot ID list
+while read -r line                                                    
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    echo $Uniprot_ID >> ./genes/Uniprot_ID_list
+done < $WORKDIR/receptors_contracted
+
+python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -t $tissue -c $cell_line
+conda deactivate

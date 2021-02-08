@@ -1,0 +1,27 @@
+
+NULL=0
+ONES=1
+
+> $WORKDIR/receptors_contracted.tmp
+
+while read -r line #add z_score and normalized gene exp factor to receptors_contracted file (5th and 6th column)
+do
+    > $WORKDIR/tmp
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    grep $Uniprot_ID ./genes/expression_scores.csv > $WORKDIR/tmp
+    lines=`wc -l < $WORKDIR/tmp`
+    if  [ $lines -eq $NULL ] ; then #we define nge (normalized gene expression) factor as 1 + z_score
+        z_score=NA
+        nge=$ONES
+    else
+        if  [ $lines -eq $ONES ] ; then
+            z_score=`cat $WORKDIR/tmp | awk -F',' '{print $2}'`
+        else
+            head -1 $WORKDIR/tmp > $WORKDIR/tmp2 ; mv $WORKDIR/tmp2 $WORKDIR/tmp
+            z_score=`cat $WORKDIR/tmp | awk -F',' '{print $2}'`
+        fi
+        nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
+    fi
+    printf "%s%s%28s%s%22s\n" "$line" " " "$z_score" " " "$nge"  >> $WORKDIR/receptors_contracted.tmp
+done < $WORKDIR/receptors_contracted
+tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted

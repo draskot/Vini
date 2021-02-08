@@ -1,0 +1,16 @@
+
+
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+conda activate Vini
+
+> ./genes/Uniprot_ID_list                                             #prepare Uniprot ID list
+while read -r line
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    echo $Uniprot_ID >> ./genes/Uniprot_ID_list
+done < $WORKDIR/receptors_contracted
+
+python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+
+conda deactivate
+
