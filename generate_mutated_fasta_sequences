@@ -1,12 +1,6 @@
 
 
 
-STORE1=$PYTHONPATH ; unset PYTHONPATH   
-
-eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
-conda activate Vini
 
 python generateMutatedFASTAseq.py
 
-conda deactivate
-export PYTHONPATH=$STORE1 

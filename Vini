@@ -137,6 +137,9 @@ do
             sh repository_check                 #Create receptors_contracted file
 
             STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
+            eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+            conda activate Vini
+
             if  [ $compute_cell_line -eq $FALSE ]
             then
                 if  [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
@@ -153,7 +156,7 @@ do
                     mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
                     mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
                     sh get_gene_mutations_from_CosmicDB
-                    sh generate_mutated_fasta_sequences #IN ERROR!
+                    #python generateMutatedFASTAseq.py #IN ERROR!
                     cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
                     cp $vini_dir/genes/sequences/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
                 else
@@ -172,8 +175,8 @@ do
                     mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
                     #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
                     #working with the expression file already preloaded in ./genes/expressions directory. 
-                    sh get_gene_mutation_cell_line ${tissue} ${cell_line}
-                    sh generateMutatedFASTAseqCellLine
+                    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -t $tissue -c $cell_line
+                    python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
                     cp $vini_dir/genes/expressions/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
                     cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
                     cp $vini_dir/genes/sequences/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
@@ -182,10 +185,14 @@ do
                     cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions/* $vini_dir/genes/expressions
                     cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations/* $vini_dir/genes/mutations
                     cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences/* $vini_dir/genes/sequences
-                    sh add_cell_expressions_to_receptors ; sh add_cell_expressions_to_relations
-                    sh predict_mutated_genes
                 fi
+                echo "Getting expression values from COSMIC cell lines. This will take a while..."
+                sh add_cell_expressions_to_receptors ${cell_line}
+                echo "brakepoint" ; sleep 100000
+                sh add_cell_expressions_to_relations
+                sh predict_mutated_genes
             fi
+            conda deactivate
             export PYTHONPATH=$STORE1 
 
 

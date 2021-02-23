@@ -166,3 +166,4 @@ done < $WORKDIR/receptors_expanded
 awk '!seen[$0]++' $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/temp
 mv $WORKDIR/temp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
 echo "done."
+cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST $vini_dir/genes/Uniprot_ID_list
