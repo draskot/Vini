@@ -37,7 +37,9 @@ export PATH=$INSTALL_DIR/openbabel-openbabel-2-4-0/bin:$PATH
 
 #UCSF-Chimera-1.14, available from https://www.cgl.ucsf.edu/chimera/download.html
 #Add the following line to your .bashrc file:
-export PATH=$INSTALL_DIR/UCSF-Chimera-1.14/bin:$PATH
+export PATH=$CHIMERA/bin:$PATH (Set CHIMERA to the directory where UCSF Chimera is installed)
+Note: You need to register Chimera. Registration is free for academic use and must be renewed year per year.
+Go to https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py and follow instructions to register
 
 #Autodock Vina 1.1.2, available from http://vina.scripps.edu/download.html
 #Add the following line to your ./bashrc file:

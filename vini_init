@@ -102,7 +102,6 @@ fi
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 grep -v HOH $vini_dir/1aki.sav > $vini_dir/1AKI.pdb
-#cp 1aki.sav $HOME/1AKI.pdb
 mkdir -p ./ligands/pdb_files
 mkdir -p ./genes/pdb_files
 
@@ -207,7 +206,7 @@ touch -a $WORKDIR/computed_therapy_level
 touch -a $WORKDIR/computed_cancer_type
 computed_therapy_level=`cat $WORKDIR/computed_therapy_level`
 
-echo -n "delete all data previously created by Vini)? (y/n)"
+echo -n "Delete all data previously created by Vini? (y/n)"
 read erase
 if  [[ $erase == "y" ]]
 then
