@@ -15,8 +15,6 @@ do
     then
         echo "yes."
     else
-        #if  [ -n "$compound" ] && [ "$compound" -eq "$compound" ] 2>/dev/null  #if number, this is PubCheM ID
-        #if    [[ -n "$compound" ]] && [[ "$compound" -eq "$compound" ]] 
         if  [[ $compound = *[[:digit:]]* ]]; then
             echo -n "no, trying to download it from PubChem..."
             pubchem_id=$compound

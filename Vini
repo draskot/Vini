@@ -33,7 +33,6 @@ do
             cancer_type=$i$j
             echo $cancer_type > $WORKDIR/cancer_type
             CANCER_PATHWAY=$ORGANISM$cancer_type
-            #mkdir -p $vini_dir/KEGG_cancer_pathways/$HSA$cancer_type
             mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
             sh download_KEGG_pathway
             echo "Processing" $CANCER_PATHWAY "metabolic pathway"
@@ -52,10 +51,8 @@ do
                  $job_submit calculate_z_scores
                  sh wait_until_jobs_finish
                  export PYTHONPATH=$STORE1 ; rm genex.out
-                 #cp $vini_dir/genes/expression_scores.csv $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
                  cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
             else
-                #cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
                 cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
             fi
 
@@ -186,15 +183,13 @@ do
                     cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations/* $vini_dir/genes/mutations
                     cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences/* $vini_dir/genes/sequences
                 fi
-                echo "Getting expression values from COSMIC cell lines. This will take a while..."
+                echo "Getting expression values from COSMIC cell lines. This may take a while..."
                 sh add_cell_expressions_to_receptors ${cell_line}
-                echo "brakepoint" ; sleep 100000
-                sh add_cell_expressions_to_relations
+                sh add_expressions_to_relations
                 sh predict_mutated_genes
             fi
             conda deactivate
             export PYTHONPATH=$STORE1 
-
 
             sh copy_genes_to_stage              #Copy Vina pdb receptor files to the stage
             sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
@@ -203,6 +198,7 @@ do
         fi
         sh estimate_Vina_computational_time
         sh estimate_EB_matrices_computational_time
+
         sh vini 
         end_date=`date`
         echo "Analysis completed at"  $end_date

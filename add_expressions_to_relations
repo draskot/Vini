@@ -1,6 +1,8 @@
 > $WORKDIR/relations.tmp
+echo -n "Adding gene expressions to the relation file. Please wait, this may take a while..."
 while read -r rel_line                            #get source IDs from relations file
 do
+    echo -n "."
     source_ID=`echo $rel_line | awk '{print $1}'`
     while read -r rec_line                        #get receptor_ID from receptors_contracted file
     do

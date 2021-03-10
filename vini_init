@@ -101,7 +101,8 @@ else
 fi 
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
-cp 1aki.sav $HOME/1AKI.pdb
+grep -v HOH $vini_dir/1aki.sav > $vini_dir/1AKI.pdb
+#cp 1aki.sav $HOME/1AKI.pdb
 mkdir -p ./ligands/pdb_files
 mkdir -p ./genes/pdb_files
 

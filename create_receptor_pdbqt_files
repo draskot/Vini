@@ -5,9 +5,11 @@ cancer_type=`cat $WORKDIR/cancer_type`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
+NULL=0
 
 echo "Creating receptor pdbqt files..."
 cd $WORKDIR/$cancer_type$data
+rm -f *pdbqt
 dir=$WORKDIR/$cancer_type$data
 
 k=1 ; l=0
@@ -27,6 +29,7 @@ done
 
 sh $vini_dir/wait_until_jobs_finish
 
+
 > linebuf
 j=0 ; k=1                             
 for i in receptor_*.pdb
@@ -36,13 +39,14 @@ do
     uniprot_id=`echo $line | awk '{print $3}'`
     if [ ! -e receptor_$e.pdbqt  ]
     then
-        echo -n "pdbqt file for" $uniprot_id  "was not created. Trying to predict new structure..." 
+        echo -n "pdbqt file for" $uniprot_id "receptor_" $e ".pdb"  "was not created. Trying to predict new structure..." 
+        
         DOWNLOAD_DIR=$WORKDIR/$cancer_type$data
-        drugname=0
+        drugname=$NULL
         sh $vini_dir/predict_protein_structure ${DOWNLOAD_DIR} ${uniprot_id} ${drugname}
-        if [ -e $uniprot_id$pdb ]
+        if [ -e $DOWNLOAD_DIR/$uniprot_id$pdb ]
         then 
-            echo -n "success. Adding hydrogens to polar atoms..."
+            echo -n "success. Adding hydrogens to polar atoms with Openbabel..."
             obabel $uniprot_id$pdb -O receptor_$e.pdb --addpolarh 2> /dev/null   #add H to polar atoms only  
             if [ -e receptor_$e.pdb ]
             then
@@ -56,7 +60,7 @@ do
                 cp $uniprot_id$pdb $vini_dir/genes/pdb_files/$uniprot_id$pdb #update protein structure in repo
             else
                 echo "failed. Using 1AKI protein instead to continue processing."
-                cp $HOME/1AKI.pdb ./receptor_$e.pdb 
+                cp $vini_dir/1AKI.pdb ./receptor_$e.pdb 
                 $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r receptor_$e.pdb -o receptor_$e.pdbqt
                 w1=`echo $line | awk '{print $1}'` #change status flag in line to F
                 w2=`echo $line | awk '{print $2}'`
@@ -66,7 +70,8 @@ do
             fi
         else
             echo "failed. Using 1AKI protein instead."
-            cp $HOME/1AKI.pdb ./receptor_$e.pdb
+            cp $vini_dir/1AKI.pdb ./receptor_$e.pdb
+            $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -U nphs_lps_waters -r receptor_$e.pdb -o receptor_$e.pdbqt
             w1=`echo $line | awk '{print $1}'` #change status flag in line to F
             w2=`echo $line | awk '{print $2}'`
             w3=`echo $line | awk '{print $3}'`

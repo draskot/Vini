@@ -21,6 +21,7 @@ if  [ $lineno -eq $NULL ]
 then
     echo "prediction failed, exiting." ; exit
 else
+    echo "predicting..." 
     rm -f $WORKDIR/tmp
     for (( i=1; i<$((lineno+1)); i++ ))
     do

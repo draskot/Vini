@@ -58,7 +58,7 @@ do
                 printf "%s%s%10s%s%10s%s%10s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "E" >> $WORKDIR/receptors_contracted
             else
                 echo "failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with F flag."
-                grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$pubchem_id$PDB #prepare faked compound
+                grep -v HETATM $vini_dir/1AKI.pdb > $DOWNLOAD_DIR/$pubchem_id$PDB #prepare faked compound
                 printf "%s%s%10s%s%10s%s%10s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$pubchem_id" " " "F" >> $WORKDIR/receptors_contracted
             fi
         fi
@@ -74,7 +74,7 @@ do
 
          echo $uniprot_id >> $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
          line=`grep $uniprot_id $vini_dir/uniprot_db` #Check if pdb structure is available
-         echo -n "KEGG entry" $entry "is a protein" $uniprot_id
+         echo -n "KEGG entry" $entry "is a gene encoding protein" $uniprot_id
          nowords=`echo $line | wc -w`
          if  [ $nowords -eq $two ]
          then
@@ -94,7 +94,7 @@ do
                  else
                      echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
                      printf "%s%s%10s%s%10s%s%10s\n" "$KEGG_entry" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
-                     grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                     grep -v HETATM $vini_dir/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
                  fi
              fi
          else
@@ -140,7 +140,7 @@ do
                          printf "%s%s%10s%s%10s%s%10s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "E" >> $WORKDIR/receptors_contracted
                      else
                          echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
-                         grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                         grep -v HETATM $vini_dir/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
                          printf "%s%s%10s%s%10s%s%10s\n"  "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
                      fi
                  else
@@ -155,7 +155,7 @@ do
                          echo "failed. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "list with F flag."
                          printf "%s%s%10s%s%10s%s%10s\n" "$KEGG_entry_id" " " "$KEGG_gene_name" " " "$uniprot_id" " " "F" >> $WORKDIR/receptors_contracted
                          echo "Adding protein 1AKI to the repo instead."
-                         grep -v HETATM $HOME/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
+                         grep -v HETATM $vini_dir/1AKI.pdb > $DOWNLOAD_DIR/$uniprot_id$PDB #prepare faked protein
                      fi
                  fi
              fi
