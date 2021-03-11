@@ -14,14 +14,7 @@ def find_frames(filename):
 			else:
 				frame.append(line.strip('\n'))
 		frames.append(''.join(frame))
-
-
-		#print f.readlines()
-		#print f.read()0
-		#lines = f.readlines().split("")
-		#lines = f.read().split("\n")
 		frames.pop(0)
-		#print frames
 	return frames
 
 
@@ -44,15 +37,9 @@ def find_longest_frame(frames):
 	#longest_frame = sorted_frames_dict.keys()[-1]
 	return longest_frame
 
-def write_longest_frame(frame, filename):
-	with open(filename + '.fasta', 'w') as f:
+def write_longest_frame(frame, inputdir, filename):
+	with open(os.path.join(inputdir, filename) + '.fasta', 'w') as f:
 		f.write(frame)
-
-
-
-
-
-
 
 
 def main(argv):
@@ -71,12 +58,10 @@ def main(argv):
 	
 	for filename in os.listdir(inputdir):
 		if '.frame' in filename:
-			frames = find_frames(filename)
-			#print "frames: ", frames
+			frames = find_frames(os.path.join(inputdir, filename))
 			longest_frame = find_longest_frame(frames)
-			print longest_frame
 			gene_name = filename.split('.')[0].strip('_')
-			write_longest_frame(longest_frame, gene_name)
+			write_longest_frame(longest_frame, inputdir ,gene_name)
 
 
 
