@@ -33,7 +33,7 @@ def find_longest_frame(frames):
 			elif start == True:
 				count += 1
 	sorted_frames_dict = sorted(frames_dict.items(), key = operator.itemgetter(1))
-	longest_frame = sorted_frames_dict[-1][0]
+	longest_frame = sorted_frames_dict[-1][0].strip('-')
 	#longest_frame = sorted_frames_dict.keys()[-1]
 	return longest_frame
 
