@@ -186,7 +186,7 @@ do
                 echo "Getting expression values from COSMIC cell lines. This may take a while..."
                 sh add_cell_expressions_to_receptors ${cell_line}
                 sh add_expressions_to_relations
-                sh predict_mutated_genes
+                sh predict_mutated_genes ${cell_line}
             fi
             conda deactivate
             export PYTHONPATH=$STORE1 
