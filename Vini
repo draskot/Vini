@@ -187,6 +187,8 @@ do
                 sh add_cell_expressions_to_receptors ${cell_line}
                 sh add_expressions_to_relations
                 sh predict_mutated_genes ${cell_line}
+                sh predict_mutated_proteins
+                echo "brakepoint" ; sleep 10000
             fi
             conda deactivate
             export PYTHONPATH=$STORE1 
