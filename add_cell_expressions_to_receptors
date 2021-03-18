@@ -1,0 +1,68 @@
+cell_line=$1
+> $WORKDIR/receptors_contracted.tmp
+NULL=0
+ONES=1
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+conda activate Vini
+touch $WORKDIR/Uniprot_gene_table
+
+while read -r line
+do
+    #do not process this paragraph if entry is the compound and contains pubchem word
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    echo $Uniprot_ID | grep pubchem > $WORKDIR/tmp
+    nolines=`wc -l < $WORKDIR/tmp`
+    if  [ $nolines -eq $NULL  ]
+    then
+        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find the gene name..."
+        grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if the gene name already exists
+        nolines=`wc -l < $WORKDIR/tmp`
+        if  [ $nolines -ne $NULL  ]
+        then
+            echo "name found in the local repository."
+            GENE_NAME=`cat $WORKDIR/tmp | awk '{print $2}'`
+        else
+            for (( N=0; N<10; N++ )) #retry 10 times
+            do
+                echo -n "Contanting UNIPROT for gene name..."
+                python mapUniprotIDtoCosmicID.py $Uniprot_ID > $WORKDIR/tmp
+                GENE_NAME=`cat $WORKDIR/tmp`
+                if  [ $GENE_NAME != "Error" ]
+                then
+                  echo "success."
+                  printf "%s%s%s\n" "$Uniprot_ID" " " "$GENE_NAME" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+                  break
+                  sleep 1
+                else
+                   echo "no answer. Will try up to 10 times."
+                fi
+            done
+        fi
+    else 
+        echo "KEGG entry is not a protein. Will not search for the gene name."
+        GENE_NAME=Error
+    fi
+
+
+    if  [ $GENE_NAME == "Error" ]
+    then
+        z_score=$NULL ; nge=$ONES
+    else
+        grep -w "$GENE_NAME" $vini_dir/genes/expressions/${cell_line}.csv > $WORKDIR/tmp
+        nolines=`wc -l < $WORKDIR/tmp`
+        if  [ $nolines -eq $NULL  ] #check if gene found in the expression table
+        then
+            echo "GENE" $GENE_NAME "NOT FOUND in" ${cell_line}.csv
+            z_score=$NULL ; nge=$ONES
+        else
+            echo "GENE" $GENE_NAME "FOUND in" ${cell_line}.csv
+            z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
+            nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
+        fi
+    fi
+    
+        
+    printf "%s%s%s%s%10s\n" "$line" " " "$z_score" " " "$nge"  >> $WORKDIR/receptors_contracted.tmp
+done < $WORKDIR/receptors_contracted
+tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted
+conda deactivate
