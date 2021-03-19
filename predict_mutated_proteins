@@ -1,24 +1,30 @@
-
-
+NULL=0
 PDB=.pdb
 CLEAN=_clean
 
-SEQDIR=$vini_dir/genes/sequences
+chars=`wc -c < predict`
 
-echo -n "Cleaning pdb files with Chimera. Please wait, this may take a while."
-while read -r line
-do
-    grep -v "HETATM" ${SEQDIR}/$line$PDB > $WORKDIR/tmp
-    grep -v "CONECT" $WORKDIR/tmp > ${SEQDIR}/$line$PDB
-    sh chimera_script ${line} BNZ
-    if  [ -e protein_clean.pdb ]
-    then
-        mv protein_clean.pdb ${vini_dir}/genes/pdb_files/$line$PDB
-        rm $line$CLEAN$PDB #cleanup
-    else
-	mv ${SEQDIR}/$line$PDB ${vini_dir}/genes/pdb_files/$line$PDB
-    fi
-done < predict
-echo "done."
+if [ $chars -ne $NULL  ]
+then
+    echo "Cleaning pdb files with Chimera. Please wait, this may take a while..."
+    while read -r line
+    do
+        grep -v "HETATM" $vini_dir/genes/sequences/$line$PDB > tmp
+        grep -v "CONECT" tmp > $line$PDB
+        ligand=BNZ
+        sh chimera_script ${line} ${ligand}
 
-rm log ligand_wH.pdb predict #cleanup
+        if  [ -e protein_clean.pdb ]
+        then
+            mv protein_clean.pdb ${vini_dir}/genes/pdb_files/$line$PDB
+            rm $line$CLEAN$PDB $line$PDB #cleanup
+            
+        else
+	    mv $line ${vini_dir}/genes/pdb_files/$line$PDB
+        fi
+    done < predict
+    echo "done."
+    rm tmp log ligand_wH.pdb #cleanup
+    rm -f $vini_dir/genes/sequences/*
+fi
+rm predict 

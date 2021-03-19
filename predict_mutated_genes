@@ -4,6 +4,7 @@
 
 cell_line=$1
 
+NULL=0
 FASTA=.fasta
 PDB=.pdb
 FRAME=.frame
@@ -91,9 +92,17 @@ done < mutated
 
 rm wild mutated combo seqnames
 
-echo -n "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences  
-ls $vini_dir/genes/sequences
-echo "Upload these sequences to the SWISS-MODEL https://swissmodel.expasy.org/ and model their structures (pdb files)."
-echo "Then, upload these structures to " $vini_dir/genes/sequences "folder."
-echo "IMPORTANT: The pdb file name must be the same as the fasta file name.. For example: 1AKI.fasta --> 1AKI.pdb"
-read -p "Press enter when ready to continue." enter
+chars=`wc -c < predict`
+if [ $chars -eq $NULL  ]
+then
+    echo "All mutated protein structures are available in Vini repo."
+    sleep 10000
+    exit
+else
+    echo "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences ":" 
+    ls $vini_dir/genes/sequences
+    echo "Upload these sequences to the SWISS-MODEL https://swissmodel.expasy.org/ and model their structures (pdb files)."
+    echo "Then, upload these structures to " $vini_dir/genes/sequences "folder."
+    echo "IMPORTANT: The pdb file name must be the same as the fasta file name.. For example: 1AKI.fasta --> 1AKI.pdb"
+    read -p "Press enter when ready to continue." enter
+fi
