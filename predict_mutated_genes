@@ -12,10 +12,10 @@ prefix=_
 dash=-
 SEQDIR=$vini_dir/genes/sequences/
 
-echo -n "Translating nucleotide sequences to aminoacid sequences, please wait" 
+echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
 rm -f $vini_dir/genes/sequences/*csv
 
-ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp
+ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
 i=1   #create and run job for DNA --> protein sequence translation
 while read -r line
 do
@@ -36,12 +36,13 @@ do
 done < $WORKDIR/tmp
 echo "done."
 
+
 python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
 
 rm -f $vini_dir/genes/sequences/*frame
 ls $SEQDIR > seqnames             #rename proteins to include cell line name
 
-ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp
+ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
 while read -r line
 do
     FILENAME=`basename "$line"`
@@ -59,6 +60,7 @@ do
 done < seqnames
 mv tmp wild
 
+> tmp
 ls $SEQDIR > mutated          #create file with mutated gene names
 while read -r line
 do
@@ -90,13 +92,11 @@ do
     fi
 done < mutated
 
-rm wild mutated combo seqnames
 
 chars=`wc -c < predict`
 if [ $chars -eq $NULL  ]
 then
     echo "All mutated protein structures are available in Vini repo."
-    sleep 10000
     exit
 else
     echo "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences ":" 

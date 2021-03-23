@@ -24,7 +24,4 @@ then
         fi
     done < predict
     echo "done."
-    rm tmp log ligand_wH.pdb #cleanup
-    rm -f $vini_dir/genes/sequences/*
 fi
-rm predict 

@@ -188,12 +188,12 @@ do
                 sh add_expressions_to_relations
                 sh predict_mutated_genes ${cell_line}
                 sh predict_mutated_proteins
-                echo "brakepoint" ; sleep 10000
+                rm -f wild mutated combo seqnames predict tmp log ligand_wH.pdb #cleanup
             fi
             conda deactivate
             export PYTHONPATH=$STORE1 
 
-            sh copy_genes_to_stage              #Copy Vina pdb receptor files to the stage
+            sh copy_genes_to_stage              #Copy pdb receptor files to the stage
             sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
             nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
             echo $nr_complexes > $WORKDIR/nr_complexes

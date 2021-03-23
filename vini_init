@@ -33,6 +33,10 @@ else
     exit
 fi 
 
+rm -f $vini_dir/genes/mutations/*     #cleanup
+rm -f $vini_dir/genes/expressions/*
+rm -f $vini_dir/genes/sequences/*
+
 echo -n "Trying to determine which workload manager is running..."
 sinfo | grep "command not found" > tmp #try to find which workload manager is running
 nolines=`wc -l < tmp`
@@ -240,8 +244,9 @@ read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #he
 if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
-    echo "Before proceeding, ensure that file with cell expression data exists in" $vini_dir/genes/expressions "directory!"
-    read -p "Please enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
+    read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
+    echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/genes/expressions "directory!"
+    read -p "press enter when the upload is done." ready
     echo $cell_line > $WORKDIR/cell_line
     if [ ! -f $vini_dir/genes/expressions/${cell_line}.csv ]
     then
