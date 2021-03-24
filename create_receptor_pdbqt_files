@@ -39,7 +39,7 @@ do
     uniprot_id=`echo $line | awk '{print $3}'`
     if [ ! -e receptor_$e.pdbqt  ]
     then
-        echo -n "pdbqt file for" $uniprot_id "receptor_" $e ".pdb"  "was not created. Trying to predict new structure..." 
+        echo -n "pdbqt file for" $uniprot_id "receptor_"$e "was not created. Trying to predict new structure..." 
         
         DOWNLOAD_DIR=$WORKDIR/$cancer_type$data
         drugname=$NULL

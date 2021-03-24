@@ -198,12 +198,15 @@ do
             nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
             echo $nr_complexes > $WORKDIR/nr_complexes
         fi
-        sh estimate_Vina_computational_time
-        sh estimate_EB_matrices_computational_time
+        #sh estimate_Vina_computational_time
+        #sh estimate_EB_matrices_computational_time
 
+       # SECONDS=0
         sh vini 
         end_date=`date`
         echo "Analysis completed at"  $end_date
+        #elapsedseconds=$SECONDS
+        #echo "elapsed seconds:" $elapsedseconds
     fi
 done
 

@@ -1,54 +1,47 @@
-
-Dim=`cat $WORKDIR/nr_complexes`
-therapy_level=`cat $WORKDIR/therapy_level`
-target_dir=`cat $WORKDIR/target_dir`
-last_col=$(( $Dim - 1 ))
-last_raw=$(( $Dim - 1 ))
-
+Dim=`cat $WORKDIR/nr_complexes`            #dimenzija EB matrice 
+therapy_level=`cat $WORKDIR/therapy_level` #nivo terapije 
+target_dir=`cat $WORKDIR/target_dir`       #direktorij u kojem se nalazi <vec> datoteka i u kojem se kreira EB matrica
 rm -f $WORKDIR/temp_buf
-i=0                                                                              #i is the raw index
+i=0                                                                  #i je index retka EB matrice
 while [ $i -lt $Dim ]            
 do
-      j=0                                                                         #j is the column index
-      while [ $j -lt $Dim ]    
-      do
-          if   [ $i -eq $j ]
-          then
-              k=$(( $i + 1 ))
-              affinity_value=`sed -n ${k}p $target_dir/vec`
-              printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #print affinity value into EB matrix
-          else
-              if  [[ $therapy_level -eq 1 ]]
-              then
-                  NUM=${i} ; let NUM++                                   #fetch receptor ID
-                  line=`sed "${NUM}q;d" $WORKDIR/receptors_contracted`                 
-                  receptor_ID=`echo "${line}" | awk '{print $1;}'`             
-                  cat $WORKDIR/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
-                  while read -r line  #break when first word in line matches receptor_ID
-                  do
-                      first_word=`echo "${line}" | awk '{print $1;}'`             
-                      if  [ $first_word -eq $receptor_ID ]  
-                      then
-                          break
-                      fi
-                  done < $WORKDIR/temp_buf
-
-                  target_ID=`echo "${line}" | awk '{print $2;}'`             
-                  genex=`echo "${line}" | awk '{print $4;}'`
-                  target_ID1=${target_ID/.*}
-              fi
-
-              if  [[ "$target_ID1" = "$j"  ]] && [[ $therapy_level -eq 1 ]]
-              then
-                  printf "%s" ${genex} " " >> $target_dir/EB_matrix #write expression
-              else
-                  printf "%s" "0" " " >> $target_dir/EB_matrix  #else write 0 into EB matrix
-              fi
-          fi
-          let "j++"
-      done
-printf '%s\n' >> $target_dir/EB_matrix
-echo -n "$i "
-let "i++"
+    NUM=${i} ; let NUM++                                           #NUM je broj linije receptors_contracted fajle
+    line=`sed "${NUM}q;d" $WORKDIR/receptors_contracted`           #line sadrži liniju receptors_contracted fajle     
+    receptor_ID=`echo "${line}" | awk '{print $1;}'`               #receptor_ID sadrži ID receptora (prvi broj u liniji)
+    j=0                                                            #j je index kolone EB matrice
+    while [ $j -lt $Dim ]    
+    do
+        if   [ $i -eq $j ] #ako je i=j, onda smo na glavnoj dijagonali EB matrice
+        then
+            k=$(( $i + 1 ))
+            affinity_value=`sed -n ${k}p $target_dir/vec` #uzimamo EB vrijednost (normiranu sa ekspresijom) iz <vec> 
+            printf "%s" ${affinity_value} " " >> $target_dir/EB_matrix #te je zapisujemo je u EB matricu
+        else
+            if  [[ $therapy_level -eq 1 ]] #vrijednosti relacija možemo odrediti samo za nivo terapije = 1 
+            then
+                cat $WORKDIR/relations | grep -w "${receptor_ID}" > $WORKDIR/temp_buf
+                while read -r line  #break when first word in line matches receptor_ID
+                do
+                    first_word=`echo "${line}" | awk '{print $1;}'` #source ID gena (iz kojeg izvire relacija)           
+                    if  [ $first_word -eq $receptor_ID ]  
+                    then
+                        break #s obzirom da gen nema relaciju sam sa sobom izlazimo iz petlje
+                    fi
+                done < $WORKDIR/temp_buf
+                target_ID=`echo "${line}" | awk '{print $2;}'` #target ID gena (u kojeg uvire relacija)             
+                genex=`echo "${line}" | awk '{print $4;}'`  #genex = genska ekspresija (kolona 4 u <relations> )
+            fi
+            if  [[ "$target_ID" = "$j"  ]] && [[ $therapy_level -eq 1 ]] #
+            then
+                printf "%s" ${genex} " " >> $target_dir/EB_matrix #zapis genske ekspresije u EB matricu (gene relation)
+            else
+                printf "%s" "0" " " >> $target_dir/EB_matrix  #zapis 0 u EB matricu (gene relation)
+            fi
+        fi
+        let "j++"
+    done
+    printf '%s\n' >> $target_dir/EB_matrix #zapis NL znaka u EB matricu
+    echo -n "$i "
+    let "i++"
 done
 rm -f $WORKDIR/temp_buf
