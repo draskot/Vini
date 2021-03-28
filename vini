@@ -29,6 +29,7 @@ lig_source=$WORKDIR
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 cd $WORKDIR
 
+SECONDS=0
 
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
@@ -77,13 +78,12 @@ do
                              cp $MGLTOOLS/AD4_parameters.dat ./                                
                              cp $vini_dir/vina $vini_dir/autogrid4 ./                                         
                              cp $comp_source/complex_$comp_index.pdbqt ./                      
-                             sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                     
-                             sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
                              cat $WORKDIR/Vina > Vina_run
+                             echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}" >> Vina_run #create Vina config file                                                     
+                             echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}" >> Vina_run
+                             #cat $WORKDIR/Vina > Vina_run
                              #$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $lig_source/ligand_$lig_index.pdb -o $lig_source/ligand_$lig_index.pdbqt #Preparing pdbqt file
                              echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_$comp_index.pdbqt --ligand $lig_source/ligand_$lig_index.pdbqt --out $target_dir/complex_$comp_index.pdbqt --log $target_dir/log_$log_index.txt " >> Vina_run
-                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                             $job_submit Vina_run    
                          fi
                          cd $WORKDIR
                      else
@@ -179,6 +179,24 @@ do
                      fi
     	         done # end of 5th loop
 
+                 line=`head -"$ligand_number" $WORKDIR/ligands_list | tail -1`
+                 flag=`echo $line | awk '{print $2}'`
+                 if  [ $flag == S ]  #if a small molecule, we are performing docking, else MD
+                 then
+                 for (( N=0; N<nr_complexes; N++ )) #5th loop
+                 do
+                     printf -v n "%03d" $N ; comp_index=$n
+                     conf_index=$comp_index ; log_index=$comp_index
+                     cd $WORKDIR/$comp_index 
+                     sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                     echo "maximum number of Vina jobs allowed is:" $max_jobs
+                     $job_submit Vina_run
+                     cd $WORKDIR
+                 done
+                 fi
+
+
+
                  let ligand_number++
                  echo "Waiting for" $USER "jobs to finish..."
                  sh $vini_dir/wait_until_jobs_finish
@@ -218,13 +236,25 @@ do
                          fi
                      done
                  fi
+
+                 elapsedseconds=$SECONDS
+                 echo "elapsed seconds for Vina jobs:" $elapsedseconds
+                 SECONDS=0
+
                  sh $vini_dir/update_affinity_vec_with_genex_values ${target_dir}
                  echo $target_dir > target_dir
                  cat Vina > create_energy_b
+                 #echo "#SBATCH --exclusive" >> create_energy_b #we want to run it exclusively on one node
                  cat $vini_dir/create_energy_binding_matrix >> create_energy_b
                  chmod +x create_energy_b
+
                  $job_submit create_energy_b 
                  sh $vini_dir/wait_until_jobs_finish #Wait until EB matrix is created
+
+                 elapsedseconds=$SECONDS
+                 echo "elapsed seconds for EB matrix creation:" $elapsedseconds
+                 
+
                  sleep 4   #allow EB matrix creation to finish
                  python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
                  eigenvalue=`cat $target_dir/E | awk '{print $2}'`
