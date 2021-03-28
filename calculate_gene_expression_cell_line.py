@@ -27,7 +27,7 @@ def filterGeneExpression (WORKING_DIR, cell_line_name, genes_list):
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv, "hg:t:o:", ["gene", "tissue="])
+        opts, args = getopt.getopt(argv, "hg:c:o:", ["gene", "cellline="])
     except getopt.GetoptError:
         print ('-g <gene Uniprot ID or file path> -t <tissue name> -o <output file>')
         sys.exit()
@@ -37,15 +37,17 @@ def main(argv):
             sys.exit()
         elif opt in ("-g", "--gene"):
             GENE_NAME = arg
-        elif opt in ("-t", "--tissue"):
-            TISSUE_NAME = arg
+        elif opt in ("-c", "--cellline"):
+            CELL_LINE = arg
         elif opt in ("-o", "--output"):
             OUTPUT_FILE = arg
 
     genes_list = cosmicTools.makeGeneListFromInput(GENE_NAME)
+    cell_lines_list = cosmicTools.makeCellLineListFromInput(CELL_LINE)
 
-    cell_lines = ['MDA-MB-231', 'MDA-MB-436', 'MDA-MB-468']
-    for cell_line in cell_lines:
+
+    #cell_lines = ['MDA-MB-231', 'MDA-MB-436', 'MDA-MB-468']
+    for cell_line in cell_lines_list:
             expressions = filterGeneExpression(WORKING_DIR, cell_line, genes_list)
             expressions.to_csv(os.path.join(WORKING_DIR, 'expression_score_' + cell_line + '.csv'), header = False,
                                columns=[' GENE_NAME', ' Z_SCORE'], index = False)

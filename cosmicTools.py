@@ -93,6 +93,19 @@ def makeGeneListFromInput(GENE_INPUT):
         gene_list = [GENE_INPUT]
         return gene_list
 
+def makeCellLineListFromInput(CELL_LINES_INPUT):
+    try:
+        cell_line_list = []
+        # checking if GENE_INPUT is list of multiple genes
+        with open(CELL_LINES_INPUT, 'r') as cell_lines_file:
+            for cell_line in cell_lines_file:
+                cell_line_list.append(cell_line.rstrip())
+        return cell_line_list
+    except:
+        # if GENE_INPUT is not a list it must be a single gene name
+        gene_list = [CELL_LINES_INPUT]
+        return gene_list
+
 
 # TODO universal method for downloading data from Cosmic
 def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
