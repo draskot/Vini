@@ -28,13 +28,18 @@ except OSError:
     print "No temp_buf to remove"
 
 
-def applyToEB(relation):
-    source = relation[0]
-    target = relation[1]
+def applyToEB(relation, receptors_contracted_df):
+    rc = receptors_contracted_df
+    source_ID = relation[0]
+    target_ID = relation[1]
     genex = relation[3]
     global EB_matrix
-    print relation
-    EB_matrix.iloc[[source], [target]] = genex
+    source_positions = rc[rc.iloc[:,0] == source_ID].index.to_numpy()
+    target_positions = rc[rc.iloc[:, 0] == target_ID].index.to_numpy()
+    # sve kombinacije elemenata iz jednog i drugog skupa
+    for sp in source_positions:
+        for tp in target_positions:
+            EB_matrix.iloc[sp, tp] = genex
 
 
 # Loading files into DataFrames
@@ -46,20 +51,17 @@ vec_df = pd.read_csv(os.path.join(WORKDIR, 'vec'), header=None)
 
 #receptor_ids_df = receptors_contracted_df.iloc[:, 1].apply(lambda x: x.strip('hsa:'))
 receptor_ids_df = receptors_contracted_df.iloc[:, 0]
+
 # Initializing energy binding matrix (dim x dim)
-# EB_matrix = pd.DataFrame(np.zeros((len(affinity_values), len(affinity_values)), float))
-print dim
-EB_matrix = pd.DataFrame(np.zeros(int(dim), int(dim), float))
+EB_matrix = pd.DataFrame(np.zeros((int(dim), int(dim)), dtype=object))
+
 # Filling EB matrix diagonal with affinity values
 np.fill_diagonal(EB_matrix.values, affinity_values)
 
-if therapy_level == 1:
-    relations_df.apply()
-
-result = [applyToEB(row) for row in relations_df.iloc[:,:].to_numpy()]
-
-
+if therapy_level == "1":
+    # Adding expression values for off-diagonal elements
+    result = [applyToEB(relation, receptors_contracted_df)
+              for relation in relations_df.iloc[:,:].to_numpy()]
 
 
-
-#print EB_matrix
+EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix_new'), sep=" ", header=False, index=False)
