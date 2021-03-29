@@ -4,8 +4,20 @@ import requests
 import time
 import csv
 
-TOKEN_NUMBER = "822239706399298093099245485975646525"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
+WORKDIR = os.environ.get('WORKDIR')
+VINI_DIR = os.path.realpath('.')
+
+def loadCosmicToken(path=os.path.join(VINI_DIR, 'cosmic_token')):
+    try:
+        print path
+        with open(path) as f:
+            token = f.read()
+            print "Found Cosmic token: %s" % token
+            return token
+    except:
+        print "Couldn't open Cosmic token file %s" % file
+
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):
     dict_path = os.path.join(WORKING_DIR, 'cosmic_ids.csv')
@@ -13,7 +25,6 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
         with open(dict_path, 'a+') as dict_csv:
             writer = csv.writer(dict_csv)
             writer.writerow(["UNIPROT_ID", "COSMIC_ID"])
-
 
     with open(dict_path, "a+") as f:
         csv_reader = csv.reader(f)
@@ -38,15 +49,13 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
                 print ('Error while contacting Uniprot service')
                 return False
 
-
     # TODO if unsuccessful try again after sleep(3)
     # TODO save already retrieved key in local storage
 
 
-
-
 def getMutationFileName(GENE_NAME, WORKING_DIR):
     return os.path.join(WORKING_DIR, GENE_NAME + '_mutations.csv')
+
 
 def getSequenceFileName(GENE_NAME, WORKING_DIR):
     return os.path.join(WORKING_DIR, GENE_NAME + '_sequence.csv')
@@ -58,6 +67,7 @@ def getGeneExpressionFileName(GENE_NAME, WORKING_DIR):
 
 def getTissueExpressionFileName(TISSUE_NAME, WORKING_DIR):
     return os.path.join(WORKING_DIR, TISSUE_NAME + '_samples.csv')
+
 
 def countLinesCSV(filename):
     with open(filename) as f:
@@ -72,6 +82,7 @@ def splitGeneExpressionCSV(GENE_NAME, nprocs, WORKING_DIR):
     csv_splitter.split(filehandler=open(filename), output_name_template=GENE_NAME + '_part_%s.csv',
                        output_path=WORKING_DIR, row_limit=ave)
 
+
 def checkCosmicEnvironment():
     try:
         cosmicdb_user = os.environ.get('COSMICDB_USER')
@@ -79,6 +90,7 @@ def checkCosmicEnvironment():
         return cosmicdb_user, cosmicdb_pass
     except:
         print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
+
 
 def makeGeneListFromInput(GENE_INPUT):
     try:
@@ -92,6 +104,7 @@ def makeGeneListFromInput(GENE_INPUT):
         # if GENE_INPUT is not a list it must be a single gene name
         gene_list = [GENE_INPUT]
         return gene_list
+
 
 def makeCellLineListFromInput(CELL_LINES_INPUT):
     try:
@@ -108,7 +121,7 @@ def makeCellLineListFromInput(CELL_LINES_INPUT):
 
 
 # TODO universal method for downloading data from Cosmic
-def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
+def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename, TOKEN_NUMBER):
     try:
         # print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
@@ -141,7 +154,7 @@ def saveSequenceToFASTA(GENE_NAME, sequence, WORKING_DIR):
         file_path = os.path.join(WORKING_DIR, GENE_NAME + '.fasta')
         with open(file_path, 'w') as fasta_file:
             fasta_file.write(sequence)
-            print "Mutated sequence saved to %s" %file_path
+            print "Mutated sequence saved to %s" % file_path
             return True
     except:
         print "Unsuccessful saving of FASTA file for gene %s" % GENE_NAME
@@ -186,7 +199,7 @@ def applyMutationsToFASTA(mutations, FASTAfile):
             range = mutation.split("_")
             start = range[0]
             finish = range[0] if len(range) == 1 else range[1]
-            del sequence[int(start):int(finish)+1]
+            del sequence[int(start):int(finish) + 1]
             print "Mutation applied: %s" % mutation
         except:
             # mutation format is probably not as expected
