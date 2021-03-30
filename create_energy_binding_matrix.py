@@ -33,8 +33,7 @@ def main(argv):
     # Loading files into DataFrames
     receptors_contracted_df = pd.read_csv(os.path.join(WORKDIR, 'receptors_contracted'), sep=' ', header=None)
     relations_df = pd.read_csv(os.path.join(WORKDIR, 'relations'), sep=' ', header=None)
-    affinity_values = pd.read_csv(os.path.join(target_dir, 'vec'), header=None)
-    vec_df = pd.read_csv(os.path.join(WORKDIR, 'vec'), header=None)
+    affinity_values = pd.read_csv(os.path.join(TARGETDIR, 'vec'), header=None)
 
     # Initializing energy binding matrix (dim x dim)
     main.EB_matrix = pd.DataFrame(np.zeros((int(dim), int(dim)), dtype=object))
