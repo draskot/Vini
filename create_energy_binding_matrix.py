@@ -46,7 +46,7 @@ def main(argv):
         result = [applyToEB(relation, receptors_contracted_df)
                   for relation in relations_df.iloc[:, :].to_numpy()]
 
-    main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix_new'), sep=" ", header=False, index=False)
+    main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix'), sep=" ", header=False, index=False)
 
 
 def applyToEB(relation, receptors_contracted_df):
