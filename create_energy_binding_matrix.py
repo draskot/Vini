@@ -20,10 +20,10 @@ def main(argv):
         exit()
 
     with open(os.path.join(WORKDIR, 'nr_complexes'), 'r') as f:
-        dim = f.read()
+        dim = f.read().strip("\n")
 
     with open(os.path.join(WORKDIR, 'therapy_level'), 'r') as f:
-        therapy_level = f.read()
+        therapy_level = f.read().strip("\n")
 
     try:
         os.remove(os.path.join(WORKDIR, 'temp_buf'))
@@ -45,7 +45,7 @@ def main(argv):
         # Adding expression values for off-diagonal elements
         result = [applyToEB(relation, receptors_contracted_df)
                   for relation in relations_df.iloc[:, :].to_numpy()]
-
+    print os.path.join(TARGETDIR, 'EB_matrix')
     main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix'), sep=" ", header=False, index=False)
 
 
