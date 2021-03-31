@@ -135,7 +135,7 @@ then
 fi
 
 echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
-read -p "Allready registered (y/n)?" yesno
+read -p "Already registered (y/n)?" yesno
 if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
@@ -156,7 +156,7 @@ else
 fi
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
-read -p "Allready registered (y/n)?" yesno
+read -p "Already registered (y/n)?" yesno
 if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
@@ -180,7 +180,7 @@ cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
 sh download_Drugbank_structures
 
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
-read -p "Allready registered (y/n)?" yesno
+read -p "Already registered (y/n)?" yesno
 if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
