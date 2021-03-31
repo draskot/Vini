@@ -14,7 +14,7 @@ def main(argv):
     try:
         with open(os.path.join(WORKDIR, 'target_dir'), 'r') as f:
             target_dir = f.read()
-            TARGETDIR = os.path.join(target_dir)
+            TARGETDIR = os.path.join(target_dir.strip("\n"))
     except:
         print "Can't open file with target directory"
         exit()
