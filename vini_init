@@ -113,7 +113,8 @@ case $JSS in
 #    3) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
 esac
 
-sh $vini_dir/get_cpu_cores
+#sh $vini_dir/get_cpu_cores
+sh $vini_dir/get_compute_node_cores
 
 $job_status > tmp
 nolines=`wc -l < tmp` 
