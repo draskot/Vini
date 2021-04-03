@@ -24,15 +24,6 @@ else
     echo "you must provide ligand list. Exiting..." ; exit
 fi
 
-echo "Vini needs to cancel all previous jobs from user" $USER
-read -p "ok to continue? (y/n)" yesno
-if  [ $yesno == y ]
-then
-    scancel -u $USER
-else
-    exit
-fi 
-
 rm -f $vini_dir/genes/mutations/*     #cleanup
 rm -f $vini_dir/genes/expressions/*
 rm -f $vini_dir/genes/sequences/*
@@ -42,7 +33,7 @@ sinfo | grep "command not found" > tmp #try to find which workload manager is ru
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
 then
-    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel 
+    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel
 else
     if [ -d /opt/sge ]
     then
@@ -51,21 +42,16 @@ else
         echo "not supported, exiting" ; exit
     fi
 fi
+echo "Vini needs to cancel all previous jobs from user" $USER
+read -p "ok to continue? (y/n)" yesno
+if  [ $yesno == y ]
+then
+    job_cancel=`cat $WORKDIR/job_cancel`
+    $job_cancel -u $USER
+else
+    exit
+fi 
 
-echo -n "Trying to determine number of cores per compute node..."
-rm -f *.out 
-echo "#! /bin/bash" > find_nr_cores
-echo "#SBATCH --cpus-per-task=1" >> find_nr_cores
-echo "#SBATCH --mem=4gb"  >> find_nr_cores
-echo "lscpu" >> find_nr_cores
-chmod u+x find_nr_cores
-job_submit=`cat $WORKDIR/job_submit`
-$job_submit find_nr_cores
-sh wait_until_jobs_finish
-grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
-grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
-cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
-echo "found" $cores "per compute node." ; rm find_nr_cores *out
 
 
 cd $WORKDIR #Cleanup
@@ -126,6 +112,8 @@ case $JSS in
      2) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_SGE_scripts ;;
 #    3) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
 esac
+
+sh $vini_dir/get_cpu_cores
 
 $job_status > tmp
 nolines=`wc -l < tmp` 

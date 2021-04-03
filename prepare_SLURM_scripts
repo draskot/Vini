@@ -28,10 +28,10 @@ cd $WORKDIR
 echo "#! /bin/bash"                           > Vina  #prepare header file for Autodock Vina related jobs
 echo "#SBATCH --job-name=Vina"               >> Vina
 echo "#SBATCH --output=Vina.out"             >> Vina
-echo "#SBATCH --time=00:10:00"               >> Vina
+echo "#SBATCH --time=04:00:00"               >> Vina
 echo "#SBATCH --cpus-per-task=3"             >> Vina
-echo "SBATCH --ntasks-per-node=8"            >> Vina
-echo "#SBATCH --mem=6gb"                     >> Vina
+#echo "SBATCH --ntasks-per-node=8"            >> Vina
+echo "#SBATCH --mem=4gb"                     >> Vina
 echo "#SBATCH --partition="$Vini_queue       >> Vina
 echo "WORKDIR=$WORKDIR"                      >> Vina
 chmod u+x                                       Vina

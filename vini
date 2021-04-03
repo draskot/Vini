@@ -254,8 +254,7 @@ do
                  conda deactivate
                  export PYTHONPATH=$STORE1
 
-                 elapsedseconds=$SECONDS
-                 echo "elapsed seconds for EB matrix creation:" $elapsedseconds
+                 echo "processed ligand" $ligand_number "therapy level is" $therapy_level
 
                  python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E  #compute SLEM
                  eigenvalue=`cat $target_dir/E | awk '{print $2}'`
