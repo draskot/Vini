@@ -1,0 +1,12 @@
+cat $WORKDIR/Vina >> find_nr_cores
+echo "lscpu" >> find_nr_cores
+echo -n "Trying to determine number of cores per compute node..."
+rm -f *.out
+chmod u+x find_nr_cores
+job_submit=`cat $WORKDIR/job_submit`
+$job_submit find_nr_cores
+sh wait_until_jobs_finish
+grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
+grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
+cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
+echo "found" $cores "cores per compute node." ; rm find_nr_cores *out
