@@ -1,0 +1,9 @@
+export FCFLAGS='-I/opt/intel/mkl/include/fftw/ -I/opt/intel/mkl/include/'
+export CFLAGS='-I/opt/intel/mkl/include/fftw/ -I/opt/intel/mkl/include/'
+export FFLAGS='-I/opt/intel/mkl/include/fftw/ -I/opt/intel/mkl/include/'
+export BLAS_LIBS='-L/opt/intel/mkl/lib/intel64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl'
+export LAPACK_LIBS='/opt/intel/mkl/lib/intel64/libmkl_blas95_lp64.a /opt/intel/mkl/lib/intel64/libmkl_lapack95_lp64.a -L/opt/intel/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lm -ldl'
+export FFT_LIBS='/opt/intel/mkl/lib/intel64/libmkl_blas95_lp64.a /opt/intel/mkl/lib/intel64/libmkl_lapack95_lp64.a -L/opt/intel/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lm -ldl'
+export SCALAPACK_LIBS='/opt/intel/mkl/lib/intel64/libmkl_blas95_lp64.a /opt/intel/mkl/lib/intel64/libmkl_lapack95_lp64.a -L/opt/intel/mkl/lib/intel64 -lmkl_scalapack_lp64 -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lmkl_blacs_intelmpi_lp64 -lpthread -lm -ldl'
+
+./configure --prefix=/opt/quantum_espresso_6.4.1 --enable-parallel --with-scalapack=intel CC=mpicc  F77=mpif90 FC=mpif90 FCFLAGS='-L/opt/fftw-3.3.4/install/lib/'

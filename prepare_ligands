@@ -17,6 +17,7 @@ do
     printf -v i "%03d" $j
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
+    echo "drugname:" $drugname "molecule type:" $flag ; sleep 1
 
     echo $drugname > tmp ; words=`wc -w < tmp` ; rm tmp          #put a question mark if 2 words
     if  [ $words -eq 2 ] #then put ? in between

@@ -1,0 +1,45 @@
+
+Installing Miniconda and creating environments:
+-----------------------------------------------
+
+Download conda from  https://docs.conda.io/en/latest/miniconda.html  Python 3.8
+
+sh Miniconda3-latest-Linux-x86_64.sh #install
+(answer no when asked: Do you wish the installer to initialize Miniconda3
+by running conda init? [yes|no])
+
+Then activate new conda environment:
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+
+
+conda create -n Vini python=2.7  #create conda environment Vini with python 2.7
+
+conda install pandas mpi4py requests         #install programs pandas and mpi4py in the environment ENV_NAME
+
+Install custom packages #optional¸
+--------------------------
+conda install -c conda-forge cookiecutter
+
+
+
+Managing conda environments:
+-----------------------------
+
+
+Activate conda's base environment in the current shell session without modifying ./bashrc:
+eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)" #activate base env without modifying .bash
+
+
+conda info --envs                    #list conda environments
+
+conda activate  Vini                 #activate conda environment Vini
+
+conda deactivate                     #deactivate active environment
+
+
+Removing conda environment:
+---------------------------
+
+
+conda env remove -n ENV_NAME         #remove conda environment
+

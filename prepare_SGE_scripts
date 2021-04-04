@@ -1,33 +1,6 @@
-cluster=`uname -n`
 cores=`cat $WORKDIR/cores`
-sleep 2
-
-if [ -e $WORKDIR/Vini_queue ]
-then
-    Vini_queue=`cat $WORKDIR/Vini_queue` 
-    Vini_pe=`cat $WORKDIR/Vini_pe`
-    echo "Vini is currently using" $Vini_queue "queue on" $cluster "for its jobs."
-else
-    echo "no mapping of Vini jobs on" $cluster "You will need to set it up now."  
-    echo "" ; echo "Available queues on" $cluster "are:"
-    qconf -sql
-    read -p  "enter the name of queue Vini will use:" Vini_queue
-    echo $Vini_queue > $WORKDIR/Vini_queue
-fi
-
-read -p "accept the current mapping (y/n)?" yesno
-if  [ $yesno == "n" ]
-then
-    echo "" ; echo "Available queues on" $cluster "are:"
-    qconf -sql
-    read -p  "enter the name of queue Vini will use:" Vini_queue
-    echo $Vini_queue > $WORKDIR/Vini_queue
-fi
-
-echo "" ; echo "Available parallel environments on" $cluster "are:"
-qconf -spl
-read -p  "enter the name of parallel environment Vini will use:" Vini_pe
-echo $Vini_pe > $WORKDIR/Vini_pe
+Vini_pe=`cat $WORKDIR/Vini_pe`
+Vini_queue=`cat $WORKDIR/Vini_queue`
 
 cd $WORKDIR
 
@@ -39,7 +12,7 @@ echo "#$ -o Vina.out"                           >> Vina
 echo "#$ -e Vina.out"                           >> Vina
 echo "#$ -l h_rt=1800"                          >> Vina
 echo "#$ -pe" $Vini_pe 3                        >> Vina
-echo "#$ -l mem_free=2048"                      >> Vina
+echo "#$ -l mem_free=4096"                      >> Vina
 echo "#$ -q" $Vini_queue                        >> Vina
 echo "WORKDIR=$WORKDIR"                         >> Vina
 
