@@ -1,0 +1,18 @@
+During the installation of MGL_Tools, script is asking for licensing. If X terminal is not enabled, this
+message will not be seen and installation script will hang. To enable X terminal, perform the following:
+
+
+export DISPLAY=localhost:0 #to enable answering on licensing question
+
+
+MGL_Tools by default do not work with molecules having metal ions. To enable this functionality,su as a root
+and perform:
+
+
+chmod o+w $MGLTOOLS $MGLTOOLS2
+
+chmod o+w $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat
+
+
+By the first start of Vini, parameters for metal ions will be added to AD4_parameters.dat files.
+

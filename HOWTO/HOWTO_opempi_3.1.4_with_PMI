@@ -1,0 +1,5 @@
+mkdir build
+cd build
+../configure --prefix=/scratch/opt2/openmpi-3.1.4_with_pmi --with-pmi
+make all install
+

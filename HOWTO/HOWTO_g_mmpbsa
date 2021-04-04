@@ -1,0 +1,15 @@
+
+cd /scratch/opt2/g_mmpbsa_source
+mkdir build
+cd build
+
+
+export CMAKE_PREFIX_PATH=/scratch/opt2/gromacs_5.1.4
+
+cmake .. -DGMX_PATH=/scratch/opt2/gromacs_5.1.4 -DAPBS_INSTALL=/scratch/opt2/apbs-1.3 -DAPBS_SRC=/scratch/opt2/apbs-1.3-source/build -DCMAKE_INSTALL_PREFIX=/scratch/opt2/g_mmpbsa
+
+make
+
+make install
+
+

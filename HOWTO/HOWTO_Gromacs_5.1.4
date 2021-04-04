@@ -1,0 +1,10 @@
+
+tar xvfz gromacs-5.1.4.tar.gz
+cd gromacs-5.1.4
+mkdir build
+cd build
+cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_USE_TNG=off -DREGRESSIONTEST_DOWNLOAD=ON -DCMAKE_INSTALL_PREFIX=/scratch/opt2/gromacs_5.1.4 
+make
+make check
+sudo make install
+source /scratch/opt2/gromacs_5.1.4/bin/GMXRC.bash

@@ -1,0 +1,9 @@
+=> cd rosetta-3.4/rosetta_source/tools/build/
+
+=> vi basic.settings
+
+=> In the file  search for "mpiCC" and replace with "mpicxx" (Found at two places)
+
+=> cd rosetta-3.4/rosetta_source
+ 
+=> ./scons.py -j 8 bin mode=release extras=mpi

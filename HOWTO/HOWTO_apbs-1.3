@@ -1,0 +1,6 @@
+cd /scratch/opt2
+tar -xzvf apbs-1.3-source.tar.gz
+cd apbs-1.3/source-dir
+./configure --prefix=/scratch/opt2/apbs-1.3 --with-openmpi=/scratch/opt2/openmpi-3.1.4 CC=gcc CXX=g++ 
+make check
+make install
