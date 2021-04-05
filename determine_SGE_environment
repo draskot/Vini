@@ -1,0 +1,28 @@
+cluster=`uname -n`
+
+if [ -e $WORKDIR/Vini_queue ]
+then
+    Vini_queue=`cat $WORKDIR/Vini_queue` 
+    Vini_pe=`cat $WORKDIR/Vini_pe`
+    echo "Vini will use" $Vini_queue "queue on" $cluster "for its jobs."
+else
+    echo "no mapping of Vini jobs on" $cluster "You will need to set it up now."  
+    echo "" ; echo "Available queues on" $cluster "are:"
+    qconf -sql
+    read -p  "enter the name of queue Vini will use:" Vini_queue
+    echo $Vini_queue > $WORKDIR/Vini_queue
+fi
+
+read -p "accept[a] this queue or choose[c] new one (a/c)?" yesno
+if  [ $yesno == "c" ]
+then
+    echo "" ; echo "Available queues on" $cluster "are:"
+    qconf -sql
+    read -p  "enter the name of queue Vini will use:" Vini_queue
+    echo $Vini_queue > $WORKDIR/Vini_queue
+fi
+
+echo "" ; echo "Available parallel environments on" $cluster "are:"
+qconf -spl
+read -p  "enter the name of parallel environment Vini will use:" Vini_pe
+echo $Vini_pe > $WORKDIR/Vini_pe

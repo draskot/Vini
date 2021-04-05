@@ -248,7 +248,7 @@ do
                  echo $target_dir > target_dir
 
                  STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
-                 eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+                 eval "$($vini_dir//miniconda3/bin/conda shell.bash hook)"
                  conda activate Vini
                  python $vini_dir/create_energy_binding_matrix.py
                  conda deactivate

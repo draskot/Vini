@@ -24,24 +24,33 @@ else
     echo "you must provide ligand list. Exiting..." ; exit
 fi
 
-rm -f $vini_dir/genes/mutations/*     #cleanup
+mkdir -p $vini_dir/ligands/pdb_files #preparing directories
+mkdir -p $vini_dir/genes/pdb_files
+mkdir -p $vini_dir/genes/expressions 
+mkdir -p $vini_dir/genes/mutations
+mkdir -p $vini_dir/genes/sequences
+rm -f $vini_dir/genes/mutations/*   
 rm -f $vini_dir/genes/expressions/*
 rm -f $vini_dir/genes/sequences/*
 
-echo -n "Trying to determine which workload manager is running..."
-sinfo | grep "command not found" > tmp #try to find which workload manager is running
+echo -n "Determining workload manager..."
+sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
+grep "command not found" tmp > tmp2 ; mv tmp2 tmp
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
 then
-    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel
+    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel ; sh determine_SLURM_environment
 else
     if [ -d /opt/sge ]
     then
-        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel
+        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
     else
         echo "not supported, exiting" ; exit
     fi
 fi
+echo $JSS > $WORKDIR/JSS
+
+
 echo "Vini needs to cancel all previous jobs from user" $USER
 read -p "ok to continue? (y/n)" yesno
 if  [ $yesno == y ]
@@ -53,75 +62,62 @@ else
 fi 
 
 
-
 cd $WORKDIR #Cleanup
 rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type max_therapy_level nr_complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf debuglog
 cd $vini_dir
 
 cat COPYRIGHT
 
-echo -n "Vini is using Miniconda. Checking if it is already installed..."
-conda --version 2&> tmp 
-grep "command not found" tmp > tmp2 ; mv tmp2 tmp
-nolines=`wc -l < tmp` ; rm tmp
-if  [ $nolines -eq $NULL ]
+if  [ ! -e $vini_dir/miniconda3 ]
 then
-    echo "yes, continuing."
-    eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
-    conda activate  Vini 
-else 
-    echo "is not. Vini will install Miniconda and requested packages in its local directory."
-    echo "Important: When asked, set installation path to" $vini_dir/miniconda3
-    read -p "Press any key to cont." key 
+    echo "Vini will install its own Miniconda and packages." ; sleep 2
     wget https://docs.conda.io/en/latest/miniconda.html
-    sh Miniconda3-latest-Linux-x86_64.sh 
+    sh Miniconda3-latest-Linux-x86_64.sh -b -p $vini_dir/miniconda3
+    $vini_dir/miniconda3/bin/conda create -n Vini python=2.7 #create conda environment Vini with python 2.7
+    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests  #install pandas and mpi4py in Vini env
+else
+    echo "Miniconda is already installed, continuing..."
 fi
+
+eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
+conda activate Vini
 
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
 then
-    read -p "enter the full path name of new working directory (e.g. /home/foo/workdir):" newdir
-    mkdir -p $newdir
-    WORKDIR=$newdir
+    read -p "enter the full path name of new working directory (e.g. /home/foo/workdir):" WORKDIR
+    mkdir -p ${WORKDIR}
     echo $WORKDIR > workdir
     echo "WORKDIR changed to" $WORKDIR 
 else 
     echo $WORKDIR > workdir
 fi 
 
+
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 grep -v HOH $vini_dir/1aki.sav > $vini_dir/1AKI.pdb
-mkdir -p ./ligands/pdb_files
-mkdir -p ./genes/pdb_files
 
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
-read -p "Enter the maximum number of compute nodes Vini is allowed to use concurrently:" nodes
-echo $nodes > $WORKDIR/nodes
-max_jobs=`echo $nodes $cores | awk '{print $1 * $2}'` #max nr of jobs Autodock Vina can use
-max_jobs=`echo $max_jobs $THREE | awk '{print $1 / $2}'` #max nr of jobs Autodock Vina can use
-echo $max_jobs > $WORKDIR/max_jobs
 
-#echo $NULL > $WORKDIR/amber
-echo $ONES > $WORKDIR/amber #amber is active
+sh $vini_dir/get_compute_node_cores
 
 case $JSS in
      1) sh prepare_SLURM_scripts ;;
-     2) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_SGE_scripts ;;
-#    3) echo "qstat" > $WORKDIR/job_status; echo "qsub" > $WORKDIR/job_submit; echo "qdel" > $WORKDIR/job_cancel; sh prepare_PBS_scripts ;; #needs testing!
+     2) sh prepare_SGE_scripts ;;
+#    3) sh prepare_PBS_scripts ;; #needs testing!
 esac
 
-#sh $vini_dir/get_cpu_cores
-sh $vini_dir/get_compute_node_cores
 
-$job_status > tmp
-nolines=`wc -l < tmp` 
-if [ $nolines -ne $NULL ]
-then
-    job_cancel=`cat $WORKDIR/job_cancel` ; $job_cancel -u $USER #cancel any job remained from the previous run
-fi
+read -p "Enter the maximum number of compute nodes Vini will use concurrently:" nodes
+echo $nodes > $WORKDIR/nodes
+cores=`cat $WORKDIR/cores`
+tmp=`echo $nodes $cores | awk '{print $1 * $2}'`     #total number of cores
+tmp=`echo $tmp $THREE | awk '{print $1 / $2}'`  #max numberr of Autodock Vina jobs
+max_jobs=${tmp%.*}
+echo $max_jobs > $WORKDIR/max_jobs
 
 echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
 read -p "Already registered (y/n)?" yesno
@@ -143,6 +139,14 @@ else
        chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
     fi
 fi
+
+sh download_SWISS_MODEL_metadata
+
+#echo -n "Initializing SWISS-MODEL repository index file, please wait..."
+#rm -f 9606_meta.tar.gz
+#wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
+#tar -xzf 9606_meta.tar.gz -C $WORKDIR
+#echo "done."
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -p "Already registered (y/n)?" yesno
@@ -190,9 +194,6 @@ fi
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
-#easy_install --user pip
-#curl -O https://raw.github.com/pypa/pip/master/contrib/get-pip.py
-#python get-pip.py
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds ?
 
 touch -a $WORKDIR/computed_therapy_level
@@ -228,6 +229,8 @@ echo "" ; rm pathways
 read -p "Please enter the pathway number:" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
+
+
 
 read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #here we check if cell line analysis will be performed
 if [ $yesno == y ]
@@ -272,6 +275,7 @@ echo -n "Choose therapy level (1 for single drug therapy, 2 for two drugs therap
 read max_therapy_level
 echo $max_therapy_level > $WORKDIR/max_therapy_level
 
+
 sh prepare_ligands 
 
 stop=`cat $WORKDIR/stop`
@@ -304,6 +308,9 @@ rm -rf $WORKDIR/$CANCER_PATHWAY$a
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 
 cp $vini_dir/prep_prot_lig.py $WORKDIR
+
+#echo $NULL > $WORKDIR/amber
+echo $ONES > $WORKDIR/amber #amber is active
 
 touch $WORKDIR/debuglog
 

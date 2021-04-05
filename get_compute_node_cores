@@ -1,12 +1,42 @@
-cat $WORKDIR/Vina >> find_nr_cores
-echo "lscpu" >> find_nr_cores
+ONES=1
+
+JSS=`cat $WORKDIR/JSS`
+Vini_queue=`cat $WORKDIR/Vini_queue`
+
+if [ $JSS == $ONES ]
+then
+    echo "#! /bin/bash"                           > get_cores
+    echo "#SBATCH --partition="$Vini_queue       >> get_cores
+    echo "WORKDIR=$WORKDIR"                      >> get_cores
+    echo "#SBATCH --job-name=get_cores"          >> get_cores
+    echo "#SBATCH --output=get_cores.out"        >> get_cores
+    echo "#SBATCH --time=00:30:00"               >> get_cores
+    echo "#SBATCH --ntasks-per-node=1"           >> get_cores
+    echo "#SBATCH --cpus-per-task=1"             >> get_cores
+    echo "#SBATCH --mem=2gb"                     >> get_cores
+else
+    Vini_pe=`cat $WORKDIR/Vini_pe`
+    echo "#! /bin/bash"                           > get_cores
+    echo "#$ -q" $Vini_queue                     >> get_cores
+    echo "WORKDIR=$WORKDIR"                      >> get_cores
+    echo "#$ -N get_cores"                       >> get_cores
+    echo "#$ -o get_cores.out"                   >> get_cores
+    echo "#$ -e get_cores.out"                   >> get_cores
+    echo "#$ -cwd"                               >> get_cores
+    echo "#$ -V"                                 >> get_cores
+    echo "#$ -l h_rt=1800"                       >> get_cores
+    echo "#$ -pe" $Vini_pe 1                     >> get_cores
+    echo "#$ -l mem_free=2048"                   >> get_cores
+fi
+
+echo "lscpu" >> get_cores
 echo -n "Trying to determine number of cores per compute node..."
 rm -f *.out
-chmod u+x find_nr_cores
+chmod u+x get_cores
 job_submit=`cat $WORKDIR/job_submit`
-$job_submit find_nr_cores
+$job_submit get_cores
 sh wait_until_jobs_finish
 grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
 grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
 cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
-echo "found" $cores "cores per compute node." ; rm find_nr_cores *out
+echo "found" $cores "cores per compute node." ; rm get_cores *out

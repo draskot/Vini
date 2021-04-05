@@ -1,27 +1,5 @@
-cluster=`uname -n`
 cores=`cat $WORKDIR/cores`
-sleep 2
-
-if [ -e $WORKDIR/Vini_queue ]
-then
-    Vini_queue=`cat $WORKDIR/Vini_queue`
-    echo "Vini is currently using" $Vini_queue "queue on" $cluster "for its jobs."
-else
-    echo "No mapping of Vini jobs on" $cluster "You will need to set it up now."
-    echo "" ; echo "Available queues on" $cluster "are:"
-    sinfo
-    read -p  "enter the name of queue Vini will use:" Vini_queue
-    echo $Vini_queue > $WORKDIR/Vini_queue
-fi
-
-read -p "accept the current mapping (y/n)?" yesno
-if  [ $yesno == "n" ]
-then
-    echo "" ; echo "Available queues on" $cluster "are:"
-    sinfo
-    read -p  "enter the name of queue Vini will use:" Vini_queue
-    echo $Vini_queue > $WORKDIR/Vini_queue
-fi
+Vini_queue=`cat $WORKDIR/Vini_queue`
 
 cd $WORKDIR
 
