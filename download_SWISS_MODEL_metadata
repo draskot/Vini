@@ -16,16 +16,18 @@ else
     file_time=$(date -r $filename +%s)
     if (( file_time <= seven_days_ago ))
     then
-      echo -n "9606_meta.tar.gz file is more than 7 days old, updating..."
-      wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
-      if  [ -e 9606_meta.tar.gz ]
-      then
-          echo success ; tar -xzf 9606_meta.tar.gz -C $WORKDIR
-          touch $WORKDIR/SWISS-MODEL_Repository/INDEX
-          mv 9606_meta.tar.gz.1 9606_meta.tar.gz
-      else
-          echo "failed! Check your network or provide this file manually."
-          read -p "Press any key when ready to cont." anykey
-      fi
+        echo "SWISS-MODEL Repository metadata file is no more than 7 days old, continuing."
+    else
+        echo -n "9606_meta.tar.gz file is more than 7 days old, updating..."
+        wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
+        if  [ -e 9606_meta.tar.gz ]
+        then
+            echo success ; tar -xzf 9606_meta.tar.gz -C $WORKDIR
+            touch $WORKDIR/SWISS-MODEL_Repository/INDEX
+            mv 9606_meta.tar.gz.1 9606_meta.tar.gz
+        else
+            echo "failed! Check your network or provide this file manually."
+            read -p "Press any key when ready to cont." anykey
+        fi
     fi
 fi

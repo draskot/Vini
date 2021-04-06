@@ -11,9 +11,12 @@ max_therapy_level=`cat $WORKDIR/max_therapy_level`
 cores=`cat $WORKDIR/cores`
 job_submit=`cat $WORKDIR/job_submit`
 compute_cell_line=`cat $WORKDIR/compute_cell_line`
-cell_line=`cat $WORKDIR/cell_line`
 TRUE=1
 FALSE=0
+if  [ $compute_cell_line -eq $TRUE ]
+then
+    cell_line=`cat $WORKDIR/cell_line`
+fi
 data="_data"
 mkdir -p $WORKDIR/KEGG_cancer_pathways
 

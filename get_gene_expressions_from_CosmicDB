@@ -5,7 +5,6 @@ COSMIC_PASS=`cat $WORKDIR/COSMIC_password` ; export COSMIC_PASS
 COSMICDB_USER=`cat $WORKDIR/COSMIC_email` ; export COSMICDB_USER
 
 > $WORKDIR/receptors_contracted.tmp
-#rm -f ./genes/expressions/* ./genes/expression_scores.csv ./genes/Uniprot_ID_list
 
 
 cancer_type=`cat $WORKDIR/cancer_type`

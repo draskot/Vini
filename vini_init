@@ -71,16 +71,15 @@ cat COPYRIGHT
 if  [ ! -e $vini_dir/miniconda3 ]
 then
     echo "Vini will install its own Miniconda and packages." ; sleep 2
-    wget https://docs.conda.io/en/latest/miniconda.html
     sh Miniconda3-latest-Linux-x86_64.sh -b -p $vini_dir/miniconda3
+    eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
     $vini_dir/miniconda3/bin/conda create -n Vini python=2.7 #create conda environment Vini with python 2.7
-    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests  #install pandas and mpi4py in Vini env
+    conda activate Vini
+    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests numpy  #install packages in Vini env
 else
     echo "Miniconda is already installed, continuing..."
 fi
 
-eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
-conda activate Vini
 
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
@@ -191,6 +190,8 @@ else
        chmod g-r,o-r $WORKDIR/COSMIC_password
     fi
 fi
+
+sh renew_COSMIC_token
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
