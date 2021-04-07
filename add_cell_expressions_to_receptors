@@ -2,11 +2,7 @@ cell_line=$1
 > $WORKDIR/receptors_contracted.tmp
 NULL=0
 ONES=1
-<<<<<<< HEAD
-eval "$($vini_dir//miniconda3/bin/conda shell.bash hook)"
-=======
 eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
->>>>>>> 49c2eaf4a7b47963d3130069ef5acbfa46df0986
 conda activate Vini
 touch $WORKDIR/Uniprot_gene_table
 
