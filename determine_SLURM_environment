@@ -1,24 +1,10 @@
 cluster=`uname -n`
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 49c2eaf4a7b47963d3130069ef5acbfa46df0986
 if [ -e $WORKDIR/Vini_queue ]
 then
     Vini_queue=`cat $WORKDIR/Vini_queue`
     echo "Vini is using" $Vini_queue "queue on" $cluster "for its jobs."
-<<<<<<< HEAD
-    read -p "accept[a] the current queue or choose[c] new one (y/c)?" yesno
-    if  [ $yesno == "c" ]
-    then
-        echo "" ; echo "Available queues on" $cluster "are:"
-        sinfo
-        read -p  "Please enter the name of new queue Vini will use:" Vini_queue
-        echo $Vini_queue > $WORKDIR/Vini_queue
-    fi
-=======
->>>>>>> 49c2eaf4a7b47963d3130069ef5acbfa46df0986
 else
     echo "No queue is currently defined for Vini jobs on" $cluster "You will need to set it up now."
     echo "" ; echo "Available queues on" $cluster "are:"
@@ -27,8 +13,6 @@ else
     echo $Vini_queue > $WORKDIR/Vini_queue
 fi
 
-<<<<<<< HEAD
-=======
 read -p "accept[a] the current queue or choose[c] new one (a/c)?" yesno
 if  [ $yesno == "c" ]
 then
@@ -37,4 +21,4 @@ then
     read -p  "Please enter the name of new queue Vini will use:" Vini_queue
     echo $Vini_queue > $WORKDIR/Vini_queue
 fi
->>>>>>> 49c2eaf4a7b47963d3130069ef5acbfa46df0986
+
