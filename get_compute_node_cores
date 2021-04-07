@@ -1,10 +1,9 @@
-NULL=0
+ONES=1
 
 JSS=`cat $WORKDIR/JSS`
 Vini_queue=`cat $WORKDIR/Vini_queue`
-Vini_pe=`cat $WORKDIR/Vini_pe`
 
-if [ $JSS == $NULL ]
+if [ $JSS == $ONES ]
 then
     echo "#! /bin/bash"                           > get_cores
     echo "#SBATCH --partition="$Vini_queue       >> get_cores
@@ -16,6 +15,7 @@ then
     echo "#SBATCH --cpus-per-task=1"             >> get_cores
     echo "#SBATCH --mem=2gb"                     >> get_cores
 else
+    Vini_pe=`cat $WORKDIR/Vini_pe`
     echo "#! /bin/bash"                           > get_cores
     echo "#$ -q" $Vini_queue                     >> get_cores
     echo "WORKDIR=$WORKDIR"                      >> get_cores

@@ -13,7 +13,7 @@ PDB=.pdb
 
 
 
-grep $uniprot_id $INSTALL_DIR/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
+grep $uniprot_id $WORKDIR/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
 lineno=`wc -l < $WORKDIR/swiss_repo_entry`
 
 

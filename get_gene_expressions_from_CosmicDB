@@ -13,7 +13,7 @@ grep $cancer_type cross_references > $WORKDIR/tmp
 tissue=`cat $WORKDIR/tmp | awk '{print $2}'`
 rm $WORKDIR/tmp 
 
-eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"
+eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
 conda activate Vini
 gene_index=1
 while read -r line

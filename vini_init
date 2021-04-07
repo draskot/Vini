@@ -34,7 +34,7 @@ rm -f $vini_dir/genes/expressions/*
 rm -f $vini_dir/genes/sequences/*
 
 echo -n "Determining workload manager..."
-sinfo 2> tmp #try to find which workload manager is running #we are trying to detect SLURM
+sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
 grep "command not found" tmp > tmp2 ; mv tmp2 tmp
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
@@ -70,16 +70,15 @@ cat COPYRIGHT
 if  [ ! -e $vini_dir/miniconda3 ]
 then
     echo "Vini will install its own Miniconda and packages." ; sleep 2
-    wget https://docs.conda.io/en/latest/miniconda.html
     sh Miniconda3-latest-Linux-x86_64.sh -b -p $vini_dir/miniconda3
     $vini_dir/miniconda3/bin/conda create -n Vini python=2.7 #create conda environment Vini with python 2.7
-    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests  #install pandas and mpi4py in Vini env
+    eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
+    #source activate Vini
+    conda activate Vini
+    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests numpy #install packages in Vini env
 else
     echo "Miniconda is already installed, continuing..."
 fi
-
-eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)" #activate conda environment Vini
-source activate Vini
 
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
@@ -136,6 +135,8 @@ else
     fi
 fi
 
+sh download_SWISS_MODEL_metadata
+
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -p "Already registered (y/n)?" yesno
 if  [ $yesno == "n" ]
@@ -179,6 +180,8 @@ else
        chmod g-r,o-r $WORKDIR/COSMIC_password
     fi
 fi
+
+sh renew_COSMIC_token
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
