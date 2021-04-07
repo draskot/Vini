@@ -1,0 +1,319 @@
+ NULL=0
+ONES=1
+THREE=3
+HSA=hsa
+TRUE=1
+FALSE=0
+
+echo -n "checking for user..." 
+if [[ $HOME == "/root" ]]
+then
+    echo "Please run Vini as an ordinary user, not as a root! Exiting..."
+    exit
+else
+    echo passed.
+fi
+
+echo -n "checking for ligands_list file..."
+if [ -e $vini_dir/ligands/ligands_list ]
+then
+    cp $vini_dir/ligands/ligands_list $WORKDIR
+    nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDIR/nr_ligands
+    echo passed.
+else
+    echo "you must provide ligand list. Exiting..." ; exit
+fi
+
+mkdir -p $vini_dir/ligands/pdb_files #preparing directories
+mkdir -p $vini_dir/genes/pdb_files
+mkdir -p $vini_dir/genes/expressions 
+mkdir -p $vini_dir/genes/mutations
+mkdir -p $vini_dir/genes/sequences
+rm -f $vini_dir/genes/mutations/*   
+rm -f $vini_dir/genes/expressions/*
+rm -f $vini_dir/genes/sequences/*
+
+echo -n "Determining workload manager..."
+sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
+grep "command not found" tmp > tmp2 ; mv tmp2 tmp
+nolines=`wc -l < tmp`
+if  [ $nolines -eq $NULL ]
+then
+    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel ; sh determine_SLURM_environment
+else
+    if [ -d /opt/sge ]
+    then
+        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
+    else
+        echo "not supported, exiting" ; exit
+    fi
+fi
+echo $JSS > $WORKDIR/JSS
+
+
+echo "Vini needs to cancel all previous jobs from user" $USER
+read -p "ok to continue? (y/n)" yesno
+if  [ $yesno == y ]
+then
+    job_cancel=`cat $WORKDIR/job_cancel`
+    $job_cancel -u $USER
+else
+    exit
+fi 
+
+
+cd $WORKDIR #Cleanup
+rm -f slurm-*.out complex_*.job ligand_*.pdbqt analysis_type cancer_type max_therapy_level nr_complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf debuglog
+cd $vini_dir
+
+cat COPYRIGHT
+
+if  [ ! -e $vini_dir/miniconda3 ]
+then
+    echo "Vini will install its own Miniconda and packages." ; sleep 2
+    sh Miniconda3-latest-Linux-x86_64.sh -b -p $vini_dir/miniconda3
+    eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
+    $vini_dir/miniconda3/bin/conda create -n Vini python=2.7 #create conda environment Vini with python 2.7
+    conda activate Vini
+    $vini_dir/miniconda3/bin/conda install -y pandas mpi4py requests numpy  #install packages in Vini env
+else
+    echo "Miniconda is already installed, continuing..."
+fi
+
+
+echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
+read -p "Accept (y/n)?" accept
+if [ $accept != "y" ]
+then
+    read -p "enter the full path name of new working directory (e.g. /home/foo/workdir):" WORKDIR
+    mkdir -p ${WORKDIR}
+    echo $WORKDIR > workdir
+    echo "WORKDIR changed to" $WORKDIR 
+else 
+    echo $WORKDIR > workdir
+fi 
+
+
+alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
+grep -v HOH $vini_dir/1aki.sav > $vini_dir/1AKI.pdb
+
+echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
+ORGANISM=`cat $WORKDIR/ORGANISM`
+
+
+sh $vini_dir/get_compute_node_cores
+
+case $JSS in
+     1) sh prepare_SLURM_scripts ;;
+     2) sh prepare_SGE_scripts ;;
+#    3) sh prepare_PBS_scripts ;; #needs testing!
+esac
+
+
+read -p "Enter the maximum number of compute nodes Vini will use concurrently:" nodes
+echo $nodes > $WORKDIR/nodes
+cores=`cat $WORKDIR/cores`
+tmp=`echo $nodes $cores | awk '{print $1 * $2}'`     #total number of cores
+tmp=`echo $tmp $THREE | awk '{print $1 / $2}'`  #max numberr of Autodock Vina jobs
+max_jobs=${tmp%.*}
+echo $max_jobs > $WORKDIR/max_jobs
+
+echo ; echo "If you never registered to SWISS-MODEL server before, stop here. Go to https://swissmodel.expasy.org/  and create account. Then enter your registration email and password here."
+read -p "Already registered (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password
+    echo""
+    echo $email > $WORKDIR/SWISS-MODEL_email
+    echo $password > $WORKDIR/SWISS-MODEL_password
+    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+else
+    if [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ] ; then
+       echo "no registration data found. You will need to enter your registration data now. "
+       read -p "Enter your registration email:" email
+       echo -n "Enter your registration password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/SWISS-MODEL_email
+       echo $password > $WORKDIR/SWISS-MODEL_password
+       chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+    fi
+fi
+
+sh download_SWISS_MODEL_metadata
+
+#echo -n "Initializing SWISS-MODEL repository index file, please wait..."
+#rm -f 9606_meta.tar.gz
+#wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
+#tar -xzf 9606_meta.tar.gz -C $WORKDIR
+#echo "done."
+
+echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
+read -p "Already registered (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password ; echo ""
+    echo $email > $WORKDIR/Drugbank_email
+    echo $password > $WORKDIR/Drugbank_password
+    chmod g-r,o-r $WORKDIR/Drugbank_password
+else
+    if [ ! -e $WORKDIR/Drugbank_email ] || [ ! -e $WORKDIR/Drugbank_password ] ; then
+       echo "no data found. You will need to enter data for the first time. "
+       read -p "Enter email:" email
+       echo -n "Enter password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/Drugbank_email
+       echo $password > $WORKDIR/Drugbank_password
+       chmod g-r,o-r $WORKDIR/Drugbank_password
+    fi
+fi
+
+cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
+
+sh download_Drugbank_structures
+
+echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
+read -p "Already registered (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password ; echo ""
+    echo $email > $WORKDIR/COSMIC_email
+    echo $password > $WORKDIR/COSMIC_password
+    chmod g-r,o-r $WORKDIR/COSMIC_password
+else
+    if [ ! -e $WORKDIR/COSMIC_email ] || [ ! -e $WORKDIR/COSMIC_password ] ; then
+       echo "no data found. You will need to enter data for the first time. "
+       read -p "Enter email:" email
+       echo -n "Enter password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/COSMIC_email
+       echo $password > $WORKDIR/COSMIC_password
+       chmod g-r,o-r $WORKDIR/COSMIC_password
+    fi
+fi
+
+sh renew_COSMIC_token
+
+#https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
+
+# https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds ?
+
+touch -a $WORKDIR/computed_therapy_level
+touch -a $WORKDIR/computed_cancer_type
+computed_therapy_level=`cat $WORKDIR/computed_therapy_level`
+
+echo -n "Delete all data previously created by Vini? (y/n)"
+read erase
+if  [[ $erase == "y" ]]
+then
+    rm -rf $WORKDIR/*_data 
+    > $WORKDIR/computed_cancer_type
+fi
+
+computed_cancer_type=`cat $WORKDIR/computed_cancer_type`
+
+echo "full" > $WORKDIR/analysis_type
+
+curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
+cat tmp | sed "s/path:hsa//g" > pathways ; rm tmp
+
+echo "Next will be shown the scrolling list of all pathways available for virtual drug screening ( <q> to exit )."
+echo "Then choose the pathway number and press <enter>. Example: For screening collorectal cancer, enter 05210 ."
+echo ""
+echo "tip 1: For the cancer type not in the list, choose 05200 (Pathways in cancer)."
+echo "tip 2: For screening all cancer pathways, enter <all> ."
+
+echo "" ; read -p "Press enter to continue." cont
+
+cat pathways | less
+
+echo "" ; rm pathways
+read -p "Please enter the pathway number:" cancer_type
+echo $cancer_type > $WORKDIR/cancer_type
+data="_data"
+
+
+
+read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #here we check if cell line analysis will be performed
+if [ $yesno == y ]
+then
+    compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
+    read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
+    echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/genes/expressions "directory!"
+    read -p "press enter when the upload is done." ready
+    echo $cell_line > $WORKDIR/cell_line
+    if [ ! -f $vini_dir/genes/expressions/${cell_line}.csv ]
+    then
+        echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
+        echo -n "Obtain this file manually from COSMIC DB "
+        echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_line}.csv 
+        read -p "Press enter when done." enter
+    else
+        echo ${cell_line} "cell line will be processed."    
+    fi
+    echo $cell_line > $WORKDIR/cell_line
+else
+    compute_cell_line=$FALSE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
+fi
+
+#Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
+#We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat
+#AD4_parameters.dat is located in $MGLTOOLS directory
+#Copy it to the working directory : http://autodock.scripps.edu/faqs-help/faq/how-do-i-add-new-atom-types-to-autodock-4
+
+echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
+if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
+then
+    cp $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat.orig
+    grep atom_par $vini_dir/AD4_parameters_for_metal_ions >> $MGLTOOLS/AD4_parameters.dat
+    echo "parameters for metal ions added."
+else
+    echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
+fi
+
+cp $INSTALL_DIR/g_mmpbsa/bin/g_mmpbsa $WORKDIR
+
+echo -n "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, 3 with three drugs therapy etc):"
+read max_therapy_level
+echo $max_therapy_level > $WORKDIR/max_therapy_level
+
+
+sh prepare_ligands 
+
+stop=`cat $WORKDIR/stop`
+if [ $stop == $ONES ]
+then
+    exit #pdbqt creation failed
+fi
+
+if  [[ $cancer_type == $computed_cancer_type ]]
+then
+    echo "Do you want to use the existing data, or let Vini compute data ab initio? (y for existing data, n for ab initio)" 
+    read answer
+    if [ $answer == y ]
+    then
+        therapy_level=`cat $WORKDIR/computed_therapy_level`
+        let "therapy_level++"
+    else
+        therapy_level=1
+        rm -rf $WORKDIR/$cancer_type$data
+        rm -rf $WORKDIR/$cancer_type$data
+    fi
+else
+    therapy_level=1
+    rm -rf $WORKDIR/$cancer_type$data
+fi
+
+CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting the cancer pathway
+a="_results"                                                     #Create directory store for results
+rm -rf $WORKDIR/$CANCER_PATHWAY$a
+mkdir -p $WORKDIR/$CANCER_PATHWAY$a
+
+cp $vini_dir/prep_prot_lig.py $WORKDIR
+
+#echo $NULL > $WORKDIR/amber
+echo $ONES > $WORKDIR/amber #amber is active
+
+touch $WORKDIR/debuglog
+
+echo "Good to go. You may now start Vini in the foreground with <sh Vini> (output will be sent to the screen)"
+echo "or in the background with <nohup ./Vini &> (output will be sent to nohup.out file)"
