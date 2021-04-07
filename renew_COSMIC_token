@@ -1,0 +1,42 @@
+#replace COSMIC token in all files in the current directory
+#input param: $WORKDIR/COSMIC_token file with TOKEN NUMBER
+#output: none
+
+link=https://github.com/draskot/Vini/wiki/Cosmic-TOKEN
+
+if [ -e $WORKDIR/COSMIC_token ] #check if token exists and update if more then 7 days old
+then
+    seven_days_ago=$(date -d 'now - 7 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
+    filename=$WORKDIR/COSMIC_token
+    file_time=$(date -r $filename +%s)
+    if  (( file_time <= seven_days_ago ))
+    then 
+        echo WARNING:"COSMIC token is more than 7 days old. In order to continue, you must renew this token."
+        echo "Instructions on how to obtain this token can be found at " $link
+        read -p "Input new token here when ready and press <enter> to continue." token
+        echo $token > $WORKDIR/COSMIC_token
+    else
+        token=`cat $WORKDIR/COSMIC_token`
+    fi
+else
+    echo WARNING:"COSMIC token not found. In order to continue, you must obtain this token."
+    echo "Instructions on how to obtain this token can be found at " $link  
+    read -p "Input token here when ready and press <enter> to continue." token
+    echo $token > $WORKDIR/COSMIC_token
+fi
+
+rm -f tmp                               #preparing file with COSMIC token entries
+grep -d skip -w "TOKEN_NUMBER =" * > tmp
+cut -d: -f1 tmp > tmp2 
+grep -v renew_COSMIC_token tmp2 > tmp
+
+while read -r line
+do
+    filename=`echo $line | cut -d: -f1`                                                   #get file name
+    lineno=`grep -n "TOKEN_NUMBER =" $filename`                                           #get line number
+    lineno=`echo $lineno | cut -d: -f1`
+    line_to_replace=`head -"$lineno" $filename | tail -1`
+    replacement=`printf "%s%s%s%s%s%s%s\n" "TOKEN_NUMBER" " " "=" " " "\"" "$token" "\""` #create replacement
+    sed -i "${lineno}s/.*/$replacement/" "$filename"                                      #replace
+done < tmp
+rm tmp
