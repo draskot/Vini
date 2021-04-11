@@ -4,6 +4,7 @@ import numpy as np
 
 t0 = time.time()
 
+
 def main(argv):
     try:
         WORKDIR = os.environ['WORKDIR']
@@ -53,7 +54,7 @@ def applyToEB(relation, receptors_contracted_df):
     source_id = relation[0]
     target_id = relation[1]
     genex = relation[3]
-    #global EB_matrix
+    # global EB_matrix
     rc = receptors_contracted_df
     source_positions = rc[rc.iloc[:, 0] == source_id].index.to_numpy()
     target_positions = rc[rc.iloc[:, 0] == target_id].index.to_numpy()
@@ -61,6 +62,7 @@ def applyToEB(relation, receptors_contracted_df):
     for sp in source_positions:
         for tp in target_positions:
             main.EB_matrix.iloc[sp, tp] = genex
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
