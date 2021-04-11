@@ -1,21 +1,21 @@
 #! /bin/bash
-#SBATCH --job-name=genex
-#SBATCH --output=genex.out
-#SBATCH --time=24:00:00
-#SBATCH --exclusive
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=48gb
-#SBATCH --partition=computes_thin
-WORKDIR=/scratch/IRB/namd5
+#$ -N genex
+#$ -cwd
+#$ -V
+#$ -o genex.out
+#$ -e genex.out
+#$ -l h_rt=86400
+#$ -pe test 16
+#$ -l mem_free=49152
+#$ -q test.q
+WORKDIR=/shared/dtomic
 
 cancer_type=`cat $WORKDIR/cancer_type`
 grep $cancer_type cross_references > $WORKDIR/tmp
 tissue=`cat $WORKDIR/tmp | awk '{print $2}'`
 rm $WORKDIR/tmp 
 
-eval "$(/home/namd5/vini_3_1/miniconda3/bin/conda shell.bash hook)"   #compute z_scores
+eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"   #compute z_scores
 conda activate Vini
 python batch_calculate_gene_expressions.py -g ./genes/Uniprot_ID_list -t $tissue -o ./genes/expression_scores.csv -n ${SLURM_NTASKS}
 conda deactivate

@@ -4,8 +4,10 @@ import requests
 import time
 import csv
 
+
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 WORKDIR = os.environ.get('WORKDIR')
+
 # TODO definirati kako se zove env varijabla s pathom do Vini
 VINI_DIR = os.path.realpath('.')
 
