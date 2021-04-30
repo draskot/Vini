@@ -4,12 +4,12 @@ import requests
 import time
 import csv
 
-
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 WORKDIR = os.environ.get('WORKDIR')
 
 # TODO definirati kako se zove env varijabla s pathom do Vini
 VINI_DIR = os.path.realpath('.')
+
 
 def loadCosmicToken(path=os.path.join(WORKDIR, 'COSMIC_token')):
     try:
@@ -41,6 +41,7 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
             try:
                 download_url = ("https://www.uniprot.org/uploadlists/?from=ACC+ID&to=GENENAME&format=tab&query=" +
                                 UNIPROT_ID)
+                print download_url
                 r = requests.get(download_url)
                 if r.status_code == 200:
                     COSMIC_ID = r.content.split('\n')[1].split('\t')[1]
@@ -49,7 +50,7 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
                     writer.writerow([UNIPROT_ID, COSMIC_ID])
                     return COSMIC_ID
             except:
-                print ('Error while contacting Uniprot service')
+                print ('Error while contacting Uniprot service for %s' % UNIPROT_ID)
                 return False
 
     # TODO if unsuccessful try again after sleep(3)
@@ -104,9 +105,12 @@ def makeGeneListFromInput(GENE_INPUT):
                 gene_list.append(gene_name.rstrip())
         return gene_list
     except:
-        # if GENE_INPUT is not a list it must be a single gene name
-        gene_list = [GENE_INPUT]
-        return gene_list
+        if '/' in GENE_INPUT:
+            print "No such file %s" % GENE_INPUT
+        else:
+            # if GENE_INPUT is not a list it must be a single gene name
+            gene_list = [GENE_INPUT]
+            return gene_list
 
 
 def makeCellLineListFromInput(CELL_LINES_INPUT):
