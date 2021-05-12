@@ -1,9 +1,11 @@
- NULL=0
+NULL=0
 ONES=1
 THREE=3
 HSA=hsa
 TRUE=1
 FALSE=0
+
+sh $vini_dir/clean
 
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -25,6 +27,7 @@ else
 fi
 
 mkdir -p $vini_dir/ligands/pdb_files #preparing directories
+mkdir -p $vini_dir/ligands/pdbqt_files #preparing directories
 mkdir -p $vini_dir/genes/pdb_files
 mkdir -p $vini_dir/genes/expressions 
 mkdir -p $vini_dir/genes/mutations
@@ -60,6 +63,7 @@ then
 else
     exit
 fi 
+
 
 
 cd $WORKDIR #Cleanup
@@ -110,7 +114,7 @@ case $JSS in
 esac
 
 
-read -p "Enter the maximum number of compute nodes Vini will use concurrently:" nodes
+read -p "Enter maximum number of compute nodes Vini may use concurrently:" nodes
 echo $nodes > $WORKDIR/nodes
 cores=`cat $WORKDIR/cores`
 tmp=`echo $nodes $cores | awk '{print $1 * $2}'`     #total number of cores
@@ -141,12 +145,6 @@ fi
 
 sh download_SWISS_MODEL_metadata
 
-#echo -n "Initializing SWISS-MODEL repository index file, please wait..."
-#rm -f 9606_meta.tar.gz
-#wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
-#tar -xzf 9606_meta.tar.gz -C $WORKDIR
-#echo "done."
-
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -p "Already registered (y/n)?" yesno
 if  [ $yesno == "n" ]
@@ -167,9 +165,11 @@ else
     fi
 fi
 
-cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav
+sh renew_Drugbank_data    #try to update drug?links.csv file if more than 7 days old
 
-sh download_Drugbank_structures
+echo ; echo "Searching for drug structures in Drugbank..."
+
+sh download_Drugbank_structures #download pdb and FASTA structures of drugs if not in repo
 
 echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
 read -p "Already registered (y/n)?" yesno
@@ -191,7 +191,8 @@ else
     fi
 fi
 
-sh renew_COSMIC_token
+#sh change_COSMIC_token_time #reset time creation to 01-01-2000
+sh renew_COSMIC_token #update COSMIC token if older than 24 hours
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -233,7 +234,7 @@ data="_data"
 
 
 
-read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #here we check if cell line analysis will be performed
+read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #checking if cell line analysis will be performed
 if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
@@ -303,8 +304,8 @@ else
     rm -rf $WORKDIR/$cancer_type$data
 fi
 
-CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting the cancer pathway
-a="_results"                                                     #Create directory store for results
+CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
+a="_results"                                                     #Create directory for results
 rm -rf $WORKDIR/$CANCER_PATHWAY$a
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 
@@ -317,3 +318,5 @@ touch $WORKDIR/debuglog
 
 echo "Good to go. You may now start Vini in the foreground with <sh Vini> (output will be sent to the screen)"
 echo "or in the background with <nohup ./Vini &> (output will be sent to nohup.out file)"
+
+echo "Attention: if you are analyzing a specific cell line for the first time, start Vini in foreground."

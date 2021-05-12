@@ -65,8 +65,6 @@ do
             sh create_receptor_pdbqt_files                  #Creating initial receptor pdbqt files
             nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
             echo $nr_complexes > $WORKDIR/nr_complexes
-            sh estimate_Vina_computational_time
-            sh estimate_EB_matrices_computational_time
             sh vini
             while [ ! -f $WORKDIR/END ]
             do
@@ -107,8 +105,6 @@ do
         sh create_receptor_pdbqt_files                       #Creating initial receptor pdbqt files
         nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
         echo $nr_complexes > $WORKDIR/nr_complexes
-        sh estimate_Vina_computational_time
-        sh estimate_EB_matrices_computational_time
 
         sh vini
         while [ ! -f $WORKDIR/END ]
@@ -175,7 +171,8 @@ do
                     mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
                     #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
                     #working with the expression file already preloaded in ./genes/expressions directory. 
-                    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -t $tissue -c $cell_line
+                    echo "getting mutations for" $cell_line ", please wait..."
+                    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
                     python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
                     cp $vini_dir/genes/expressions/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
                     cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
@@ -196,23 +193,26 @@ do
             conda deactivate
             export PYTHONPATH=$STORE1 
 
+
             sh copy_genes_to_stage              #Copy pdb receptor files to the stage
             sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
             nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
             echo $nr_complexes > $WORKDIR/nr_complexes
         fi
-        #sh estimate_Vina_computational_time
-        #sh estimate_EB_matrices_computational_time
-
         sh vini 
         end_date=`date`
         echo "Analysis completed at"  $end_date
     fi
 done
 
-mv $vini_dir/ligands/ligands_list.sav $vini_dir/ligands/ligands_list
-
 cd $WORKDIR 
-rm -f create_energy_b postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err ligands_list word temp_buf AD4_parameters.dat END relations receptors receptors_contracted receptors_expanded url nr_complexes nr_ligands Vina target_dir ultradock stats prediction_list analysis_type max_jobs max_therapy_level therapy_level ORGANISM cancer_type SLEM_values swiss_repo_entry *.pdb O* P* Q* nodes MD_engine tmp computed_cancer_type success Vina_run rm complex_*
+rm -f postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err
+rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded url
+rm -f nr_complexes nr_ligands Vina target_dir stats prediction_list analysis_type max_jobs
+rm -f max_therapy_level therapy_level swiss_repo_entry *.pdb
+rm -f O???? P* Q* nodes tmp computed_cancer_type success Vina_run rm complex_*
+rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list
+rm -f relations receptors_contracted
+rm -rf 0* 1* 2*
 cd $vini_dir
-rm -f partition workdir
+rm -f partition workdir tmp tmp2

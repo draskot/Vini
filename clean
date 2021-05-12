@@ -1,12 +1,11 @@
 
-rm -f cancer_type temp_buf analysis_type ORGANISM nr_complexes nr_ligands max_jobs max_therapy_level ligands_list job_submit computed_cancer_type job_status receptors receptors_expanded relations therapy_level Vina computed_therapy_level nohup.out
+rm -f cancer_type temp_buf analysis_type nr_complexes nr_ligands max_jobs max_therapy_level ligands_list job_submit computed_cancer_type job_status receptors receptors_expanded relations therapy_level Vina computed_therapy_level nohup.out
 
 rm -f $WORKDIR/ligand*
 rm -f $WORKDIR/nr_ligands
 rm -f $WORKDIR/max_jobs
 rm -f $WORKDIR/recepto*
 rm -f $WORKDIR/workload*
-rm -f $WORKDIR/ORGANISM
 rm -f $WORKDIR/job_submit
 rm -f $WORKDIR/job_status
 rm -f $WORKDIR/relations

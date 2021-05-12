@@ -10,18 +10,23 @@ import requests
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "371818745204792537942947923028087475"
+TOKEN_NUMBER = "31582567955031531733982630810776050"
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
+
+if not os.path.exists(WORKING_DIR_MUTATIONS):
+    os.makedirs(WORKING_DIR_MUTATIONS)
+if not os.path.exists(WORKING_DIR_SEQUENCES):
+    os.makedirs(WORKING_DIR_SEQUENCES)
 
 failed_downloads = []
 
 
-def getCellLineMutations(TISSUE_NAME, CELL_LINE):
+def getCellLineMutations(CELL_LINE):
     try:
         # print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                        "table=V92_38_MUTANT" + "&primarysite=" + TISSUE_NAME + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
+                        "table=V92_38_MUTANT" + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
         number_of_attempts = 10
         current_attempt = 0
         print ('Downloading gene mutations for cell line %s' % CELL_LINE)
@@ -84,12 +89,13 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:c:", ["gene", "tissue=",'cellline'])
     except getopt.GetoptError:
-        print 'Usage: -g <gene Uniprot ID or file path> -t <tissue name> -c <cell line>'
+        print 'Usage: -g <gene Uniprot ID or file path> -c <cell line>'
         sys.exit()
 
     for opt, arg in opts:
         if opt == '-h':
             print '-g <gene Uniprot ID or file path> -t <tissue name>'
+            print '-g <gene Uniprot ID or file path>'
             sys.exit()
         elif opt in ("-g", "--gene"):
             GENE_INPUT = arg
@@ -102,7 +108,7 @@ def main(argv):
     cosmicTools.checkCosmicEnvironment()
     gene_list = cosmicTools.makeGeneListFromInput(GENE_INPUT)
     try:
-        mutationsFile = getCellLineMutations(TISSUE_NAME, CELL_LINE)
+        mutationsFile = getCellLineMutations(CELL_LINE)
         if mutationsFile:
             print 'Gene mutations saved in file: %s' % mutationsFile
     except:
@@ -119,7 +125,7 @@ def main(argv):
                 print 'FASTA sequence saved in file: %s' % fastaSeq
         except:
             pass
-    print ("Downloaded %s of %s FASTA dequences from list." % (num_successful_downloads, len(gene_list)))
+    print ("Downloaded %s of %s FASTA sequences from list." % (num_successful_downloads, len(gene_list)))
     if failed_downloads:
         print ("These genes/cell-lines were not downloaded: %s" % ','.join(failed_downloads))
 

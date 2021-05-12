@@ -66,8 +66,8 @@ then
     free_binding_energy=`echo $line | awk '{print $4}'`
     if  [ $free_binding_energy == "nan" ]
     then
-        echo "free binding energy cannot be calculated (nan).  Setting FBE to 7.0 kcal/mol."
-        FBE_kcal_mol=7.0
+        echo "free binding energy cannot be calculated (nan).  Setting FBE to -7.0 kcal/mol."
+        FBE_kcal_mol=`printf "%.1f" -7.0`
         error=1
         echo $error > FBE_error
     else
@@ -77,8 +77,8 @@ then
         echo $error > FBE_error
     fi
 else
-    echo "error found. setting free binding energy to 7.0 kcal/mol."
-    FBE_kcal_mol=7.0
+    echo "error found. setting free binding energy to -7.0 kcal/mol."
+    FBE_kcal_mol=`printf "%.1f" -7.0`
     error=1
     echo $error > FBE_error
 fi

@@ -2,6 +2,7 @@
 NULL=0
 ONES=1
 HASH="#"
+pdbqt=.pdbqt
 
 
 job_status=`cat $WORKDIR/job_status`
@@ -10,6 +11,7 @@ max_jobs=`cat $WORKDIR/max_jobs`
 
 cd $WORKDIR
 
+echo ; echo "Trying to prepare pdbqt files for Autodock Vina..."
 
 j=1 ; b='ligand_'
 while  read -r line
@@ -17,9 +19,9 @@ do
     printf -v i "%03d" $j
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
-    echo "drugname:" $drugname "molecule type:" $flag ; sleep 1
+    echo "drugname:" $drugname "molecule type:" $flag 
 
-    echo $drugname > tmp ; words=`wc -w < tmp` ; rm tmp          #put a question mark if 2 words
+    echo $drugname > tmp ; words=`wc -w < tmp` ; rm tmp  #put a question mark in between if 2 words
     if  [ $words -eq 2 ] #then put ? in between
     then
         line=`echo $line | tr ',' ' '`
@@ -28,14 +30,30 @@ do
     fi
 
     cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR/${b}${i}.pdb
-    if [ $flag == S ] # if small molecule, create pdbqt file for Vina
+    if  [ -e $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt ]
     then
-        cat Vina > Vina_run
-        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/${b}${i}.pdbqt"  >> Vina_run
-        chmod +x Vina_run
-        sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-        $job_submit Vina_run
+        echo "pdbqt file" for ${drugname} "found in repo, copying to" $WORKDIR
+        cp $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/${b}${i}.pdbqt
+    else
+        #cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR/${b}${i}.pdb
+        if [ $flag == S ] 
+        then
+            echo "Trying to create pdbqt file for" ${drugname} "in working directory..."
+            cat Vina > Vina_run
+            echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/${b}${i}.pdbqt"  >> Vina_run
+            chmod +x Vina_run
+            sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+            $job_submit Vina_run
+
+            echo "Trying to create pdbqt file for" ${drugname} "in repo..."
+            cat Vina > Vina_run   #creating pdbqt file for repo
+            echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt"  >> Vina_run
+            chmod +x Vina_run
+            sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+            $job_submit Vina_run
+        fi
     fi
+
     let j++
 done < $vini_dir/ligands/ligands_list
 

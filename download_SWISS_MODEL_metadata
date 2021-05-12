@@ -11,23 +11,20 @@ then
         read -p "Press any key when ready to cont." anykey
     fi
 else
-    filename=9606_meta.tar.gz     #update drug?links.csv file if older than 7 days.
-    seven_days_ago=$(date -d 'now - 7 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
+    filename=9606_meta.tar.gz     
+    thirty_days_ago=$(date -d 'now - 30 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
     file_time=$(date -r $filename +%s)
-    if (( file_time <= seven_days_ago ))
+    if (( file_time <= thirty_days_ago ))
     then
-        echo "SWISS-MODEL Repository metadata file is no more than 7 days old, continuing."
-    else
-        echo -n "9606_meta.tar.gz file is more than 7 days old, updating..."
+        echo -n "9606_meta.tar.gz file is more than 30 days old, updating..."
         wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
         if  [ -e 9606_meta.tar.gz ]
         then
-            echo success ; tar -xzf 9606_meta.tar.gz -C $WORKDIR
+            echo "success" ; tar -xzf 9606_meta.tar.gz -C $WORKDIR
             touch $WORKDIR/SWISS-MODEL_Repository/INDEX
             mv 9606_meta.tar.gz.1 9606_meta.tar.gz
         else
-            echo "failed! Check your network or provide this file manually."
-            read -p "Press any key when ready to cont." anykey
+            echo -n "Problem with the network or server may be busy. Existing file will be used."
         fi
     fi
 fi

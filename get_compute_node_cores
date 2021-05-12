@@ -1,7 +1,10 @@
+NULL=0
 ONES=1
 
 JSS=`cat $WORKDIR/JSS`
 Vini_queue=`cat $WORKDIR/Vini_queue`
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
 
 if [ $JSS == $ONES ]
 then
@@ -10,7 +13,7 @@ then
     echo "WORKDIR=$WORKDIR"                      >> get_cores
     echo "#SBATCH --job-name=get_cores"          >> get_cores
     echo "#SBATCH --output=get_cores.out"        >> get_cores
-    echo "#SBATCH --time=00:30:00"               >> get_cores
+    echo "#SBATCH --time=00:00:60"               >> get_cores
     echo "#SBATCH --ntasks-per-node=1"           >> get_cores
     echo "#SBATCH --cpus-per-task=1"             >> get_cores
     echo "#SBATCH --mem=2gb"                     >> get_cores
@@ -24,19 +27,27 @@ else
     echo "#$ -e get_cores.out"                   >> get_cores
     echo "#$ -cwd"                               >> get_cores
     echo "#$ -V"                                 >> get_cores
-    echo "#$ -l h_rt=1800"                       >> get_cores
+    echo "#$ -l h_rt=60"                         >> get_cores
     echo "#$ -pe" $Vini_pe 1                     >> get_cores
     echo "#$ -l mem_free=2048"                   >> get_cores
 fi
 
 echo "lscpu" >> get_cores
-echo -n "Trying to determine number of cores per compute node..."
+echo -n "Trying to determine number of CPU cores per compute node, please wait..."
 rm -f *.out
 chmod u+x get_cores
-job_submit=`cat $WORKDIR/job_submit`
 $job_submit get_cores
-sh wait_until_jobs_finish
-grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
-grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
-cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
-echo "found" $cores "cores per compute node." ; rm get_cores *out
+timeout 60s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
+if [ -e $vini_dir/*out ]
+then
+    grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
+    grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
+    cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
+    echo "found" $cores "CPU cores per compute node."
+else
+    $job_cancel -u $USER
+    read -p "failed to get info about cores. Ask your admin and write number of cores per compute node here:" cores
+    echo $cores > $WORKDIR/cores
+    job_cancel=`cat $WORKDIR/job_cancel`
+fi
+rm -f *out

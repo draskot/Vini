@@ -63,14 +63,8 @@ do
             fi
         fi
     else 
-         if [ $KEGG_gene_name == hsa:19254 ] #we have SARS COV-2 spike glycoprotein
-         then
-             uniprot_id=P59594
-         else
-             uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
-             uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
-         fi
-
+        uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
 
          echo $uniprot_id >> $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
          line=`grep $uniprot_id $vini_dir/uniprot_db` #Check if pdb structure is available
@@ -123,7 +117,6 @@ do
              else
                  echo "no. Analyzing associated RCSB structures, may take a while... "  
 
-
                  rm -f $WORKDIR/completeness_list
                  sh create_completeness_list ${uniprot_id}
                  noentries=`wc -l < $WORKDIR/completeness_list`
@@ -163,7 +156,8 @@ do
     fi
     let "entry++"
 done < $WORKDIR/receptors_expanded
-awk '!seen[$0]++' $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/temp
-mv $WORKDIR/temp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
-echo "done."
+awk '!seen[$0]++' $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/tmp #remove duplicate lines
+grep "\S" $WORKDIR/tmp > $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST         #remove empty lines
 cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST $vini_dir/genes/Uniprot_ID_list
+rm $WORKDIR/tmp
+echo "done."

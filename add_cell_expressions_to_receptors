@@ -2,6 +2,8 @@ cell_line=$1
 > $WORKDIR/receptors_contracted.tmp
 NULL=0
 ONES=1
+dash=-
+suffix=$dash$cell_line
 eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
 conda activate Vini
 touch $WORKDIR/Uniprot_gene_table
@@ -10,12 +12,13 @@ while read -r line
 do
     #do not process this paragraph if entry is the compound and contains pubchem word
     Uniprot_ID=`echo $line | awk '{print $3}'`
+    Uniprot_ID=`echo "$Uniprot_ID" | sed -e "s/^$suffix//"`
     echo $Uniprot_ID | grep pubchem > $WORKDIR/tmp
     nolines=`wc -l < $WORKDIR/tmp`
     if  [ $nolines -eq $NULL  ]
     then
         echo -n "Uniprot ID is" $Uniprot_ID "Trying to find the gene name..."
-        grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if the gene name already exists
+        grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -ne $NULL  ]
         then
@@ -24,7 +27,7 @@ do
         else
             for (( N=0; N<10; N++ )) #retry 10 times
             do
-                echo -n "Contanting UNIPROT for gene name..."
+                echo -n "Contacting UNIPROT for gene name..."
                 python mapUniprotIDtoCosmicID.py $Uniprot_ID > $WORKDIR/tmp
                 GENE_NAME=`cat $WORKDIR/tmp`
                 if  [ $GENE_NAME != "Error" ]
