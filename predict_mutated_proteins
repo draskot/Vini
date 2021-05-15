@@ -1,27 +1,108 @@
+
+#Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
+#curl -s -d "dna_sequence=ATCG....AGCTAG&output_format=fasta" https://web.expasy.org/cgi-bin/translate/dna2aa.cgi > my_output.frame
+
+cell_line=$1
+
 NULL=0
+FASTA=.fasta
 PDB=.pdb
-CLEAN=_clean
+FRAME=.frame
+prefix=_
+dash=-
+SEQDIR=$vini_dir/genes/sequences/
+
+echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
+rm -f $vini_dir/genes/sequences/*csv
+
+ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
+i=1   #create and run job for DNA --> protein sequence translation
+while read -r line
+do
+    CMD="curl -s -d"
+    A=\"dna_sequence=
+    SEQ=`cat $line`
+    FORMAT=\&output_format=fasta\"
+    LINK=https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
+    OUT=" > "
+    FILENAME=`basename "$line"`
+    echo $CMD $A$SEQ$FORMAT $LINK $OUT $SEQDIR$prefix$FILENAME > translate
+    chmod u+x translate
+    sh translate 
+    FRAMES=`basename -s .fasta $SEQDIR$prefix$FILENAME | cut -c2-`
+    mv $SEQDIR$prefix$FRAMES$FASTA $SEQDIR$FRAMES$FRAME
+    let "i++"
+    echo -n "."
+done < $WORKDIR/tmp
+echo "done."
+
+
+python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
+
+rm -f $vini_dir/genes/sequences/*frame
+ls $SEQDIR > seqnames             #rename proteins to include cell line name
+
+ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
+while read -r line
+do
+    FILENAME=`basename "$line"`
+    BASE=`basename -s .fasta $SEQDIR$FILENAME`
+    PROTNAME=$BASE$dash$cell_line$FASTA
+    mv $SEQDIR$FILENAME $SEQDIR$PROTNAME
+done < $WORKDIR/tmp
+
+> tmp                            #create file with wild gene names
+while read -r line
+do
+    suffix=".fasta";
+    string=${line%$suffix};
+    echo $string >> tmp
+done < seqnames
+mv tmp wild
+
+> tmp
+ls $SEQDIR > mutated          #create file with mutated gene names
+while read -r line
+do
+    suffix=".fasta";
+    string=${line%$suffix};
+    echo $string >> tmp
+done < mutated
+mv tmp mutated
+
+paste -d' ' wild mutated > combo
+
+while read -r line #replacing wild genes  with mutated receptors_contracted file
+do
+    wild=`echo $line | awk '{print $1}'`
+    mutated=`echo $line | awk '{print $2}'`
+    sed -i "s/$wild/$mutated/" $WORKDIR/receptors_contracted
+done < combo
+
+
+> predict
+while read -r line    #delete fasta if pdb already in epo
+do
+    mutated=`echo $line`
+    if [ -e $vini_dir/genes/pdb_files/$mutated$PDB ]
+    then
+        rm $vini_dir/genes/sequences/$mutated.fasta
+    else
+        echo $mutated >> predict
+    fi
+done < mutated
+
 
 chars=`wc -c < predict`
-
-if [ $chars -ne $NULL  ]
+if [ $chars -eq $NULL  ]
 then
-    echo "Cleaning pdb files with Chimera. Please wait, this may take a while..."
-    while read -r line
-    do
-        grep -v "HETATM" $vini_dir/genes/sequences/$line$PDB > tmp
-        grep -v "CONECT" tmp > $line$PDB
-        ligand=BNZ
-        sh chimera_script ${line} ${ligand}
-
-        if  [ -e protein_clean.pdb ]
-        then
-            mv protein_clean.pdb ${vini_dir}/genes/pdb_files/$line$PDB
-            rm $line$CLEAN$PDB $line$PDB #cleanup
-            
-        else
-	    mv $line ${vini_dir}/genes/pdb_files/$line$PDB
-        fi
-    done < predict
-    echo "done."
+    echo "All mutated protein structures are available in Vini repo."
+    exit
+else
+    echo "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences ":" 
+    ls $vini_dir/genes/sequences
+    echo "Upload these sequences to the SWISS-MODEL https://swissmodel.expasy.org/ and model their structures (pdb files)."
+    echo "Then, upload these structures to " $vini_dir/genes/sequences "folder."
+    echo "IMPORTANT: The pdb file name must be the same as the fasta file name.. For example: 1AKI.fasta --> 1AKI.pdb"
+    read -p "Press enter when ready to continue." enter
 fi

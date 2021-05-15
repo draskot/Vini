@@ -4,8 +4,8 @@ NULL=0
 ONES=1
 dash=-
 suffix=$dash$cell_line
-eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
-conda activate Vini
+#eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
+#conda activate Vini
 touch $WORKDIR/Uniprot_gene_table
 
 while read -r line
@@ -27,17 +27,22 @@ do
         else
             for (( N=0; N<10; N++ )) #retry 10 times
             do
-                echo -n "Contacting UNIPROT for gene name..."
-                python mapUniprotIDtoCosmicID.py $Uniprot_ID > $WORKDIR/tmp
-                GENE_NAME=`cat $WORKDIR/tmp`
+                echo -n "Converting UNIPROT ID" $Uniprot_ID "to gene name..."
+                #python mapUniprotIDtoCosmicID.py $Uniprot_ID > $WORKDIR/tmp
+                #GENE_NAME=`cat $WORKDIR/tmp`
+                pre="https://www.uniprot.org/uniprot/?query="
+                post="&format=tab&columns=id,genes(PREFERRED)"
+                curl -Lfs -o tmp $pre$Uniprot_ID$post
+                gene=`grep $Uniprot_ID tmp`
+                GENE_NAME=`echo $gene | awk '{print $2}'`
                 if  [ $GENE_NAME != "Error" ]
                 then
-                  echo "success."
+                  echo "preffered gene name is" $GENE_NAME
                   printf "%s%s%s\n" "$Uniprot_ID" " " "$GENE_NAME" >> $WORKDIR/Uniprot_gene_table #add entry to the table
                   break
                   sleep 1
                 else
-                   echo "no answer. Will try up to 10 times."
+                   echo "no answer from UNIPROT. Will try up to 10 times."
                 fi
             done
         fi
@@ -68,4 +73,4 @@ do
     printf "%s%s%s%s%10s\n" "$line" " " "$z_score" " " "$nge"  >> $WORKDIR/receptors_contracted.tmp
 done < $WORKDIR/receptors_contracted
 tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted
-conda deactivate
+#conda deactivate

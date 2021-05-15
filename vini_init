@@ -191,8 +191,8 @@ else
     fi
 fi
 
-#sh change_COSMIC_token_time #reset time creation to 01-01-2000
-sh renew_COSMIC_token #update COSMIC token if older than 24 hours
+sh $vini_dir/change_COSMIC_token_file #reset time creation to 01-01-2000
+sh $vini_dir/renew_COSMIC_token #update COSMIC token if older than 24 hours
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -214,7 +214,9 @@ computed_cancer_type=`cat $WORKDIR/computed_cancer_type`
 
 echo "full" > $WORKDIR/analysis_type
 
-curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
+#curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
+#curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
+curl -Lfs -o tmp http://rest.kegg.jp/list/pathway/hsa
 cat tmp | sed "s/path:hsa//g" > pathways ; rm tmp
 
 echo "Next will be shown the scrolling list of all pathways available for virtual drug screening ( <q> to exit )."
@@ -239,17 +241,24 @@ if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
-    echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/genes/expressions "directory!"
-    read -p "press enter when the upload is done." ready
-    echo $cell_line > $WORKDIR/cell_line
-    if [ ! -f $vini_dir/genes/expressions/${cell_line}.csv ]
+    if [ ! -e $vini_dir/NCI-60_cell_lines/$cell_line/expressions ]
     then
-        echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
-        echo -n "Obtain this file manually from COSMIC DB "
-        echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_line}.csv 
-        read -p "Press enter when done." enter
+        echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/genes/expressions "directory!"
+        echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=<cell name>&token=<token number"
+        read -p "press enter when the upload is done." ready
+        echo $cell_line > $WORKDIR/cell_line
+        if [ ! -f $vini_dir/genes/expressions/${cell_line}.csv ]
+        then
+            echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
+            echo -n "Obtain this file manually from COSMIC DB "
+            echo "and put it under" $vini_dir/genes/expressions/ "directory with the name" ${cell_line}.csv 
+            read -p "Press enter when done." enter
+        else
+            echo ${cell_line} "cell line will be processed."    
+        fi
     else
-        echo ${cell_line} "cell line will be processed."    
+        echo "expression file already in repo, continuing."
+        cp $vini_dir/NCI-60_cell_lines/$cell_line/expressions/* $vini_dir/genes/expressions 
     fi
     echo $cell_line > $WORKDIR/cell_line
 else

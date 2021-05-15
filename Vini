@@ -186,13 +186,19 @@ do
                 echo "Getting expression values from COSMIC cell lines. This may take a while..."
                 sh add_cell_expressions_to_receptors ${cell_line}
                 sh add_expressions_to_relations
-                sh predict_mutated_genes ${cell_line}
-                sh predict_mutated_proteins
+                #if [ -e $vini_dir/NCI-60_cell_lines/$cell_line ]
+                #then
+                #  echo "predicted mutated protein structures for" $cell_line "already in repo, continuing."
+                #    cp $vini_dir/NCI-60_cell_lines/$cell_line/mutations/* $vini_dir/genes/mutations
+                #    sh clean_mutated_proteins
+                #else
+                sh predict_mutated_proteins ${cell_line}
+                sh clean_mutated_proteins
                 rm -f wild mutated combo seqnames predict tmp log ligand_wH.pdb #cleanup
+                #fi
             fi
             conda deactivate
             export PYTHONPATH=$STORE1 
-
 
             sh copy_genes_to_stage              #Copy pdb receptor files to the stage
             sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
