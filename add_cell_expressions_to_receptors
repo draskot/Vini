@@ -4,73 +4,60 @@ NULL=0
 ONES=1
 dash=-
 suffix=$dash$cell_line
-#eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
-#conda activate Vini
+seven=7
 touch $WORKDIR/Uniprot_gene_table
 
 while read -r line
 do
-    #do not process this paragraph if entry is the compound and contains pubchem word
-    Uniprot_ID=`echo $line | awk '{print $3}'`
-    Uniprot_ID=`echo "$Uniprot_ID" | sed -e "s/^$suffix//"`
-    echo $Uniprot_ID | grep pubchem > $WORKDIR/tmp
-    nolines=`wc -l < $WORKDIR/tmp`
-    if  [ $nolines -eq $NULL  ]
+    Uniprot_ID=`echo $line | awk '{print $3}'` #check if entry is protein or compound
+    nochars=`echo -n $Uniprot_ID | wc -c`
+    if  [ $nochars -gt $seven ]
     then
-        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find the gene name..."
+        entry=`echo $Uniprot_ID | head -c 7` 
+    else
+        entry=protein
+    fi
+
+    if [ $entry != pubchem ]
+    then
+        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find the gene name for protein" $Uniprot_ID
         grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -ne $NULL  ]
         then
-            echo "name found in the local repository."
-            GENE_NAME=`cat $WORKDIR/tmp | awk '{print $2}'`
+            gene=`cat $WORKDIR/tmp | awk '{print $2}'`
+            echo -n "found in repo:" $GENE_NAME
         else
-            for (( N=0; N<10; N++ )) #retry 10 times
-            do
-                echo -n "Converting UNIPROT ID" $Uniprot_ID "to gene name..."
-                #python mapUniprotIDtoCosmicID.py $Uniprot_ID > $WORKDIR/tmp
-                #GENE_NAME=`cat $WORKDIR/tmp`
-                pre="https://www.uniprot.org/uniprot/?query="
-                post="&format=tab&columns=id,genes(PREFERRED)"
-                curl -Lfs -o tmp $pre$Uniprot_ID$post
-                gene=`grep $Uniprot_ID tmp`
-                GENE_NAME=`echo $gene | awk '{print $2}'`
-                if  [ $GENE_NAME != "Error" ]
-                then
-                  echo "preffered gene name is" $GENE_NAME
-                  printf "%s%s%s\n" "$Uniprot_ID" " " "$GENE_NAME" >> $WORKDIR/Uniprot_gene_table #add entry to the table
-                  break
-                  sleep 1
-                else
-                   echo "no answer from UNIPROT. Will try up to 10 times."
-                fi
-            done
+            echo -n "searching for gene name in Uniprot DB..."
+            sh map_Uniprot_to_gene_ID ${Uniprot_ID}
+            gene=`cat $ivini_dir/genename`
+            if  [ $gene != "Error" ]
+            then
+                 echo "gene name" $gene "found."
+                 printf "%s%s%s\n" "$Uniprot_ID" " " "$GENE_NAME" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+            fi
         fi
     else 
         echo "KEGG entry is not a protein. Will not search for the gene name."
-        GENE_NAME=Error
     fi
 
-
-    if  [ $GENE_NAME == "Error" ]
+    if  [ $gene == "Error" ]
     then
         z_score=$NULL ; nge=$ONES
     else
-        grep -w "$GENE_NAME" $vini_dir/genes/expressions/${cell_line}.csv > $WORKDIR/tmp
+        grep -w "$gene" $vini_dir/genes/expressions/${cell_line}.csv > $WORKDIR/tmp
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -eq $NULL  ] #check if gene found in the expression table
         then
-            echo "GENE" $GENE_NAME "NOT FOUND in" ${cell_line}.csv
+            echo "gene" $gene "NOT FOUND in" ${cell_line}.csv
             z_score=$NULL ; nge=$ONES
         else
-            echo "GENE" $GENE_NAME "FOUND in" ${cell_line}.csv
+            echo "gene" $GENE_NAME "FOUND in" ${cell_line}.csv
             z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
             nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
         fi
     fi
-    
         
     printf "%s%s%s%s%10s\n" "$line" " " "$z_score" " " "$nge"  >> $WORKDIR/receptors_contracted.tmp
 done < $WORKDIR/receptors_contracted
 tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted
-#conda deactivate
