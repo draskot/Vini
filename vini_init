@@ -4,6 +4,7 @@ THREE=3
 HSA=hsa
 TRUE=1
 FALSE=0
+CSV=.csv
 
 sh $vini_dir/clean
 
@@ -84,7 +85,6 @@ else
     echo "Miniconda is already installed, continuing..."
 fi
 
-
 echo "Working directory is usually fast shared filesystem. It is set to" $WORKDIR "."
 read -p "Accept (y/n)?" accept
 if [ $accept != "y" ]
@@ -97,13 +97,11 @@ else
     echo $WORKDIR > workdir
 fi 
 
-
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 grep -v HOH $vini_dir/1aki.sav > $vini_dir/1AKI.pdb
 
 echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of homo sapiens only.
 ORGANISM=`cat $WORKDIR/ORGANISM`
-
 
 sh $vini_dir/get_compute_node_cores
 
@@ -112,7 +110,6 @@ case $JSS in
      2) sh prepare_SGE_scripts ;;
 #    3) sh prepare_PBS_scripts ;; #needs testing!
 esac
-
 
 read -p "Enter maximum number of compute nodes Vini may use concurrently:" nodes
 echo $nodes > $WORKDIR/nodes
@@ -241,7 +238,7 @@ if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
-    if [ ! -e $vini_dir/NCI-60_cell_lines/$cell_line/expressions ]
+    if [ ! -e $vini_dir/NCI-60_cell_lines/$cell_line/expressions/$cell_line$CSV ]
     then
         echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/genes/expressions "directory!"
         echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=<cell name>&token=<token number"
@@ -326,6 +323,6 @@ echo $ONES > $WORKDIR/amber #amber is active
 touch $WORKDIR/debuglog
 
 echo "Good to go. You may now start Vini in the foreground with <sh Vini> (output will be sent to the screen)"
-echo "or in the background with <nohup ./Vini &> (output will be sent to nohup.out file)"
+echo "or in the background with <nohup ./VelikaVini &> (output will be sent to nohup.out file)"
 
 echo "Attention: if you are analyzing a specific cell line for the first time, start Vini in foreground."

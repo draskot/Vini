@@ -21,17 +21,19 @@ lineno=1
 while read -r line
 do
     drugname=`echo $line | awk -F','   '{print $1}'`
-    echo $drugname > test ; words=`wc -w < test` ; rm test          #put a question mark if 2 words
+    echo $drugname > priv ; words=`wc -w < priv` ; rm priv          #put a question mark if 2 words
     if  [ $words -eq 2 ] #then put ? in between
     then
-        line=`echo $line | tr ',' ' '`
-        word1=`echo $line | awk '{print $1}'` ;  word2=`echo $line | awk '{print $2}'` 
-        drugname=`echo $word1"?"$word2`
+        addline=`echo $line | tr ',' ' '`
+        word1=`echo $addline | awk '{print $1}'` ;  word2=`echo $addline | awk '{print $2}'` 
+        pdb_filename=`echo $word1"?"$word2`
+    else
+        pdb_filename=$drugname
     fi
 
-    if  [ -e $vini_dir/ligands/pdb_files/$drugname$pdb ] #check if drug is in repo
+    if  [ -e $vini_dir/ligands/pdb_files/$pdb_filename$pdb ] #check if drug is in repo
     then
-        echo $drugname "already in repo."
+        echo $drugname "structure found in repo."
     else
         echo -n "searching for" $drugname "in Drugbank..."
          
@@ -43,17 +45,12 @@ do
             echo "drug found." 
             inline=`head -1 $vini_dir/tmp`
             DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-            if  [ $words -eq $ONES ]                  #check if a drug is small molecule or biotech
-            then
-                dtype=`echo $line | awk '{print $2}'` 
-            else
-                dtype=`echo $line | awk '{print $3}'` 
-            fi
+            dtype=`echo $line | awk -F',' '{print $2}'`
             if [ $dtype == S ]
             then
                 echo $drugname "is a small molecule drug"
                 echo -n "downloading" $drugname "pdb file from Drugbank..."
-                curl -Lfs -o $vini_dir/ligands/pdb_files/$drugname$pdb https://www.drugbank.ca/structures/small_molecule_drugs/$DBID$pdb
+                curl -Lfs -o $vini_dir/ligands/pdb_files/$pdb_filename$pdb https://www.drugbank.ca/structures/small_molecule_drugs/$DBID$pdb
                 echo ""
             else
                 grep $DBID drug?links.csv > tmp.csv               #read Uniprot ID

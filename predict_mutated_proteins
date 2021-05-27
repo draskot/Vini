@@ -39,8 +39,10 @@ echo "done."
 
 python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
 
+
 rm -f $vini_dir/genes/sequences/*frame
 ls $SEQDIR > seqnames             #rename proteins to include cell line name
+
 
 ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
 while read -r line
@@ -81,12 +83,16 @@ done < combo
 
 
 > predict
-while read -r line    #delete fasta if pdb already in epo
+> exist
+while read -r line    #delete fasta if pdb already in repo
 do
     mutated=`echo $line`
-    if [ -e $vini_dir/genes/pdb_files/$mutated$PDB ]
+    #if [ -e $vini_dir/genes/pdb_files/$mutated$PDB ]
+    if [ -e $vini_dir/NCI-60_cell_lines/$cell_line/mutations/$mutated$PDB ] #debug
     then
         rm $vini_dir/genes/sequences/$mutated.fasta
+        cp $vini_dir/NCI-60_cell_lines/$cell_line/mutations/$mutated$PDB $vini_dir/genes/sequences #debug
+        echo $mutated >> exist
     else
         echo $mutated >> predict
     fi
@@ -96,8 +102,9 @@ done < mutated
 chars=`wc -c < predict`
 if [ $chars -eq $NULL  ]
 then
-    echo "All mutated protein structures are available in Vini repo."
-    exit
+    echo "Predicted mutated protein structure(s) found in" $vini_dir/NCI-60_cell_line/$cell_line/mutations "folder."
+    echo "They will be now cleaned with UCSF Chimera. This may take a while, please be patient..."
+    sh clean_existed_structures
 else
     echo "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences ":" 
     ls $vini_dir/genes/sequences
@@ -105,4 +112,8 @@ else
     echo "Then, upload these structures to " $vini_dir/genes/sequences "folder."
     echo "IMPORTANT: The pdb file name must be the same as the fasta file name.. For example: 1AKI.fasta --> 1AKI.pdb"
     read -p "Press enter when ready to continue." enter
+    sh clean_predicted_structures
 fi
+
+
+rm -f wild mutated combo seqnames predict exist tmp log ligand_wH.pdb #cleanup

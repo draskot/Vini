@@ -12,11 +12,11 @@ then
     fi
 else
     filename=9606_meta.tar.gz     
-    thirty_days_ago=$(date -d 'now - 30 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
+    fourty_days_ago=$(date -d 'now - 40 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
     file_time=$(date -r $filename +%s)
-    if (( file_time <= thirty_days_ago ))
+    if (( file_time <= fourty_days_ago ))
     then
-        echo -n "9606_meta.tar.gz file is more than 30 days old, updating..."
+        echo -n "9606_meta.tar.gz file is more than 40 days old, updating..."
         wget -q https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
         if  [ -e 9606_meta.tar.gz ]
         then

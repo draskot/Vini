@@ -35,7 +35,6 @@ SECONDS=$NULL
 elapsed_time=$NULL
 elapsed_simulations=$NULL
 
-
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
      1) L4=$nr_ligands ;;
@@ -67,15 +66,15 @@ do
                      printf -v n "%03d" $N ; comp_index=$n
                      conf_index=$comp_index ; log_index=$comp_index
                      cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
-                     line=`head -"$ligand_number" $WORKDIR/ligands_list | tail -1`
-                     flag=`echo $line | awk -F','  '{print $2}'`
-                     if  [ $flag == S ]  #if a small molecule, we are performing docking, else MD
+                     moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
+                     moltype=`echo $moltype | awk -F','  '{print $2}'`
+                     if  [ $moltype == S ]  #if a small molecule, we are performing docking, else MD
                      then
                          echo "Vina" > $WORKDIR/MD_engine
                          mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * 
                          recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
-                         line=`head -$recline $WORKDIR/receptors_contracted | tail -1`
-                         flag=`echo $line | awk '{print $4}'`
+                         flag=`head -$recline $WORKDIR/receptors_contracted | tail -1`
+                         flag=`echo $flag | awk '{print $4}'`
                          if  [ $flag == F ]
                          then
                              printf "%.1f\n" -7.0 > $target_dir/log_$comp_index.txt
@@ -250,6 +249,11 @@ do
                  eigenvalue=`cat $target_dir/E | awk '{print $2}'`
                  SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
 
+                 grep HETATM $lig_source/ligand_$lig_index.pdb > tmp #calculate drug efficiency
+                 noatoms=`wc -l < tmp`
+                 echo "$SLEM $noatoms" | awk '{printf "%.9f \n", $1/$2}' > tmp
+                 SLEM=`cat tmp` ; rm tmp
+
                  case $therapy_level in
                      1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
                      2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
@@ -262,28 +266,23 @@ do
     done            #end of 2nd loop
 done                #end of 1st loop
 
-cp SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level  
+mv SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level  
 
-echo -n "deleting SLEM entries with equal indices, please wait..."
 cat $WORKDIR/Vina > $WORKDIR/postproc                                #delete SLEM entries with equal indices
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 chmod u+x postproc ; $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
-
-echo -n "creating SLEM named list, please wait..."
 cat $WORKDIR/Vina > $WORKDIR/postproc                                        #create named SLEM list
 cat $vini_dir/create_SLEM_named_list >> $WORKDIR/postproc
 chmod u+x postproc ; $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
-echo -n "creating SLEM wings list, please wait..."
 cat $WORKDIR/Vina > $WORKDIR/postproc                                        #create SLEM wings list
 cat $vini_dir/create_SLEM_wings_list >> $WORKDIR/postproc
 chmod u+x postproc ; $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
-echo -n "creating SLEM wings named list, please wait..."
 cat $WORKDIR/Vina > $WORKDIR/postproc                                        #create SLEM wings named list
 cat $vini_dir/create_SLEM_wings_named_list >> $WORKDIR/postproc
 chmod u+x postproc ; $job_submit $WORKDIR/postproc
