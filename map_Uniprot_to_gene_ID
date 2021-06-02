@@ -1,0 +1,26 @@
+
+
+
+#Maps Uniprot ID to preffered gene name
+#input parameter: Uniprot ID
+#output parameter: gene name or error in $vini_dir/genename file
+
+Uniprot_ID=$1
+
+genename=Error
+echo $genename > $vini_dir/genename
+
+for (( N=0; N<10; N++ )) #contact Uniprot ID max 10 times
+do
+    prefix="https://www.uniprot.org/uniprot/?query="
+    sufix="&format=tab&columns=id,genes(PREFERRED)"
+    curl -Lfs -o tmp $prefix$Uniprot_ID$sufix
+    genename=`grep $Uniprot_ID tmp`
+    genename=`echo $genename | awk '{print $2}'`
+    if  [ $genename != "Error" ]
+    then
+        echo $genename > $vini_dir/genename
+        break
+    fi
+    sleep 4
+done
