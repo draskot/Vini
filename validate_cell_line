@@ -1,0 +1,154 @@
+
+ORGANISM=`cat $WORKDIR/ORGANISM`
+cancer_type=`cat $WORKDIR/cancer_type`
+results="_results"
+cell_line=`cat $WORKDIR/cell_line`
+gi50="_GI50"
+NULL=0
+ONES=1
+TWO=2
+
+if [ $cell_line == SF268 ] #map COSMIC cell line names to NCI-60 cell line names
+then 
+    echo "SF-268" > $WORKDIR/cell_line
+fi
+if [ $cell_line == SF295 ] ; then
+    echo "SF-295" > $WORKDIR/cell_line
+fi
+if [ $cell_line == SF539 ] ; then
+    echo "SF-539" > $WORKDIR/cell_line
+fi
+if [ $cell_line == SNB75 ] ; then
+    echo "SNB-75" > $WORKDIR/cell_line
+fi
+if [ $cell_line == T47D ] ; then
+    echo "T-47D" > $WORKDIR/cell_line
+fi
+if [ $cell_line == TK10 ] ; then
+    echo "TK-10" > $WORKDIR/cell_line
+fi
+if [ $cell_line == MCF-7 ] ; then
+    echo "MCF7" > $WORKDIR/cell_line
+fi
+if [ $cell_line == T47D ] ; then
+    echo "T-47D" > $WORKDIR/cell_line
+fi
+
+cp $WORKDIR/$ORGANISM$cancer_type$results/SLEM_values_thl1_named ./tmp #get SLEM values in csv format
+sed -i -e 's/SLEM_//g' tmp              
+cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
+
+#https://dtp.cancer.gov/dtpstandard/cancerscreeningdata/index.jsp
+
+#(Chemical name that starts with AND 5 dose data)
+
+
+#download GI50.zip from https://wiki.nci.nih.gov/display/NCIDTPdata/NCI-60+Growth+Inhibition+Data
+#AgentInfo.txt is downloaded from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent
+
+echo "checking for GI50.csv file..."
+if  [ ! -e $vini_dir/GI50.csv ] #create a file with GI50 values for cell line
+then
+    wget 'https://wiki.nci.nih.gov/download/attachments/454361438/GI50.zip?version=2&modificationDate=1616190275000&api=v2&download=true'
+    a="GI50.zip?version=2&modificationDate=1616190275000&api=v2&download=true"
+    mv $a GI50.zip
+    unzip -qn GI50.zip
+    rm GI50.zip
+fi
+
+echo "checking for AgentInfo file..."
+if  [ ! -e $vini_dir/AgentInfo ] 
+then
+    echo "WARNING: File with Agent NSC numbers not found in" $vini_dir "directory."
+    echo "Please download this file from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent "
+    read -p "Press enter when ready to continue." cont
+    dos2unix -n AgentInfo.txt AgentInfo
+fi
+
+echo -n "checking if NSC_numbers file exists..."
+if  [ ! -e $vini_dir/NSC_numbers ] 
+then
+    echo "no, creating it."
+    > tmp
+    while read -r line                                        #create NSC_number file
+    do
+        drugname=`echo $line | awk -F',' '{print $1}'`                   
+        NSC=`grep $drugname $vini_dir/AgentInfo`              
+        NSC_NUMBER=`echo $NSC | awk  'NF>1{print $NF}'`
+        echo $drugname " " $NSC_NUMBER >> tmp
+    done < SLEM_values
+    sed -e "s/\r//g" tmp > NSC_numbers                        #remove ^M from file
+    echo "There may be some drugs missing NCS numbers in AgentInfo. By default they will be not analysed."
+    echo "However you may search for these numbers elsewhere and insert them manually in" $vini_dir/NSC_numbers "file."
+    read -p "Press enter when ready to continue."
+    > tmp
+    while read -r line                #delete drugs without NCS number from NCS_numbers file
+    do
+        nowords=`echo $line | wc -w`
+        if [ $nowords -eq $TWO ]
+        then
+            echo $line >> tmp  
+        else
+            drugname=`echo $line | awk '{print $1}'`
+            grep -v $drugname SLEM_values >tmp2 ; mv tmp2 SLEM_values
+        fi
+    done < NSC_numbers
+    cat tmp | tr -s '[:blank:]' ',' > NSC_numbers #convert text to csv file
+else
+    echo "yes."
+    
+fi
+
+grep $cell_line GI50.csv > tmp                               #extract cell line entries from GI50.csv file
+sed -e "s/\r//g" tmp > $vini_dir/$cell_line$gi50             #remove ^M
+
+> NCI-60_GI50_values                                         #creating NCI-60_GI50_values file
+while read -r line
+do
+    drugname=`echo $line | awk -F','  '{print $1}'`
+    grep $drugname NSC_numbers > tmp 
+    NSC_NUMBER=`cat tmp | awk -F',' '{print $2}'`
+    echo "drug:" $drugname "NSC_NUMBER:" $NSC_NUMBER
+    grep -w $NSC_NUMBER $vini_dir/$cell_line$gi50 > tmp
+    nolines=`wc -l < tmp`                                    #count number of lines
+    if [ $nolines -gt $NULL ]
+    then
+        echo -n "computing average GI50 value from NCI-60 panel of" $drugname "for" $cell_line "cell line..."
+        sum=0
+        index=0
+        while read -r newline
+        do
+            GI50=`echo $newline | awk -F',' '{print $13}'`
+            echo "$sum $GI50" | awk '{printf "%.9f \n", $1+$2}' > sum
+            sum=`cat sum`
+            let index++
+        done < tmp
+
+        echo "$sum $nolines" | awk '{printf "%.9f \n", $1/$2}' > GI50_avg
+        GI50_avg=`cat GI50_avg`
+        printf "%s%s%s\n" "$drugname" " " "$GI50_avg" >> NCI-60_GI50_values
+        echo "done."
+    else
+        echo "no data for" $drugname "in panel found."
+    fi
+done < $vini_dir/ligands/ligands_list
+
+mkdir -p $vini_dir/cell_line_results
+echo -n "Creating file for the final analysis..."
+printf "%s%s%s%s%s\n" "Drug" " " "SLEM" " " "GI50" > tmp
+
+index=$ONES
+while read -r line
+do
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    SLEM=`echo $line | awk -F','  '{print $2}'`
+    GI50=`head -"$index" NCI-60_GI50_values | tail -1`
+    GI50=`echo $GI50 | awk '{print $2}'`
+    printf "%s%s%s%s%s\n" "$drugname" " " "$SLEM" " " "$GI50" >> tmp
+    let index++
+done < SLEM_values
+cat tmp | tr -s '[:blank:]' ',' > $vini_dir/cell_line_results/${cell_line}_Pearson.csv
+
+#rm $cell_line$gi50 NSC_numbers
+rm tmp sum SLEM_values GI50_avg NCI-60_GI50_values
+echo "done. You may now upload" $vini_dir/cell_line_results/${cell_line}_Pearson.csv "file to your PC for correlation analysis."
