@@ -1,0 +1,16 @@
+na=NA
+
+j=1 ; a='.pdb';  b='ligand_'
+while  read -r line
+do
+       printf -v i "%03d" $j
+       name=`echo $line | awk '{print $1}'` #change due to the new format of ligands_list file
+       c=$name$a
+       d=$b$i$a
+
+       if  [ $name != $na ]    #do not copy if ligand structure is not available
+       then
+	   cp $vini_dir/ligands/pdb_files/$c $WORKDIR/$d
+       fi
+       let j++
+done < $vini_dir/ligands/ligands_list

@@ -29,7 +29,8 @@ lig_source=$WORKDIR
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 cd $WORKDIR
 
-> SLEM_values    #delete SLEM values from the previous run !!!
+> SLEM_values    #delete SLEM/LE values from the previous run
+> LE_values
 
 SECONDS=$NULL
 elapsed_time=$NULL
@@ -248,18 +249,24 @@ do
                  export PYTHONPATH=$STORE1
                  eigenvalue=`cat $target_dir/E | awk '{print $2}'`
                  SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
-
-                 grep HETATM $lig_source/ligand_$lig_index.pdb > tmp #calculate drug efficiency
-                 noatoms=`wc -l < tmp`
-                 echo "$SLEM $noatoms" | awk '{printf "%.9f \n", $1/$2}' > tmp
-                 SLEM=`cat tmp` ; rm tmp
-
                  case $therapy_level in
                      1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
                      2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
                      3) printf "%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=3
                      4) printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" "." "$I" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=4
                  esac
+
+                 grep HETATM $lig_source/ligand_$lig_index.pdb > tmp #calculate drug efficiency
+                 noatoms=`wc -l < tmp`
+                 echo "$SLEM $noatoms" | awk '{printf "%.9f \n", $1/$2}' > tmp
+                 LE=`cat tmp` ; rm tmp
+                 case $therapy_level in
+                     1) printf "%s%s%s%s\n" "LE_" "$M" " " "$LE" >> $WORKDIR/LE_values ;; #th=1
+                     2) printf "%s%s%s%s%s%s\n" "LE_" "$M" "." "$L" " " "$LE" >> $WORKDIR/LE_values ;; #th=2
+                     3) printf "%s%s%s%s%s%s%s%s\n" "LE_" "$M" "." "$L" "." "$J" " " "$LE" >> $WORKDIR/LE_values ;; #th=3
+                     4) printf "%s%s%s%s%s%s%s%s%s%s\n" "LE_" "$M" "." "$L" "." "$J" "." "$I" " " "$LE" >> $WORKDIR/LE_values ;; #th=4
+                 esac   
+
                  rm -f target_dir stats 
              done   #end of 4thloop
          done       #end of 3rd loop
@@ -267,6 +274,7 @@ do
 done                #end of 1st loop
 
 mv SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level  
+mv LE_values ./$CANCER_PATHWAY$a/LE_values_thl$therapy_level  
 
 cat $WORKDIR/Vina > $WORKDIR/postproc                                #delete SLEM entries with equal indices
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  

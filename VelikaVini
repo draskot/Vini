@@ -1,0 +1,216 @@
+     
+# The VINI in silico model of cancer is supercomputing application  for computing the efficacy of existing drugs and their 2, 3, and 4 combinations
+echo "If using this program in your academic research , please cite:"                                                   #
+echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
+echo ; sleep 1
+
+HSA=hsa
+WORKDIR=`cat workdir`
+ORGANISM=`cat $WORKDIR/ORGANISM`
+max_therapy_level=`cat $WORKDIR/max_therapy_level`
+cores=`cat $WORKDIR/cores`
+job_submit=`cat $WORKDIR/job_submit`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+TRUE=1
+FALSE=0
+if  [ $compute_cell_line -eq $TRUE ]
+then
+    cell_line=`cat $WORKDIR/cell_line`
+fi
+data="_data"
+mkdir -p $WORKDIR/KEGG_cancer_pathways
+
+for (( therapy_level=1; therapy_level<=max_therapy_level; therapy_level++ ))
+do
+    echo $therapy_level > $WORKDIR/therapy_level
+    cancer_type=`cat $WORKDIR/cancer_type`          #getting cancer type from the preproc script
+    if  [ $cancer_type == "all" ]
+    then
+        echo "All cancer types will be screened."
+        start_date=`date`
+        echo "Analysis started at" $start_date
+        rm -f $WORKDIR/END
+        x=27; i=052
+        for (( j=10; j<$x; j++ ))
+        do
+            cancer_type=$i$j
+            echo $cancer_type > $WORKDIR/cancer_type
+            CANCER_PATHWAY=$ORGANISM$cancer_type
+            mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
+            sh download_KEGG_pathway
+            echo "Processing" $CANCER_PATHWAY "metabolic pathway"
+            mkdir -p $WORKDIR/$cancer_type$data              #create staging directory
+            sh create_relations_receptors_files   #Creates relations, receptors and receptors_expanded files
+            sh repository_check          #Create receptors_contracted file
+
+            cancer_type=`cat $WORKDIR/cancer_type` #if gene expressions does not exist, go to CosmicDB
+            grep $cancer_type $vini_dir/cross_references > tmp
+            line=`cat tmp`
+            tissue=`echo $line | awk '{print $2}'`
+            if [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+            then
+                 STORE1=$PYTHONPATH ; unset PYTHONPATH
+                 sh get_gene_expressions_from_CosmicDB ${cores}
+                 $job_submit calculate_z_scores
+                 sh wait_until_jobs_finish
+                 export PYTHONPATH=$STORE1 ; rm genex.out
+                 cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+            else
+                cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+            fi
+
+            sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
+            sh add_expressions_to_relations     #add gene expressions to relations file
+            sh copy_genes_to_stage                   #Copy Vina pdb receptor files to the stage
+            sh create_receptor_pdbqt_files                  #Creating initial receptor pdbqt files
+            nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+            echo $nr_complexes > $WORKDIR/nr_complexes
+            sh vini
+            while [ ! -f $WORKDIR/END ]
+            do
+                sleep 1
+            done
+            rm -f $WORKDIR/END                                   #End file created from vini at the end
+        done
+        cancer_type=05200                                     #Processing pathways in cancer 05200
+        echo $cancer_type > $WORKDIR/cancer_type
+        CANCER_PATHWAY=$ORGANISM$cancer_type
+        mkdir -p $WORKDIR/KEGG_cancer_pathways/$HSA$cancer_type
+        sh download_KEGG_pathway
+        echo "Processing" $CANCER_PATHWAY "metabolic pathway"
+        mkdir -p $WORKDIR/$cancer_type$data                       #create staging directory
+
+        sh create_relations_receptors_files  #Creates relations, receptors and receptors_expanded files
+        sh repository_check                              #Create receptors_contracted files
+
+        cancer_type=`cat $WORKDIR/cancer_type` #if gene expressions does not exist, go to CosmicDB
+        grep $cancer_type $vini_dir/cross_references > tmp
+        line=`cat tmp`
+        tissue=`echo $line | awk '{print $2}'`
+        if  [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+        then
+            STORE1=$PYTHONPATH ; unset PYTHONPATH
+            sh get_gene_expressions_from_CosmicDB ${cores}
+            $job_submit calculate_z_scores
+            sh wait_until_jobs_finish
+            export PYTHONPATH=$STORE1 ; rm genex.out
+            cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+        else
+            cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+        fi
+
+        sh add_expressions_to_receptors     #add gene expressions to receptors_contracted file
+        sh add_expressions_to_relations     #add gene expressions to relations file
+        sh copy_genes_to_stage                           #Copy Vina pdb receptor files to the stage
+        sh create_receptor_pdbqt_files                       #Creating initial receptor pdbqt files
+        nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+        echo $nr_complexes > $WORKDIR/nr_complexes
+
+        sh vini
+        while [ ! -f $WORKDIR/END ]
+        do
+          sleep 1
+        done
+        rm -f $WORKDIR/END                                   #End file created from vini at the end
+        end_date=`date`
+        echo "Analysis completed at"  $end_date
+    else
+        echo $cancer_type > $WORKDIR/cancer_type
+        grep $cancer_type $vini_dir/cross_references > tmp
+        line=`cat tmp`
+        tissue=`echo $line | awk '{print $2}'`
+        CANCER_PATHWAY=$ORGANISM$cancer_type
+        mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+        sh download_KEGG_pathway
+        echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
+        start_date=`date`
+        echo "Analysis of therapy level " $therapy_level "started at" $start_date
+        rm -f $WORKDIR/END
+
+        if  [ $therapy_level -eq 1 ]
+        then
+            sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
+            sh repository_check                 #Create receptors_contracted file
+
+            STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
+            eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
+            conda activate Vini
+
+            if  [ $compute_cell_line -eq $FALSE ]
+            then
+                if  [ ! -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ]
+                then
+                    sh get_gene_expressions_from_CosmicDB ${cores}
+                    $job_submit calculate_z_scores
+                    sh wait_until_jobs_finish ; rm genex.out
+                    cp $vini_dir/genes/expression_scores.csv $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+                else
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/genes
+                fi
+                if  [ ! -d $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations ]
+                then
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
+                    sh get_gene_mutations_from_CosmicDB
+                    #python generateMutatedFASTAseq.py #IN ERROR!
+                    cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
+                    cp $vini_dir/genes/sequences/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
+                else
+                    rm -f $vini_dir/genes/mutations/* $vini_dir/genes/sequences/*
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations/* $vini_dir/genes/mutations
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences/* $vini_dir/genes/sequences
+                    echo "gene mutations already in repo. Adding expressions to receptor/relation files"
+                    sh add_expressions_to_receptors ; sh add_expressions_to_relations
+                fi
+            else
+                if [ ! -d $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line ]
+                then
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
+                    mkdir -p $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+                    #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
+                    #working with the expression file already preloaded in ./genes/expressions directory. 
+                    echo "getting mutations for" $cell_line ", please wait..."
+                    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
+                    python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+                    cp $vini_dir/genes/expressions/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
+                    cp $vini_dir/genes/mutations/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
+                    cp $vini_dir/genes/sequences/* $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+                else
+                    rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/*
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions/* $vini_dir/genes/expressions
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations/* $vini_dir/genes/mutations
+                    cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences/* $vini_dir/genes/sequences
+                fi
+                echo "Getting expression values from COSMIC cell lines. This may take a while..."
+                sh add_cell_expressions_to_receptors ${cell_line}
+                sh add_expressions_to_relations
+                sh predict_mutated_proteins ${cell_line}
+                rm -f wild mutated combo seqnames predict exist tmp log ligand_wH.pdb #cleanup
+            fi
+            conda deactivate
+            export PYTHONPATH=$STORE1 
+
+            sh copy_genes_to_stage              #Copy pdb receptor files to the stage
+            sh create_receptor_pdbqt_files      #Creating initial receptor pdbqt files
+            nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+            echo $nr_complexes > $WORKDIR/nr_complexes
+        fi
+        sh vini 
+        end_date=`date`
+        echo "Analysis completed at"  $end_date
+    fi
+done
+
+cd $WORKDIR 
+rm -f postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err
+rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded url
+rm -f nr_complexes nr_ligands Vina target_dir stats prediction_list analysis_type max_jobs
+rm -f max_therapy_level therapy_level swiss_repo_entry *.pdb
+rm -f O???? P* Q* nodes tmp computed_cancer_type success Vina_run rm complex_*
+rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list
+rm -f relations receptors_contracted
+rm -rf 0* 1* 2*
+cd $vini_dir
+rm -f partition workdir tmp tmp2 genename

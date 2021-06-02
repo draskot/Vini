@@ -1,0 +1,224 @@
+#!/bin/sh
+#
+# --- UCSF Chimera Copyright ---
+# Copyright (c) 2000-2003 Regents of the University of California.
+# All rights reserved.  This software provided pursuant to a
+# license agreement containing restrictions on its disclosure,
+# duplication and use.  This notice must be embedded in or
+# attached to all copies, including partial copies, of the
+# software or any revisions or derivations thereof.
+# --- UCSF Chimera Copyright ---
+#
+# $Id: base.sh 40585 2015-05-13 21:12:50Z gregc $
+
+# set path so we get the versions of command we expect
+originalpath="$PATH"
+PATH=/bin:/usr/bin:"$PATH"
+
+# application name can be hardcoded by altering the next line
+app=`basename "$0"`
+
+# if CDPATH is set, then cd echos the directory as well
+if test -n "$CDPATH"
+then
+	CHIMERA_CDPATH="$CDPATH"
+	export CHIMERA_CDPATH
+fi
+unset CDPATH
+
+# canonicalize CHIMERA for consistency with Tcl/Tk (remove symbolic links)
+if test -n "$CHIMERA" -a -x "$CHIMERA/bin/chimera" -a -d "$CHIMERA/share/chimera"
+then
+	CHIMERA=`cd "$CHIMERA"; pwd -P`
+else
+	if test -n "$CHIMERA"
+	then
+		echo "Ignoring CHIMERA environment variable" 1>&2
+	fi
+	# Assume that the true location of $app is in CHIMERA/bin/ and
+	# deduce what CHIMERA should be even if there are symbolic links
+	bindir=`dirname "$0"`
+	if test ! -L "$0"
+	then
+		bindir=`cd "$bindir"; pwd -P`
+	else
+		if link=`readlink "$0"`
+		then :
+		else
+			# fallback if readlink doesn't exist
+			link=`ls -l "$0" | sed 's/.* -> //'`
+		fi
+		# $app was a (relative?) symbolic link
+		tmp=`dirname "$link"`
+		bindir=`cd "$bindir"; cd "$tmp"; pwd -P`
+	fi
+	CHIMERA=`dirname "$bindir"`
+fi
+export CHIMERA
+
+# system-dependent setup
+case "`uname -s`" in
+Linux)
+	if test -n "$LD_LIBRARY_PATH"
+	then
+		CHIMERA_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+		export CHIMERA_LD_LIBRARY_PATH
+	fi
+	LD_LIBRARY_PATH="$CHIMERA/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+	if test -x "$CHIMERA/bin/need-syslibs"
+	then
+		if "$CHIMERA/bin/need-syslibs" "$CHIMERA"
+		then
+			LD_LIBRARY_PATH="$CHIMERA/syslibs:$LD_LIBRARY_PATH"
+		fi
+	fi
+	export LD_LIBRARY_PATH
+	;;
+Darwin*)
+	if test -n "$FONTCONFIG_FILE"
+	then
+		CHIMERA_FONTCONFIG_FILE="$FONTCONFIG_FILE"
+		export CHIMERA_FONTCONFIG_FILE
+	fi
+	ver=`sw_vers -productVersion | awk -F. '{ print $1"."$2 }'`
+	case $ver in
+	10.[34])
+		FONTCONFIG_FILE=/etc/fonts/fonts.conf
+		;;
+	*)
+		FONTCONFIG_FILE=/usr/X11/lib/X11/fonts/fonts.conf
+		;;
+	esac
+	export FONTCONFIG_FILE
+	if test -n "$DYLD_FALLBACK_LIBRARY_PATH"
+	then
+		CHIMERA_DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH"
+		export CHIMERA_DYLD_FALLBACK_LIBRARY_PATH
+	fi
+	DYLD_FALLBACK_LIBRARY_PATH="$CHIMERA/lib${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
+	export DYLD_FALLBACK_LIBRARY_PATH
+	# Make the Tcl/Tk and Python frameworks accessible.
+	if test -n "$DYLD_FRAMEWORK_PATH"
+	then
+		CHIMERA_DYLD_FRAMEWORK_PATH="$DYLD_FRAMEWORK_PATH"
+		export CHIMERA_DYLD_FRAMEWORK_PATH
+	fi
+	DYLD_FRAMEWORK_PATH="$CHIMERA/frameworks${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}"
+	export DYLD_FRAMEWORK_PATH
+	;;
+esac
+
+# $Id: opengl.sh 36294 2012-04-26 00:55:21Z goddard $
+# system-dependent error checking
+
+# check if we're in nogui mode
+nogui=""
+for i in "$@"
+do
+	case $i in
+	--nogui)
+		nogui="true";;
+	esac
+done
+
+if [ -z "$nogui" ]
+then
+	case "`uname -s`" in
+		Linux)
+			if test -e "$CHIMERA/bin/python2.7"
+			then
+				python="$CHIMERA/bin/python2.7"
+			else
+				python="python2.7"
+			fi
+			$python -E "$CHIMERA/share/checkOpenGL.py" Linux || exit 1
+			;;
+		Darwin*)
+			;;
+	esac
+fi
+
+# $Id: tcltk.sh 31281 2010-08-28 01:07:36Z gregc $
+# make sure we use our Tcl/Tk and Tix
+if test -n "$TCL_LIBRARY"
+then
+	CHIMERA_TCL_LIBRARY="$TCL_LIBRARY"
+	export CHIMERA_TCL_LIBRARY
+fi
+TCL_LIBRARY="$CHIMERA/lib/tcl8.6"
+export TCL_LIBRARY
+if test -n "$TCLLIBPATH"
+then
+	CHIMERA_TCLLIBPATH="$TCLLIBPATH"
+	export CHIMERA_TCLLIBPATH
+fi
+TCLLIBPATH="{$CHIMERA/lib}"
+export TCLLIBPATH
+if test -n "$TK_LIBRARY"
+then
+	CHIMERA_TK_LIBRARY="$TK_LIBRARY"
+	export CHIMERA_TK_LIBRARY
+fi
+unset TK_LIBRARY
+if test -n "$TIX_LIBRARY"
+then
+	CHIMERA_TIX_LIBRARY="$TIX_LIBRARY"
+	export CHIMERA_TIX_LIBRARY
+fi
+unset TIX_LIBRARY
+
+# $Id: python.sh 32762 2011-03-10 01:50:10Z gregc $
+# deduce any flags we want to pass to python
+pyflags=""
+for i in "$@"
+do
+	case $i in
+	--opt)
+		pyflags="$pyflags${pyflags:+ }-OO";;
+	esac
+done
+
+# deduce which python to use
+if test -e "$CHIMERA/bin/python2.7"
+then
+	# using our distributed version of python, don't use any python
+	# environment variables, especialy PYTHONHOME and PYTHONPATH
+	if test -n "$PYTHONHOME"
+	then
+		CHIMERA_PYTHONHOME="$PYTHONHOME"
+		export CHIMERA_PYTHONHOME
+	fi
+	unset PYTHONHOME
+	if test -n "$PYTHONPATH"
+	then
+		CHIMERA_PYTHONPATH="$PYTHONPATH"
+		export CHIMERA_PYTHONPATH
+	fi
+	if test -n "$CHIMERAPATH"
+	then
+		PYTHONPATH="$CHIMERAPATH"
+		export PYTHONPATH
+	else
+		unset PYTHONPATH
+	fi
+	python="$CHIMERA/bin/python2.7"
+else
+	python="python2.7"
+fi
+# avoid problems with Python 2.6+ (PEP 370)
+if test -n "$PYTHONNOUSERSITE"
+then
+	CHIMERA_PYTHONNOUSERSITE="$PYTHONNOUSERSITE"
+	export CHIMERA_PYTHONNOUSERSITE
+fi
+PYTHONNOUSERSITE=1
+export PYTHONNOUSERSITE
+
+# start up with given arguments
+PATH="$originalpath"
+if test $# -gt 0
+then
+	exec "$python" $pyflags "$CHIMERA/share/__main__.py" "$@"
+else
+	exec "$python" $pyflags "$CHIMERA/share/__main__.py"
+fi
