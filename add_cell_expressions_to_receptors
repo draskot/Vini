@@ -20,14 +20,14 @@ do
 
     if [ $entry != pubchem ]
     then
-        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find the gene name for protein" $Uniprot_ID
+        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find gene name for protein" $Uniprot_ID
         grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -ne $NULL  ]
         then
-            gene=`cat $WORKDIR/tmp | awk '{print $2}'`
-            echo -n "found in repo:" $GENE_NAME
-            echo $GENE_NAME > $vini_dir/genename
+            gene=`head -1 $WORKDIR/tmp`
+            gene=`echo $gene | awk '{print $2}'`
+            echo "gene name" $gene "found in repo:" $gene
         else
             echo -n "searching for gene name in Uniprot DB..."
             sh map_Uniprot_to_gene_ID ${Uniprot_ID}
@@ -35,7 +35,7 @@ do
             if  [ $gene != "Error" ]
             then
                  echo "gene name" $gene "found."
-                 printf "%s%s%s\n" "$Uniprot_ID" " " "$GENE_NAME" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+                 printf "%s%s%s\n" "$Uniprot_ID" " " "$gene" >> $WORKDIR/Uniprot_gene_table #add entry to the table
             fi
         fi
     else 
@@ -53,7 +53,7 @@ do
             echo "gene" $gene "NOT FOUND in" ${cell_line}.csv
             z_score=$NULL ; nge=$ONES
         else
-            echo "gene" $GENE_NAME "FOUND in" ${cell_line}.csv
+            echo "gene" $gene "FOUND in" ${cell_line}.csv
             z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
             nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
         fi
