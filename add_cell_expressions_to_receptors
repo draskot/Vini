@@ -27,6 +27,7 @@ do
         then
             gene=`cat $WORKDIR/tmp | awk '{print $2}'`
             echo -n "found in repo:" $GENE_NAME
+            echo $GENE_NAME > $vini_dir/genename
         else
             echo -n "searching for gene name in Uniprot DB..."
             sh map_Uniprot_to_gene_ID ${Uniprot_ID}
