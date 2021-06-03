@@ -38,6 +38,10 @@ cp $WORKDIR/$ORGANISM$cancer_type$results/SLEM_values_thl1_named ./tmp #get SLEM
 sed -i -e 's/SLEM_//g' tmp              
 cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
 
+cp $WORKDIR/$ORGANISM$cancer_type$results/LE_values_thl1 ./tmp #get LE values in csv format
+sed -i -e 's/SLEM_//g' tmp              
+cat tmp | tr -s '[:blank:]' ',' > LE_values #convert text to csv file
+
 #https://dtp.cancer.gov/dtpstandard/cancerscreeningdata/index.jsp
 
 #(Chemical name that starts with AND 5 dose data)
@@ -135,7 +139,7 @@ done < $vini_dir/ligands/ligands_list
 
 mkdir -p $vini_dir/cell_line_results
 echo -n "Creating file for the final analysis..."
-printf "%s%s%s%s%s\n" "Drug" " " "SLEM" " " "GI50" > tmp
+printf "%s%s%s%s%s%s%s\n" "Drug" " " "SLEM" " " LE" " " "GI50" > tmp
 
 index=$ONES
 while read -r line
@@ -144,11 +148,12 @@ do
     SLEM=`echo $line | awk -F','  '{print $2}'`
     GI50=`head -"$index" NCI-60_GI50_values | tail -1`
     GI50=`echo $GI50 | awk '{print $2}'`
-    printf "%s%s%s%s%s\n" "$drugname" " " "$SLEM" " " "$GI50" >> tmp
+    LE=`head -"$index" LE_values | tail -1`
+    LE=`echo $LE | awk '{print $2}'`
+    printf "%s%s%s%s%s%s%s\n" "$drugname" " " "$SLEM" " " "$LE" " " "$GI50" >> tmp
     let index++
 done < SLEM_values
 cat tmp | tr -s '[:blank:]' ',' > $vini_dir/cell_line_results/${cell_line}_Pearson.csv
 
-#rm $cell_line$gi50 NSC_numbers
-rm tmp sum SLEM_values GI50_avg NCI-60_GI50_values
-echo "done. You may now upload" $vini_dir/cell_line_results/${cell_line}_Pearson.csv "file to your PC for correlation analysis."
+rm tmp sum SLEM_values GI50_avg NCI-60_GI50_values $cell_line$gi50
+echo "done. SLEM, LE (Ligand Efficiency), and GI50 values are in " $vini_dir/cell_line_results/${cell_line}_Pearson.csv "file."
