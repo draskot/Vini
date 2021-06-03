@@ -14,9 +14,9 @@ max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 nr_ligands=`cat $WORKDIR/nr_ligands` 
 nr_complexes=`cat $WORKDIR/nr_complexes`
-NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
+NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
 
 data="_data"
 a="_results"                               #Create directory store for results

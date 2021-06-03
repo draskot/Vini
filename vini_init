@@ -104,6 +104,8 @@ echo "hsa" > $WORKDIR/ORGANISM  #We are currently performing the analysis of hom
 ORGANISM=`cat $WORKDIR/ORGANISM`
 
 sh $vini_dir/get_compute_node_cores
+Gromacs_threads=`cat $WORKDIR/cores`         #setting number of OMP threads to max number of cores, might not always work well
+echo $Gromacs_threads > $WORKDIR/Gromacs_threads
 
 case $JSS in
      1) sh prepare_SLURM_scripts ;;
