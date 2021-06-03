@@ -13,7 +13,7 @@ import csv_splitter
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "373888613477539361573560893179594769"
+TOKEN_NUMBER = "657297670098505891602426682966134271"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def mapUniprotIDtoCosmicID(UNIPROT_ID):

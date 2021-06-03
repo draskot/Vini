@@ -30,7 +30,7 @@ do
         else
             echo -n "searching for gene name in Uniprot DB..."
             sh map_Uniprot_to_gene_ID ${Uniprot_ID}
-            gene=`cat $ivini_dir/genename`
+            gene=`cat $vini_dir/genename`
             if  [ $gene != "Error" ]
             then
                  echo "gene name" $gene "found."
