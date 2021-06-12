@@ -263,6 +263,20 @@ then
         cp $vini_dir/NCI-60_cell_lines/$cell_line/expressions/* $vini_dir/genes/expressions 
     fi
     echo $cell_line > $WORKDIR/cell_line
+    echo "Drugs without NCI-60 data will be deleted  from the ligands_list file."
+    sh $vini_dir/create_NSC_numbers_file
+    > new_ligands_list
+    while read -r line
+    do
+        drugname=`echo $line | awk -F','  '{print $1}'`
+        grep -w ${drugname} $vini_dir/ligands/ligands_list > tmp
+        if [ -s tmp ]
+        then
+            cat tmp >> new_ligands_list
+            echo $drugname "will be analysed."
+        fi
+    done < $vini_dir/NSC_numbers
+    mv new_ligands_list $vini_dir/ligands/ligands_list
 else
     compute_cell_line=$FALSE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
 fi
@@ -317,7 +331,7 @@ fi
 
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
 a="_results"                                                     #Create directory for results
-rm -rf $WORKDIR/$CANCER_PATHWAY$a
+#rm -rf $WORKDIR/$CANCER_PATHWAY$a
 mkdir -p $WORKDIR/$CANCER_PATHWAY$a
 
 cp $vini_dir/prep_prot_lig.py $WORKDIR

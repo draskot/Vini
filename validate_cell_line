@@ -1,7 +1,7 @@
 ORGANISM=`cat $WORKDIR/ORGANISM`
 cancer_type=`cat $WORKDIR/cancer_type`
 results="_results"
-cell_line=`cat $WORKDIR/cell_line`
+cell_line=`cat $WORKDIR/NCI60_cell_line`
 gi50="_GI50"
 NULL=0
 ONES=1
@@ -9,111 +9,12 @@ TWO=2
 
 mkdir -p $vini_dir/cell_line_results
 
-if [ $cell_line == SF268 ] #map COSMIC cell line names to NCI-60 cell line names
-then 
-    echo "SF-268" > $WORKDIR/cell_line
-fi
-if [ $cell_line == SF295 ] ; then
-    echo "SF-295" > $WORKDIR/cell_line
-fi
-if [ $cell_line == SF539 ] ; then
-    echo "SF-539" > $WORKDIR/cell_line
-fi
-if [ $cell_line == SNB75 ] ; then
-    echo "SNB-75" > $WORKDIR/cell_line
-fi
-if [ $cell_line == T47D ] ; then
-    echo "T-47D" > $WORKDIR/cell_line
-fi
-if [ $cell_line == TK10 ] ; then
-    echo "TK-10" > $WORKDIR/cell_line
-fi
-if [ $cell_line == MCF-7 ] ; then
-    echo "MCF7" > $WORKDIR/cell_line
-fi
-if [ $cell_line == T47D ] ; then
-    echo "T-47D" > $WORKDIR/cell_line
-fi
-
 cp $WORKDIR/$ORGANISM$cancer_type$results/SLEM_values_thl1_named ./tmp #get SLEM values in csv format
 sed -i -e 's/SLEM_//g' tmp              
 cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
 
-cp $WORKDIR/$ORGANISM$cancer_type$results/LE_values_thl1 ./tmp #get LE values in csv format
-sed -i -e 's/SLEM_//g' tmp              
-cat tmp | tr -s '[:blank:]' ',' > LE_values #convert text to csv file
-
-#https://dtp.cancer.gov/dtpstandard/cancerscreeningdata/index.jsp
-
-#(Chemical name that starts with AND 5 dose data)
-
-#download GI50.zip from https://wiki.nci.nih.gov/display/NCIDTPdata/NCI-60+Growth+Inhibition+Data
-#AgentInfo.txt is downloaded from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent
-
-echo -n "checking for GI50.csv file..."
-if  [ ! -e $vini_dir/GI50.csv ] #create a file with GI50 values for cell line
-then
-    echo "not found, creating it."
-    wget 'https://wiki.nci.nih.gov/download/attachments/454361438/GI50.zip?version=2&modificationDate=1616190275000&api=v2&download=true'
-    a="GI50.zip?version=2&modificationDate=1616190275000&api=v2&download=true"
-    mv $a GI50.zip
-    unzip -qn GI50.zip
-    rm GI50.zip
-else
-    echo "passed."
-fi
-
-echo -n "checking for AgentInfo file..."
-if  [ ! -e $vini_dir/AgentInfo ] 
-then
-    echo "WARNING: not found!"
-    echo "Download it from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent and save as AgentInfo.txt"
-    read -p "Press enter when ready to continue." cont
-    dos2unix -n AgentInfo.txt AgentInfo ; echo "done."
-else
-    echo "yes."
-fi
-
-> tmp
-while read -u3 line                                        #create NSC_number file
-do
-    drugname=`echo $line | awk -F',' '{print $1}'`                   
-    grep $drugname $vini_dir/AgentInfo > lines
-    nolines=`wc -l < lines`
-    if  [ $nolines -eq $NULL ]
-    then 
-        echo "drug" $drugname "not found in AgentInfo file"
-    else
-        if [ $nolines -eq $ONES ]
-        then
-            NSC_NUMBER=`cat lines | awk  'NF>1{print $NF}'`
-        else
-            echo "WARNING: found multiple entries for drug" $drugname "in AgentInfo file:" ; echo
-            cat lines ; echo
-            echo -n "please choose one NSC number:"
-            read NSC_NUMBER
-        fi
-        printf "%s%s%s%s\n" "$drugname" "," " " "$NSC_NUMBER" >> tmp
-    fi
-done 3<   SLEM_values
-sed -e "s/\r//g" tmp > NSC_numbers                        #remove ^M from file
-
-
 grep $cell_line GI50.csv > tmp                               #extract cell line entries from GI50.csv file
 sed -e "s/\r//g" tmp > $vini_dir/$cell_line$gi50             #remove ^M
-
-> tmp                                                      #remove entries without values in $cell_line$gi50
-while read -r line
-do
-    drugname=`echo $line | awk -F','  '{print $2}'`
-    grep -w $drugname $vini_dir/$cell_line$gi50 > lines
-    nolines=`wc -l < lines`
-    if  [ $nolines -gt $NULL ]
-    then
-        echo $line >> tmp
-    fi
-done < NSC_numbers
-mv tmp NSC_numbers
 
 > NCI-60_GI50_values                                         #creating NCI-60_GI50_values file
 while read -r line
