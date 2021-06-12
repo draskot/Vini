@@ -12,6 +12,7 @@ mkdir -p $vini_dir/cell_line_results
 cp $WORKDIR/$ORGANISM$cancer_type$results/SLEM_values_thl1_named ./tmp #get SLEM values in csv format
 sed -i -e 's/SLEM_//g' tmp              
 cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
+#delete SLEM_ from file
 
 grep $cell_line GI50.csv > tmp                               #extract cell line entries from GI50.csv file
 sed -e "s/\r//g" tmp > $vini_dir/$cell_line$gi50             #remove ^M
@@ -46,11 +47,12 @@ while read -r line
 do
     drugname=`echo $line | awk '{print $1}'`
     GI50=`echo $line | awk '{print $2}'`
-    grep -w ${drugname} SLEM_values > SLEM
+    grep -w $drugname SLEM_values > SLEM
+    echo $drugname 
     SLEM=`cat SLEM | awk -F','  '{print $2}'`
     printf "%s%s%s%s%s%s%s\n" "$drugname" "," " " "$SLEM" "," " " "$GI50" >> tmp
 done < NCI-60_GI50_values
 mv tmp $vini_dir/cell_line_results/${cell_line}_Pearson.csv
 
-rm sum SLEM SLEM_values GI50_avg NCI-60_GI50_values $cell_line$gi50
+#rm sum SLEM SLEM_values GI50_avg NCI-60_GI50_values $cell_line$gi50
 echo "done. SLEM and GI50 values are in " $vini_dir/cell_line_results/${cell_line}_Pearson.csv "file."

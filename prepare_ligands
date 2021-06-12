@@ -62,7 +62,7 @@ sh $vini_dir/wait_until_jobs_finish #wait until all jobs finish
 > $WORKDIR/tmp ; echo $NULL > $WORKDIR/stop ; lineno=1
 for j in $WORKDIR/ligand_*.pdb  #final check
 do
-    line=`head -"$lineno" $WORKDIR/ligands_list | tail -1`
+    line=`head -"$lineno" $vini_dir/ligands/ligands_list | tail -1`
     flag=`echo $line | awk -F','  '{print $2}'`
     b=`basename $j .pdb`
     if  [[ ! -e $WORKDIR/$b$pdbqt ]] && [[ $flag == S ]] #delete drug if pdbqt creation failed

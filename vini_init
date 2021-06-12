@@ -23,8 +23,6 @@ fi
 echo -n "checking for ligands_list file..."
 if [ -e $vini_dir/ligands/ligands_list ]
 then
-    cp $vini_dir/ligands/ligands_list $WORKDIR
-    nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDIR/nr_ligands
     echo passed.
 else
     echo "you must provide ligand list. Exiting..." ; exit
@@ -280,6 +278,7 @@ then
 else
     compute_cell_line=$FALSE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
 fi
+nr_ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $nr_ligands > $WORKDIR/nr_ligands
 
 #Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
 #We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat
