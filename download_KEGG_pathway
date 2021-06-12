@@ -9,10 +9,10 @@ CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from th
 CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
 PATHWAY_FILE=$CANCER_PATHWAY$c
 
-if [ $PATHWAY_FILE == hsa05244.xml ] 
-then
-    cp 6vxx.pdb ./genes/pdb_files/P59594.pdb
-else
+#if [ $PATHWAY_FILE == hsa05244.xml ] 
+#then
+#    cp 6vxx.pdb ./genes/pdb_files/P59594.pdb
+#else
     curl -s http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml -o $WORKDIR/$PATHWAY_FILE
     cd $WORKDIR
     sed -i.bak '/SYSTEM/d' $WORKDIR/$PATHWAY_FILE #Remove the line trying to make outbound connection
@@ -35,6 +35,6 @@ else
         echo "KEGG pathway file does not exists, creating new one."
         cp $WORKDIR/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
     fi
-fi
+#fi
 
 rm -f $WORKDIR/*.bak $WORKDIR/temp_buf $WORKDIR/$PATHWAY_FILE

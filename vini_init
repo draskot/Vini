@@ -8,6 +8,9 @@ CSV=.csv
 
 sh $vini_dir/clean
 
+norm_factor=1  #for debug
+echo $norm_factor > $WORKDIR/norm_factor
+
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
 then
