@@ -10,7 +10,7 @@ import requests
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "316214784439339216914946948561071508"
+TOKEN_NUMBER = "75892065115874850858694795532879335"
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 

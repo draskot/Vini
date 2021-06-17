@@ -114,11 +114,18 @@ case $JSS in
 #    3) sh prepare_PBS_scripts ;; #needs testing!
 esac
 
-read -p "Enter maximum number of compute nodes Vini may use concurrently:" nodes
+read -p "Optimum number of nodes for Vini run is 12. Accept [a] this value or choose [c] a new one [a/c]:" nodes
+if [ $nodes  == a ]
+then
+    nodes=12 ; echo "Vini will use" $nodes "for its simulations."
+else
+    read -p "Enter number of compute nodes:" nodes ; echo "Vini will use" $nodes "for its simulations."
+fi
 echo $nodes > $WORKDIR/nodes
+
 cores=`cat $WORKDIR/cores`
 tmp=`echo $nodes $cores | awk '{print $1 * $2}'`     #total number of cores
-tmp=`echo $tmp $THREE | awk '{print $1 / $2}'`  #max numberr of Autodock Vina jobs
+tmp=`echo $tmp $THREE | awk '{print $1 / $2}'`       #max numberr of Autodock Vina jobs
 max_jobs=${tmp%.*}
 echo $max_jobs > $WORKDIR/max_jobs
 

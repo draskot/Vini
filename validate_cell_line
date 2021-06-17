@@ -32,6 +32,7 @@ do
     do
         GI50=`echo $newline | awk -F',' '{print $13}'`
         echo "$sum $GI50" | awk '{printf "%.9f \n", $1+$2}' > sum
+        echo -n "."
         sum=`cat sum`
         let index++
     done < tmp
@@ -45,14 +46,16 @@ echo -n "Creating file for the final analysis..."
 printf "%s%s%s%s%s%s%s\n" "Drug" "," " " "SLEM" "," " " "GI50" > tmp
 while read -r line
 do
-    drugname=`echo $line | awk '{print $1}'`
-    GI50=`echo $line | awk '{print $2}'`
-    grep -w $drugname SLEM_values > SLEM
-    echo $drugname 
-    SLEM=`cat SLEM | awk -F','  '{print $2}'`
-    printf "%s%s%s%s%s%s%s\n" "$drugname" "," " " "$SLEM" "," " " "$GI50" >> tmp
-done < NCI-60_GI50_values
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    grep -w $drugname NCI-60_GI50_values > GI50
+    if [ -s GI50 ]
+    then
+        SLEM=`echo $line | awk -F','  '{print $2}'`
+        GI50=`cat GI50 | awk '{print $2}'`
+        printf "%s%s%s%s%s%s%s\n" "$drugname" "," " " "$SLEM" "," " " "$GI50" >> tmp
+    fi
+done < SLEM_values
 mv tmp $vini_dir/cell_line_results/${cell_line}_Pearson.csv
 
-#rm sum SLEM SLEM_values GI50_avg NCI-60_GI50_values $cell_line$gi50
+rm sum SLEM_values GI50_avg NSC_numbers NCI-60_GI50_values $cell_line$gi50
 echo "done. SLEM and GI50 values are in " $vini_dir/cell_line_results/${cell_line}_Pearson.csv "file."
