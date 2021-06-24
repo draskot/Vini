@@ -65,6 +65,17 @@ do
     else 
         uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
         uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
+        if [ -z "$uniprot_id" ]; then
+           echo "Uniprot ID for" $KEGG_gene_name "does not exists. Will continue to work with gene name."
+           uniprot_id=`grep $KEGG_gene_name nouniprotid` #fetch the gene name from nouniprotid file
+           uniprot_id=`echo $uniprot_id | awk '{print $2}'`
+           if  [ ! -e $vini_dir/genes/pdb_files/$uniprot_id$PDB ]
+           then
+               echo "please provide" $uniprot_id "structure!" ; sleep 10000 
+           else
+               echo $uniprot "structure already in repo, continuing."
+           fi
+        fi
 
          echo $uniprot_id >> $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
          line=`grep $uniprot_id $vini_dir/uniprot_db` #Check if pdb structure is available

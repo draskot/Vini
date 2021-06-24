@@ -22,6 +22,7 @@ do
 
     if [ $entry != pubchem ]
     then
+        
         echo -n "Uniprot ID is" $Uniprot_ID "Trying to find gene name for protein" $Uniprot_ID
         grep -w "$Uniprot_ID" $WORKDIR/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
         nolines=`wc -l < $WORKDIR/tmp`
@@ -31,13 +32,25 @@ do
             gene=`echo $gene | awk '{print $2}'`
             echo "gene name" $gene "found in repo:" $gene
         else
-            echo -n " searching for gene name in Uniprot DB..."
-            sh map_Uniprot_to_gene_ID ${Uniprot_ID}
-            gene=`cat $vini_dir/genename`
-            if  [ $gene != "Error" ]
+            grep $entry nouniprotid > tmp #if entry is in nouniprotid list, do not search for gene name in Uniprot DB
+            if [ -s tmp ]
             then
-                 echo "gene name" $gene "found."
-                 printf "%s%s%s\n" "$Uniprot_ID" " " "$gene" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+                echo "gene" $gene "found in nouniprotid list. Will not search Uniprot for this gene."
+                gene=`grep $entry $vini_dir/nouniprotid`
+                gene=`echo $gene | awk '{print $2}'`
+                Uniprot_ID=$gene
+                printf "%s%s%s\n" "$Uniprot_ID" " " "$gene" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+            else
+                echo -n " searching for gene in Uniprot..."
+                sh map_Uniprot_to_gene_ID ${Uniprot_ID}
+                gene=`cat $vini_dir/genename`
+                if  [ $gene != "Error" ]
+                then
+                    echo "gene name" $gene "found in Uniprot."
+                    printf "%s%s%s\n" "$Uniprot_ID" " " "$gene" >> $WORKDIR/Uniprot_gene_table #add entry to the table
+                else
+                    echo "ERROR: not found in Uniprot and not exists in nouniprotid list! STOP and clear this gene!" ; sleep 1000000
+                fi
             fi
         fi
     else 

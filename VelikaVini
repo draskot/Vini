@@ -200,6 +200,10 @@ do
         sh vini 
         end_date=`date`
         echo "Analysis completed at"  $end_date
+        if  [ $compute_cell_line -eq $TRUE ]
+        then 
+            sh $vini_dir/validate_cell_line
+        fi
     fi
 done
 
