@@ -33,11 +33,12 @@ else
 fi
 
 echo "lscpu" >> get_cores
-echo -n "Trying to determine number of CPU cores per compute node, please wait..."
+echo -n "Trying to determine number of CPU cores per compute node, please wait for 15 seconds..."
 rm -f *.out
 chmod u+x get_cores
 $job_submit get_cores
-timeout 60s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
+#timeout 60s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
+sleep 15
 if [ -e $vini_dir/*out ]
 then
     grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
