@@ -1,6 +1,5 @@
 cell_line=$1
 > $WORKDIR/receptors_contracted.tmp
-norm_factor=`cat $WORKDIR/norm_factor`
 
 NULL=0
 ONES=1
@@ -70,7 +69,6 @@ do
         else
             echo "gene" $gene "FOUND in" ${cell_line}.csv
             z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
-            z_score=`echo "$z_score $norm_factor" | awk '{printf "%9f \n", $1 * $2}'` #for debug !!!!!!!!!!!!!!!!!!!!!!!!!11
             nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
         fi
     fi
