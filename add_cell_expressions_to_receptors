@@ -70,6 +70,8 @@ do
             echo "gene" $gene "FOUND in" ${cell_line}.csv
             z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
             nge=`echo $ONES $z_score | awk '{print $1 + $2}'`
+            norm=`cat $WORKDIR/norm`
+            nge=`echo $nge $norm | awk '{print $1 * $2}'`
         fi
     fi
 

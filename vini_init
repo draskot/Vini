@@ -219,8 +219,6 @@ computed_cancer_type=`cat $WORKDIR/computed_cancer_type`
 
 echo "full" > $WORKDIR/analysis_type
 
-#curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
-#curl  -s http://rest.kegg.jp/list/pathway/hsa > tmp #get all available homo sapiens pathways
 curl -Lfs -o tmp http://rest.kegg.jp/list/pathway/hsa
 cat tmp | sed "s/path:hsa//g" > pathways ; rm tmp
 
@@ -244,6 +242,8 @@ data="_data"
 read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #checking if cell line analysis will be performed
 if [ $yesno == y ]
 then
+    read -p "enter norm factor:" norm
+    echo $norm > $WORKDIR/norm
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
     if [ ! -e $vini_dir/NCI-60_cell_lines/$cell_line/expressions/$cell_line$CSV ]
