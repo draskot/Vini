@@ -61,7 +61,8 @@ then
     job_cancel=`cat $WORKDIR/job_cancel`
     $job_cancel -u $USER
 else
-    exit
+    #exit
+    echo "please do it manually."
 fi 
 
 
@@ -237,13 +238,13 @@ read -p "Please enter the pathway number:" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
 
+read -p "enter norm factor:" norm
+echo $norm > $WORKDIR/norm
 
 
 read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #checking if cell line analysis will be performed
 if [ $yesno == y ]
 then
-    read -p "enter norm factor:" norm
-    echo $norm > $WORKDIR/norm
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     read -p "Enter the name of cell line that will be analysed (e.g. MDA-MB-231):" cell_line
     if [ ! -e $vini_dir/NCI-60_cell_lines/$cell_line/expressions/$cell_line$CSV ]
