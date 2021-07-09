@@ -107,9 +107,9 @@ then
     sh clean_existed_structures
 else
     echo "The following files with fasta sequences are in the directory " $vini_dir/genes/sequences ":" 
-    ls $vini_dir/genes/sequences
+    ls $vini_dir/genes/sequences/*fasta
     echo "Upload these sequences to the SWISS-MODEL https://swissmodel.expasy.org/ and model their structures (pdb files)."
-    echo "Then, upload these structures to " $vini_dir/genes/sequences "folder."
+    echo "Then, upload these structures (pdb files) to " $vini_dir/genes/sequences "folder."
     echo "IMPORTANT: The pdb file name must be the same as the fasta file name.. For example: 1AKI.fasta --> 1AKI.pdb"
     read -p "Press enter when ready to continue." enter
     sh clean_predicted_structures

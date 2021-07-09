@@ -9,7 +9,7 @@ PDB=.pdb ; sdf=sdf ; two=2 ; dots=: ; ast=* ; NA=NA ; MON=monomer ; NULL=0 ;
 NULL=0
 alias python=/usr/bin/python
 
-rm -f $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+rm -f $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
 
 echo "finalizing receptor file, please wait..."
 touch $WORKDIR/receptors_contracted
@@ -77,7 +77,7 @@ do
            fi
         fi
 
-         echo $uniprot_id >> $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+         echo $uniprot_id >> $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
          line=`grep $uniprot_id $vini_dir/uniprot_db` #Check if pdb structure is available
          echo -n "KEGG entry" $entry "is a gene encoding protein" $uniprot_id
          nowords=`echo $line | wc -w`
@@ -167,8 +167,8 @@ do
     fi
     let "entry++"
 done < $WORKDIR/receptors_expanded
-awk '!seen[$0]++' $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/tmp #remove duplicate lines
-grep "\S" $WORKDIR/tmp > $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST         #remove empty lines
-cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST $vini_dir/genes/Uniprot_ID_list
+awk '!seen[$0]++' $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST > $WORKDIR/tmp #remove duplicate lines
+grep "\S" $WORKDIR/tmp > $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST         #remove empty lines
+cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST $vini_dir/genes/Uniprot_ID_list
 rm $WORKDIR/tmp
 echo "done."

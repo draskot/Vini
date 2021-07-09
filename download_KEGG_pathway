@@ -16,24 +16,24 @@ PATHWAY_FILE=$CANCER_PATHWAY$c
     curl -s http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml -o $WORKDIR/$PATHWAY_FILE
     cd $WORKDIR
     sed -i.bak '/SYSTEM/d' $WORKDIR/$PATHWAY_FILE #Remove the line trying to make outbound connection
-    if [ -e $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE ]   #check if cancer pathway exists
+    if [ -e $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE ]   #check if cancer pathway exists
     then
-        diff $WORKDIR/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE > temp_buf
+        diff $WORKDIR/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE > temp_buf
         lineno=`wc -l temp_buf | awk '{ print $1 }'`    
 
         if [ $lineno != 0 ]
         then
             echo "Newer version of KEGG pathway found. Old KEGG pathway will be replaced by new one."
             echo -n "updating KEGG pathway..." 
-            cp $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
-            cp $WORKDIR/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+            cp $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE$sav #backup of the existing file
+            cp $WORKDIR/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
             echo "done."
             echo "Existing gene expression values will be deleted."
-            rm -f $WORKDIR/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
+            rm -f $WORKDIR/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
         fi
     else
         echo "KEGG pathway file does not exists, creating new one."
-        cp $WORKDIR/$PATHWAY_FILE $WORKDIR/KEGG_cancer_pathways/$CANCER_PATHWAY
+        cp $WORKDIR/$PATHWAY_FILE $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY
     fi
 #fi
 
