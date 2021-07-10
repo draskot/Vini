@@ -1,3 +1,5 @@
+LC_NUMERIC="en_US.UTF-8"
+
 WORKDIR=`cat workdir`
 ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
 therapy_level=`cat $WORKDIR/therapy_level`          #Current therapy level received from Vini
