@@ -1,0 +1,10 @@
+#! /bin/bash
+#SBATCH --partition=computes_thin
+WORKDIR=/scratch/IRB/ddavidovic/
+#SBATCH --job-name=get_cores
+#SBATCH --output=get_cores.out
+#SBATCH --time=00:00:60
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=2gb
+lscpu
