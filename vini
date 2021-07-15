@@ -63,13 +63,18 @@ do
                      4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
                  esac
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
-                 for (( N=0; N<nr_complexes; N++ )) #5th loop
+                 
+		 moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
+                 moltype=`echo $moltype | awk -F','  '{print $2}'`
+		 
+		 FIFTH_LOOP=$SECONDS
+		 for (( N=0; N<nr_complexes; N++ )) #5th loop
        	         do
                      printf -v n "%03d" $N ; comp_index=$n
                      conf_index=$comp_index ; log_index=$comp_index
                      cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
-                     moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
-                     moltype=`echo $moltype | awk -F','  '{print $2}'`
+                     
+		     # This statement can be outside loop!
                      if  [ $moltype == S ]  #if a small molecule, we are performing docking, else MD
                      then
                          echo "Vina" > $WORKDIR/MD_engine
@@ -84,10 +89,11 @@ do
                              cp $MGLTOOLS/AD4_parameters.dat ./                                
                              cp $vini_dir/vina $vini_dir/autogrid4 ./                                         
                              cp $comp_source/complex_$comp_index.pdbqt ./                      
-                             sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                     
-                             sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
-                             cat $WORKDIR/Vina > Vina_run
-                             cp $WORKDIR/ligand_$lig_index.pdbqt ./ #get ligand pdbqt file
+	                     cat $WORKDIR/Vina > Vina_run
+
+                             echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}" >> Vina_run #create Vina config file                                                     
+                             echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}" >> Vina_run
+                             echo "cp $WORKDIR/ligand_$lig_index.pdbqt ./" >> Vina_run #get ligand pdbqt file
                              echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_$comp_index.pdbqt --ligand ligand_$lig_index.pdbqt --out $target_dir/complex_$comp_index.pdbqt --log $target_dir/log_$log_index.txt " >> Vina_run 
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              $job_submit Vina_run    
@@ -185,8 +191,10 @@ do
                         cd $WORKDIR
                      fi
     	         done # end of 5th loop
-                 echo "Waiting for" $USER "jobs to finish..."
+		 echo "Waiting for" $USER "jobs to finish..."
                  sh $vini_dir/wait_until_jobs_finish
+		 echo "5.th loop finished in " $(($SECONDS - $FIFTH_LOOP)) " seconds!"
+
                  let ligand_number++
                  > $target_dir/vec                               #initialize affinity vector
                  MD_engine=`cat $WORKDIR/MD_engine`
