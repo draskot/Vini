@@ -14,6 +14,18 @@ echo "#SBATCH --partition="$Vini_queue       >> Vina
 echo "WORKDIR=$WORKDIR"                      >> Vina
 chmod u+x                                       Vina
 
+mkdir $WORKDIR/err
+echo "#! /bin/bash"                           > Vina_arr  #prepare header file for Autodock Vina related jobs
+echo "#SBATCH --job-name=Vina_arr"               >> Vina_arr
+echo "#SBATCH --output=./err/Vina_arr.%a.out"             >> Vina_arr
+echo "#SBATCH --time=04:00:00"               >> Vina_arr
+echo "#SBATCH --cpus-per-task=3"             >> Vina_arr
+#echo "SBATCH --ntasks-per-node=8"            >> Vina_arr
+echo "#SBATCH --mem=4gb"                     >> Vina_arr
+echo "#SBATCH --partition="$Vini_queue       >> Vina_arr
+echo "WORKDIR=$WORKDIR"                      >> Vina_arr
+chmod u+x                                       Vina_arr
+
 
 echo "#! /bin/bash"                           > $vini_dir/calculate_z_scores #prep calculate_z_scores script
 echo "#SBATCH --job-name=genex"              >> $vini_dir/calculate_z_scores

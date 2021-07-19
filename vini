@@ -66,41 +66,56 @@ do
                  
 		 moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
                  moltype=`echo $moltype | awk -F','  '{print $2}'`
-		 
-		 FIFTH_LOOP=$SECONDS
-		 for (( N=0; N<nr_complexes; N++ )) #5th loop
-       	         do
-                     printf -v n "%03d" $N ; comp_index=$n
-                     conf_index=$comp_index ; log_index=$comp_index
-                     cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
-                     
-		     # This statement can be outside loop!
-                     if  [ $moltype == S ]  #if a small molecule, we are performing docking, else MD
-                     then
-                         echo "Vina" > $WORKDIR/MD_engine
-                         mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * 
-                         recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
-                         flag=`head -$recline $WORKDIR/receptors_contracted | tail -1`
-                         flag=`echo $flag | awk '{print $4}'`
-                         if  [ $flag == F ]
-                         then
-                             printf "%.1f\n" -7.0 > $target_dir/log_$comp_index.txt
-                         else
-                             cp $MGLTOOLS/AD4_parameters.dat ./                                
-                             cp $vini_dir/vina $vini_dir/autogrid4 ./                                         
-                             cp $comp_source/complex_$comp_index.pdbqt ./                      
-	                     cat $WORKDIR/Vina > Vina_run
 
-                             echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}" >> Vina_run #create Vina config file                                                     
-                             echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}" >> Vina_run
-                             echo "cp $WORKDIR/ligand_$lig_index.pdbqt ./" >> Vina_run #get ligand pdbqt file
-                             echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_$comp_index.pdbqt --ligand ligand_$lig_index.pdbqt --out $target_dir/complex_$comp_index.pdbqt --log $target_dir/log_$log_index.txt " >> Vina_run 
-                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                             $job_submit Vina_run    
-                         fi
-                         cd $WORKDIR
-                     else
-                         echo "Gromacs" > $WORKDIR/MD_engine
+		 FIFTH_LOOP=$SECONDS
+		 
+		 #if a small molecule, we are performing docking, else MD
+		 if [ $moltype == S ]
+		 then
+			echo "Vina" > $WORKDIR/MD_engine
+			
+			end_idx=$(($nr_complexes - 1))
+			time eval cp $comp_source/complex_{000..$end_idx}.pdbqt $WORKDIR	
+			eval mkdir -p $WORKDIR/{000..$end_idx}
+			eval rm -f $WORKDIR/{000..$end_idx}/*
+			
+			eval "echo $WORKDIR/{000..$end_idx}/" | xargs -n 1 cp $MGLTOOLS/AD4_parameters.dat $vini_dir/vina $vini_dir/autogrid4
+			
+			idx=0
+			idx_arr=""
+			while read line
+			do
+				printf -v comp_index "%03d" $idx
+				cp $comp_source/complex_${comp_index}.pdbqt $WORKDIR/${comp_index}
+				
+				flag=`echo $line | awk '{print $4}'`
+				if [ $flag == F ]
+				then
+					printf "%.1f\n" -7.0 > $target_dir/log_$comp_index.txt
+				else
+					idx_arr="${idx_arr}${idx},"
+				fi
+				let "idx++"
+			done < $WORKDIR/receptors_contracted
+			
+			echo "Array indices: " ${idx_arr}
+			cat $WORKDIR/Vina_arr > Vina_run
+			echo 'printf -v index "%03d" $SLURM_ARRAY_TASK_ID' >> Vina_run
+			echo 'cd $WORKDIR/$index' >> Vina_run
+			echo "sh $vini_dir/create_Vina_config_file ${lig_index} \${index} \${index} ${comp_source}" >> Vina_run #create Vina config file
+                        echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} \${index}" >> Vina_run
+                        echo "cp $WORKDIR/ligand_$lig_index.pdbqt ./" >> Vina_run #get ligand pdbqt file
+                        echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_\${index}.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_\${index}.pdbqt --ligand ligand_$lig_index.pdbqt --out $target_dir/complex_\${index}.pdbqt --log $target_dir/log_\$index.txt " >> Vina_run 
+                        sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                        $job_submit --array=${idx_arr} Vina_run
+		 else
+			echo "Gromacs" > $WORKDIR/MD_engine
+		 	for (( N=0; N<nr_complexes; N++ )) #5th loop
+       	        	do
+                     	 printf -v n "%03d" $N ; comp_index=$n
+                         conf_index=$comp_index ; log_index=$comp_index
+                     	 cp $comp_source/complex_$comp_index.pdbqt $WORKDIR
+                     
                          mkdir -p $WORKDIR/$comp_index ; cd $WORKDIR/$comp_index ; rm -f * #cleanup
                          recline=$N ; let "recline++" #do not compute FBE if receptor is with F flag
                          line=`head -$recline $WORKDIR/receptors_contracted | tail -1`
@@ -119,7 +134,6 @@ do
                                   FBE_kcal_mol=`cat tmp | awk '{print $7}'`    
                                   echo ${FBE_kcal_mol} > ${target_dir}/log_${comp_index}.txt 
                              else
-
                                  if [ $amber -eq $NULL ]
                                  then #calculate protein-protein DG with g_mmpbsa
                                      cp $vini_dir/nodes_control_script ./ 
@@ -187,10 +201,12 @@ do
                                      sh nodes_control_script ${MAX_NODES} ; $job_submit sander
                                  fi
                              fi
-                        fi
-                        cd $WORKDIR
-                     fi
-    	         done # end of 5th loop
+			     cd $WORKDIR
+			 fi
+			done #end of 5th loop for Gromacs
+  		 fi
+                 cd $WORKDIR
+
 		 echo "Waiting for" $USER "jobs to finish..."
                  sh $vini_dir/wait_until_jobs_finish
 		 echo "5.th loop finished in " $(($SECONDS - $FIFTH_LOOP)) " seconds!"
