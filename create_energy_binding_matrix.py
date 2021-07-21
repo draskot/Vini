@@ -1,6 +1,13 @@
 import os, time, sys
 import pandas as pd
 import numpy as np
+import argparse
+
+parse = argparse.ArgumentParser()
+
+# Target_dir absoulte path
+parse.add_argument("-t")
+args = parse.parse_args()
 
 t0 = time.time()
 
@@ -11,13 +18,7 @@ def main(argv):
         print "WORKDIR environmental variable is not set"
         exit()
 
-    try:
-        with open(os.path.join(WORKDIR, 'target_dir'), 'r') as f:
-            target_dir = f.read()
-            TARGETDIR = os.path.join(target_dir.strip("\n"))
-    except:
-        print "Can't open file with target directory"
-        exit()
+    TARGETDIR = os.path.join(args.t)
 
     with open(os.path.join(WORKDIR, 'nr_complexes'), 'r') as f:
         dim = f.read().strip("\n")

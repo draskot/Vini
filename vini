@@ -19,6 +19,8 @@ nr_complexes=`cat $WORKDIR/nr_complexes`
 export target_dir comp_index recline     #vars for (SGE) compute_FBE/Vina script
 amber=`cat $WORKDIR/amber` 
 NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prepare scripts will use
+max_jobs_per_ligand=$(($max_jobs / $nr_ligands - 3)) # - 3 is for base-array-job, affinity-vector-job and postprocess-job
+echo "Max jobs per ligand: ${max_jobs_per_ligand}"
 
 data="_data"
 a="_results"                               #Create directory store for results
@@ -47,6 +49,21 @@ esac
 
 ligand_number=1                #initializing ligand index
 
+end_idx=$(($nr_complexes - 1))
+eval cp $DIR/complex_{000..$end_idx}.pdbqt $WORKDIR
+
+eval mkdir -p $WORKDIR/{000..$end_idx}
+eval rm -f $WORKDIR/{000..$end_idx}/*
+eval "echo $WORKDIR/{000..$end_idx}/" | xargs -n 1 cp $MGLTOOLS/AD4_parameters.dat $vini_dir/vina $vini_dir/autogrid4
+
+for (( i=0; i<$((end_idx)); i++ ))
+do
+	printf -v comp_index "%03d" $i
+	cp $WORKDIR/complex_${comp_index}.pdbqt $WORKDIR/${comp_index}
+done
+
+TOTAL_TIME=$SECONDS
+
 for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
     for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
@@ -56,12 +73,10 @@ do
              for (( M=1; M<$((L4+1)); M++ )) #4th loop - 1st thl
              do
                  printf -v m "%03d" $M ; lig_index=$m
-                 case $therapy_level in
-                     1) comp_source=$DIR;          target_dir=$DIR/$M ;;
-                     2) comp_source=$DIR/$M;       target_dir=$DIR/$M/$L ;;
-                     3) comp_source=$DIR/$M/$L;    target_dir=$DIR/$M/$L/$J ;;
-                     4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
-                 esac
+		 ### pobrinuti se da VelikaVini (odnosno create_receptors_pdbqt_files) premjesti pdbqt fajlove u taj novi comp_source
+                 comp_source=${DIR}/$M/$L/$J/$I 
+		 target_dir=${DIR}_target/$M/$L/$J/$I
+       
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
                  
 		 moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
@@ -72,25 +87,16 @@ do
 		 #if a small molecule, we are performing docking, else MD
 		 if [ $moltype == S ]
 		 then
-			echo "Vina" > $WORKDIR/MD_engine
-			
-			end_idx=$(($nr_complexes - 1))
-			time eval cp $comp_source/complex_{000..$end_idx}.pdbqt $WORKDIR	
-			eval mkdir -p $WORKDIR/{000..$end_idx}
-			eval rm -f $WORKDIR/{000..$end_idx}/*
-			
-			eval "echo $WORKDIR/{000..$end_idx}/" | xargs -n 1 cp $MGLTOOLS/AD4_parameters.dat $vini_dir/vina $vini_dir/autogrid4
+			echo "Vina" > $WORKDIR/MD_engine_${M}_${L}_${J}_${I}
 			
 			idx=0
 			idx_arr=""
 			while read line
-			do
-				printf -v comp_index "%03d" $idx
-				cp $comp_source/complex_${comp_index}.pdbqt $WORKDIR/${comp_index}
-				
+			do	
 				flag=`echo $line | awk '{print $4}'`
 				if [ $flag == F ]
 				then
+					printf -v comp_index "%03d" $idx
 					printf "%.1f\n" -7.0 > $target_dir/log_$comp_index.txt
 				else
 					idx_arr="${idx_arr}${idx},"
@@ -98,16 +104,33 @@ do
 				let "idx++"
 			done < $WORKDIR/receptors_contracted
 			
-			echo "Array indices: " ${idx_arr}
-			cat $WORKDIR/Vina_arr > Vina_run
-			echo 'printf -v index "%03d" $SLURM_ARRAY_TASK_ID' >> Vina_run
-			echo 'cd $WORKDIR/$index' >> Vina_run
-			echo "sh $vini_dir/create_Vina_config_file ${lig_index} \${index} \${index} ${comp_source}" >> Vina_run #create Vina config file
-                        echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} \${index}" >> Vina_run
-                        echo "cp $WORKDIR/ligand_$lig_index.pdbqt ./" >> Vina_run #get ligand pdbqt file
-                        echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_\${index}.txt --num_modes 10 --energy_range 4 --receptor $comp_source/complex_\${index}.pdbqt --ligand ligand_$lig_index.pdbqt --out $target_dir/complex_\${index}.pdbqt --log $target_dir/log_\$index.txt " >> Vina_run 
+			Vina_run=Vina_run_${M}_${L}_${J}_${I}
+			cat $WORKDIR/Vina_arr > $Vina_run
+			echo 'printf -v index "%03d" $SLURM_ARRAY_TASK_ID' >> $Vina_run
+			echo 'cd $WORKDIR/$index' >> $Vina_run
+			echo "sh $vini_dir/create_Vina_config_file ${lig_index} \${index} \${index} ${comp_source}" >> $Vina_run #create Vina config file
+                        echo "sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} \${index}" >> $Vina_run
+                        echo "cp $WORKDIR/ligand_$lig_index.pdbqt ./" >> $Vina_run #get ligand pdbqt file
+                        echo "$INSTALL_DIR/autodock_vina_1_1_2_linux_x86/bin/vina --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_\${index}.txt --num_modes 10 --energy_range 4 --receptor $WORKDIR/complex_\${index}.pdbqt --ligand ligand_$lig_index.pdbqt --out $target_dir/complex_\${index}.pdbqt --log $target_dir/log_\$index.txt " >> $Vina_run 
                         sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                        $job_submit --array=${idx_arr} Vina_run
+                        job_array_id=`$job_submit --array=${idx_arr}\%${max_jobs_per_ligand} $Vina_run | awk '{print $4}'`
+			echo "Job array for ligand nr. ${M} is submitted with id: ${job_array_id}"
+
+			let ligand_number++
+	                > $target_dir/vec           #initialize affinity vector
+			
+			Vina_run=Vina_run_aff_${M}_${L}_${J}_${I}
+			cat $WORKDIR/Affinity.slurm > $Vina_run
+			echo "sh $vini_dir/create_affinity_vector_Vina ${target_dir}" >> $Vina_run
+			affinity_vec_job_id=`$job_submit --dependency=afterany:${job_array_id} $Vina_run | awk '{print $4}'`
+			echo "Affinity vector for ligand nr. ${M} is submitted with id: ${affinity_vec_job_id}"
+
+			Vina_run=Vina_run_postproc_${M}_${L}_${J}_${I}
+			cat $WORKDIR/Postprocess.slurm > $Vina_run
+			echo "sh $vini_dir/postprocess $WORKDIR $target_dir $therapy_level $M $L $J $I" >> $Vina_run
+			postproc_job_id=`$job_submit --dependency=afterany:${affinity_vec_job_id} $Vina_run | awk '{print $4}'`
+			echo "Postprocess for ligand nr. ${M} is submitted with id: ${postproc_job_id}"
+
 		 else
 			echo "Gromacs" > $WORKDIR/MD_engine
 		 	for (( N=0; N<nr_complexes; N++ )) #5th loop
@@ -204,49 +227,65 @@ do
 			     cd $WORKDIR
 			 fi
 			done #end of 5th loop for Gromacs
-  		 fi
+			
+		        echo "Waiting for" $USER "jobs to finish..."
+                        sh $vini_dir/wait_until_jobs_finish
+			
+			let ligand_number++
+                 	> $target_dir/vec                               #initialize affinity vector
+  		 	
+			ls $target_dir/log* > temp_buf
+                        nologs=`wc -l < temp_buf`
+                        for (( N=0; N<nologs; N++ ))
+                        do
+                        	printf -v n "%03d" $N
+                        	cat $target_dir/log_$n.txt  >> $target_dir/vec
+                     	done
+
+			#postproces
+			 # therapy_level nr_complexes, nr_ligands, elapsed time
+        	         case $therapy_level in       #estimating computational time left
+                		1) total_simulations=$(( $nr_complexes * $nr_ligands )) ;;
+                     		2) total_simulations=$(( $nr_complexes * $nr_ligands * $nr_ligands )) ;;
+                     		3) total_simulations=$(( $nr_complexes * $nr_ligands * $nr_ligands * $nr_ligands )) ;;
+                     		4) total_simulations=$(( $nr_complexes * $nr_ligands * $nr_ligands * $nr_ligands * $nr_ligands )) ;;
+                 	esac
+                 	elapsedseconds=$SECONDS
+                 	echo "elapsed seconds for Vina jobs:" $elapsedseconds
+#                 	SECONDS=0
+                 	elapsed_time=`echo ${elapsed_time} ${elapsedseconds} | awk '{printf "%.9f \n", $1 + $2}'`
+                 	elapsed_simulations=`echo $elapsed_simulations $nr_complexes | awk '{print $1 + $2}'`
+                 	simulations_left=`echo $total_simulations $elapsed_simulations | awk '{print $1 - $2}'`
+                 	avg_simulation_time=`echo "$elapsed_time $elapsed_simulations" | awk '{printf "%.9f \n", $1/$2}'`
+                 	time_left=`echo "$avg_simulation_time $simulations_left" | awk '{printf "%9f \n", $1 * $2}'`
+                 	time=`echo $time_left | awk '{print int($1)}'`  #rounding
+                 	echo $elapsed_simulations "simulations performed." $simulations_left "simulations left." "Estimated  remaining time [sec]:" $time
+                 
+		 	# target_dir, WORKDIR
+		 	sh $vini_dir/update_affinity_vec_with_genex_values ${target_dir}
+                 	echo $target_dir > target_dir
+                 	STORE1=$PYTHONPATH ; unset PYTHONPATH  #create EB matrix and calculate SLEM
+                 	eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
+                 	conda activate Vini
+                 	python $vini_dir/create_energy_binding_matrix.py
+                 	python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E
+                 	conda deactivate
+                 	export PYTHONPATH=$STORE1
+                 	eigenvalue=`cat $target_dir/E | awk '{print $2}'`
+                 	SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
+                 	case $therapy_level in
+                     		1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
+                     		2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
+                     		3) printf "%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=3
+                     		4) printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" "." "$I" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=4
+                 	esac
+
+                 	rm -f target_dir stats
+		 fi
                  cd $WORKDIR
 
-		 echo "Waiting for" $USER "jobs to finish..."
-                 sh $vini_dir/wait_until_jobs_finish
-		 echo "5.th loop finished in " $(($SECONDS - $FIFTH_LOOP)) " seconds!"
-
-                 let ligand_number++
-                 > $target_dir/vec                               #initialize affinity vector
-                 MD_engine=`cat $WORKDIR/MD_engine`
-                 if [ $MD_engine == Gromacs ]
-                 then
-                     ls $target_dir/log* > temp_buf
-                     nologs=`wc -l < temp_buf`
-                     for (( N=0; N<nologs; N++ ))
-                     do
-                         printf -v n "%03d" $N
-                         cat $target_dir/log_$n.txt  >> $target_dir/vec
-                     done
-                 else
-                     m=0  #creating affinity vector                                          
-                     for (( N=0; N<nr_complexes; N++ )) 
-       	             do
-                         let "m++"                                   #checking flag value
-                         line=`head -$m $WORKDIR/receptors_contracted | tail -1`            
-                         flag=`echo $line | awk '{print $4}'`
-                         if  [ $flag == F ] #or complex was not created
-                         then
-                             printf "%.1f\n" -7.0 >> $target_dir/vec 
-                         else
-                             printf -v n "%03d" $N ; log_index=$n #compute mean for 10 Vina num_modes
-                             sum=0             
-                             num_modes=10  
-                             for (( lineno=28; lineno<38; lineno++ ))
-                             do
-                                 affinity_value=`head -"$lineno" $target_dir/log_$log_index.txt | tail -1`
-                                 affinity_value=`echo $affinity_value | awk '{print $2}'`
-                                 sum=`echo $sum $affinity_value | awk '{print $1 + $2}'`
-                             done
-                             echo "$sum $num_modes" | awk '{printf "%.9f \n", $1/$2}' >> $target_dir/vec
-                         fi
-                     done
-                 fi
+		 #postproces -  zanemari za sada
+		 # therapy_level nr_complexes, nr_ligands, elapsed time
                  case $therapy_level in       #estimating computational time left
                      1) total_simulations=$(( $nr_complexes * $nr_ligands )) ;;
                      2) total_simulations=$(( $nr_complexes * $nr_ligands * $nr_ligands )) ;;
@@ -255,7 +294,7 @@ do
                  esac
                  elapsedseconds=$SECONDS
                  echo "elapsed seconds for Vina jobs:" $elapsedseconds
-                 SECONDS=0
+#                 SECONDS=0
                  elapsed_time=`echo ${elapsed_time} ${elapsedseconds} | awk '{printf "%.9f \n", $1 + $2}'`
                  elapsed_simulations=`echo $elapsed_simulations $nr_complexes | awk '{print $1 + $2}'`
                  simulations_left=`echo $total_simulations $elapsed_simulations | awk '{print $1 - $2}'`
@@ -263,29 +302,15 @@ do
                  time_left=`echo "$avg_simulation_time $simulations_left" | awk '{printf "%9f \n", $1 * $2}'`
                  time=`echo $time_left | awk '{print int($1)}'`  #rounding
                  echo $elapsed_simulations "simulations performed." $simulations_left "simulations left." "Estimated  remaining time [sec]:" $time
-                 sh $vini_dir/update_affinity_vec_with_genex_values ${target_dir}
-                 echo $target_dir > target_dir
-                 STORE1=$PYTHONPATH ; unset PYTHONPATH  #create EB matrix and calculate SLEM
-                 eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
-                 conda activate Vini
-                 python $vini_dir/create_energy_binding_matrix.py
-                 python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E
-                 conda deactivate
-                 export PYTHONPATH=$STORE1
-                 eigenvalue=`cat $target_dir/E | awk '{print $2}'`
-                 SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
-                 case $therapy_level in
-                     1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
-                     2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
-                     3) printf "%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=3
-                     4) printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" "." "$I" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=4
-                 esac
-
-                 rm -f target_dir stats 
+                 
+		
              done   #end of 4thloop
          done       #end of 3rd loop
     done            #end of 2nd loop
 done                #end of 1st loop
+
+sh $vini_dir/wait_until_jobs_finish
+echo "Total time took for vina: $(($SECONDS-$TOTAL_TIME))"
 
 mv SLEM_values ./$CANCER_PATHWAY$a/SLEM_values_thl$therapy_level  
 

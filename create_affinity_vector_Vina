@@ -1,0 +1,35 @@
+# Creates affinity vector for small molecules.
+# Author: Marko Minđek
+# Date: 20/07/2021
+
+# Input parameters:
+#	1. target_dir - directory where affinity vector will be stored
+# Output parameters - none
+
+LC_NUMERIC="en_US.UTF-8"
+
+target_dir=${1}
+
+num_modes=10
+m=0
+
+while read line
+do
+	flag=`echo $line | awk '{print $4}'`
+	if  [ $flag == F ] #or complex was not created
+	then
+		printf "%.1f\n" -7.0 >> $target_dir/vec
+	else
+		printf -v n "%03d" $m ; log_index=$n #compute mean for 10 Vina num_modes
+		sum=0
+		for (( lineno=28; lineno<38; lineno++ ))
+		do
+			affinity_value=`head -"$lineno" $target_dir/log_$log_index.txt | tail -1`
+			affinity_value=`echo $affinity_value | awk '{print $2}'`
+			sum=`echo $sum $affinity_value | awk '{print $1 + $2}'`
+		done
+		echo "$sum $num_modes" | awk '{printf "%.9f \n", $1/$2}' >> $target_dir/vec
+	fi
+	let "m++"
+done < $WORKDIR/receptors_contracted
+

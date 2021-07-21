@@ -14,10 +14,10 @@ echo "#SBATCH --partition="$Vini_queue       >> Vina
 echo "WORKDIR=$WORKDIR"                      >> Vina
 chmod u+x                                       Vina
 
-mkdir $WORKDIR/err
+mkdir -p $WORKDIR/err
 echo "#! /bin/bash"                           > Vina_arr  #prepare header file for Autodock Vina related jobs
 echo "#SBATCH --job-name=Vina_arr"               >> Vina_arr
-echo "#SBATCH --output=./err/Vina_arr.%a.out"             >> Vina_arr
+echo "#SBATCH --output=./err/Vina_arr.%A.%a.out"             >> Vina_arr
 echo "#SBATCH --time=04:00:00"               >> Vina_arr
 echo "#SBATCH --cpus-per-task=3"             >> Vina_arr
 #echo "SBATCH --ntasks-per-node=8"            >> Vina_arr
@@ -25,6 +25,26 @@ echo "#SBATCH --mem=4gb"                     >> Vina_arr
 echo "#SBATCH --partition="$Vini_queue       >> Vina_arr
 echo "WORKDIR=$WORKDIR"                      >> Vina_arr
 chmod u+x                                       Vina_arr
+
+echo "#! /bin/bash"                           > Affinity.slurm  #prepare header file for affinity vector creation
+echo "#SBATCH --job-name=Affinity"               >>  Affinity.slurm
+echo "#SBATCH --output=./err/affinity.%A.out"             >>  Affinity.slurm
+echo "#SBATCH --time=00:30:00"               >>  Affinity.slurm
+echo "#SBATCH --cpus-per-task=1"             >>  Affinity.slurm
+echo "#SBATCH --mem=128mb"                     >>  Affinity.slurm
+echo "#SBATCH --partition="$Vini_queue       >>  Affinity.slurm
+echo "WORKDIR=$WORKDIR"                      >>  Affinity.slurm
+chmod u+x                                        Affinity.slurm
+
+echo "#! /bin/bash"                           > Postprocess.slurm  #prepare header file for affinity vector creation
+echo "#SBATCH --job-name=Postprocess"               >>   Postprocess.slurm
+echo "#SBATCH --output=./err/postprocess.%A.out"             >>   Postprocess.slurm
+echo "#SBATCH --time=00:30:00"               >>   Postprocess.slurm
+echo "#SBATCH --cpus-per-task=1"             >>   Postprocess.slurm
+echo "#SBATCH --mem=256mb"                     >>   Postprocess.slurm
+echo "#SBATCH --partition="$Vini_queue       >>   Postprocess.slurm
+echo "WORKDIR=$WORKDIR"                      >>   Postprocess.slurm
+chmod u+x                                         Postprocess.slurm
 
 
 echo "#! /bin/bash"                           > $vini_dir/calculate_z_scores #prep calculate_z_scores script
@@ -124,5 +144,3 @@ cat $vini_dir/compute_FBE_script                >> compute_FBE
 chmod u+x                                          compute_FBE
 
 cd $vini_dir
-
-

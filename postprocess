@@ -1,0 +1,36 @@
+# Calculates energy binding matrix, eigenvalues and stores SLEM values.
+# Input parameters:
+#	1. WORKDIR
+#	2. target_dir
+#	3. therapy_level
+#       4,5,6,7. loop info
+# Output parameters - none
+
+WORKDIR=${1}
+target_dir=${2}
+therapy_level=${3}
+
+M=${4}
+L=${5}
+J=${6}
+I=${7}
+
+sh $vini_dir/update_affinity_vec_with_genex_values ${target_dir}
+STORE1=$PYTHONPATH ; unset PYTHONPATH  #create EB matrix and calculate SLEM
+eval "$($vini_dir/miniconda3/bin/conda shell.bash hook)"
+conda activate Vini
+python $vini_dir/create_energy_binding_matrix.py -t $target_dir
+python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E
+conda deactivate
+export PYTHONPATH=$STORE1
+eigenvalue=`cat $target_dir/E | awk '{print $2}'`
+SLEM=`echo $eigenvalue | tr -d "(),-" | cut -f1 -d"+"`
+case $therapy_level in
+	1) printf "%s%s%s%s\n" "SLEM_" "$M" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=1
+	2) printf "%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=2
+	3) printf "%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=3
+	4) printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" "$M" "." "$L" "." "$J" "." "$I" " " "$SLEM" >> $WORKDIR/SLEM_values ;; #th=4
+esac
+
+# rm -f stats
+
