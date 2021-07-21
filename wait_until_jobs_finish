@@ -10,13 +10,14 @@ while true
 do
      sleep 1
      $job_status -u $USER > $WORKDIR/temp2_buf
-     grep $USER $WORKDIR/temp2_buf > $WORKDIR/temp3_buf
-     lines=`wc -l < $WORKDIR/temp3_buf`
+     sed -i '1d' $WORKDIR/temp2_buf
+     lines=`wc -l < $WORKDIR/temp2_buf`
      echo -n $lines ; echo -n " "
      if  [ $lines -eq $NULL ]
      then
 	 break
      fi 
+     echo -n "$lines "
 done
 rm -f $WORKDIR/temp2_buf $WORKDIR/temp3_buf
 echo "Done."
