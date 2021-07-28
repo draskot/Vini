@@ -37,8 +37,8 @@ echo -n "Trying to determine number of CPU cores per compute node, please wait f
 rm -f *.out
 chmod u+x get_cores
 $job_submit get_cores
-#timeout 60s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
-sleep 30
+timeout 60s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
+#sleep 30
 if [ -e $vini_dir/*out ]
 then
     grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
