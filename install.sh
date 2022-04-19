@@ -284,7 +284,7 @@ if  [ ! -s tmp ]
 then
     echo -n "no. Please wait while Vini database is downloaded..."
     mkdir -p $vini_dir/database
-    wget -O $vini_dir/database/database.tar.bz2   --no-check-certificate https://mojoblak.irb.hr/remote.php/webdav/Storage-CIR/Vini%20support%20files/database.tar.bz2
+    wget -O $vini_dir/database/database.tar.bz2   --no-check-certificate https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
     echo "done."
     echo -n "Uncompressing database, please wait..."
     cd $vini_dir/database
