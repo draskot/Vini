@@ -1,0 +1,54 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+CANCER_TYPE=`cat $WORKDIR/cancer_type`
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+therapy_level=`cat $WORKDIR/therapy_level`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cell_line=`cat $WORKDIR/cell_line`
+exp=`cat $WORKDIR/exp`
+
+SLEM_FILE=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
+
+> ${SLEM_FILE}_reduced
+
+while read -r line
+do
+    echo -n "."
+    word=`echo $line | awk '{print $1;}' | cut -c 6-`     #Get SLEM indices
+    echo $word | tr '.' ' ' > tmp
+    word=`cat tmp`
+        case $therapy_level in
+             1) i=`echo $word | awk '{print $1}'` ;;
+             2) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'` ;;
+             3) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'` ; k=`echo $word | awk '{print $3}'` ;;
+             4) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'`; k=`echo $word | awk '{print $3}'`; l=`echo $word | awk '{print $4}'` ;;
+        esac
+
+    if  [[ $therapy_level == 1 ]]
+    then
+        echo $line >> ${SLEM_FILE}_reduced
+    fi
+    
+    if  [[ $therapy_level == 2 ]] 
+    then
+        if  [[ $i != $j ]]
+        then
+            echo $line >> ${SLEM_FILE}_reduced
+        fi
+    fi
+    
+    if  [[ $therapy_level == 3 ]]
+    then
+        if  [[ $i != $j ]] && [[ $i != $k ]] && [[ $j != $k ]] 
+        then
+            echo $line >> ${SLEM_FILE}_reduced
+        fi
+    fi
+
+    if  [[ $therapy_level == 4 ]]
+    then
+        if  [[ $i != $j ]] && [[ $i != $k ]] && [[ $i != $l ]] && [[ $j != $k ]] && [[ $j != $l ]] && [[ $k != $l ]]
+        then
+            echo $line >> ${SLEM_FILE}_reduced
+        fi
+    fi
+done < $SLEM_FILE

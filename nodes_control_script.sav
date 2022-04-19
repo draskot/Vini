@@ -1,0 +1,29 @@
+
+# nodes_control_script
+#Input parameter: MAX_NODES
+
+MAX_NODES=$1
+job_status=`cat $WORKDIR/job_status`
+user=`echo ${USER:0:8}` #for long partition names last characters may be lost
+
+while true
+do
+    $job_status | grep $user > $WORKDIR/all_user_jobs
+    #allnodes=0
+    while read -r line
+    do
+        nodes=`echo $line | awk '{print $7}'`
+        allnodes=`echo $allnodes $nodes | awk '{print $1 + $2}'`
+    done < $WORKDIR/all_user_jobs
+
+    echo "allnodes:" $allnodes
+
+    if [ $allnodes -gt $MAX_NODES ]
+    then 
+        echo "nr. nodes exceeds limit" ; sleep 1
+    else
+        break
+    fi
+done
+
+rm -f temp_buf

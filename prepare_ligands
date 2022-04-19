@@ -1,0 +1,53 @@
+TRUE=1
+FALSE=0
+job_status=`cat $WORKDIR/job_status`
+job_submit=`cat $WORKDIR/job_submit`
+max_jobs=`cat $WORKDIR/max_jobs`
+
+cd $WORKDIR
+i=1
+while  read -r line
+do
+    printf -v lig_index "%03d" $i
+    echo -n "."
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    flag=`echo $line | awk -F',' '{print $2}'`
+
+    if  [ -e $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt ]
+    then
+        cp $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
+    else                                                                                      #create pdbqt file
+        cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR #create pdbqt file
+        cat Vina > Vina_run
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/database/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/ligand_${lig_index}.pdbqt"  >> Vina_run
+        chmod +x Vina_run
+        sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+        $job_submit Vina_run
+    fi
+    cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
+    let i++
+done < $vini_dir/database/ligands/ligands_list
+
+sh $vini_dir/wait_until_jobs_finish #wait until all jobs finish
+
+echo -n "Checking if pdbqt files are created..."
+> $WORKDIR/tmp
+while read -r line  
+do
+    echo -n "."
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    echo $drugname > drugname ; words=`wc -w < drugname`
+    if  [ $words -eq 2 ] ; then #put ? between 2 words
+        word1=`echo $drugname | awk '{print $1}'` ;  word2=`echo $drugname | awk '{print $2}'`
+        drugname=`echo $word1"?"$word2`
+    fi
+    flag=`echo $line | awk -F',' '{print $2}'`
+    if  [[ ! -e $WORKDIR/${drugname}.pdbqt ]] && [[ $flag == S ]] #delete drug if pdbqt creation failed
+    then
+        echo "pdbqt file for" $drugname "was not created!" $drugname "will not be analyzed."
+    else
+        echo $line >> $WORKDIR/tmp
+    fi
+done < $vini_dir/database/ligands/ligands_list
+    mv $WORKDIR/tmp $vini_dir/database/ligands/ligands_list
+    echo "done."

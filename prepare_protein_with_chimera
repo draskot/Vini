@@ -1,0 +1,64 @@
+#Code below uses dockprep functionality of Chimera to remove HETATM and add missing residues using Dunbrack Library
+#input parameters: uniprot_id ; $WORKDIR/completeness_list 
+#output parameters: protein structure in $vini_dir/database/genes/pdb_files if success
+# $WORKDIR/chim_status = 1 if success, otherwise 0
+
+uniprot_id=$1
+
+prediction_model=`cat $WORKDIR/prediction_model`
+MAX_NODES=`cat $WORKDIR/nodes`                     #maximum number of compute nodes Vini can use concurrently
+job_submit=`cat $WORKDIR/job_submit`
+
+NULL=0
+ONES=1
+chim_status=1 ; echo $chim_status > $WORKDIR/chim_status
+
+cd $WORKDIR
+
+while read -r line
+do
+    accession_code=`echo $line | awk '{print $1}'` #get RCSB structure
+    cp $vini_dir/database/RCSB_structures/${accession_code}.pdb ./
+    echo -n "Determining number of ligands..."
+    grep -w "HET" ${accession_code}.pdb > $WORKDIR/noligands 
+    noligands=`wc -l < $WORKDIR/noligands`
+    echo "done."
+    echo -n "Removing water molecules..."
+    ligand=HOH
+    chimera --nogui --script "prep_prot_lig.py ${accession_code}.pdb ${ligand}" | tee -a log
+    grep Error log > stats 
+    chars=`wc -c < stats`
+    if  [ $chars -eq $NULL ]
+    then
+        mv protein_clean.pdb ${accession_code}.pdb
+        rm -f ligand_wH.pdb ${ligand}.pdb stats log #cleanup
+    else
+        grep -v HOH ${accession_code}.pdb > tmp
+        mv -f tmp ${accession_code}.pdb
+    fi
+    echo "done."
+
+    if  [ $noligands -eq $NULL ]
+    then     
+        echo -n ${accession_code} "has no ligands. Moving" ${accession_code}.pdb "to repo." 
+        reduce -BUILD ${accession_code}.pdb  > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb #add H
+        echo "done."
+        break
+    else
+        echo -n ${accession_code} "has one ligand. Cleaning with Chimera, please wait..."
+        ligand=`head -1 $WORKDIR/noligands`                         #get ligand name
+        ligand=`echo $ligand | awk '{print $2}'`
+        chimera --nogui --script "prep_prot_lig.py ${accession_code}.pdb ${ligand}" | tee -a log
+        grep Error log > stats 
+        chars=`wc -c < stats`
+        if  [ $chars -eq $NULL ]
+        then
+            reduce -BUILD protein_clean.pdb  > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb #add H
+            break
+        else
+            chim_status=$NULL ; echo $chim_status > $WORKDIR/chim_status  #Chimera failed to clean any structure
+            rm -f ${uniprot_id}.pdb
+        fi
+        rm -f ligand_wH.pdb ${ligand}.pdb stats log #cleanup
+    fi
+done < completeness_list

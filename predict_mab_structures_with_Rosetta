@@ -1,0 +1,36 @@
+MAX_NODES=`cat $WORKDIR/nodes`
+job_submit=`cat $WORKDIR/job_submit`
+cd $WORKDIR
+echo -n "Predicting mAb structures with Rosetta, please wait..."
+while read -r line
+do
+    type=`echo $line | awk -F','  '{print $2}'`
+    if [ $type == P ]
+    then
+        antibody=`echo $line | awk -F','  '{print $1}'`
+        if [ ! -e $vini_dir/database/ligands/pdb_files/${antibody}.pdb ]
+        then
+            mkdir -p ${antibody} ; cd ${antibody} ; rm -rf *
+            mkdir -p H3_modeling
+            rosie=`cat $WORKDIR/rosie`
+            if  [ $rosie == mpi ]
+            then
+                cp $vini_dir/nodes_control_script ../rosetta_grafting.mpi ../rosetta_antibody.mpi ./
+                cp $ROSETTA/tools/antibody/abH3.flags ./
+                sh nodes_control_script ${MAX_NODES} ; jobID=$(${job_submit} --parsable rosetta_grafting.mpi ${antibody})
+                sh nodes_control_script ${MAX_NODES} ; $job_submit --dependency=afterok:${jobID} rosetta_antibody.mpi ${antibody}
+            else
+                cp $vini_dir/nodes_control_script $WORKDIR/rosetta_grafting $WORKDIR/rosetta_antibody ./
+                cp $ROSETTA/tools/antibody/abH3.flags ./
+                sh nodes_control_script ${MAX_NODES}
+                jobID=$(${job_submit} --parsable rosetta_grafting ${antibody})
+                sh nodes_control_script ${MAX_NODES}
+                $job_submit --dependency=afterok:${jobID} rosetta_antibody ${antibody}
+                echo "job submitted and may last a days to finish. Please be patient."
+            fi
+            cd ..
+        fi
+    fi
+done < $vini_dir/database/ligands/ligands_list
+sh $vini_dir/wait_until_jobs_finish
+echo "done."

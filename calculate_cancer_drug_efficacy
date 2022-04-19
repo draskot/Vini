@@ -1,0 +1,67 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+CANCER_TYPE=`cat $WORKDIR/cancer_type`
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+exp=`cat $WORKDIR/exp`
+therapy_level=`cat $WORKDIR/therapy_level`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+ONES=1
+TRUE=1
+vina_version=$1
+
+if [ $compute_cell_line -eq $TRUE ]
+then
+    cell_line=`cat $WORKDIR/NCI60_cell_line`
+else
+    cell_line=`cat $WORKDIR/cell_line`
+fi
+
+
+if [[ -e $WORKDIR/hsa05223_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_exp_named ]] && [[ -e $WORKDIR/hsa05223_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_noexp_named ]]
+then
+    exp=exp
+    grep Water $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}_named > tmp
+    SLEMcw=`cat tmp | awk '{print $2}'`
+    exp=noexp
+    grep Water $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}_named > tmp
+    SLEMnw=`cat tmp | awk '{print $2}'`
+    echo -n "Computing cancer drug effectiveness..."
+    > $WORKDIR/tmp
+    while read -r line
+    do
+        echo $line | awk  '{print $1}' > drug    #delete SLEM_ prefix from lines
+        sed -i -e 's/SLEM_//g' drug  #delete SLEM_ prefix from lines
+        drug=`cat drug`
+        if  [ $drug != Water ]                    #avoid the computation for the water
+        then
+            SLEMcd=`echo $line | awk '{print $2}'`
+            grep $drug $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_noexp_named > SLEMn
+            SLEMnd=`cat SLEMn | awk '{print $2}'`
+            Q1=`echo $ONES / $SLEMcd | bc -l`    #compute (Q1 - Q2) / (Q3 - Q4)
+            Q2=`echo $ONES / $SLEMcw | bc -l`    
+            Q3=`echo $ONES / $SLEMnd | bc -l`    
+            Q4=`echo $ONES / $SLEMnw | bc -l`    
+            deltaQ12=`echo $Q1 - $Q2 | bc -l`
+            deltaQ34=`echo $Q3 - $Q4 | bc -l`
+	    if  [ $deltaQ34 == 0 ]
+            then                       #avoid division by zero
+                echo "failed to compute efficacy for drug" $drug
+            else
+                #Qd=`echo $deltaQ12 / $deltaQ34 | bc -l`
+                Qd=`echo $SLEMcd / $SLEMnd | bc -l`
+                echo $drug $Qd >> $WORKDIR/tmp
+            fi
+        fi
+    done < $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_exp_named
+    sort -k2 -n -r $WORKDIR/tmp > $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_${vina_version}_drug_efficacy
+    echo "done." ; echo "Data are in" $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_${vina_version}_drug_efficacy "file."
+else
+    echo "If you want to compute the effectiveness of cancer drugs, you need to run the second simulation"
+    if  [ -e $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_exp_named ] ; then
+        echo "without expression and mutation data."
+    else
+        echo "with expression and mutation data."
+    fi
+fi
+rm -f $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}
+rm -f $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}_reduced
+rm -f drug SLEMn tmp 

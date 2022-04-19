@@ -1,0 +1,134 @@
+cores=`cat $WORKDIR/cores`
+Vini_pe=`cat $WORKDIR/Vini_pe`
+Vini_queue=`cat $WORKDIR/Vini_queue`
+
+cd $WORKDIR
+
+echo "#! /bin/bash"                              > Vina #prepare Vina header file
+echo "#$ -N Vina"                               >> Vina
+echo "#$ -cwd"                                  >> Vina
+echo "#$ -V"                                    >> Vina
+echo "#$ -o Vina.out"                           >> Vina
+echo "#$ -e Vina.out"                           >> Vina
+echo "#$ -l h_rt=1800"                          >> Vina
+echo "#$ -pe" $Vini_pe 3                        >> Vina
+echo "#$ -l mem_free=4096"                      >> Vina
+echo "#$ -q" $Vini_queue                        >> Vina
+echo "WORKDIR=$WORKDIR"                         >> Vina
+
+echo "#! /bin/bash"                              > $vini_dir/calculate_z_scores #adjust to SGE!!!!
+echo "#$ -N genex"                              >> $vini_dir/calculate_z_scores
+echo "#$ -cwd"                                  >> $vini_dir/calculate_z_scores
+echo "#$ -V"                                    >> $vini_dir/calculate_z_scores
+echo "#$ -o genex.out"                          >> $vini_dir/calculate_z_scores
+echo "#$ -e genex.out"                          >> $vini_dir/calculate_z_scores
+echo "#$ -l h_rt=86400"                         >> $vini_dir/calculate_z_scores
+echo "#$ -pe" $Vini_pe $cores                   >> $vini_dir/calculate_z_scores
+echo "#$ -l mem_free=49152"                     >> $vini_dir/calculate_z_scores
+echo "#$ -q" $Vini_queue                        >> $vini_dir/calculate_z_scores
+echo "WORKDIR=$WORKDIR"                         >> $vini_dir/calculate_z_scores
+cat $vini_dir/calculate_z_scores_script         >> $vini_dir/calculate_z_scores
+chmod u+x                                       $vini_dir/calculate_z_scores
+
+echo "#! /bin/bash"                              > sander
+echo "#$ -N sander"                             >> sander
+echo "#$ -cwd"                                  >> sander
+echo "#$ -V"                                    >> sander
+echo "#$ -o sander.out"                         >> sander
+echo "#$ -e sander.out"                         >> sander
+echo "#$ -l h_rt=345600"                        >> sander
+echo "#$ -pe" $Vini_pe $cores                   >> sander
+echo "#$ -l mem_free=49152"                     >> sander
+echo "#$ -q" $Vini_queue                        >> sander
+echo "WORKDIR=$WORKDIR"                         >> sander
+cat $vini_dir/sander_script                     >> sander
+chmod u+x                                          sander
+
+echo "#! /bin/bash"                              > MD_prep #prepare Gromacs header files
+echo "#$ -N MD_prep"                            >> MD_prep
+echo "#$ -cwd"                                  >> MD_prep
+echo "#$ -V"                                    >> MD_prep
+echo "#$ -o MD_prep.out"                        >> MD_prep
+echo "#$ -e MD_prep.out"                        >> MD_prep
+echo "#$ -l h_rt=86400"                         >> MD_prep
+echo "#$ -pe" $Vini_pe $cores                   >> MD_prep
+echo "#$ -l mem_free=8192"                      >> MD_prep
+echo "#$ -q" $Vini_queue                        >> MD_prep
+echo "WORKDIR=$WORKDIR"                         >> MD_prep
+cat $vini_dir/MD_prep                           >> MD_prep
+chmod u+x MD_prep
+
+echo "#! /bin/bash"                              > MD_run
+echo "#$ -N MD_run"                             >> MD_run
+echo "#$ -cwd"                                  >> MD_run
+echo "#$ -V"                                    >> MD_run
+echo "#$ -o MD_run.out"                         >> MD_run
+echo "#$ -e MD_run.out"                         >> MD_run
+echo "#$ -l h_rt=86400"                         >> MD_run
+echo "#$ -pe" $Vini_pe $cores                   >> MD_run
+echo "#$ -l mem_free=32768"                     >> MD_run
+echo "#$ -q" $Vini_queue                        >> MD_run
+echo "WORKDIR=$WORKDIR"                         >> MD_run
+cat $vini_dir/MD_run                            >> MD_run
+chmod u+x MD_run
+
+echo "#! /bin/bash"                              > create_index_file
+echo "#$ -N ndx"                                >> create_index_file
+echo "#$ -cwd"                                  >> create_index_file
+echo "#$ -V"                                    >> create_index_file
+echo "#$ -o ndx.out"                            >> create_index_file
+echo "#$ -e ndx.out"                            >> create_index_file
+echo "#$ -l h_rt=86400"                         >> create_index_file
+echo "#$ -pe" $Vini_pe $cores                   >> create_index_file
+echo "#$ -l mem_free=4096"                      >> create_index_file
+echo "#$ -q" $Vini_queue                        >> create_index_file
+echo "WORKDIR=$WORKDIR"                         >> create_index_file
+echo "module load gromacs/5.1.4"                >> create_index_file
+cat $vini_dir/create_index_file_script          >> create_index_file
+chmod u+x create_index_file
+
+echo "#! /bin/bash"                              > g_mmpbsa_slurm_script  
+echo "#$ -N potential"                          >> g_mmpbsa_slurm_script
+echo "#$ -cwd"                                  >> g_mmpbsa_slurm_script
+echo "#$ -V"                                    >> g_mmpbsa_slurm_script
+echo "#$ -o potential.out"                      >> g_mmpbsa_slurm_script
+echo "#$ -e potential.out"                      >> g_mmpbsa_slurm_script
+echo "#$ -l h_rt=86400"                         >> g_mmpbsa_slurm_script
+echo "#$ -pe" $Vini_pe $cores                   >> g_mmpbsa_slurm_script
+echo "#$ -l mem_free=16384"                     >> g_mmpbsa_slurm_script
+echo "#$ -q" $Vini_queue                        >> g_mmpbsa_slurm_script
+echo "WORKDIR=$WORKDIR"                         >> g_mmpbsa_slurm_script
+echo "export OMP_NUM_THREADS="$cores            >> g_mmpbsa_slurm_script
+
+echo "#! /bin/bash"                              > compute_FBE
+echo "#$ -N FBE_calc"                           >> compute_FBE
+echo "#$ -cwd"                                  >> compute_FBE
+echo "#$ -V"                                    >> compute_FBE
+echo "#$ -o FBE_calc.out"                       >> compute_FBE
+echo "#$ -e FBE_calc.out"                       >> compute_FBE
+echo "#$ -l h_rt=86400"                         >> compute_FBE
+echo "#$ -pe" Vini_pe $cores                    >> compute_FBE
+echo "#$ -l mem_free=4096"                      >> compute_FBE
+echo "#$ -q" $Vini_queue                        >> compute_FBE
+echo "WORKDIR=$WORKDIR"                         >> compute_FBE
+echo "export OMP_NUM_THREADS="$cores            >> compute_FBE
+cat $vini_dir/compute_FBE_script                >> compute_FBE
+chmod u+x compute_FBE
+
+cp g_mmpbsa_slurm_script                           g_mmpbsa_potential_energy
+cat $vini_dir/g_mmpbsa_potential_energy_script  >> g_mmpbsa_potential_energy
+chmod u+x                                          g_mmpbsa_potential_energy
+
+cp g_mmpbsa_slurm_script                           g_mmpbsa_polar_energy
+cat $vini_dir/g_mmpbsa_polar_energy_script      >> g_mmpbsa_polar_energy
+chmod u+x                                          g_mmpbsa_polar_energy
+
+cp g_mmpbsa_slurm_script                           g_mmpbsa_apolar_energy
+cat $vini_dir/g_mmpbsa_apolar_energy_script               >> g_mmpbsa_apolar_energy
+chmod u+x                                          g_mmpbsa_apolar_energy
+
+cp g_mmpbsa_slurm_script                           compute_FBE
+cat $vini_dir/compute_FBE_script                >> compute_FBE
+chmod u+x                                          compute_FBE
+
+cd $vini_dir

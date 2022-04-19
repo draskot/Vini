@@ -1,0 +1,22 @@
+# wait_until_jobs_finish
+
+job_status=`cat $WORKDIR/job_status`
+NULL=0
+user=`echo ${USER:0:8}` #for long partition names last characters may be lost
+cd $WORKDIR
+
+> all_user_jobs
+echo -n $USER "jobs remaining: "
+while true
+do
+     sleep 1
+     $job_status | grep $user > all_user_jobs
+     lines=`wc -l < all_user_jobs` #break loop if there are no more Vini jobs
+     echo -n $lines ; echo -n " "
+     if  [ $lines -eq $NULL ]
+     then
+	 break
+     fi 
+done
+
+echo "Done."

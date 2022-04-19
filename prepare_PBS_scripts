@@ -1,0 +1,177 @@
+cluster=`uname -n`
+cd $WORKDIR
+
+if [ -e $WORKDIR/Vina_queue ]
+then
+    Vina_queue=`cat $WORKDIR/Vina_queue`
+    Vina_pe=`cat $WORKDIR/Vina_pe`
+    Gromacs_queue=`cat $WORKDIR/Gromacs_queue`
+    Gromacs_pe=`cat $WORKDIR/Gromacs_pe`
+    g_mmpbsa_queue=`cat $WORKDIR/g_mmpbsa_queue`
+    g_mmpbsa_pe=`cat $WORKDIR/g_mmpbsa_pe`
+    echo "The current mapping of Vini tasks on" $cluster "partitions is:"
+    echo "Vina_queue:" $Vina_queue "Gromacs_queue:" $Gromacs_queue "g_mmpbsa_queue:" $g_mmpbsa_queue
+else
+    echo "no mapping of my jobs on" $cluster "You will need to set it up now."
+    echo "" ; echo "Available queues on" $cluster "are:"
+    qstat -q
+    read -p  "enter the name of queue Vina will use:" Vina_queue
+    echo $Vina_queue > $WORKDIR/Vina_queue
+    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    echo $Gromacs_queue > $WORKDIR/Gromacs_queue
+    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+fi
+
+read -p "accept the current mapping (y/n)?" yesno
+if  [ $yesno == "n" ]
+then
+    echo "" ; echo "Available queues on" $cluster "are:"
+    qconf -sql
+    read -p  "enter the name of queue Vina will use:" Vina_queue
+    echo $Vina_queue > $WORKDIR/Vina_queue
+    read -p  "enter the name of queue Gromacs  will use:" Gromacs_queue
+    echo $Gromacs_queue > $WORKDIR/Gromacs_queue
+    read -p  "enter the name of queue g_mmpbsa will use:" g_mmpbsa_queue
+    echo $g_mmpbsa_queue > $WORKDIR/g_mmpbsa_queue
+fi
+sleep 2
+
+echo ""
+echo "Vina, Gromacs and g_mmpbsa jobs can use several OMP threads on compute nodes."
+echo "If you already used Vini on this system, you may use the number of threads from the previous Vini run."
+echo "Alternativelly, you may enter new values."
+
+if  [ -e $WORKDIR/Vina_threads ] ; then
+    Vina_threads=`cat $WORKDIR/Vina_threads`
+    echo "The number of Vina threads is currently set to" $Vina_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each Vina job will use:" Vina_threads
+       echo $Vina_threads > $WORKDIR/Vina_threads
+    fi
+else
+    read -p "Please enter the number of threads each Vina job will use:" Vina_threads
+    echo $Vina_threads > $WORKDIR/Vina_threads
+fi
+
+if  [ -e $WORKDIR/Gromacs_threads ] ; then
+    Gromacs_threads=`cat $WORKDIR/Gromacs_threads`
+    echo "The number of Gromacs threads is currently set to" $Gromacs_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+       echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+    fi
+else
+    read -p "Please enter the number of threads each Gromacs job will use:" Gromacs_threads
+    echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+fi
+
+if  [ -e $WORKDIR/g_mmpbsa_threads ] ; then
+    g_mmpbsa_threads=`cat $WORKDIR/g_mmpbsa_threads`
+    echo "The number of g_mmpbsa_threads is currently set to" $g_mmpbsa_threads
+    read -p "accept or change (a/c)?" yesno
+    if [ $yesno == c ] ; then
+       read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+       echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+    fi
+else
+    read -p "Please enter the number of threads each g_mmpbsa job will use:" g_mmpbsa_threads
+    echo $g_mmpbsa_threads > $WORKDIR/g_mmpbsa_threads
+fi
+
+
+echo "#! /bin/bash"               > Vina #prepare Vina header file
+echo "#PBS -N Vina"              >> Vina
+echo "#PBS -o Vina.out"          >> Vina
+echo "#PBS -e Vina.out"          >> Vina
+echo "#PBS -l walltime=24:00:00" >> Vina
+echo "#PBS -l nodes=1:ppn=3"     >> Vina
+echo "#PBS -l mem=8gb"           >> Vina
+echo "#PBS -q " $Vina            >> Vina
+
+echo "#! /bin/bash"                            > MD_prep  #prepare Gromacs header files
+echo "#PBS -N MD_prep"                        >> MD_prep
+echo "#PBS -o MD_prep.out"                    >> MD_prep
+echo "#PBS -e MD_prep.out"                    >> MD_prep
+echo "#PBS -l walltime=24:00:00"              >> MD_prep
+echo "#PBS -l nodes=1:ppn=1"                  >> MD_prep         
+echo "#PBS -l mem=4gb"                        >> MD_prep
+echo "#PBS -q " $MD_prep                      >> MD_prep
+chmod u+x MD_prep
+cat $vini_dir/MD_prep >> MD_prep
+
+echo "#! /bin/bash"                            > MD_run
+echo "#PBS -N MD_run"                         >> MD_run
+echo "#PBS -o MD_run.out"                     >> MD_run
+echo "#PBS -e MD_run.out"                     >> MD_run
+echo "#PBS -l walltime=24:00:00"              >> MD_run
+echo "#PBS -l nodes=1:ppn=4"                  >> MD_run         
+echo "#PBS -l mem=32gb"                       >> MD_run
+echo "#PBS -q " $MD_run                       >> MD_run
+chmod u+x MD_run
+cat $vini_dir/MD_run >> MD_run
+
+echo "#! /bin/bash"                            > ndx
+echo "#PBS -N ndx"                            >> ndx
+echo "#PBS -o ndx.out"                        >> ndx
+echo "#PBS -e ndx.out"                        >> ndx
+echo "#PBS -l walltime=24:00:00"              >> ndx
+echo "#PBS -l nodes=1:ppn=1"                  >> ndx         
+echo "#PBS -l mem=4gb"                        >> ndx
+echo "#PBS -q " $ndx                          >> ndx
+chmod u+x ndx
+cat $vini_dir/create_index_file_script >> ndx
+
+echo "#! /bin/bash"                            > potent  #prepare mmpbsa header files
+echo "#PBS -N potent"                         >> potent
+echo "#PBS -o potent.out"                     >> potent
+echo "#PBS -e potent.out"                     >> potent
+echo "#PBS -l walltime=24:00:00"              >> potent
+echo "#PBS -l nodes=1:ppn=16"                 >> potent         
+echo "#PBS -l mem=16gb"                       >> potent
+echo "#PBS -q " $potential                    >> potent
+echo "export OMP_NUM_THREADS=16"              >> potent
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> potent
+chmod u+x potent
+cat $vini_dir/potent >> potent
+
+echo "#! /bin/bash"                            > apolar
+echo "#PBS -N apolar"                         >> apolar
+echo "#PBS -o apolar.out"                     >> apolar
+echo "#PBS -e apolar.out"                     >> apolar
+echo "#PBS -l walltime=24:00:00"              >> apolar
+echo "#PBS -l nodes=1:ppn=4"                  >> apolar         
+echo "#PBS -l mem=8gb"                        >> apolar
+echo "#PBS -q " $apolar                       >> apolar
+echo "export OMP_NUM_THREADS=4"               >> apolar
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> apolar
+chmod u+x apolar
+cat $vini_dir/apolar >> apolar
+
+echo "#! /bin/bash"                            > polar
+echo "#PBS -N polar"                          >> polar
+echo "#PBS -o polar.out"                      >> polar
+echo "#PBS -e polar.out"                      >> polar
+echo "#PBS -l walltime=24:00:00"              >> polar
+echo "#SBATCH --nodes=1"                      >> polar
+echo "#PBS -l nodes=1:ppn=16"                 >> polar         
+echo "#PBS -l mem=24gb"                       >> polar
+echo "#PBS -q " $MD_prep                      >> polar
+echo "export OMP_NUM_THREADS=16"              >> polar
+echo "export APBS=/scratch/opt2/apbs-1.3/bin/apbs" >> polar
+chmod u+x polar
+cat $vini_dir/polar >> polar
+
+echo "#! /bin/bash"                            > FBE
+echo "#PBS -N FBE_calc"                       >> FBE
+echo "#PBS -o FBE_calc.out"                   >> FBE
+echo "#PBS -e FBE_calc.out"                   >> FBE
+echo "#PBS -l walltime=24:00:00"               >> FBE
+echo "#PBS -l nodes=1:ppn=1"                  >> FBE         
+echo "#PBS -l mem=4gb"                        >> FBE
+echo "#PBS -q " $FBE                          >> FBE
+echo "export OMP_NUM_THREADS=1"               >> FE
+chmod u+x compute_FBE
+cat $vini_dir/FBE >> FBE

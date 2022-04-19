@@ -1,0 +1,66 @@
+#  affinity vector is created and multiplied with gene expression values from receptors_contracted file
+#  input param: target_dir
+#  output: affinity vector in $target_dir
+#  modification date: 09/03/2022
+
+target_dir=$1
+
+random_affinity=`cat $WORKDIR/random_affinity`
+complexes=`cat $WORKDIR/complexes`
+ONES=1
+
+> $target_dir/vec
+
+MD_engine=`cat $WORKDIR/MD_engine`   
+if  [ $MD_engine == Vina ]
+then
+    for (( N=1; N<$((complexes+1)); N++ ))                  #create Vina vector
+    do
+        #printf -v n "%03d" $N
+        printf -v log_index "%03d" $N
+        
+        if  [[ -e ${target_dir}/log_${log_index}.txt ]]
+        then
+            nolines=`wc -l < ${target_dir}/log_${log_index}.txt`
+            if  [ $nolines -ne $ONES ]
+            then
+                lineno=`grep -n kcal ${target_dir}/log_${log_index}.txt | awk '{print $1}'` #get line nr with kcal string
+                lineno=`echo $lineno | awk '{ print substr( $0, 1, length($0)-1 ) }'` #strip :
+                let lineno=lineno+2        #read line with the best affinity and store in vec
+                line=`head -$lineno ${target_dir}/log_${log_index}.txt | tail -1`
+                echo $line | awk '{print $2}' >> ${target_dir}/vec
+            else
+                echo ${random_affinity} >> ${target_dir}/vec
+            fi
+        else
+            echo ${random_affinity} >> ${target_dir}/vec
+        fi
+    done
+else
+    for (( N=1; N<$((complexes+1)); N++ ))                 #create Gromacs vector
+    do
+        printf -v comp_index "%03d" $N
+        FBE=`cat ${target_dir}/log_${comp_index}.txt`
+        echo $FBE >> $target_dir/vec
+    done
+    
+fi
+#cp ${target_dir}/vec ${target_dir}/vec.orig #for debug only
+
+
+index=1
+> $target_dir/vec.tmp
+while read -r line
+do
+    genex=`echo $line | awk '{print $6}'`
+    if  [ -z "$genex" ]                                    #set genex to 1 if unset or empty
+    then
+        genex=1
+    fi
+    affinity=`head -"$index" ${target_dir}/vec | tail -1`
+    product=`echo $genex $affinity | awk '{print $1 * $2}'`
+    echo $product >> ${target_dir}/vec.tmp
+    let "index++"
+done < $WORKDIR/receptors_contracted
+
+mv $target_dir/vec.tmp ${target_dir}/vec

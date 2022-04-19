@@ -1,0 +1,83 @@
+PDB=.pdb
+NULL=0
+one=1
+two=2
+
+> $WORKDIR/clean_structures
+> $WORKDIR/complex_structures
+> $WORKDIR/completeness_list
+
+mkdir -p $vini_dir/database/RCSB_structures
+DOWNLOAD_DIR=$vini_dir/database/RCSB_structures #repo for RCSB structures
+
+uniprot_id=$1
+
+line=`grep $uniprot_id $vini_dir/database/uniprot_db`       #download all available pdb structures
+accession_codes=`echo $line | awk '{print $3}'`
+accession_codes=`echo $accession_codes | tr ";" " "   `
+echo $accession_codes > $WORKDIR/accession_codes
+
+for accession_code in $(<$WORKDIR/accession_codes) #inspecting RCSB structures
+do
+    if [ -e $DOWNLOAD_DIR/$accession_code$PDB ]
+    then
+        echo -n $accession_code "structure found in RCSB repo. "
+    else
+        echo -n "getting" $accession_code "structure from RCSB... "
+        sh $vini_dir/download_pdb_structure ${DOWNLOAD_DIR} ${accession_code}
+    fi
+
+    if  [ -e $DOWNLOAD_DIR/$accession_code$PDB ] #check if we have the structure
+    then
+        grep -w ENDMDL $DOWNLOAD_DIR/$accession_code$PDB > $WORKDIR/models #check if multi model or chain
+        grep -w CHAIN: $DOWNLOAD_DIR/$accession_code$PDB > $WORKDIR/chains
+        grep "HET " $DOWNLOAD_DIR/$accession_code$PDB > $WORKDIR/ligands
+        models=`wc -l < $WORKDIR/models` ; chains=`wc -l < $WORKDIR/chains` ; ligands=`wc -l < $WORKDIR/ligands`
+        if { [[ $models -ne $NULL ]] || [[ $ligands -gt $one ]] ||  [[ $chains -gt $two ]]; } #ignore multi-model, multi-ligand and multi-chain structures
+        then 
+            echo $accession_code "has" $models "models and" $chains "chain(s) and" $ligands "ligands, skipped." 
+            #rm $DOWNLOAD_DIR/$accession_code$PDB
+        else
+            echo -n "structure" $accession_code "has" $models "models and" $chains "chain(s) and" $ligands "ligands." 
+            if  [ $ligands -eq $NULL ]
+            then 
+                echo " Will be saved in a clean_structure list."
+                echo $accession_code >> $WORKDIR/clean_structures
+            else
+                echo " Will be saved in a complex_structure list."
+                echo $accession_code >> $WORKDIR/complex_structures
+            fi
+        fi
+    fi
+done
+echo ""
+
+nolines=`wc -l < $WORKDIR/clean_structures`
+if  [ $nolines -ne $NULL ]
+then
+    let "nolines++"
+    for (( x=1; x<$nolines; x++ ))    
+    do
+        accession_code=`head -$x $WORKDIR/clean_structures | tail -1`
+        completeness=`grep "COMPLETENESS FOR RANGE" $DOWNLOAD_DIR/$accession_code$PDB`
+        completeness=`echo $completeness | awk '{print $8}'`
+        echo $accession_code $completeness >> $WORKDIR/completeness_list #sort the "clean" list
+    done
+else
+    nolines=`wc -l < $WORKDIR/complex_structures`
+    let "nolines++"
+    for (( x=1; x<$nolines; x++ ))    
+    do
+        accession_code=`head -$x $WORKDIR/complex_structures | tail -1`
+        completeness=`grep "COMPLETENESS FOR RANGE" $DOWNLOAD_DIR/$accession_code$PDB`
+        completeness=`echo $completeness | awk '{print $8}'`
+        echo $accession_code $completeness >> $WORKDIR/completeness_list #sort the "complex" list
+    done
+fi
+
+
+if  [ -e $WORKDIR/completeness_list ]
+then
+    sort -k2 -n -r $WORKDIR/completeness_list > $WORKDIR/tmp ; mv $WORKDIR/tmp $WORKDIR/completeness_list
+fi
+rm -f $WORKDIR/models $WORKDIR/chains

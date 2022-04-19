@@ -1,0 +1,133 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+CANCER_TYPE=`cat $WORKDIR/cancer_type`
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+prefix="SLEM_"
+dot="."
+therapy_level=`cat $WORKDIR/therapy_level`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cell_line=`cat $WORKDIR/cell_line`
+exp=`cat $WORKDIR/exp`
+
+SLEM_FILE=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
+
+SLEM_WINGS=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_wings_${cell_line}_thl${therapy_level}_${exp}
+
+> $SLEM_WINGS
+while read -r line    
+do
+     echo -n "."
+     word=`echo $line | awk '{print $1;}' | cut -c 6-`      #Get SLEM indices
+     echo $word | tr '.' ' ' > tmp
+     word=`cat tmp`
+     case $therapy_level in
+             1) i=`echo $word | awk '{print $1}'` ;;
+             2) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'` ;;
+             3) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'`; k=`echo $word | awk '{print $3}'` ;;
+             4) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'`; k=`echo $word | awk '{print $3}'`; l=`echo $word | awk '{print $4}'` ;;
+     esac
+     rm tmp
+
+     if  [[ $therapy_level == 1 ]]         #do not create SLEM wings list for th level 1
+     then
+         echo $line > /dev/null
+     fi
+
+     if  [[ $therapy_level == 2 ]]                     #create SLEM wing entry for th level 2 (2! permutations)
+     then
+         line_transpose1=`grep -w $prefix$j$dot$i ${SLEM_FILE}_reduced`
+         line_transpose2=`grep -w $prefix$j$dot$i ${SLEM_FILE}_reduced`
+         SLEM_1=`echo ${line_transpose1} | awk 'NF>1{print $NF}'`              #Get transposed SLEM value
+         SLEM_2=`echo ${line_transpose2} | awk 'NF>1{print $NF}'`              #Get transposed SLEM value
+         SLEM_wing=`echo ${SLEM_1} ${SLEM_2}  | awk '{printf "%.9f \n", $1 + $2}'` #compute SLEM wing
+         PERM=2
+         SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.9f \n", $1 / $2}'`
+         printf "%s%s%s%s%s%s\n" "SLEM_" $i "." $j " " $SLEM_wing >> ${SLEM_WINGS}
+     fi
+
+
+     if  [[ $therapy_level == 3 ]]                     #create SLEM wing entry for th level 3 (3! permutations)
+     then
+         line_transpose1=`grep -w $prefix$i$dot$j$dot$k ${SLEM_FILE}_reduced`
+         line_transpose2=`grep -w $prefix$i$dot$k$dot$j ${SLEM_FILE}_reduced`
+         line_transpose3=`grep -w $prefix$j$dot$k$dot$i ${SLEM_FILE}_reduced`
+         line_transpose4=`grep -w $prefix$j$dot$i$dot$k ${SLEM_FILE}_reduced`
+         line_transpose5=`grep -w $prefix$k$dot$j$dot$i ${SLEM_FILE}_reduced`
+         line_transpose6=`grep -w $prefix$k$dot$i$dot$j ${SLEM_FILE}_reduced`
+         SLEM_1=`echo ${line_transpose1} | awk 'NF>1{print $NF}'`              #Get 1st transposed SLEM value
+         SLEM_2=`echo ${line_transpose2} | awk 'NF>1{print $NF}'`              #Get 2nd transposed SLEM value
+         SLEM_3=`echo ${line_transpose3} | awk 'NF>1{print $NF}'`              #Get 3rd transposed SLEM value
+         SLEM_4=`echo ${line_transpose4} | awk 'NF>1{print $NF}'`              #Get 4th transposed SLEM value
+         SLEM_5=`echo ${line_transpose5} | awk 'NF>1{print $NF}'`              #Get 5th transposed SLEM value
+         SLEM_6=`echo ${line_transpose6} | awk 'NF>1{print $NF}'`              #Get 6th transposed SLEM value
+         SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6}  | awk '{printf "%.9f \n", $1 + $2 + $3 +$4 + $5 + $6}'` #compute SLEM wing
+         PERM=6
+         SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.9f \n", $1 / $2}'`
+         printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $i "." $j "." $k " " $SLEM_wing >> ${SLEM_WINGS}
+     fi
+
+
+     if  [[ $therapy_level == 4 ]]                   #create SLEM wing entry for th level 4 (4! permutations)
+     then
+         line_transpose1=`grep -w $prefix$i$dot$j$dot$k$dot$l ${SLEM_FILE}_reduced`
+         line_transpose2=`grep -w $prefix$i$dot$j$dot$l$dot$k ${SLEM_FILE}_reduced`
+         line_transpose3=`grep -w $prefix$i$dot$k$dot$j$dot$l ${SLEM_FILE}_reduced`
+         line_transpose4=`grep -w $prefix$i$dot$rkdot$l$dot$j ${SLEM_FILE}_reduced`
+         line_transpose5=`grep -w $prefix$i$dot$l$dot$k$dot$j ${SLEM_FILE}_reduced`
+         line_transpose6=`grep -w $prefix$i$dot$l$dot$j$dot$k ${SLEM_FILE}_reduced`
+         line_transpose7=`grep -w $prefix$j$dot$i$dot$k$dot$l ${SLEM_FILE}_reduced`
+         line_transpose8=`grep -w $prefix$j$dot$i$dot$l$dot$k ${SLEM_FILE}_reduced`
+         line_transpose9=`grep -w $prefix$j$dot$k$dot$i$dot$l ${SLEM_FILE}_reduced`
+         line_transpose10=`grep -w $prefix$j$dot$k$dot$l$dot$i ${SLEM_FILE}_reduced`
+         line_transpose11=`grep -w $prefix$j$dot$l$dot$i$dot$k ${SLEM_FILE}_reduced`
+         line_transpose12=`grep -w $prefix$j$dot$l$dot$k$dot$i ${SLEM_FILE}_reduced`
+         line_transpose13=`grep -w $prefix$k$dot$i$dot$j$dot$l ${SLEM_FILE}_reduced`
+         line_transpose14=`grep -w $prefix$k$dot$i$dot$l$dot$j ${SLEM_FILE}_reduced`
+         line_transpose15=`grep -w $prefix$k$dot$j$dot$i$dot$l ${SLEM_FILE}_reduced`
+         line_transpose16=`grep -w $prefix$k$dot$j$dot$l$dot$i ${SLEM_FILE}_reduced`
+         line_transpose17=`grep -w $prefix$k$dot$l$dot$i$dot$j ${SLEM_FILE}_reduced`
+         line_transpose18=`grep -w $prefix$k$dot$l$dot$j$dot$i ${SLEM_FILE}_reduced`
+         line_transpose19=`grep -w $prefix$l$dot$i$dot$j$dot$k ${SLEM_FILE}_reduced`
+         line_transpose20=`grep -w $prefix$l$dot$i$dot$k$dot$j ${SLEM_FILE}_reduced`
+         line_transpose21=`grep -w $prefix$l$dot$j$dot$i$dot$k ${SLEM_FILE}_reduced`
+         line_transpose22=`grep -w $prefix$l$dot$j$dot$k$dot$i ${SLEM_FILE}_reduced`
+         line_transpose23=`grep -w $prefix$l$dot$k$dot$i$dot$j ${SLEM_FILE}_reduced`
+         line_transpose24=`grep -w $prefix$l$dot$k$dot$j$dot$i ${SLEM_FILE}_reduced`
+         SLEM_1=`echo ${line_transpose1} | awk 'NF>1{print $NF}'`              #Get 1st transposed SLEM value
+         SLEM_2=`echo ${line_transpose2} | awk 'NF>1{print $NF}'`              #Get 2nd transposed SLEM value
+         SLEM_3=`echo ${line_transpose3} | awk 'NF>1{print $NF}'`              #Get 3rd transposed SLEM value
+         SLEM_4=`echo ${line_transpose4} | awk 'NF>1{print $NF}'`              #Get 4th transposed SLEM value
+         SLEM_5=`echo ${line_transpose5} | awk 'NF>1{print $NF}'`              #Get 5th transposed SLEM value
+         SLEM_6=`echo ${line_transpose6} | awk 'NF>1{print $NF}'`              #Get 6th transposed SLEM value
+         SLEM_7=`echo ${line_transpose7} | awk 'NF>1{print $NF}'`              #Get 7th transposed SLEM value
+         SLEM_8=`echo ${line_transpose8} | awk 'NF>1{print $NF}'`              #Get 8th transposed SLEM value
+         SLEM_9=`echo ${line_transpose9} | awk 'NF>1{print $NF}'`              #Get 9th transposed SLEM value
+         SLEM_10=`echo ${line_transpose10} | awk 'NF>1{print $NF}'`            #Get 10th transposed SLEM value
+         SLEM_11=`echo ${line_transpose11} | awk 'NF>1{print $NF}'`            #Get 11th transposed SLEM value
+         SLEM_12=`echo ${line_transpose12} | awk 'NF>1{print $NF}'`            #Get 12th transposed SLEM value
+         SLEM_13=`echo ${line_transpose13} | awk 'NF>1{print $NF}'`            #Get 13th transposed SLEM value
+         SLEM_14=`echo ${line_transpose14} | awk 'NF>1{print $NF}'`            #Get 14th transposed SLEM value
+         SLEM_15=`echo ${line_transpose15} | awk 'NF>1{print $NF}'`            #Get 15th transposed SLEM value
+         SLEM_16=`echo ${line_transpose16} | awk 'NF>1{print $NF}'`            #Get 16th transposed SLEM value
+         SLEM_17=`echo ${line_transpose17} | awk 'NF>1{print $NF}'`            #Get 17th transposed SLEM value
+         SLEM_18=`echo ${line_transpose18} | awk 'NF>1{print $NF}'`            #Get 18th transposed SLEM value
+         SLEM_19=`echo ${line_transpose19} | awk 'NF>1{print $NF}'`            #Get 19th transposed SLEM value
+         SLEM_20=`echo ${line_transpose20} | awk 'NF>1{print $NF}'`            #Get 20th transposed SLEM value
+         SLEM_21=`echo ${line_transpose21} | awk 'NF>1{print $NF}'`            #Get 21th transposed SLEM value
+         SLEM_22=`echo ${line_transpose22} | awk 'NF>1{print $NF}'`            #Get 22th transposed SLEM value
+         SLEM_23=`echo ${line_transpose23} | awk 'NF>1{print $NF}'`            #Get 23th transposed SLEM value
+         SLEM_24=`echo ${line_transpose24} | awk 'NF>1{print $NF}'`            #Get 24th transposed SLEM value
+
+         SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6} ${SLEM_7} ${SLEM_8} ${SLEM_9} ${SLEM_10} ${SLEM_11} ${SLEM_12} ${SLEM_13} ${SLEM_14} ${SLEM_15} ${SLEM_16} ${SLEM_17} ${SLEM_18} ${SLEM_19} ${SLEM_20} ${SLEM_21} ${SLEM_22} ${SLEM_23} ${SLEM_24} | awk '{printf "%.9f \n", $1 + $2 + $3 +$4 + $5 + $6 + $7 + $8 + $9 + $10 + $11 + $12 + $13 + $14 + $15 + $16 + $17 + $18 + $19 + $20 + $21 + $22 + $23 + $24}'` #compute SLEM wing
+         PERM=24
+         SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.9f \n", $1 / $2}'`
+         printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $i "." $j "." $k "." $l " " $SLEM_wing >> ${SLEM_WINGS}
+     fi
+
+       # awk -v n=$n 'NR == n {next} {print}' $WORKDIR/temp_buf > temp2_buf #deleting nth line with awk
+done < $SLEM_FILE$reduced
+
+if  [[ $therapy_level != 1 ]] #Sorting the list
+then
+    mv ${SLEM_WINGS} $WORKDIR/temp_buf                      
+    sort -k2 -n -r $WORKDIR/temp_buf > ${SLEM_WINGS}
+fi

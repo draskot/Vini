@@ -1,0 +1,27 @@
+receptor=$1
+ligand=$2
+target_dir=$3
+comp_index=$4
+lig_index=$5
+
+if [ ! -s rosetta_docking.err ]
+then                                                      #no errors, create complex and log binding energy value
+    mv protein2_relaxed_0002_0001.pdb COMPLEX.pdb
+    grep "interaction energy"  rosetta_docking.out > tmp
+    line=`head -2 tmp | tail -1`
+    FBE=`echo $line | tr -d ':' | awk '{print $4}'`
+    echo "ligand:" $ligand  "receptor:" $receptor "FBE:" $FBE >> $WORKDIR/free_binding_energy_data
+else                                                      #errors, check if binding energy was computed
+    grep "interaction energy"  rosetta_docking.out > tmp
+    if  [ -s tmp ]
+    then                                                  #binding energy computed, log value
+        line=`head -2 tmp | tail -1`
+        FBE=`echo $line | tr -d ':' | awk '{print $4}'`
+        echo "ligand:" $ligand  "receptor:" $receptor "FBE:" $FBE >> $WORKDIR/free_binding_energy_data
+    else                                                  #binding energy not computed, writting default
+        FBE=-7.0
+        echo "ligand:" $ligand  "receptor:" $receptor "FBE: not_computed" >> $WORKDIR/free_binding_energy_data
+    fi
+fi
+
+echo $FBE > ${target_dir}/log_${comp_index}.txt

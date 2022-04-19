@@ -1,0 +1,8 @@
+
+#https://new.rosettacommons.org/demos/latest/tutorials/Relax_Tutorial/Relax
+#https://new.rosettacommons.org/demos/latest/tutorials/input_and_output/input_and_output
+#check numer of processors Rosetta use: squeue -o"%.7i %.9P %.8j %.8u %.2t %.10M %.6D %C"
+#Rosetta with SLURM https://wiki.rc.usf.edu/index.php/Rosetta
+#Performance https://hpc.nih.gov/apps/rosetta.html
+
+mpirun -np ${SLURM_NTASKS} docking_protocol.mpi.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb

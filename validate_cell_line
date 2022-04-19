@@ -1,0 +1,72 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+CANCER_TYPE=`cat $WORKDIR/cancer_type`
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cell_line=`cat $WORKDIR/NCI60_cell_line`
+exp=`cat $WORKDIR/exp`
+therapy_level=`cat $WORKDIR/therapy_level`
+NULL=0
+
+cp $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}_named ./tmp
+sed -i -e 's/SLEM_//g' tmp  #delete SLEM_ prefix from lines            
+cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
+
+grep $cell_line $vini_dir/database/GI50.csv > tmp                               #extract cell line entries from GI50.csv file
+sed -e "s/\r//g" tmp > $vini_dir/database/${cell_line}_GI50                     #remove ^M
+
+> $WORKDIR/NCI-60_GI50_values                                         #create NCI-60_GI50_values file
+logN="-9" # only entries with log(concentration) -4 will be analysed
+while read -r line
+do
+    drugname=`echo $line | awk -F','  '{print $1}'`
+    NSC_NUMBER=`echo $line  | awk -F',' '{print $2}'`
+    grep -w $NSC_NUMBER $vini_dir/database/${cell_line}_GI50 > tmp
+    > tmp2
+    while read -r line2
+    do
+        concentration=`echo $line2  | awk -F',' '{print $6}'`
+        if [ $concentration != $logN ]
+        then
+            echo $line2 >> tmp2
+        fi
+    done < tmp
+    nolines=`wc -l < tmp2`
+    if [ $nolines -ne $NULL ]
+    then
+        echo -n "computing average GI50 value from NCI-60 panel of" $drugname "for" $cell_line "cell line..."
+        sum=0
+        index=0
+        while read -r line2
+        do
+            GI50=`echo $line2 | awk -F',' '{print $13}'`
+            echo "$sum $GI50" | awk '{printf "%.9f \n", $1+$2}' > sum
+            echo -n "."
+            sum=`cat sum`
+            let index++
+        done < tmp2
+        echo "$sum $index" | awk '{printf "%.9f \n", $1/$2}' > $WORKDIR/GI50_avg
+        GI50_avg=`cat $WORKDIR/GI50_avg`
+        printf "%s%s%s\n" "$drugname" " " "$GI50_avg" >> $WORKDIR/NCI-60_GI50_values
+        echo "done."
+    else
+        echo "data for" $drugname "at concentration" $logN "not found in NCI-60 data panel"
+    fi
+done < $vini_dir/database/NSC_numbers
+
+echo -n "Creating file for the correlation analysis..."
+> tmp
+while read -r line
+do
+    drugname=`echo $line | awk -F',' '{print $1}'`
+    grep -w $drugname $WORKDIR/NCI-60_GI50_values > $WORKDIR/GI50
+    if [ -s $WORKDIR/GI50 ]
+    then
+        SLEM=`echo $line | awk -F','  '{print $2}'`
+        GI50=`cat $WORKDIR/GI50 | awk '{print $2}'`
+        printf "%s%s%s%s%s%s%s\n" "$drugname" "," " " "$SLEM" "," " " "$GI50" >> tmp
+    fi
+done < SLEM_values
+rm SLEM_values sum
+
+mv tmp $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_Pearson_${exp}.csv
+echo "done. SLEM and GI50 values are in:" $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_Pearson_${exp}.csv "file."

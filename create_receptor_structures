@@ -1,0 +1,309 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE                #setting the cancer pathway
+UNIPROT_ID_LIST="_uniprot_entries.txt"
+prediction_model=`cat $WORKDIR/prediction_model`                  
+MAX_NODES=`cat $WORKDIR/nodes`                      #maximum number of compute nodes Vini can use concurrently
+job_submit=`cat $WORKDIR/job_submit`
+
+two=2
+ONES=1
+NULL=0
+alias python=/usr/bin/python
+
+#http://mmb.irbbarcelona.org/gitlab/DBW/PDBBrowser/raw/d80ad01c7569f5cfaac3a247f6e086d63db815cc/PDBData/cmpd_res.idx
+#The database of all RCSB structure names
+
+rm -f $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
+
+> $WORKDIR/failed_structures
+
+echo "finalizing receptor file, please wait..."
+> $WORKDIR/receptors_contracted
+
+noentries=`wc -l < $WORKDIR/receptors_expanded`
+echo "number of entries in pathway is" $noentries
+entry=1
+
+while read -r line
+do     
+    KEGG_entry_id=`echo $line | awk '{print $1}'` #get KEGG entry ID (number) and KEGG gene name (hsa:xxxx)
+                                                  # note one KEGG entry may have several genes! 
+    KEGG_gene_name=`echo $line | awk '{print $2}'`           
+
+    if  [[ ${KEGG_gene_name:0:1} == "C" ]]         #checking if KEGG entry is the compound
+    then
+        pubchem_id=`curl -s http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
+        if  [ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]  
+        then 
+            echo " yes. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with E flag."
+            echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "E" >> $WORKDIR/receptors_contracted
+        else
+            echo -n "no. Trying to obtain the structure from Pubchem..."
+            echo ${pubchem_id}
+            sh download_substance_structure ${pubchem_id} $vini_dir/database/genes/pdb_files
+            if  [ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]
+            then
+                echo "success. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with E flag."
+            else
+                echo " failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with F flag."
+                echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "F" >> $WORKDIR/receptors_contracted
+                echo $pubchem_id >> $WORKDIR/failed_structures
+            fi
+        fi
+    else  #KEGG entry is protein
+        uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
+
+        if  [ -z "$uniprot_id" ]
+        then
+            echo "Uniprot ID for" $KEGG_gene_name "does not exists. Continuing to work with gene name."
+            uniprot_id=`grep $KEGG_gene_name nouniprotid` #fetch the gene name from nouniprotid file
+            uniprot_id=`echo $uniprot_id | awk '{print $2}'`
+            if  [ ! -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]
+            then
+                echo $uniprot_id >> $WORKDIR/failed_structures
+            else
+                echo $uniprot "structure already in repo, continuing."
+            fi
+        else
+            echo $uniprot_id >> $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST}
+            uline=`grep $uniprot_id $vini_dir/database/uniprot_db` #Check if pdb structure is available
+            echo -n "KEGG entry" $entry "is a gene encoding protein" $uniprot_id
+            nowords=`echo $uline | wc -w`
+            if  [ $nowords -eq $two ]
+            then
+                echo -n " without structure. Checking if in repo..."
+                if  [ -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]   
+                then
+                    echo "yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with P flag." 
+                    echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
+                else
+                    echo "no."
+                    if  [ ! -e $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta ]
+                    then
+                        wget -O $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
+                    fi
+                    fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
+                    if  [ ${prediction_model} == A ]
+                    then
+                        echo "Trying to predict" $uniprot_id "structure with AlphaFold." 
+                        cat $WORKDIR/alphafold > $WORKDIR/AlphaFold
+                        echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
+                        echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
+                        echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
+
+                        echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
+                        rm -rf $WORKDIR/${uniprot_id}
+                        sh nodes_control_script ${MAX_NODES}
+                        ${job_submit} $WORKDIR/AlphaFold
+                        echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
+                        echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
+                    else
+                        echo "Trying to find" $uniprot_id "structure in SWISS-MODEL repository."
+                        grep ${uniprot_id} $vini_dir/database/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
+                        lineno=`wc -l < $WORKDIR/swiss_repo_entry`
+                        if  [ -s $WORKDIR/swiss_repo_entry ]
+                        then
+                            wget -O ${uniprot_id}.pdb  --no-check-certificate -q  https://swissmodel.expasy.org/repository/uniprot/${uniprot_id}.pdb
+                            grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+                        else
+                            echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
+                            sh $vini_dir/test/predict_protein_structure_with_swiss_model ${fasta_file}
+                            echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
+                            echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "P" >> $WORKDIR/receptors_contracted
+                        fi
+                    fi
+                fi
+            else
+                echo -n "with structure. Checking if in repo..."
+                if  [ -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]
+                then 
+                    echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
+                    echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
+                else
+                    echo "no. Analyzing available RCSB structures, may take a while... "  
+                    rm -f $WORKDIR/completeness_list
+                    sh create_completeness_list ${uniprot_id}
+                    noentries=`wc -l < $WORKDIR/completeness_list`
+                    if  [ $noentries -ne $NULL ]
+                    then
+                        sh prepare_protein_with_chimera ${uniprot_id}    
+                        chim_status=`cat $WORKDIR/chim_status`
+                        if  [ $chim_status -eq $ONES ] #check for  success
+                        then
+                            echo "success. Adding ${uniprot_id} to $WORKDIR/receptors_contracted list with E flag."
+                            echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
+                        else
+                            echo "Chimera failed. Will try to predict the structure."
+                            if   [ ! -e $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta ]
+                            then
+                                wget -O ${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
+                            fi
+                            fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
+                            if  [ ${prediction_model} == A ]
+                            then
+                                echo "Predicting" $uniprot_id "structure with AlphaFold." 
+                                cat $WORKDIR/alphafold > $WORKDIR/AlphaFold
+                                echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
+                                echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
+                                echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
+                                echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
+                                rm -rf $WORKDIR/${uniprot_id}
+                                sh nodes_control_script ${MAX_NODES}
+                                ${job_submit} $WORKDIR/AlphaFold
+                                echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
+                                echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "W" >> $WORKDIR/receptors_contracted
+                            else
+                                echo "Trying to find" $uniprot_id "structure in SWISS-MODEL repository."
+                                grep ${uniprot_id} $vini_dir/database/SWISS-MODEL_Repository/INDEX > $WORKDIR/swiss_repo_entry
+                                lineno=`wc -l < $WORKDIR/swiss_repo_entry`
+                                if  [ -s $WORKDIR/swiss_repo_entry ]
+                                then
+                                    wget -O ${uniprot_id}.pdb  --no-check-certificate -q  https://swissmodel.expasy.org/repository/uniprot/${uniprot_id}.pdb
+                                    grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+                                else
+                                    echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
+                                    sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
+                                    echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
+                                    echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
+                                fi
+                            fi
+                        fi
+                    else
+                        echo "no RCSB single model found."
+                        if  [ ! -e $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta ]
+                        then
+                            wget -O $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
+                        fi
+                        fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
+                        if  [ ${prediction_model} == A ]
+                        then
+                            echo "Predicting" $uniprot_id "structure with AlphaFold." 
+                            cat $WORKDIR/alphafold > $WORKDIR/AlphaFold
+                            echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
+                            echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
+                            echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
+                            echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
+                            rm -rf $WORKDIR/${uniprot_id}
+                            sh nodes_control_script ${MAX_NODES}
+                            ${job_submit} $WORKDIR/AlphaFold
+                            echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
+                            echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "W" >> $WORKDIR/receptors_contracted
+                        else
+                            echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
+                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
+                            echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
+                            echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
+                        fi
+                    fi
+                fi
+            fi
+        fi
+    fi
+    let "entry++"
+done < $WORKDIR/receptors_expanded
+awk '!seen[$0]++' $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST} > $WORKDIR/tmp #remove duplicate lines
+grep "\S" $WORKDIR/tmp > $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST         #remove empty lines
+cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST} $vini_dir/database/genes/Uniprot_ID_list
+rm $WORKDIR/tmp
+echo "done."
+
+echo "Waiting for predictions to finish. This may take a while."
+sh $vini_dir/wait_until_jobs_finish
+
+> tmp                     #update receptors_contracted file and copy predicted structures to repo
+while read -r line                      
+do
+    KEGG_entry_id=`echo $line  | awk '{print $1}'`
+    KEGG_gene_name=`echo $line | awk '{print $2}'`
+    uniprot_id=`echo $line     | awk '{print $3}'`
+    stat=`echo $line           | awk '{print $4}'`
+    if  [ $stat != W ]
+    then
+        echo $line >> tmp
+    else
+        if  [ -e $WORKDIR/${uniprot_id}/ranked_0.pdb ]
+        then                                               #prediction succeeded
+            stat=P
+            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+        else                                               #prediction failed
+            stat=F
+            echo $uniprot_id >> $WORKDIR/failed_structures
+        fi
+        echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} ${stat} >> tmp
+    fi
+done < $WORKDIR/receptors_contracted
+mv tmp $WORKDIR/receptors_contracted
+
+if  [ ! -s $WORKDIR/failed_structures ]
+then
+    echo $NULL > $WORKDIR/error   #all AlphaFold jobs done
+    exit
+fi
+
+while read -r line                                      #run failed AlphaFold jobs on SMP
+do
+    KEGG_entry_id=`echo $line  | awk '{print $1}'`
+    KEGG_gene_name=`echo $line | awk '{print $2}'`
+    uniprot_id=`echo $line     | awk '{print $3}'`
+    stat=`echo $line           | awk '{print $4}'`
+    if [ $stat != F ]
+    then
+        echo $line >> tmp
+    else
+        stat=W
+        echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} ${stat} >> tmp
+        fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
+        echo "#!/bin/bash"                                            > $WORKDIR/AlphaFold
+        echo "#SBATCH --nodes=1"                                     >> $WORKDIR/AlphaFold
+        echo "#SBATCH --ntasks-per-node=1"                           >> $WORKDIR/AlphaFold
+        echo "#SBATCH --cpus-per-task=48"                            >> $WORKDIR/AlphaFold
+        echo "#SBATCH --mem=256gb"                                   >> $WORKDIR/AlphaFold
+        echo "#SBATCH --partition=comp_smp"                          >> $WORKDIR/AlphaFold
+        echo "#SBATCH --time=05-00:00:00"                            >> $WORKDIR/AlphaFold
+        echo "#SBATCH --job-name=A_"${uniprot_id}                    >> $WORKDIR/AlphaFold
+        echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
+        echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
+        echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
+        sh nodes_control_script ${MAX_NODES}
+        ${job_submit} $WORKDIR/AlphaFold
+        sbatch $WORKDIR/AlphaFold
+    fi
+done < $WORKDIR/receptors_contracted
+mv tmp $WORKDIR/receptors_contracted
+
+sh $vini_dir/wait_until_jobs_finish
+
+echo $uniprot_id >> $WORKDIR/failed_structures
+while read -r line    #update data
+do
+    KEGG_entry_id=`echo $line  | awk '{print $1}'`
+    KEGG_gene_name=`echo $line | awk '{print $2}'`
+    uniprot_id=`echo $line     | awk '{print $3}'`
+    stat=`echo $line           | awk '{print $4}'`
+    if  [ $stat != W ]
+    then
+        echo $line >> tmp
+    else
+        if  [ -e $WORKDIR/${uniprot_id}/ranked_0.pdb ]
+        then                                               #prediction succeeded
+            stat=P
+            echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} ${stat} >> tmp
+            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+        else                                               #prediction failed
+            stat=F
+            echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} ${stat} >> tmp
+            echo $uniprot_id >> $WORKDIR/failed_structures
+        fi
+    fi
+done < $WORKDIR/receptors_contracted
+mv tmp $WORKDIR/receptors_contracted
+
+if  [ -s $WORKDIR/failed_structures ]
+then
+    echo $ONES > $WORKDIR/error
+else
+    echo $NULL > $WORKDIR/error
+fi

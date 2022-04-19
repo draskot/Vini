@@ -1,0 +1,30 @@
+if [ ! -e $vini_dir/database/9606_meta.tar.gz ]
+then
+    echo -n "9606_meta.tar.gz file missing. Trying to download it from swissmodel.expasy.org/repository... "
+    wget -O $vini_dir/database/9606_meta.tar.gz --no-check-certificate https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
+    if [ -e $vini_dir/database/9606_meta.tar.gz ]
+    then
+        echo success ; tar -xzf $vini_dir/database/9606_meta.tar.gz -C $vini_dir
+        touch $vini_dir/database/SWISS-MODEL_Repository/INDEX
+    else
+        echo "failed! Check your network or provide this file manually."
+        read -p "Press any key when ready to cont." anykey
+    fi
+else
+    filename=$vini_dir/database/9606_meta.tar.gz
+    ninthy_days_ago=$(date -d 'now - 90 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
+    file_time=$(date -r $filename +%s)
+    if (( file_time <= ninthy_days_ago ))
+    then
+        echo -n "9606_meta.tar.gz file is more than 40 days old, updating..."
+        wget -O $vini_dir/database/9606_meta.tar.gz --no-check-certificate https://swissmodel.expasy.org/repository/download/core_species/9606_meta.tar.gz
+        if  [ -e $vini_dir/database/9606_meta.tar.gz ]
+        then
+            echo "success" ; tar -xzf $vini_dir/database/9606_meta.tar.gz -C $vini_dir
+            touch $vini_dir/database/SWISS-MODEL_Repository/INDEX
+            mv $vini_dir/database/9606_meta.tar.gz.1 $vini_dir/database/9606_meta.tar.gz
+        else
+            echo -n "Problem with the network or server may be busy. Existing file will be used."
+        fi
+    fi
+fi

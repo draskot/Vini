@@ -1,0 +1,25 @@
+NTOMP=$1
+
+NULL=0   #checking if MD_prep job finished or an error occured
+error=0
+
+while [ ! -e nvt.tpr ]
+do
+    sleep 1
+    grep Error MD_prep.out > tmp
+    if  [ -s tmp ]
+    then 
+        error=1 ; break
+    else 
+        error=0
+    fi
+done
+
+if  [ $error -eq $NULL ] #run MD_run job only if MD_prep job finished sucesfully
+then
+    gmx mdrun -ntmpi 1 -ntomp $NTOMP -pin on -backup -deffnm nvt
+    gmx grompp -f npt.mdp -c nvt.gro -r nvt.gro -t nvt.cpt -p topol.top -o npt.tpr
+    gmx mdrun -ntmpi 1 -ntomp $NTOMP -pin on -backup -deffnm npt
+    gmx grompp -f md.mdp -c npt.gro -t npt.cpt -p topol.top -o md_0_1.tpr
+    gmx mdrun -ntmpi 1 -ntomp $NTOMP -pin on -backup -deffnm md_0_1
+fi

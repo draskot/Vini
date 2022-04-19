@@ -1,0 +1,69 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+CANCER_TYPE=`cat $WORKDIR/cancer_type`
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+therapy_level=`cat $WORKDIR/therapy_level`
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cell_line=`cat $WORKDIR/cell_line`
+exp=`cat $WORKDIR/exp`
+
+SLEM_WINGS=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_wings_${cell_line}_thl${therapy_level}_${exp}
+
+> ${SLEM_WINGS}_named                      
+while read -r line
+do
+    echo -n "."
+    SLEM=`echo $line | awk 'NF>1{print $NF}'`              #Get SLEM value
+    word=`echo $line | awk '{print $1;}' | cut -c 6-`      #Get SLEM indices
+    echo $word | tr '.' ' ' > tmp 
+    word=`cat tmp`    
+
+    case $therapy_level in                                        
+             1) i=`echo $word | awk '{print $1}'` ;;
+             2) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'` ;;
+             3) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'`; k=`echo $word | awk '{print $3}'` ;;
+             4) i=`echo $word | awk '{print $1}'`; j=`echo $word | awk '{print $2}'`; k=`echo $word | awk '{print $3}'`; l=`echo $word | awk '{print $4}'` ;;
+    esac
+    
+    if [[ $therapy_level == 1 ]]
+    then
+        drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #get drug name 
+        drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+        printf "%s%s%s%s\n" "SLEM_" $drug1 " " $SLEM >> ${SLEM_WINGS}_named 
+    else
+        if  [[ $therapy_level == 2 ]]  
+        then
+            drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" to name 
+            drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+            drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+            drug2=`echo $drug2 | awk -F',' '{print $1}'`       
+            printf "%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 " " $SLEM >> ${SLEM_WINGS}_named 
+        else
+            if   [[ $therapy_level == 3 ]] 
+            then
+                drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" to name 
+                drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+                drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+                drug2=`echo $drug2 | awk -F',' '{print $1}'`
+                drug3=`head -"$k" $vini_dir/database/ligands/ligands_list | tail -1` #convert "k" to name 
+                drug3=`echo $drug3 | awk -F',' '{print $1}'`
+                printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 " " $SLEM >> ${SLEM_WINGS}_named 
+            else
+                if  [[ $therapy_level == 4 ]]
+                then
+                drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" 
+                drug1=`echo $drug1 | awk -F',' '{print $1}'`
+                drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+                drug2=`echo $drug2 | awk -F',' '{print $1}'`
+                drug3=`head -"$k" $vini_dir/database/ligands/ligands_list | tail -1` #convert "k" to name 
+                drug3=`echo $drug3 | awk -F',' '{print $1}'`
+                drug4=`head -"$l" $vini_dir/database/ligands/ligands_list | tail -1` #convert "l" to name 
+                drug4=`echo $drug4 | awk -F',' '{print $1}'`
+                printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 "." $drug4 " " $SLEM >> ${SLEM_WINGS}_named 
+                fi
+            fi
+        fi
+    fi
+done < ${SLEM_WINGS}
+
+sort -k2 -n -r ${SLEM_WINGS}_named > $WORKDIR/tmp  #Sort and format the list
+column -t $WORKDIR/tmp > ${SLEM_WINGS}_named

@@ -1,0 +1,18 @@
+
+# jobs_control_script
+# input parameters: job_status max_jobs
+
+job_status=$1 ; max_jobs=$2
+user=`echo ${USER:0:8}` #for long partition names last characters may be lost
+
+$job_status | grep $user > $WORKDIR/temp_buf #control max number of concurrent jobs allowed
+JOBS=`wc -l $WORKDIR/temp_buf | awk '{print $1}'`
+
+echo "nr. jobs running:" $JOBS
+touch $WORKDIR/temp_buf
+while [ $JOBS -gt $max_jobs  ]
+do
+    $job_status | grep $USER > $WORKDIR/temp_buf 
+    JOBS=`wc -l $WORKDIR/temp_buf | awk '{print $1}'`
+done
+rm -f $WORKDIR/temp_buf

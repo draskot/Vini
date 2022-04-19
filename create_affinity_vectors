@@ -1,0 +1,27 @@
+
+
+rm -f vec*
+
+lambda=`cat  LAMBDA`
+
+let "index_width = 6 * $lambda"                                   #3 ciphers are added to complex and conf indexes in each iteration.
+index_width_ligand=3 
+
+
+   
+     for i in ligand_*.pdbqt
+     do
+        for j in log*.txt    #inner loop for logs
+        do
+            b=`basename  $i .pdbqt`
+            c=`basename  $j .txt`
+
+            lig_index=`echo "${b:(-$index_width_ligand)}"`
+            log_index=`echo "${c:(-$index_width)}"`
+
+
+            sed -n 28p log$log_index.txt | awk '{print $2;}' >> vec$lig_index
+
+
+        done
+     done

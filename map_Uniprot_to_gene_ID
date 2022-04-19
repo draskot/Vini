@@ -1,0 +1,18 @@
+
+#Maps Uniprot ID to preffered gene name
+#input parameter: Uniprot ID
+#output parameter: gene name or error in $vini_dir/genename file
+
+Uniprot_ID=$1
+
+genename=Error
+echo $genename > $vini_dir/genename
+
+
+genename=`grep $Uniprot_ID $vini_dir/database/uniprot_db`
+genename=`echo $genename | awk '{print $2}'`
+if  [ $genename != "Error" ]
+then
+    echo $genename > $vini_dir/genename
+    break
+fi

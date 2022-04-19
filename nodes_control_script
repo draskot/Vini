@@ -1,0 +1,34 @@
+
+# nodes_control_script
+#Input parameter: MAX_NODES
+
+MAX_NODES=$1
+job_status=`cat $WORKDIR/job_status`
+user=`echo ${USER:0:8}` #for long partition names last characters may be lost
+ONE=1
+
+while true
+do
+    $job_status -u $user > all_user_jobs
+    nolines=`wc -l < all_user_jobs`
+    if [ $nolines -eq $ONE ]
+    then
+        break # exit if there are no user jobs 
+    else
+        allnodes=0
+
+        while read -r line #count number of used nodes
+        do
+            nodes=`echo $line | awk '{print $7}'`
+            allnodes=`echo $allnodes $nodes | awk '{print $1 + $2}'`
+        done < $WORKDIR/all_user_jobs
+         
+        if  [ $allnodes -gt $MAX_NODES ] 
+        then
+            echo "number of used nodes exceeds limit, waiting"
+            sleep 4
+        else
+            break
+        fi
+    fi
+done

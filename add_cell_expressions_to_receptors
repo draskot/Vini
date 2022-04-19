@@ -1,0 +1,93 @@
+cell_line=`cat $WORKDIR/cell_line`
+cosmic=`cat $WORKDIR/cosmic`
+
+NULL=0
+ONES=1
+seven=7
+touch $vini_dir/database/genes/Uniprot_gene_table
+
+> $WORKDIR/receptors_contracted.tmp
+while read -r line
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'` #check if entry is gene or compound
+    nochars=`echo -n $Uniprot_ID | wc -c`
+    if  [ $nochars -gt $seven ]
+    then
+        echo $Uniprot_ID > tmp   #check if entry is compound or mutated gene
+        grep pubchem tmp > tmp2
+        if [ -s tmp2  ]
+        then
+            entry=pubchem
+        else
+            entry=protein
+            Uniprot_ID=${Uniprot_ID:0:6}
+        fi
+    else
+        entry=protein
+    fi
+
+    if [ $entry != pubchem ]
+    then
+        echo -n "Uniprot ID is" $Uniprot_ID "Trying to find gene name for protein" $Uniprot_ID
+        grep -w "$Uniprot_ID" $vini_dir/database/genes/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
+        nolines=`wc -l < $WORKDIR/tmp`
+        if  [ $nolines -ne $NULL  ]
+        then
+            gene=`head -1 $WORKDIR/tmp`
+            gene=`echo $gene | awk '{print $2}'`
+            echo "gene name" $gene "found in repo:" $gene
+        else
+            grep $entry nouniprotid > tmp #if entry is in nouniprotid list, do not search for gene name in Uniprot DB
+            if [ -s tmp ]
+            then
+                echo "gene" $gene "found in nouniprotid list. Will not search Uniprot for this gene."
+                gene=`grep $entry $vini_dir/nouniprotid`
+                gene=`echo $gene | awk '{print $2}'`
+                Uniprot_ID=$gene
+                echo $Uniprot_ID $gene  >> $vini_dir/database/genes/Uniprot_gene_table #add entry to the table
+            else
+                echo -n " searching for gene in Uniprot..."
+                echo ${Uniprot_ID}
+                sh map_Uniprot_to_gene_ID ${Uniprot_ID}
+                gene=`cat $vini_dir/genename`
+                if  [ $gene != "Error" ]
+                then
+                    echo "gene" $gene "found in Uniprot."
+                    echo $Uniprot_ID $gene >> $vini_dir/database/genes/Uniprot_gene_table #add entry to the table
+                else
+                    echo "ERROR! gene" $gene "not found in Uniprot and not exists in nouniprotid list! STOP and clear this gene!" ; sleep 1000000
+                fi
+            fi
+        fi
+    else 
+        echo "KEGG entry is the compound. Will not search for the gene name."
+        z_score=0.000
+    fi
+
+    flag=`echo $line | awk '{print $4}'`
+    if  [[ $gene == "Error" ]] | [[ $flag == "F" ]] || [[ $entry == "pubchem" ]]
+    then
+        z_score=0.000
+    else
+        grep -w "$gene" $vini_dir/database/genes/expressions/${cell_line}.csv > $WORKDIR/tmp
+        nolines=`wc -l < $WORKDIR/tmp`
+        if  [ $nolines -eq $NULL  ] #check if gene found in the expression table
+        then
+            echo "gene" $gene "NOT FOUND in" $vini_dir/database/genes/expressions/${cell_line}.csv 
+            z_score=0.000          
+        else
+            echo "gene" $gene "FOUND in" $vini_dir/genes/expressions/${cell_line}.csv
+            if [ $cosmic == y ] #wether we take gene expressions or not into the consideration
+            then
+                z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`
+            else
+                z_score=0.000
+            fi
+        fi
+    fi
+    nge=`echo ${z_score} ${ONES} | awk '{printf "%.9f \n", $1 + $2}'`
+     
+    echo $line $z_score $nge >> $WORKDIR/receptors_contracted.tmp
+done < $WORKDIR/receptors_contracted
+tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted
+rm -f tmp tmp2 $WORKDIR/receptors_contracted.tmp

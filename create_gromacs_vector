@@ -1,0 +1,12 @@
+
+target_dir=$1
+
+complexes=`cat $WORKDIR/complexes`
+
+> $target_dir/vec
+for (( N=1; N<$((complexes+1)); N++ ))
+do
+    printf -v comp_index "%03d" $N
+    FBE=`cat ${target_dir}/log_${comp_index}.txt`
+    echo $FBE >> $target_dir/vec
+done

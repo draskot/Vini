@@ -1,0 +1,18 @@
+cancer_type=`cat $WORKDIR/cancer_type`
+
+mkdir -p $WORKDIR/${cancer_type}_data
+
+echo -n "Copying receptor pdb files to" $WORKDIR/${cancer_type}_data
+
+j=1
+while  read -r line
+do
+       echo -n "."
+       printf -v i "%03d" $j
+       name=`echo $line | awk '{print $3}'` #get entry name
+       if  [ -e $vini_dir/database/genes/pdb_files/${name}.pdb ] ; then
+           cp $vini_dir/database/genes/pdb_files/${name}.pdb $WORKDIR/${cancer_type}_data/receptor_${i}.pdb
+       fi
+       let j++
+done < $WORKDIR/receptors_contracted
+echo "done."

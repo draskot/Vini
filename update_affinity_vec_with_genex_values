@@ -1,0 +1,24 @@
+
+#  affinity vector is multiplied with gene expression values from receptors_contracted file
+#  input param: target_dir
+#  output: modified affinity vector (vec) in $target_dir
+#  modification date: 26/12/2000
+
+target_dir=$1
+
+index=1
+> $target_dir/vec.tmp
+while read -r line
+do
+    genex=`echo $line | awk '{print $6}'`
+    if  [ -z "$genex" ]                   #set genex to 1 if unset or empty
+    then
+        genex=1
+    fi
+    affinity=`head -"$index" ${target_dir}/vec | tail -1`
+    product=`echo $genex $affinity | awk '{print $1 * $2}'`
+    echo $product >> ${target_dir}/vec.tmp
+    let "index++"
+done < $WORKDIR/receptors_contracted
+
+mv $target_dir/vec.tmp ${target_dir}/vec

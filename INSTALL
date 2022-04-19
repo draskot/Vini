@@ -1,0 +1,32 @@
+
+Hardware & OS requirements:
+---------------------------
+Vini is the supercomputing applications and needs at least 10 computing cluster nodes to run smoothly.
+Vini is tested on RHEL 7 and CENTOS 7. SLURM and SGE are supported workload managers. 
+
+Registering for third party programs and external databases/services:
+----------------------------------------------------------------------
+Vini uses third party programs and data from external databes and services. Registration for some of them is needed before running Vini. This registrations are free for academic institutions and approvals are tipically received within 1 working day.
+
+Drugbank: Go to https://go.drugbank.com/public_users/sign_up and register
+Cosmic: Go to https://cancer.sanger.ac.uk/cosmic/register and register
+Swiss-Model: Go to https://swissmodel.expasy.org/, pick <create account> in the right uper corner and register
+Chimera registration: Go to https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py and register
+
+Installing Vini: 
+----------------
+Download  Vini_4_0.tar.bz2 archive from the repository of Rudjer Boskovich Institute: http://fulir.irb.hr/5420/.
+
+Create the installation directory. For example: mkdir Vini
+
+Change to this directory and unpack archive: tar -xvf Vini_4_0.tar.bz2>.
+
+Start the installation <sh install.sh> and follow the instructions
+
+After the installation is finished, execute: source sourceme
+
+Running Vini:
+--------------
+Initialize the environment <sh vini_init> and follow the instructions.
+
+

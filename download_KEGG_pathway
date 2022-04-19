@@ -1,0 +1,33 @@
+#This subroutine is called from main program Vini and is checking for KEGG pathway updates 
+
+
+ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting cancer type from the main script
+c=.xml
+
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+PATHWAY_FILE=${CANCER_PATHWAY}.xml
+
+curl -s http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml -o $WORKDIR/$PATHWAY_FILE
+cd $WORKDIR
+sed -i.bak '/SYSTEM/d' $WORKDIR/$PATHWAY_FILE       #Remove the line trying to make outbound connection
+if [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE ]   #check if cancer pathway exists
+then
+    diff $WORKDIR/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE > temp_buf
+    lineno=`wc -l temp_buf | awk '{ print $1 }'`    
+    if [ $lineno != 0 ]
+    then
+        echo "Newer version of KEGG pathway found. Old KEGG pathway will be replaced by new one."
+        echo -n "updating KEGG pathway..." 
+        cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${PATHWAY_FILE}.sav #backup of the existing file
+        cp $WORKDIR/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
+        echo "done."
+        echo "Existing gene expression values will be deleted."
+        rm -f $WORKDIR/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
+    fi
+else
+    echo "KEGG pathway file does not exists, creating new one."
+    cp $WORKDIR/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
+fi
+
+rm -f $WORKDIR/*.bak $WORKDIR/temp_buf $WORKDIR/$PATHWAY_FILE

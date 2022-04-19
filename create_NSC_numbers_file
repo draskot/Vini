@@ -1,0 +1,105 @@
+ORGANISM=`cat $WORKDIR/ORGANISM`
+cancer_type=`cat $WORKDIR/cancer_type`
+results="_results"
+cell_line=`cat $WORKDIR/cell_line`
+NULL=0
+ONES=1
+TWO=2
+
+if [ $cell_line == SF268 ] ; then  #map COSMIC to NCI-60 cell names
+   cell_line=SF-268
+fi
+if [ $cell_line == SF295 ] ; then
+   cell_line=SF-295
+fi
+if [ $cell_line == SF539 ] ; then
+   cell_line=SF-539
+fi
+if [ $cell_line == SNB75 ] ; then
+   cell_line=SNB-75
+fi
+if [ $cell_line == T47D ] ; then
+   cell_line=T-47D
+fi
+if [ $cell_line == TK10 ] ; then
+   cell_line=TK-10
+fi
+if [ $cell_line == MCF-7 ] ; then
+   cell_line=MCF7
+fi
+if [ $cell_line == T47D ] ; then
+   cell_line=T-47D
+fi
+if [ $cell_line == HT-29 ] ; then
+   cell_line=HT29
+fi
+if [ $cell_line == LOXIMVI ] ; then
+   cell_line=LOX
+fi
+
+echo $cell_line > $WORKDIR/NCI60_cell_line
+
+
+#https://dtp.cancer.gov/dtpstandard/cancerscreeningdata/index.jsp
+
+#(Chemical name that starts with AND 5 dose data)
+
+#download GI50.zip from https://wiki.nci.nih.gov/display/NCIDTPdata/NCI-60+Growth+Inhibition+Data to $vini_dir/database
+#AgentInfo.txt is downloaded from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent
+
+
+echo -n "checking for AgentInfo file..."
+if  [ ! -e $vini_dir/database/AgentInfo ] 
+then
+    echo "not found."
+    echo "Download AgentInfo from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent and save as" $vini_dir/database/AgentInfo.txt
+    read -p "Press enter when ready to continue." cont
+    dos2unix -n $vini_dir/database/AgentInfo.txt $vini_dir/database/AgentInfo
+    rm $vini_dir/database/AgentInfo.txt
+    echo "done."
+else
+    echo "passed."
+fi
+
+> tmp
+while read -r line                                        #create NSC_number file
+do
+    drugname=`echo $line | awk -F',' '{print $1}'`                   
+    grep $drugname $vini_dir/database/AgentInfo > lines
+    nolines=`wc -l < lines`
+    if  [ $nolines -eq $NULL ]
+    then 
+        echo "drug" $drugname "not found in AgentInfo file"
+    else
+        if [ $nolines -eq $ONES ]
+        then
+            NSC_NUMBER=`cat lines | awk  'NF>1{print $NF}'`
+            echo "NSC number for drug" $drugname "found:" $NSC_NUMBER
+        else
+            echo "Found several NSC numbers for drug" $drugname "in AgentInfo file:" ; echo
+            cat lines ; echo
+            NSC_NUMBER=`head -1 lines`
+            NSC_NUMBER=`echo $NSC_NUMBER | awk  'NF>1{print $NF}'`
+            echo "NSC number" $NSC_NUMBER "will be used." ; echo ; sleep 4
+        fi
+        printf "%s%s%s%s\n" "$drugname" "," " " "$NSC_NUMBER" >> tmp
+    fi
+done <  $vini_dir/database/ligands/ligands_list 
+sed -e "s/\r//g" tmp > $vini_dir/database/NSC_numbers               #remove ^M from file
+
+grep $cell_line $vini_dir/database/GI50.csv > tmp    #extract cell line entries from GI50.csv file
+sed -e "s/\r//g" tmp > $vini_dir/database/${cell_line}_GI50        #remove ^M
+
+> tmp                       #remove entries without values from the ${cell_line}_GI50 file
+while read -r line
+do
+    drugname=`echo $line | awk -F','  '{print $2}'`
+    grep -w $drugname $vini_dir/database/${cell_line}_GI50 > lines
+    nolines=`wc -l < lines`
+    if  [ $nolines -gt $NULL ]
+    then
+        echo $line >> tmp
+    fi
+done < $vini_dir/database/NSC_numbers
+mv tmp $vini_dir/database/NSC_numbers
+rm lines

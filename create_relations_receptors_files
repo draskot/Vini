@@ -1,0 +1,101 @@
+#This subroutine is called from main program Vini. It creates receptors and relations files#
+
+
+ORGANISM=`cat $WORKDIR/ORGANISM`              #getting cancer type from the main script
+c=.xml
+sav=.sav
+
+CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
+PATHWAY_FILE=$CANCER_PATHWAY$c
+PWD=`pwd`
+
+
+cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $WORKDIR
+
+
+
+cd $WORKDIR
+
+b=`basename $PATHWAY_FILE`
+
+echo -n "Preparing initial receptor / relation files..."
+
+grep -P '^(?=.*entry)(?=.*gene)' $PATHWAY_FILE | sed 's/type=\"gene\"//'  | sed 's/\"//;s/\"//;s/\"//;s/\"//'  | sed 's/<entry//' | sed 's/id=//' | sed 's/name=//' > $WORKDIR/receptors
+
+grep -P '^(?=.*entry)(?=.*compound)' $PATHWAY_FILE | sed 's/type=\"compound\"//' | sed 's/\"//;s/\"//;s/\"//;s/\"//'  | sed 's/<entry//' | sed 's/id=//' | sed 's/name=//' | sed 's/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://;s/cpd://'>> $WORKDIR/receptors
+
+grep -P '^(?=.*entry)(?=.*relation)' $PATHWAY_FILE | sed 's/<relation entry1=//;s/entry2=//;s/type=//;s/>//;s/\"//;s/\"//;s/\"//;s/\"//;s/\"//;s/\"//' | sed 's/rel//'  > $WORKDIR/relations #Create relations file
+
+rm -f $PATHWAY_FILE
+
+#KEGG entry and relation types: https://www.genome.jp/kegg/xml/docs/
+#PPrel 	protein-protein interaction, such as binding and modification
+#GErel 	gene expression interaction, indicating relation of transcription factor and target gene product
+#ECrel 	enzyme-enzyme relation, indicating two enzymes catalyzing successive reaction steps
+#PCrel 	protein-compound interaction
+#maplink 	link to another map
+
+while read -r line_relations                                #we will keep only relations within given pathway
+do
+         source_ID=`echo $line_relations | awk '{print $1}'`        #get source ID from relation
+         target_ID=`echo $line_relations | awk '{print $2}'`        #get target ID from relation
+
+         rec1_ID=0                                                  #search for source ID in the receptor file
+         while read -r line_receptors                               #read line from receptor file
+         do
+             receptor_ID=`echo $line_receptors | awk '{print $1}'`  #get source ID from line
+             if  [[ $receptor_ID -eq source_ID ]]
+             then
+                 rec1_ID=$source_ID ; break
+             fi
+         done < $WORKDIR/receptors
+
+         rec2_ID=0                                                  #search for target ID in the receptor file
+         while read -r line_receptors                               #read line from receptor file
+         do
+             receptor_ID=`echo $line_receptors | awk '{print $1}'`  #get source ID from line
+             if  [[ $receptor_ID -eq target_ID ]]
+             then
+                 rec2_ID=$target_ID ; break
+             fi
+         done < $WORKDIR/receptors
+
+         if  [[ $source_ID -eq $rec1_ID ]] && [[ $target_ID -eq $rec2_ID ]]
+         then
+              echo $line_relations >> $WORKDIR/temp_buf                                #write line in temp_buf
+         fi
+         echo -n "."
+
+done < $WORKDIR/relations
+
+mv $WORKDIR/temp_buf $WORKDIR/relations
+echo "done."
+
+total=0 ; echo -n "Expanding receptor file..."
+while read
+do
+for word in $REPLY
+    do
+        echo -n "."
+        A[$total]=$word
+        total=$(($total+1))
+    done
+done < $WORKDIR/receptors
+
+rm -f $WORKDIR/receptors_expanded entry_id
+for i in "${A[@]}"
+do
+scale=${i}
+if ! [[ "$scale" =~ ^[0-9]+$ ]]
+        then
+             entry_ida=`cat entry_id`
+             printf "%s" ${entry_ida} " " ${scale}  >> $WORKDIR/receptors_expanded
+             printf '%s\n' >> $WORKDIR/receptors_expanded
+        else
+             printf "%s" ${scale} > entry_id
+        fi
+done
+
+rm entry_id
+echo "done."

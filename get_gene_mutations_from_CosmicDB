@@ -1,0 +1,19 @@
+
+
+
+COSMIC_PASS=`cat $WORKDIR/COSMIC_password` ; export COSMIC_PASS
+COSMICDB_USER=`cat $WORKDIR/COSMIC_email` ; export COSMICDB_USER
+
+cancer_type=`cat $WORKDIR/cancer_type`
+grep $cancer_type $vini_dir/database/cross_references > $WORKDIR/tmp
+tissue=`cat $WORKDIR/tmp | awk '{print $2}'`
+rm $WORKDIR/tmp
+
+gene_index=1
+while read -r line
+do
+    Uniprot_ID=`echo $line | awk '{print $3}'`
+    echo "trying to obtain from CosmicDB gene mutation for KEGG entry " $gene_index "UniprotID:" $Uniprot_ID
+    python get_gene_mutation.py -g $Uniprot_ID -t $tissue
+    let "gene_index++"
+done < $WORKDIR/receptors_contracted

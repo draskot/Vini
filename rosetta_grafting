@@ -1,0 +1,3 @@
+antibody=$1
+
+antibody.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log
