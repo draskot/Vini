@@ -144,15 +144,22 @@ MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 
 
-if  [ -s $WORKDIR/rosie ] #if Rosetta is installed mab structures will be predicted with Rosetta Antibody
+#sh $vini_dir/predict_mab_structures_with_Rosetta
+
+prediction_model=`cat $WORKDIR/prediction_model`
+if  [ ${prediction_model} == S ]
 then
-    sh $vini_dir/predict_mab_structures_with_Rosetta
-else
     sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
+    error=`cat $WORKDIR/error`
+    if [ $error -eq $TRUE ] ; then
+       exit 
+    fi
+else
+    echo "predicting with AlphaFold" ;  sleep 1000
 fi
 
 sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
-#sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
+sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
 #sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
 #sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
 

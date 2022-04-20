@@ -3,8 +3,9 @@ CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type fro
 CANCER_PATHWAY=$ORGANISM$CANCER_TYPE                #setting the cancer pathway
 UNIPROT_ID_LIST="_uniprot_entries.txt"
 prediction_model=`cat $WORKDIR/prediction_model`                  
-MAX_NODES=`cat $WORKDIR/nodes`                      #maximum number of compute nodes Vini can use concurrently
+MAX_NODES=`cat $WORKDIR/nodes`                   #maximum number of compute nodes Vini can use concurrently
 job_submit=`cat $WORKDIR/job_submit`
+outdir=$vini_dir/database/genes/pdb_files  #where the predicted structures are placed
 
 two=2
 ONES=1
@@ -83,7 +84,7 @@ do
                     echo "no."
                     if  [ ! -e $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta ]
                     then
-                        wget -O $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
+                        wget -O $vini_dir/database/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get fasta sequence
                     fi
                     fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
                     if  [ ${prediction_model} == A ]
@@ -110,7 +111,7 @@ do
                             grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
                         else
                             echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                            sh $vini_dir/test/predict_protein_structure_with_swiss_model ${fasta_file}
+                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
                             echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                             echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "P" >> $WORKDIR/receptors_contracted
                         fi
@@ -165,7 +166,7 @@ do
                                     grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
                                 else
                                     echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                                    sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
+                                    sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
                                     echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                                     echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
                                 fi
@@ -193,7 +194,7 @@ do
                             echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "W" >> $WORKDIR/receptors_contracted
                         else
                             echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
+                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
                             echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                             echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
                         fi
