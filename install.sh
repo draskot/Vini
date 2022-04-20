@@ -145,7 +145,7 @@ then
         mkdir $vini_dir/software/openbabel-openbabel-3-1-1/build
         cd $vini_dir/software/openbabel-openbabel-3-1-1/build
         rm -rf $INSTALL/openbabel-3.1.1
-        cmake3 ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
         make -j 4
         make -j 4 install
         echo "#*****OpenBabel section******" >> $vini_dir/sourceme
@@ -212,7 +212,7 @@ then
     cd reduce-master
     mkdir build
     cd build
-    cmake3 .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
+    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
     make
     make install
     echo "#***Reduce section***" >> $vini_dir/sourceme

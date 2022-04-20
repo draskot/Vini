@@ -104,20 +104,38 @@ echo $jobs > $WORKDIR/max_jobs
 read -p "How many compute nodes Vini can use?" nodes
 echo $nodes > $WORKDIR/nodes
 
-prediction_model=`cat $WORKDIR/prediction`
-if [ $prediction_model == S ]
+echo "Vini can predict protein structuress with AlphaFold[A], Rosetta[R], or SWISS-MODEL[S]."
+read -p "Which prediction model you would like to use (A,R,S)?" prediction_model
+
+if [ ${prediction_model} == A ]
 then 
-    echo "SWISS-MODEL will be used for prediction of protein structures."
-    if  [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ]
+    grep AlphaFold $vini_dir/sourceme > tmp
+    if  [ -s tmp ]
     then
+        echo "AlphaFold will be used for protein structure predictions."
+    else
+        echo "Vini can not find AlphaFold. Check if it is installed. Then rerun <install.sh> script and start Vini again."
+        exit
+    fi
+else
+    if  [ ${prediction_model} == R ]
+    then
+        grep Rosetta $vini_dir/sourceme > tmp
+        if  [ -s tmp ]
+        then
+            echo "Rosetta will be used for protein structure predictions."
+        else
+            echo "Vini can not find Rosetta. Check if it is installed. Then rerun <install.sh> script and start Vini again."
+            exit
+        fi
+    else
+        echo "SWISS-MODEL will be used for prediction of protein structures."
         read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
         read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
         read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
         chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
         sh download_SWISS_MODEL_metadata
     fi
-else
-    echo "AlphaFold will be used for protein structure predictions."
 fi
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
@@ -143,19 +161,77 @@ fi
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 
-
-#sh $vini_dir/predict_mab_structures_with_Rosetta
-
-prediction_model=`cat $WORKDIR/prediction_model`
-if  [ ${prediction_model} == S ]
+if  [ ${prediction_model} == A ]
 then
-    sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
-    error=`cat $WORKDIR/error`
-    if [ $error -eq $TRUE ] ; then
-       exit 
-    fi
+    memsize=64gb
+    partition=computes_thin
+    input_data=${vini_dir}/database/ligands
+    input_list=$vini_dir/database/ligands/ligands_list
+    alphafold_base=reduced_dbs
+
+    FALSE=0
+    TRUE=1
+    echo "predicting mAb structures with AlphaFold"
+    echo $FALSE > $WORKDIR/error
+    while read -r line
+    do
+        type=`echo $line | awk -F','  '{print $2}'`
+        if  [ $type == P ]
+        then
+            protein=`echo $line | awk -F','  '{print $1}'
+            if  [ ! -e $vini_dir/database/ligands/pdb_files/${protein}.pdb ]
+            then
+                if  [ ! -e ${input_data}/fasta_files/${protein}.fasta ]
+                then
+                    echo ${protein}.fasta "not found in" ${input_data}/fasta_files "folder."
+                    echo $TRUE > $WORKDIR/error
+                    break
+                else
+                    fasta_file=${indata}/fasta_files/${protein}.fasta
+                    echo "Trying to predict" $antibody "structure with AlphaFold."
+                    echo "#!/bin/bash"                                          > $WORKDIR/AlphaFold
+                    echo "#SBATCH --nodes=1"                                   >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --ntasks-per-node=1"                         >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --cpus-per-task=48"                          >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --mem="$memsize                              >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --partition="$queue                          >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --time=05-00:00:00"                          >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --job-name=A_"${protein}                     >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --output=$WORKDIR/alphafold.out."${protein}  >> $WORKDIR/AlphaFold
+                    echo "#SBATCH --error=$WORKDIR/alphafold.err."${protein}  >> $WORKDIR/AlphaFold
+                    echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR"                                  >> $WORKDIR/AlphaFold
+                    chmod u+x                                                     $WORKDIR/AlphaFold
+                    sh nodes_control_script ${MAX_NODES}
+                    ${job_submit} $WORKDIR/AlphaFold
+                fi
+            fi
+        fi
+    done < ${input_list}
+    echo "Waiting for predictions to finish. This may take a while."
+    sh $vini_dir/wait_until_jobs_finish
+
+    while read -r line
+    do
+        protein=`echo $line | awk -F',' '{print $1}'
+        type=`echo $line | awk -F',' '{print $2}'`
+         
+        if  [ -e $WORKDIR/${protein}/ranked_0.pdb ]
+        then
+            cp $WORKDIR/${protein}/ranked_0.pdb $vini_dir/database/ligands/pdb_files/${protein}.pdb
+        else
+            echo 1 > $WORKDIR/error
+        fi
+    done < $vini_dir/database/ligands/ligands_list
+    
 else
-    echo "predicting with AlphaFold" ;  sleep 1000
+    if  [ ${prediction_model} == R ]
+    then
+        echo "predicting mAb structures with Rosetta"
+        sh $vini_dir/predict_mab_structures_with_Rosetta
+    else
+        echo "predicting mAb structures with SWISS-MODEL"
+        sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
+    fi
 fi
 
 sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old

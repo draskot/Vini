@@ -7,9 +7,9 @@ MAX_NODES=`cat $WORKDIR/nodes`                   #maximum number of compute node
 job_submit=`cat $WORKDIR/job_submit`
 outdir=$vini_dir/database/genes/pdb_files  #where the predicted structures are placed
 
-two=2
-ONES=1
 NULL=0
+ONES=1
+two=2
 alias python=/usr/bin/python
 
 #http://mmb.irbbarcelona.org/gitlab/DBW/PDBBrowser/raw/d80ad01c7569f5cfaac3a247f6e086d63db815cc/PDBData/cmpd_res.idx
@@ -94,7 +94,6 @@ do
                         echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
                         echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
                         echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
-
                         echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
                         rm -rf $WORKDIR/${uniprot_id}
                         sh nodes_control_script ${MAX_NODES}
