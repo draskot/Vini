@@ -1,5 +1,5 @@
 #This script looks for 3D ligands structures.
-#If no 3D (SDF) structure on RCSB is found, we continue are search for it on Drugbank.
+#If no 3D (SDF) structure on RCSB is found, we search for it on Drugbank.
 #If no 3D (SDF) structure on Drugbank is found, we search for pdb structure on Drugbank.
 #If found, we convert this structure to 3D (SDF) with Openbabel. Otherwise, we delete this drug from ligands_list.
 #Input param: structure type on RCSB (can be "model" or "ideal")

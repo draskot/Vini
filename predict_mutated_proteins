@@ -2,12 +2,16 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 #curl -s -d "dna_sequence=ATCG....AGCTAG&output_format=fasta" https://web.expasy.org/cgi-bin/translate/dna2aa.cgi > my_output.frame
 
-
 cell_line=$1
 
 NULL=0
 
 prediction_model=`cat $WORKDIR/prediction_model`
+cpus=`cat $WORKDIR/AlphaFold_cpus`
+mem=`cat $WORKDIR/AlphaFold_mem`
+partition=`cat  $WORKDIR/AlphaFold_partition`
+base=`cat $WORKDIR/AlphaFold_base`
+model=`cat $WORKDIR/AlphaFold_model`
 
 SEQDIR=$vini_dir/database/genes/sequences/
 
@@ -86,20 +90,12 @@ do
         then 
             cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
         else
+            fasta_file=$vini_dir/database/genes/sequences/${line}.fasta
             if  [ ${prediction_model} == A ]
             then
-                echo "Trying to predict" mutated $line "structure with AlphaFold."
-                cat $WORKDIR/alphafold > $WORKDIR/AlphaFold
-                echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
-                echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
-                echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
-                echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
-                rm -rf $WORKDIR/${uniprot_id}
-                sh nodes_control_script ${MAX_NODES}
-                ${job_submit} $WORKDIR/AlphaFold
+                sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
             else
                 echo "Trying to predict" mutated $line "structure with SWISS-MODEL."
-                fasta_file=$vini_dir/database/genes/sequences/${line}.fasta
                 sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
                 cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
             fi
@@ -107,12 +103,13 @@ do
     fi
 done < mutated
 
+sh $vini_dir/wait_until_jobs_finish
+
 if  [ ${prediction_model} == A ]
 then
-    sh $vini_dir/wait_until_jobs_finish
     while read -r line
     do
-        uniprot_id=$line #Ovo treba sve ispraviti!!!!!!!!!!!!!!!!!!!!!!!!!1
+        uniprot_id=$line 
         cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
         cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
     done < mutated

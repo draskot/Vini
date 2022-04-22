@@ -1,0 +1,74 @@
+FALSE=0
+TRUE=1
+
+prediction_model=`cat $WORKDIR/prediction_model`
+cpus=`cat $WORKDIR/AlphaFold_cpus`
+mem=`cat $WORKDIR/AlphaFold_mem`
+partition=`cat  $WORKDIR/AlphaFold_partition`
+base=`cat $WORKDIR/AlphaFold_base`
+model=`cat $WORKDIR/AlphaFold_model`
+
+#echo $prediction_model
+#echo $cpus
+#echo $mem
+#echo $partition
+#echo $base
+#echo $model
+
+
+MAX_NODES=`cat $WORKDIR/nodes`
+job_submit=`cat $WORKDIR/job_submit`
+if  [ ${prediction_model} == A ]
+then
+    echo $FALSE > $WORKDIR/error
+    while read -r line
+    do
+        type=`echo $line | awk -F','  '{print $2}'`
+        if  [ $type == P ]
+        then
+            drug=`echo $line | awk -F','  '{print $1}'`
+            if  [ ! -e $vini_dir/database/ligands/pdb_files/${drug}.pdb ]
+            then
+                if  [ ! -e ${vini_dir}/database/ligands/fasta_files/${drug}.fasta ]
+                then
+                    echo ${drug}.fasta "not found in" $vini_dir/database/ligands/fasta_files "folder."
+                    echo "Please provide ${drug} sequence or remove it from the analysis."
+                    break
+                else
+                    fasta_file=${vini_dir}/database/ligands/fasta_files/${drug}.fasta
+                    echo "processing $fasta_file"
+                    sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
+                fi
+            fi
+        fi
+
+    done < $vini_dir/database/ligands/ligands_list
+
+    echo "Waiting for predictions to finish. This may take a while."
+    sh $vini_dir/wait_until_jobs_finish
+
+    while read -r line
+    do
+        protein=`echo $line | awk -F',' '{print $1}'`
+        type=`echo $line | awk -F',' '{print $2}'`
+        if  [ $type == P ]
+        then 
+            if  [ -e $WORKDIR/${protein}/ranked_0.pdb ]
+            then
+                cp $WORKDIR/${protein}/ranked_0.pdb ${vini_dir}/database/ligands/pdb_files/${protein}.pdb
+            else
+                echo 1 > $WORKDIR/error
+                echo ${protein} >> $WORKDIR/failed_list
+            fi
+        fi
+    done < $vini_dir/database/ligands/ligands_list
+else
+    if  [ ${prediction_model} == R ]
+    then
+        echo "predicting mAb structures with Rosetta"
+        sh $vini_dir/predict_mab_structures_with_Rosetta
+    else
+        echo "predicting mAb structures with SWISS-MODEL"
+        sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
+    fi
+fi
