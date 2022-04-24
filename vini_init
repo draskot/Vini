@@ -95,7 +95,7 @@ echo "rosetta" > $WORKDIR/docking
 read -e -p "Set the number of concurrent Vina/Rosetta jobs (each job using 4 processors). Press enter to accept default: " -i "60" jobs
 echo $jobs > $WORKDIR/max_jobs
 
-read -e -p "How many compute nodes Vini can use? Press enter to accept default: " -i "10" nodes
+read -e -p "How many Alphafold jobs can run in parallel? Press enter to accept default: " -i "10" nodes
 echo $nodes > $WORKDIR/nodes
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
@@ -337,7 +337,6 @@ else
     echo "biotech" > $WORKDIR/drugtype
 fi
 
-sh $vini_dir/predict_mab_structures
 #sh $vini_dir/prepare_ligands
 
 sh $vini_dir/prepare_ligands_with_meeko

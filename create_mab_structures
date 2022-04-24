@@ -8,14 +8,6 @@ partition=`cat  $WORKDIR/AlphaFold_partition`
 base=`cat $WORKDIR/AlphaFold_base`
 model=`cat $WORKDIR/AlphaFold_model`
 
-#echo $prediction_model
-#echo $cpus
-#echo $mem
-#echo $partition
-#echo $base
-#echo $model
-
-
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 if  [ ${prediction_model} == A ]
@@ -35,8 +27,8 @@ then
                     echo "Please provide ${drug} sequence or remove it from the analysis."
                     break
                 else
+                    sh $vini_dir/nodes_control_script ${MAX_NODES}
                     fasta_file=${vini_dir}/database/ligands/fasta_files/${drug}.fasta
-                    echo "processing $fasta_file"
                     sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
                 fi
             fi

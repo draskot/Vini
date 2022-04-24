@@ -5,11 +5,9 @@ base=$4
 model=$5
 fasta_file=$6
 
-MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 
 name=`basename ${fasta_file} .fasta`
-echo "Predicting $name structure with AlphaFold."
 
 echo "#!/bin/bash"                                          > $WORKDIR/AlphaFold
 echo "#SBATCH --nodes=1"                                   >> $WORKDIR/AlphaFold
@@ -17,12 +15,11 @@ echo "#SBATCH --ntasks-per-node=1"                         >> $WORKDIR/AlphaFold
 echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
 echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
+echo "#SBATCH --nodelist=bura44"                           >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=05-00:00:00"                          >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=A_"${name}                        >> $WORKDIR/AlphaFold
 echo "#SBATCH --output=$WORKDIR/alphafold.out."${name}     >> $WORKDIR/AlphaFold
 echo "#SBATCH --error=$WORKDIR/alphafold.err."${name}      >> $WORKDIR/AlphaFold
-#echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
 echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold
-sh nodes_control_script ${MAX_NODES}
 ${job_submit} $WORKDIR/AlphaFold

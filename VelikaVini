@@ -32,9 +32,11 @@ start_date=`date`
 echo "Analysis of therapy level " $therapy_level "started at" $start_date
 rm -f $WORKDIR/END
 
+
 therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
+    sh $vini_dir/create_mab_structures
     sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh create_receptor_structures     #Create receptors_contracted file and molecular structures
     error=`cat $WORKDIR/error`
@@ -159,6 +161,17 @@ rm -f stop WM COSMIC_token *pdbqt drugname failed_structures
 rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
 rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
 rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
+rm -f alphafold*
+
+while read -r line
+do
+    name=`echo $line | awk -F','  '{print $1}'`
+    type=`echo $line | awk -F','  '{print $2}'`
+    if [ $type == P ]
+    then
+        rm -rf $WORKDIR/$name
+    fi
+done < $vini_dir/database/ligands/ligands_list
 
 cd $vini_dir
 rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50

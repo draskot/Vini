@@ -20,7 +20,7 @@ do
         fi
         if  [ -e $vini_dir/database/ligands/fasta_files/${drug}.fasta ] #check if drug is in repo
         then
-            echo $drug "found in repo."
+            echo "fasta sequence for $drug found in repo."
         else
             echo -n "searching for" $drug "in Drugbank..."
             echo "grep -w" "\"$drug\"" "drug?links.csv" > search

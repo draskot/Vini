@@ -12,24 +12,25 @@ do
     echo -n "."
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
-
-    if  [ -e $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt ]
+    if [ $flag == S ]
     then
-        cp $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
-    else                                                                                      #create pdbqt file
-        cp $vini_dir/database/ligands/sdf_files/${drugname}.sdf $WORKDIR #create pdbqt file
-        cat $WORKDIR/meeko > meeko_run
-        echo "source $INSTALL/miniconda3/bin/activate" >> meeko_run
-        echo "conda activate meeko" >> meeko_run
-        echo "mk_prepare_ligand.py -i $vini_dir/database/ligands/sdf_files/${drugname}.sdf -o $WORKDIR/ligand_${lig_index}.pdbqt" >> meeko_run
-        echo "if [ -e $WORKDIR/ligand_${lig_index}.pdbqt ] ; then" >> meeko_run
-        echo "cp $WORKDIR/ligand_${lig_index}.pdbqt $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt" >> meeko_run
-        echo "fi"  >> meeko_run
-        chmod +x meeko_run
-        sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-        $job_submit meeko_run
+        if  [ -e $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt ]
+        then
+            cp $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
+        else                                                                                      #create pdbqt file
+            cp $vini_dir/database/ligands/sdf_files/${drugname}.sdf $WORKDIR #create pdbqt file
+            cat $WORKDIR/meeko > meeko_run
+            echo "source $INSTALL/miniconda3/bin/activate" >> meeko_run
+            echo "conda activate meeko" >> meeko_run
+            echo "mk_prepare_ligand.py -i $vini_dir/database/ligands/sdf_files/${drugname}.sdf -o $WORKDIR/ligand_${lig_index}.pdbqt" >> meeko_run
+            echo "if [ -e $WORKDIR/ligand_${lig_index}.pdbqt ] ; then" >> meeko_run
+            echo "cp $WORKDIR/ligand_${lig_index}.pdbqt $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt" >> meeko_run
+            echo "fi"  >> meeko_run
+            chmod +x meeko_run
+            sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+            $job_submit meeko_run
+        fi
     fi
-    #cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
     let i++
 done < $vini_dir/database/ligands/ligands_list
 
