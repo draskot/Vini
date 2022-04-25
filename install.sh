@@ -11,7 +11,8 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory is set to" $vini_dir"." ; echo
-    echo "Reminder: for HPC VEGA working directory is /ceph/hpc/data/d2203-0100-users"
+    echo "Reminder: for HPC Vega working directory is /ceph/hpc/data/d2203-0100-users"
+    echo "Reminder: for Bura working directory is /ceph/hpc/data/d2203-0100-users"
     read -p "Enter the full path name of the working directory:" WORKDIR ; echo
     mkdir -p $WORKDIR
     INSTALL=$WORKDIR/packages
@@ -68,8 +69,11 @@ grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
 then
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    echo "no. Download chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
-    read -p "press enter when ready to go." enter
+    if  [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
+    then
+        echo "Download chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
+        read -p "press enter when ready to go." enter
+    fi
     chmod u+x $vini_dir/software/chimera-1.16-linux_x86_64.bin
     echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera_1.16
     echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
