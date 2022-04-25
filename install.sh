@@ -11,8 +11,8 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory is set to" $vini_dir"." ; echo
-    echo "Reminder: for HPC Vega working directory is /ceph/hpc/data/d2203-0100-users"
-    echo "Reminder: for Bura working directory is /scratch/IRB/i$USER"
+    echo "Reminder: for HPC Vega install directory is /ceph/hpc/data/d2203-0100-users/$USER"
+    echo "Reminder: for Bura working directory is /scratch/IRB/$USER"
     read -p "Enter the full path name of the working directory:" WORKDIR ; echo
     mkdir -p $WORKDIR
     INSTALL=$WORKDIR/packages
