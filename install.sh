@@ -11,9 +11,9 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory is set to" $vini_dir"." ; echo
-    echo "Reminder: for HPC Vega working directory is /exa5/scratch/user/$USER"
-    echo "Reminder: for Bura working directory is /scratch/IRB/$USER"
-    read -p "Enter the full path name of the installation directory:" WORKDIR ; echo
+    echo "HPC Vega working directory is /exa5/scratch/user/$USER"
+    echo "Bura working directory is /scratch/IRB/$USER"
+    read -p "Enter full path name of the working directory:" WORKDIR ; echo
     mkdir -p $WORKDIR
     INSTALL=$WORKDIR/packages
     echo "Third party software will be installed in" $INSTALL "directory."
@@ -32,6 +32,7 @@ if  [ ! -s tmp ]
 then
     echo "no. Please wait while downloading and installing miniconda2..."
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
+
     rm -rf  $INSTALL/miniconda2
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
     wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
