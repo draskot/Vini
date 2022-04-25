@@ -41,7 +41,9 @@ then
     sh create_receptor_structures     #Create receptors_contracted file and molecular structures
     error=`cat $WORKDIR/error`
     if [ $error -eq $TRUE ] ; then    #exit if error has occured
-       echo "failed to create receptor_structures, exiting...." ; exit
+       echo "The following structures failed to predict:"
+       cat $WORKDIR/failed_structures
+       exit
     fi
       
     STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
