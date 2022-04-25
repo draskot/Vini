@@ -73,6 +73,11 @@ then
     then
         echo "Download chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
         read -p "press enter when ready to go." enter
+        if [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
+        then
+            echo "chimera-1.16-linux_x86_64.bin not found. Aborting"
+            rm $vini_dir/sourceme
+        fi
     fi
     chmod u+x $vini_dir/software/chimera-1.16-linux_x86_64.bin
     echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera_1.16
