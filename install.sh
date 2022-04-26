@@ -196,8 +196,27 @@ else
     echo "yes."
 fi
 
-exit
-
+echo -n "Checking if Alphafold is installed..."
+grep Alphafold $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
+    module spider Alphafold 2> tmp
+    grep -w error tmp > alphafold
+    if [ ! -s alphafold ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" alphafold
+        echo "module load" $alphafold >> $vini_dir/sourceme
+        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
+        source $vini_dir/sourceme
+    else
+        echo "no module found. You may install Alphafold locally."
+    fi
+else
+    echo "yes."
+fi
+rm -f alphafold tmp
 
 grep rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -242,59 +261,8 @@ then
 fi
 rm -f rosetta tmp tmp2
 
-echo -n "Checking if Alphafold is present on this system..."
-grep Alphafold $vini_dir/sourceme > tmp #install Alphafold
-if  [ ! -s tmp ]
-then
-    echo "yes."
-    module keyword Alphafold 2> tmp
-    if [ -s tmp ]
-    then
-        echo "#***Alphafold 2.1.2 section***" >> sourceme
-        grep -i AlphaFold: tmp > tmp2
-        modulename=`cat tmp2 | awk '{print $2}'`
-        echo "module load" $modulename >> sourceme
-        rm tmp tmp2
-    else
-        echo "no."
-    fi
-    echo "A" > $WORKDIR/prediction
-else
-    echo "S" > $WORKDIR/prediction
-fi
-
 echo "The downloaded source packages are in" $vini_dir/software
 echo "Installation is done. You may want to put source" $vini_dir"/sourceme in your .bashrc file."
-
-#echo -n "Checking if Reduce is installed..."
-#grep Reduce $vini_dir/sourceme > tmp #install Reduce
-#if  [ ! -s tmp ]
-#then
-#    echo "no. Please wait while installing Reduce..."
-#    wget https://codeload.github.com/rlabduke/reduce/zip/refs/heads/master
-#    mv master reduce-master.zip
-#    rm -rf reduce-master
-#    rm -rf $INSTALL/reduce ; mkdir $INSTALL/reduce
-#    unzip -oq reduce-master.zip
-#    cd reduce-master
-#    mkdir build
-#    cd build
-#    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
-#    make
-#    make install
-#    echo "#***Reduce section***" >> $vini_dir/sourceme
-#    echo "export PATH=\$PATH:$INSTALL/reduce/bin" >> $vini_dir/sourceme
-#    echo "You may also want to su and place" $INSTALL/reduce/reduce_wwPDB_het_dict.txt
-#    echo "into /usr/local. If you don't, Reduce will still run, but you'll probably get the"
-#    echo "error message: ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open"
-#    #https://github.com/jaredsampson/pymolprobity
-#    read -p "Press enter to continue." enter
-#    source $vini_dir/sourceme
-#    rm -f tmp
-#else
-#    "yes."
-#fi
-
 
 #grep Openbabel $vini_dir/sourceme > tmp
 #if  [ ! -s tmp ]
@@ -328,4 +296,31 @@ echo "Installation is done. You may want to put source" $vini_dir"/sourceme in y
 #fi
 #rm -f openbabel tmp
 
-
+#echo -n "Checking if Reduce is installed..."
+#grep Reduce $vini_dir/sourceme > tmp #install Reduce
+#if  [ ! -s tmp ]
+#then
+#    echo "no. Please wait while installing Reduce..."
+#    wget https://codeload.github.com/rlabduke/reduce/zip/refs/heads/master
+#    mv master reduce-master.zip
+#    rm -rf reduce-master
+#    rm -rf $INSTALL/reduce ; mkdir $INSTALL/reduce
+#    unzip -oq reduce-master.zip
+#    cd reduce-master
+#    mkdir build
+#    cd build
+#    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
+#    make
+#    make install
+#    echo "#***Reduce section***" >> $vini_dir/sourceme
+#    echo "export PATH=\$PATH:$INSTALL/reduce/bin" >> $vini_dir/sourceme
+#    echo "You may also want to su and place" $INSTALL/reduce/reduce_wwPDB_het_dict.txt
+#    echo "into /usr/local. If you don't, Reduce will still run, but you'll probably get the"
+#    echo "error message: ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open"
+#    #https://github.com/jaredsampson/pymolprobity
+#    read -p "Press enter to continue." enter
+#    source $vini_dir/sourceme
+#    rm -f tmp
+#else
+#    "yes."
+#fi
