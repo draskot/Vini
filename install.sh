@@ -2,22 +2,32 @@ NULL=0
 module purge
 rm -f tmp
 
-if [ -e ./sourceme ]
+if [ -e sourceme ]
 then
-    grep General ./sourceme > tmp
+    grep General sourceme > tmp
 fi
 
 if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
-    echo "Vini main directory is set to" $vini_dir"." ; echo
-    echo "HPC Vega working directory is /exa5/scratch/user/$USER"
-    echo "Bura working directory is /scratch/IRB/$USER"
-    read -p "Enter full path name of the working directory:" WORKDIR ; echo
+    echo "Vini main directory will be set to $vini_dir" ; echo
+        
+    name=`uname -n | grep vega`
+    if [[ ! -z "$name" ]]
+    then
+        WORKDIR=/exa5/scratch/user/$USER
+        echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
+        INSTALL=/ceph/hpc/data/d2203-0100-users/$USER
+    else
+        WORKDIR=/scratch/IRB/$USER
+        echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
+        INSTALL=$WORKDIR/packages
+    fi
+    echo "Third party software will be installed in $INSTALL directory" ; echo
+
     mkdir -p $WORKDIR
-    INSTALL=$WORKDIR/packages
-    echo "Third party software will be installed in" $INSTALL "directory."
     mkdir -p $INSTALL
+
     echo "#************General section**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
@@ -25,6 +35,7 @@ then
     source $vini_dir/sourceme
 fi
 read -p "press enter when ready to start the installation."
+
 
 echo -n "checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
@@ -65,37 +76,49 @@ else
     echo "yes."
 fi
 
+echo -n "Checking if coreapi-cli is installed..."
+grep coreapi $vini_dir/sourceme > tmp #install coreapi
+if  [ ! -s tmp ]
+then
+    echo -n "no. Please wait while coreapi-cli is installed..."
+    source $INSTALL/miniconda3/etc/profile.d/conda.sh
+    conda create -n coreapi --yes -c conda-forge coreapi-cli
+    echo "#***coreapi***" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
+
 echo -n "checking if UCSF Chimera is installed..."
 grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
 then
-    echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    if  [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
+    if  [ ! -e $vini_dir/software/chimera*.bin ]
     then
-        echo "Download chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
+        echo "Download Chimera distribution from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
         read -p "press enter when ready to go." enter
-        if [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
+        if [ ! -e $vini_dir/software/chimera*bin ]
         then
-            echo "chimera-1.16-linux_x86_64.bin not found. Aborting"
-            rm $vini_dir/sourceme
+            echo "Chimera distribution not found. Download and run install.sh again"
         fi
     fi
-    chmod u+x $vini_dir/software/chimera-1.16-linux_x86_64.bin
-    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera_1.16
+    chmod u+x $vini_dir/software/chimera*.bin
+    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera
     echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
     echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
     read -p "press enter when ready to continue." enter
-    rm -rf $INSTALL/chimera_1.16
-    cp $vini_dir/software/chimera-1.16-linux_x86_64.bin $INSTALL 
+    rm -rf $INSTALL/chimera
+    cp $vini_dir/software/chimera*.bin $INSTALL 
     cd $INSTALL
-    ./chimera-1.16-linux_x86_64.bin
-    rm -f $INSTALL/chimera-1.16-linux_x86_64.bin $vini_dir/software/chimera-1.16-linux_x86_64.bin
+    ./chimera*.bin
     cd $vini_dir
-    echo "export PATH=$INSTALL/chimera_1.16/bin:\$PATH" >> $vini_dir/sourceme
+    echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/chimera/bin:\$PATH" >> $vini_dir/sourceme
     source $vini_dir/sourceme
 else
     echo "yes."
 fi
+
 
 echo -n "checking if MGLTools are installed..."
 grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
@@ -115,57 +138,65 @@ then
     source $vini_dir/sourceme
     echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
     echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
+    source $vini_dir/sourceme
 else
     echo "yes."
 fi
 
 echo -n "checking if Vina is installed..."
-grep vina_1_2_3 sourceme > tmp
+grep Vina sourceme > tmp
 nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
-    echo "no. Will try to install Vina."
-    rm -f vina_1.2.3_linux*
-    wget https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
-    chmod u+x vina_1.2.3_linux_x86_64
-    mkdir -p $INSTALL/vina_1_2_3_linux_x86_64
-    mv vina_1.2.3_linux_x86_64 $INSTALL/vina_1_2_3_linux_x86_64/vina
-    echo "#***** vina_1_2_3 section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/vina_1_2_3_linux_x86_64:\$PATH" >> $vini_dir/sourceme
+    echo "no. Installing Vina..."
+    rm -f $vini_dir/software/vina*
+    wget -P $vini_dir/software --no-check-certificate  https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
+    chmod u+x $vini_dir/software/vina*
+    mkdir -p $INSTALL/vina
+    cp $vini_dir/software/vina* $INSTALL/vina/vina
+    echo "#***** Vina section******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/vina:\$PATH" >> $vini_dir/sourceme
     source $vini_dir/sourceme
-echo
+else
     echo "yes."
 fi
 
-grep Openbabel $vini_dir/sourceme > tmp
+echo -n "Checking if ADFR suite is installed..."
+grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
 if  [ ! -s tmp ]
 then
-    module avail Openbabel 2> tmp
-    grep Openbabel tmp > openbabel
-    if [ -s openbabel ]
-    then
-        echo "Found the following openbabel module(s):" ; cat openbabel
-        read -p "Please select one of modules found:" openbabel
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "module load" $openbabel >> $vini_dir/sourceme
-    else
-        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
-        wget -P $vini_dir/software https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
-        mv $vini_dir/software/openbabel-3-1-1 $vini_dir/software/openbabel-3-1-1.tar.gz
-        tar -xvzf $vini_dir/software/openbabel-3-1-1.tar.gz -C $vini_dir/software
-        mkdir $vini_dir/software/openbabel-openbabel-3-1-1/build
-        cd $vini_dir/software/openbabel-openbabel-3-1-1/build
-        rm -rf $INSTALL/openbabel-3.1.1
-        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-        make -j 4
-        make -j 4 install
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
-        cd $vini_dir
-    fi
-    source $vini_dir/sourceme
+    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
+    rm -f $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz
+    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
+    curl -Lfs -o $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+    tar -xzf $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
+    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
+    sh install.sh
+    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
+else
+    echo "yes."
 fi
-rm -f openbabel tmp
+
+echo -n "Checking if database is in place..."
+grep database $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo -n "no. Please wait while Vini database is downloaded..."
+    mkdir -p $vini_dir/database
+    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate   https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
+    echo "done."
+    echo -n "Uncompressing database, please wait..."
+    cd $vini_dir/database
+    tar -xvf database.tar.bz2
+    echo "done."
+    echo "#***database***" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
+exit
+
 
 grep rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -210,52 +241,6 @@ then
 fi
 rm -f rosetta tmp tmp2
 
-echo -n "Checking if Reduce is installed..."
-grep Reduce $vini_dir/sourceme > tmp #install Reduce
-if  [ ! -s tmp ]
-then
-    echo "no. Please wait while installing Reduce..."
-    wget https://codeload.github.com/rlabduke/reduce/zip/refs/heads/master
-    mv master reduce-master.zip
-    rm -rf reduce-master
-    rm -rf $INSTALL/reduce ; mkdir $INSTALL/reduce
-    unzip -oq reduce-master.zip
-    cd reduce-master
-    mkdir build
-    cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
-    make
-    make install
-    echo "#***Reduce section***" >> $vini_dir/sourceme
-    echo "export PATH=\$PATH:$INSTALL/reduce/bin" >> $vini_dir/sourceme
-    echo "You may also want to su and place" $INSTALL/reduce/reduce_wwPDB_het_dict.txt
-    echo "into /usr/local. If you don't, Reduce will still run, but you'll probably get the"
-    echo "error message: ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open"
-    #https://github.com/jaredsampson/pymolprobity
-    read -p "Press enter to continue." enter
-    source $vini_dir/sourceme
-    rm -f tmp
-else
-    "yes."
-fi
-
-echo -n "Checking if ADFR suite is installed..."
-grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
-    rm -f $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz
-    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-    curl -Lfs -o $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
-    tar -xzf $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
-    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
-    sh install.sh
-    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
-
 echo -n "Checking if Alphafold is present on this system..."
 grep Alphafold $vini_dir/sourceme > tmp #install Alphafold
 if  [ ! -s tmp ]
@@ -277,35 +262,69 @@ else
     echo "S" > $WORKDIR/prediction
 fi
 
-echo -n "Checking if coreapi-cli is installed..."
-grep coreapi $vini_dir/sourceme > tmp #install coreapi
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while coreapi-cli is installed..."
-    source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n coreapi --yes -c conda-forge coreapi-cli
-    echo "#***coreapi***" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
-
-echo -n "Checking if database is in place..."
-grep database $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while Vini database is downloaded..."
-    mkdir -p $vini_dir/database
-    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate   https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
-    echo "done."
-    echo -n "Uncompressing database, please wait..."
-    cd $vini_dir/database
-    tar -xvf database.tar.bz2
-    echo "done."
-    echo "#***database***" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
-
 echo "The downloaded source packages are in" $vini_dir/software
-
 echo "Installation is done. You may want to put source" $vini_dir"/sourceme in your .bashrc file."
+
+#echo -n "Checking if Reduce is installed..."
+#grep Reduce $vini_dir/sourceme > tmp #install Reduce
+#if  [ ! -s tmp ]
+#then
+#    echo "no. Please wait while installing Reduce..."
+#    wget https://codeload.github.com/rlabduke/reduce/zip/refs/heads/master
+#    mv master reduce-master.zip
+#    rm -rf reduce-master
+#    rm -rf $INSTALL/reduce ; mkdir $INSTALL/reduce
+#    unzip -oq reduce-master.zip
+#    cd reduce-master
+#    mkdir build
+#    cd build
+#    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
+#    make
+#    make install
+#    echo "#***Reduce section***" >> $vini_dir/sourceme
+#    echo "export PATH=\$PATH:$INSTALL/reduce/bin" >> $vini_dir/sourceme
+#    echo "You may also want to su and place" $INSTALL/reduce/reduce_wwPDB_het_dict.txt
+#    echo "into /usr/local. If you don't, Reduce will still run, but you'll probably get the"
+#    echo "error message: ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open"
+#    #https://github.com/jaredsampson/pymolprobity
+#    read -p "Press enter to continue." enter
+#    source $vini_dir/sourceme
+#    rm -f tmp
+#else
+#    "yes."
+#fi
+
+
+#grep Openbabel $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    #echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#    module spider Openbabel 2> tmp
+#    grep -w error tmp > openbabel
+#    if [ ! -s openbabel ]
+#    then
+#        echo "Found the following openbabel module(s):" ; cat tmp
+#        read -p "Please select one of Openbabel modules found:" openbabel
+#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        echo "module load" $openbabel >> $vini_dir/sourceme
+#        source $vini_dir/sourceme
+#    else
+#        #echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
+#        #wget -P $vini_dir/software https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
+#        #mv $vini_dir/software/openbabel-3-1-1 $vini_dir/software/openbabel-3-1-1.tar.gz
+#        #tar -xvzf $vini_dir/software/openbabel-3-1-1.tar.gz -C $vini_dir/software
+#        #mkdir $vini_dir/software/openbabel-openbabel-3-1-1/build
+#        #cd $vini_dir/software/openbabel-openbabel-3-1-1/build
+#        #rm -rf $INSTALL/openbabel-3.1.1
+#        #cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+#        #make -j 4
+#        #make -j 4 install
+#        #echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        #echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
+#        #cd $vini_dir
+#        echo "No Openbabel module found. Will use own Openbabel version 2.4.1"
+#    fi
+#fi
+#rm -f openbabel tmp
+
+
