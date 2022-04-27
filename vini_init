@@ -84,6 +84,7 @@ cat COPYRIGHT
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
 sh $vini_dir/get_compute_node_cores
+sh $vini_dir/get_compute_node_memory
 
 Gromacs_threads=`cat $WORKDIR/cores` #setting number of OMP threads to max number of cores
 echo $Gromacs_threads > $WORKDIR/Gromacs_threads
@@ -137,10 +138,11 @@ then
     if  [ -s tmp ]
     then
         echo "AlphaFold will be used."
-        #cores=`cat $WORKDIR/cores`
+        cores=`cat $WORKDIR/cores`
+        memsize=`cat $WORKDIR/memsize`
         part=`cat $WORKDIR/Vini_queue`
         read -e -p "Enter number of CPU cores each AlphaFold job will use. Press enter to accept default: " -i "$cores" cpus
-        read -e -p "Enter memory size (in GB) each AlphaFold job will use. Press enter to accept default: " -i "256" mem
+        read -e -p "Enter memory size (in GB) each AlphaFold job will use. Press enter to accept default: " -i "$memsize" mem
         read -e -p "Enter name of SLURM partition AlphaFold jobs will use. Press enter to accept default: " -i "$part" partition
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model

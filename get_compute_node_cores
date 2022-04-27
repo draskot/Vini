@@ -46,13 +46,11 @@ then
     grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
     echo "found $cores CPU cores per compute node."
-    memory=`cat $WORKDIR/memory`
-    #echo "found $memory memory per compute node."
 else
     $job_cancel -u $USER
     read -p "failed to get info about cores. Ask your admin and write number of cores per compute node here:" cores
     echo $cores > $WORKDIR/cores
     job_cancel=`cat $WORKDIR/job_cancel`
 fi
-rm -f *out cores
+#rm -f *out cores
 
