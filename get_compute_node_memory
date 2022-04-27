@@ -1,0 +1,34 @@
+echo "Trying to determine memory per compute node. This may last for a while, please be patient."
+
+
+Vini_queue=`cat $WORKDIR/Vini_queue`
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
+
+echo "#! /bin/bash"                           > $WORKDIR/memory
+echo "#SBATCH --job-name=memory"             >> $WORKDIR/memory
+echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/memory
+echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/memory
+echo "#SBATCH --time=00:00:60"               >> $WORKDIR/memory
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/memory
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/memory
+echo "#SBATCH --partition="$Vini_queue       >> $WORKDIR/memory
+echo "free -h"                               >> $WORKDIR/memory
+chmod u+x                                       $WORKDIR/memory
+
+$job_submit $WORKDIR/memory
+
+timeout 30s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
+if [ -e $WORKDIR/memory.out ]
+then
+    line=`head -2  $WORKDIR/memory.out | tail -1`
+    memsize=`echo $line | awk '{print $2}'`
+    echo "found $memsize free memory per compute node."
+    memsize=`echo $memsize | awk '{ print substr( $0, 1, length($0)-2 ) }'`
+    echo $memsize > $WORKDIR/memsize
+else
+    $job_cancel -u $USER
+    read -p "failed to get info about memory. Ask your admin and write memory size per compute node here:" memory
+    echo $memory > $WORKDIR/memory
+    job_cancel=`cat $WORKDIR/job_cancel`
+fi
