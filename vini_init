@@ -9,6 +9,8 @@ echo
 
 sh $vini_dir/clean
 
+module purge
+
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
 then
@@ -94,8 +96,8 @@ esac
 echo "rosetta" > $WORKDIR/docking
 read -e -p "How many Vina/Rosetta jobs can run in parallel (each job using 4 processors). Press enter to accept default: " -i "60" jobs
 echo $jobs > $WORKDIR/max_jobs
-
-read -e -p "How many Alphafold jobs can run in parallel (each job using 24 cores)? Press enter to accept default: " -i "10" nodes
+cores=`cat $WORKDIR/cores`
+read -e -p "How many Alphafold jobs can run in parallel (each job using $cores cores)? Press enter to accept default: " -i "10" nodes
 echo $nodes > $WORKDIR/nodes
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
@@ -135,9 +137,11 @@ then
     if  [ -s tmp ]
     then
         echo "AlphaFold will be used."
-        read -e -p "Enter number of CPU cores each AlphaFold job will use. Press enter to accept default: " -i "24" cpus
+        #cores=`cat $WORKDIR/cores`
+        part=`cat $WORKDIR/Vini_queue`
+        read -e -p "Enter number of CPU cores each AlphaFold job will use. Press enter to accept default: " -i "$cores" cpus
         read -e -p "Enter memory size (in GB) each AlphaFold job will use. Press enter to accept default: " -i "256" mem
-        read -e -p "Enter name of SLURM partition AlphaFold jobs will use. Press enter to accept default: " -i "comp_smp" partition
+        read -e -p "Enter name of SLURM partition AlphaFold jobs will use. Press enter to accept default: " -i "$part" partition
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model
         echo $cpus > $WORKDIR/AlphaFold_cpus
@@ -359,6 +363,8 @@ echo ${box_size} > $WORKDIR/box_size
 
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
+
+source $vini_dir/sourceme
 
 echo "You may now start Vini in the foreground with <sh VelikaVini> (output will be sent to the screen)"
 echo "or in the background with <nohup ./VelikaVini &> (output will be sent to nohup.out file)"

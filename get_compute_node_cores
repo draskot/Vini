@@ -36,6 +36,8 @@ fi
 
 echo "Trying to determine number of CPU cores per compute node. This may last for a while, please be patient."
 echo "lscpu" >> cores
+#echo "awk '/MemFree/ { printf "%.3f \n", $2/1024/1024 }' /proc/meminfo > $WORKDIR/memory" >> cores
+
 $job_submit cores
 timeout 30s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 30 seconds
 if [ -e $vini_dir/*out ]
@@ -43,7 +45,9 @@ then
     grep "CPU(s)" *out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" *out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'` ; echo $cores > $WORKDIR/cores
-    echo "found" $cores "CPU cores per compute node."
+    echo "found $cores CPU cores per compute node."
+    memory=`cat $WORKDIR/memory`
+    #echo "found $memory memory per compute node."
 else
     $job_cancel -u $USER
     read -p "failed to get info about cores. Ask your admin and write number of cores per compute node here:" cores
@@ -51,3 +55,4 @@ else
     job_cancel=`cat $WORKDIR/job_cancel`
 fi
 rm -f *out cores
+

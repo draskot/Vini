@@ -188,7 +188,8 @@ if  [ ! -s tmp ]
 then
     echo -n "no. Please wait while Vini database is downloaded..."
     mkdir -p $vini_dir/database
-    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate   https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
+    #wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate   https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
+    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate  https://mojoblak.irb.hr/s/4C3MbQ3SirGTKJm/download/database.tar.bz2
     echo "done."
     echo -n "Uncompressing database, please wait..."
     cd $vini_dir/database
@@ -216,10 +217,11 @@ then
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
         source $vini_dir/sourceme
     else
-        echo "no module found. Will use local Alphafold installation."
+        echo "no module found. Will use AlphaFold local installation."
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
 	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	echo "export PATH=$SHARED:\$PATH"  >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$SHARED" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
