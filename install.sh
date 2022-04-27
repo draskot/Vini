@@ -18,7 +18,9 @@ then
     then
         WORKDIR=/exa5/scratch/user/$USER
         echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-        INSTALL=/ceph/hpc/data/d2203-0100-users/$USER
+        SHARED=/ceph/hpc/data/d2203-0100-users
+	echo "Alphafold and Rosetta installation is on CEPH filesystem, mounted as $SHARED" ; echo
+        INSTALL=$SHARED/$USER
     else
         WORKDIR=/scratch/IRB/$USER
         echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
@@ -32,6 +34,7 @@ then
     echo "#************General section**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
+    echo "export SHARED=$SHARED" >> $vini_dir/sourceme
     echo "export INSTALL=$INSTALL" >> $vini_dir/sourceme
     source $vini_dir/sourceme
 fi
@@ -196,6 +199,8 @@ else
     echo "yes."
 fi
 
+source $vini_dir/sourceme
+
 echo -n "Checking if Alphafold is installed..."
 grep Alphafold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -211,12 +216,17 @@ then
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
         source $vini_dir/sourceme
     else
-        echo "no module found. You may install Alphafold locally."
+        echo "no module found. Will use local Alphafold installation."
+        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
+	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
+	echo "export PATH=$SHARED:\$PATH"  >> $vini_dir/sourceme
     fi
 else
     echo "yes."
 fi
 rm -f alphafold tmp
+
+exit
 
 grep rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
