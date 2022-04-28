@@ -56,6 +56,7 @@ else
 fi
 echo $JSS > $WORKDIR/JSS
 
+
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -81,12 +82,18 @@ cd $vini_dir
 
 cat COPYRIGHT
 
+
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
-sh $vini_dir/get_compute_node_cores
-sh $vini_dir/get_compute_node_memory
+node_type=`cat $WORKDIR/cpu_partition`
+sh $vini_dir/get_number_cores_per_node ${node_type}
+sh $vini_dir/get_node_memory_size ${node_type}
 
-Gromacs_threads=`cat $WORKDIR/cores` #setting number of OMP threads to max number of cores
+node_type=`cat $WORKDIR/gpu_partition`
+sh $vini_dir/get_number_cores_per_node ${node_type}
+sh $vini_dir/get_node_memory_size ${node_type}
+
+Gromacs_threads=`cat $WORKDIR/cpu_cores` #setting number of OMP threads to max number of cores
 echo $Gromacs_threads > $WORKDIR/Gromacs_threads
 
 case $JSS in
@@ -134,18 +141,20 @@ read -e -p "Which prediction model Vini will use (A,R,S) in this analysis? Press
 echo ${prediction_model} > $WORKDIR/prediction_model
 if [ ${prediction_model} == A ]
 then 
+    cpu_partition=`cat $WORKDIR/cpu_partition`
+    gpu_partition=`cat $WORKDIR/gpu_partition`
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        echo "AlphaFold will be used."
-        read -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? partition #determine partition to run
+        read -e -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "$gpu_partition" partition
         if [ $partition == cpu ]
         then
-            cat $WORKLOAD/cpu_partition > $WORKDIR/AlphaFold_partition
+            echo $cpu_partition > $WORKDIR/AlphaFold_partition
             cat $WORKDIR/cores > $WORKDIR/AlphaFold_cpus
-            cat $WORKDIR/memsize > $WORKDIR/AlphaFold_mem
+            cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
         else
-            cat $WORKLOAD/gpu_partition > $WORKDIR/AlphaFold_partition`
+            echo $gpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKLOAD/gpu_partition > $WORKDIR/AlphaFold_partition
         fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base

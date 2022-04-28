@@ -18,7 +18,7 @@ else
     echo $gpu_partition > $WORKDIR/gpu_partition
 fi
 
-read -p "accept the current queues (y/n)?" yesno
+read -p "Accept the current partition setup (y/n)?" yesno
 if  [ $yesno == n ]
 then
     echo ""
