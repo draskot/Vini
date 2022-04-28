@@ -138,18 +138,18 @@ then
     if  [ -s tmp ]
     then
         echo "AlphaFold will be used."
-        cores=`cat $WORKDIR/cores`
-        memsize=`cat $WORKDIR/memsize`
-        part=`cat $WORKDIR/Vini_queue`
-        read -e -p "Enter number of CPU cores each AlphaFold job will use. Press enter to accept default: " -i "$cores" cpus
-        read -e -p "Enter memory size (in GB) each AlphaFold job will use. Press enter to accept default: " -i "$memsize" mem
-        read -e -p "Enter name of SLURM partition AlphaFold jobs will use. Press enter to accept default: " -i "$part" partition
+        read -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? partition #determine partition to run
+        if [ $partition == cpu ]
+        then
+            cat $WORKLOAD/cpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/cores > $WORKDIR/AlphaFold_cpus
+            cat $WORKDIR/memsize > $WORKDIR/AlphaFold_mem
+        else
+            cat $WORKLOAD/gpu_partition > $WORKDIR/AlphaFold_partition`
+        fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
-        read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model
-        echo $cpus > $WORKDIR/AlphaFold_cpus
-        echo $mem > $WORKDIR/AlphaFold_mem
-        echo $partition > $WORKDIR/AlphaFold_partition
         echo $base > $WORKDIR/AlphaFold_base
+        read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model
         echo $model > $WORKDIR/AlphaFold_model
     else
         echo "AlphaFold not found, check if it is installed. Then rerun <install.sh> script and start Vini again."

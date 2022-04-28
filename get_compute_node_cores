@@ -2,7 +2,7 @@ NULL=0
 ONES=1
 
 JSS=`cat $WORKDIR/JSS`
-Vini_queue=`cat $WORKDIR/Vini_queue`
+cpu_partition=`cat $WORKDIR/cpu_partition`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 
@@ -16,10 +16,10 @@ then
     echo "#SBATCH --time=00:00:60"               >> cores
     echo "#SBATCH --cpus-per-task=1"             >> cores
     echo "#SBATCH --mem=2gb"                     >> cores
-    echo "#SBATCH --partition="$Vini_queue       >> cores
+    echo "#SBATCH --partition="$cpu_partition    >> cores
     chmod u+x                                       cores
 else
-    echo "#$ -q" $Vini_queue                     >> cores
+    echo "#$ -q" $cpu_partition                  >> cores
     Vini_pe=`cat $WORKDIR/Vini_pe`
     echo "#! /bin/bash"                           > cores
     echo "WORKDIR=$WORKDIR"                      >> cores

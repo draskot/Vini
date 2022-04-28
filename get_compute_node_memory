@@ -1,7 +1,7 @@
 echo "Trying to determine memory per compute node. This may last for a while, please be patient."
 
 
-Vini_queue=`cat $WORKDIR/Vini_queue`
+cpu_partition=`cat $WORKDIR/cpu_partition`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 
@@ -12,7 +12,7 @@ echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/memory
 echo "#SBATCH --time=00:00:60"               >> $WORKDIR/memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/memory
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/memory
-echo "#SBATCH --partition="$Vini_queue       >> $WORKDIR/memory
+echo "#SBATCH --partition="$cpu_partition    >> $WORKDIR/memory
 echo "free -h"                               >> $WORKDIR/memory
 chmod u+x                                       $WORKDIR/memory
 
