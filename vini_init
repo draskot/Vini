@@ -101,10 +101,11 @@ case $JSS in
      2) sh prepare_SGE_scripts ;;
 esac
 
+
 echo "rosetta" > $WORKDIR/docking
 read -e -p "How many Vina/Rosetta jobs can run in parallel (each job using 4 processors). Press enter to accept default: " -i "60" jobs
 echo $jobs > $WORKDIR/max_jobs
-cores=`cat $WORKDIR/cores`
+cores=`cat $WORKDIR/cpu_cores`
 read -e -p "How many Alphafold jobs can run in parallel (each job using $cores cores)? Press enter to accept default: " -i "10" nodes
 echo $nodes > $WORKDIR/nodes
 
@@ -150,11 +151,12 @@ then
         if [ $partition == cpu ]
         then
             echo $cpu_partition > $WORKDIR/AlphaFold_partition
-            cat $WORKDIR/cores > $WORKDIR/AlphaFold_cpus
+            cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
             cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
         else
             echo $gpu_partition > $WORKDIR/AlphaFold_partition
-            cat $WORKLOAD/gpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
+            cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
         fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base

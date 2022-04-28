@@ -1,4 +1,4 @@
-cores=`cat $WORKDIR/cores`
+cores=`cat $WORKDIR/cpu_cores`
 cpu_partition=`cat $WORKDIR/cpu_partition`
 
 cd $WORKDIR
@@ -235,6 +235,7 @@ echo "#SBATCH --partition="$cpu_partition     >> potential
 echo "export OMP_NUM_THREADS=8"               >> potential
 cat $vini_dir/potent                          >> potential
 chmod u+x                                        potential
+
 
 echo "#! /bin/bash"                            > FBE
 echo "#SBATCH --job-name=FBE"                 >> FBE
