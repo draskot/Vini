@@ -3,12 +3,11 @@
 
 MAX_NODES=$1
 job_status=`cat $WORKDIR/job_status`
-user=`echo ${USER:0:8}` #for long partition names last characters may be lost
 NULL=0
 
 while true
 do
-    $job_status -u $user > $WORKDIR/all_user_jobs
+    $job_status -u $USER > $WORKDIR/all_user_jobs
     nolines=`wc -l < $WORKDIR/all_user_jobs`
     if [ $nolines -eq $NULL ]
     then

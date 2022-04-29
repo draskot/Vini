@@ -8,6 +8,7 @@ partition=`cat  $WORKDIR/AlphaFold_partition`
 base=`cat $WORKDIR/AlphaFold_base`
 model=`cat $WORKDIR/AlphaFold_model`
 
+
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 if  [ ${prediction_model} == A ]
@@ -15,10 +16,10 @@ then
     echo $FALSE > $WORKDIR/error
     while read -r line
     do
+        drug=`echo $line | awk -F','  '{print $1}'`
         type=`echo $line | awk -F','  '{print $2}'`
         if  [ $type == P ]
         then
-            drug=`echo $line | awk -F','  '{print $1}'`
             if  [ ! -e $vini_dir/database/ligands/pdb_files/${drug}.pdb ]
             then
                 if  [ ! -e ${vini_dir}/database/ligands/fasta_files/${drug}.fasta ]

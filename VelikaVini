@@ -27,6 +27,7 @@ tissue=`echo $line | awk '{print $2}'`
 CANCER_PATHWAY=$ORGANISM$cancer_type
 mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
 sh download_KEGG_pathway
+
 echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
 start_date=`date`
 echo "Analysis of therapy level " $therapy_level "started at" $start_date
