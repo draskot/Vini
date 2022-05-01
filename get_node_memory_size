@@ -1,0 +1,50 @@
+
+node_type=$1
+walltime=$2
+
+if [ ${node_type} == cpu ]
+then
+    partition=`cat $WORKDIR/cpu_partition`
+else
+    partition=`cat $WORKDIR/gpu_partition`
+fi
+#walltime=120
+
+
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
+
+echo "Determining memory size per ${node_type} node. This may last up to ${walltime} seconds."
+
+echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
+echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
+echo "free -h"                               >> $WORKDIR/get_size_of_memory
+chmod u+x                                       $WORKDIR/get_size_of_memory
+
+$job_submit $WORKDIR/get_size_of_memory
+
+timeout ${walltime}s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 60 seconds
+if [ -e $WORKDIR/memory.out ]
+then
+    line=`head -2  $WORKDIR/memory.out | tail -1`
+    memsize=`echo $line | awk '{print $2}'`
+    echo "found $memsize free memory per ${node_type} node."
+    memsize=`echo $memsize | awk '{ print substr( $0, 1, length($0)-2 ) }'`
+else
+    $job_cancel -u $USER
+    read -p "failed to get info about memory. Write memory size in [GB] per ${node_type} node:" memsize
+fi
+
+suffix=gb    
+if  [ ${node_type} == cpu ]
+then
+    echo $memsize$suffix > $WORKDIR/cpu_memsize
+else
+    echo $memsize$suffix > $WORKDIR/gpu_memsize
+fi
