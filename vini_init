@@ -95,8 +95,8 @@ sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
 node_type=`cat $WORKDIR/gpu_partition`
 sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
 
-Gromacs_threads=`cat $WORKDIR/cpu_cores` #setting number of OMP threads to max number of cores
-echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+#Gromacs_threads=`cat $WORKDIR/cpu_cores` #setting number of OMP threads to max number of cores
+#echo $Gromacs_threads > $WORKDIR/Gromacs_threads
 
 #case $JSS in
 #     1) sh prepare_SLURM_scripts ;;
