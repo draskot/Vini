@@ -30,6 +30,7 @@ then
                 else
                     sh $vini_dir/nodes_control_script ${MAX_NODES}
                     fasta_file=${vini_dir}/database/ligands/fasta_files/${drug}.fasta
+                    model=multimer
                     sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
                 fi
             fi

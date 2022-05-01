@@ -89,28 +89,27 @@ walltime=120  #seconds
 node_type=`cat $WORKDIR/cpu_partition`
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-
 node_type=`cat $WORKDIR/gpu_partition`
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-
 node_type=`cat $WORKDIR/gpu_partition`
 sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
 
 Gromacs_threads=`cat $WORKDIR/cpu_cores` #setting number of OMP threads to max number of cores
 echo $Gromacs_threads > $WORKDIR/Gromacs_threads
 
-case $JSS in
-     1) sh prepare_SLURM_scripts ;;
-     2) sh prepare_SGE_scripts ;;
-esac
+#case $JSS in
+#     1) sh prepare_SLURM_scripts ;;
+#     2) sh prepare_SGE_scripts ;;
+#esac
 
+sh $vini_dir/prepare_SLURM_scripts
 
 echo "rosetta" > $WORKDIR/docking
 read -e -p "How many Vina/Rosetta jobs can run in parallel (each job using 4 processors). Press enter to accept default: " -i "60" jobs
 echo $jobs > $WORKDIR/max_jobs
 cores=`cat $WORKDIR/cpu_cores`
-read -e -p "How many Alphafold jobs can run in parallel (each job using $cores cores)? Press enter to accept default: " -i "10" nodes
+read -e -p "How many Alphafold jobs can run in parallel (each job will use $cores CPU threads)? Press enter to accept default: " -i "30" nodes
 echo $nodes > $WORKDIR/nodes
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
@@ -164,8 +163,8 @@ then
         fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base
-        read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model
-        echo $model > $WORKDIR/AlphaFold_model
+        #read -e -p "Enter which structure AlphaFold will try to produce (monomer or multimer). Press enter to accept default: " -i "multimer" model
+        #echo $model > $WORKDIR/AlphaFold_model
     else
         echo "AlphaFold not found, check if it is installed. Then rerun <install.sh> script and start Vini again."
         exit
@@ -267,7 +266,7 @@ cat tmp | sed "s/path:hsa//g" > $WORKDIR/pathways ; rm tmp
 echo "Next will be shown the list of available pathways (use bar to scroll and <q> to exit)."
 echo "Then choose the pathway number and press <enter>. Example: For screening collorectal cancer, enter 05210 ."
 echo ""
-echo "tip: For cancer type not in the list, choose 05200 (Pathways in cancer)."
+echo "tip: For cancer type not in the list, choose 05200 (general cancer pathway)."
 echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/pathways | less
 echo ""

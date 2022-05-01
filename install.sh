@@ -203,7 +203,7 @@ fi
 source $vini_dir/sourceme
 
 echo -n "Checking if Alphafold is installed..."
-grep Alphafold $vini_dir/sourceme > tmp
+grep AlphaFold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
     echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
@@ -222,6 +222,7 @@ then
 	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	echo "export PATH=$SHARED:\$PATH"  >> $vini_dir/sourceme
 	echo "export AlphaFoldSTART=$SHARED" >> $vini_dir/sourceme
+	echo "export AlphaFoldBASE=$SHARED/alphafold-data" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
