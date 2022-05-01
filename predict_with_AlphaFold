@@ -43,4 +43,3 @@ echo "python3 $AlphaFoldSTART/$run_singularity --data-dir=$AlphaFoldBASE --fasta
 chmod u+x                                                     $WORKDIR/AlphaFold
 
 ${job_submit} $WORKDIR/AlphaFold
-echo "brakepoint" ; sleep 1000
