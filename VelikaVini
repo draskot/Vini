@@ -38,6 +38,7 @@ therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
     sh $vini_dir/create_mab_structures
+    echo "brakepoint" ; sleep 1000
     sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh create_receptor_structures     #Create receptors_contracted file and molecular structures
     error=`cat $WORKDIR/error`
