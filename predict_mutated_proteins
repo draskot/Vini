@@ -1,10 +1,6 @@
-
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
-#curl -s -d "dna_sequence=ATCG....AGCTAG&output_format=fasta" https://web.expasy.org/cgi-bin/translate/dna2aa.cgi > my_output.frame
 
 cell_line=$1
-
-NULL=0
 
 prediction_model=`cat $WORKDIR/prediction_model`
 cpus=`cat $WORKDIR/AlphaFold_cpus`
@@ -19,22 +15,13 @@ echo -n "Translating nucleotide sequences to aminoacid sequences, please wait...
 rm -f $vini_dir/database/genes/sequences/*csv
 
 ls $vini_dir/database/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
-i=1   #create and run job for DNA --> protein sequence translation
-while read -r line
+
+while read -r line              #DNA --> protein sequence translation
 do
-    CMD="curl -s -d"
-    A=\"dna_sequence=
-    SEQ=`cat $line`
-    FORMAT=\&output_format=fasta\"
-    LINK=https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
-    OUT=" > "
-    FILENAME=`basename "$line"`
-    echo $CMD $A$SEQ$FORMAT $LINK $OUT ${SEQDIR}_${FILENAME} > translate
-    chmod u+x translate
-    sh translate 
-    FRAMES=`basename -s .fasta ${SEQDIR}_${FILENAME} | cut -c2-`
-    mv ${SEQDIR}_${FRAMES}.fasta $SEQDIR${FRAMES}.frame
-    let "i++"
+    uniprot_id=`basename ${line} .fasta`
+    dnaseq=`cat $line`
+    wget -O $SEQDIR/${uniprot_id}.frame --post-data="dna_sequence=${dnaseq}&output_format=fasta" -q  https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
+    rm $SEQDIR/${uniprot_id}.fasta
     echo -n "."
 done < $WORKDIR/tmp
 echo "done."

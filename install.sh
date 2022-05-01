@@ -40,17 +40,15 @@ then
 fi
 read -p "press enter when ready to start the installation."
 
-
 echo -n "checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
 if  [ ! -s tmp ]
 then
     echo "no. Please wait while downloading and installing miniconda2..."
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
-
     rm -rf  $INSTALL/miniconda2
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
-    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    wget -P $vini_dir/software -q https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
     sh $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
     source $INSTALL/miniconda2/etc/profile.d/conda.sh
     conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
@@ -68,7 +66,7 @@ then
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
     rm -rf $INSTALL/miniconda3
     rm -f $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh
-    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget -P $vini_dir/software -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
     conda create -n meeko -c conda-forge numpy scipy rdkit
@@ -123,14 +121,13 @@ else
     echo "yes."
 fi
 
-
 echo -n "checking if MGLTools are installed..."
 grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
 if  [ ! -s tmp ]
 then
     echo "no."
     rm -rf $vini_dir/software/index*
-    wget -P $vini_dir/software --no-check-certificate https://ccsb.scripps.edu/download/532/
+    wget -P $vini_dir/software -q --no-check-certificate https://ccsb.scripps.edu/download/532/
     mv $vini_dir/software/index.html $vini_dir/software/mgltools_x86_64Linux2_1.5.7.tar.gz
     tar -xvzf $vini_dir/software/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
     cd $INSTALL/mgltools_x86_64Linux2_1.5.7
@@ -154,7 +151,7 @@ if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
     rm -f $vini_dir/software/vina*
-    wget -P $vini_dir/software --no-check-certificate  https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
+    wget -P $vini_dir/software -q --no-check-certificate https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
     chmod u+x $vini_dir/software/vina*
     mkdir -p $INSTALL/vina
     cp $vini_dir/software/vina* $INSTALL/vina/vina
@@ -172,7 +169,8 @@ then
     echo -n "no. Please wait while ADFR suite 1.0 is installed..."
     rm -f $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz
     rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-    curl -Lfs -o $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+    #curl -Lfs -o $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+    wget -O $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -q https://ccsb.scripps.edu/adfr/download/1038/
     tar -xzf $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
     cd $INSTALL/ADFRsuite_x86_64Linux_1.0
     sh install.sh
@@ -188,8 +186,7 @@ if  [ ! -s tmp ]
 then
     echo -n "no. Please wait while Vini database is downloaded..."
     mkdir -p $vini_dir/database
-    #wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate   https://mojoblak.irb.hr/s/mdCFfbykRmR6WA9/download/database.tar.bz2
-    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate  https://mojoblak.irb.hr/s/4C3MbQ3SirGTKJm/download/database.tar.bz2
+    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate -q https://mojoblak.irb.hr/s/4C3MbQ3SirGTKJm/download/database.tar.bz2
     echo "done."
     echo -n "Uncompressing database, please wait..."
     cd $vini_dir/database

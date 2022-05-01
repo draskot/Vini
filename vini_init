@@ -9,8 +9,6 @@ echo
 
 sh $vini_dir/clean
 
-module purge
-
 echo -n "checking for user..." 
 if [[ $HOME == "/root" ]]
 then
@@ -86,25 +84,17 @@ alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
 walltime=120  #seconds
 
-#node_type=`cat $WORKDIR/cpu_partition`
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-#node_type=`cat $WORKDIR/gpu_partition`
 node_type=gpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-#node_type=`cat $WORKDIR/gpu_partition`
 node_type=gpu
 sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
 
 #Gromacs_threads=`cat $WORKDIR/cpu_cores` #setting number of OMP threads to max number of cores
 #echo $Gromacs_threads > $WORKDIR/Gromacs_threads
-
-#case $JSS in
-#     1) sh prepare_SLURM_scripts ;;
-#     2) sh prepare_SGE_scripts ;;
-#esac
 
 sh $vini_dir/prepare_SLURM_scripts
 
@@ -247,7 +237,7 @@ then
 fi
 
 echo -n "Trying to retrieve the list of available organisms from KEGG, please wait..."
-curl -Lfs -o tmp http://rest.kegg.jp/list/organism
+wget -O tmp --no-check-certificate -q http://rest.kegg.jp/list/organism
 echo "done."
 awk '{$1=""}1' tmp | awk '{$1=$1}1' > tmp2
 awk 'NF{NF--};1' <tmp2 > $WORKDIR/organisms
@@ -262,7 +252,7 @@ read -e -p "Please enter the abbreviation for organism you want to analyse? Pres
 echo $ORGANISM > $WORKDIR/ORGANISM
 
 echo -n "Trying to retrieve the list of available metabolic pathways from KEGG, please wait..."
-curl -Lfs -o $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
+wget -O $vini_dir/tmp --no-check-certificate -q $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
 echo "done."
 cat tmp | sed "s/path:hsa//g" > $WORKDIR/pathways ; rm tmp
 

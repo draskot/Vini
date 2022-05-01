@@ -40,7 +40,8 @@ do
 
     if  [[ ${KEGG_gene_name:0:1} == "C" ]]         #checking if KEGG entry is the compound
     then
-        pubchem_id=`curl -s http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        #pubchem_id=`curl -s http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        pubchem_id=`wget -q http://rest.kegg.jp/conv/pubchem/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
         echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
         if  [ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]  
         then 
@@ -60,7 +61,8 @@ do
             fi
         fi
     else  #KEGG entry is protein
-        uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        #uniprot_id=`curl -s http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
+        uniprot_id=`wget -q http://rest.kegg.jp/conv/uniprot/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
         uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
 
         if  [ -z "$uniprot_id" ]

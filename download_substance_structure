@@ -13,7 +13,8 @@ pubchem_id=`echo ${pubchem_id} | tr -dc '[0-9\n]'`
 prefix="https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/SID/"
 suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename=Structure2D_SID_"
 
-curl -Lfs -o ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
+#curl -Lfs -o ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
+wget -O ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
 
 obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats ; mv tmp.pdb $DOWNLOAD_DIR/pubchem:${pubchem_id}.pdb
 

@@ -32,7 +32,8 @@ then
             inline=`head -1 $vini_dir/tmp`
             DBID=`echo $inline | tr "," " " | awk '{print $1}'`
             dtype=`echo $line | awk -F',' '{print $2}'`
-                curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
+                #curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
+                wget -O $vini_dir/database/ligands/sdf_files/${drug}.sdf -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
                 if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ] #check if download was ok
                 then
                     echo " ${drug}.sdf downloaded from Drugbank!"
