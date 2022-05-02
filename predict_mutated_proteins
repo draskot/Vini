@@ -11,6 +11,8 @@ model=`cat $WORKDIR/AlphaFold_model`
 
 SEQDIR=$vini_dir/database/genes/sequences/
 
+echo "brakepoint" ; sleep 1000
+
 echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
 rm -f $vini_dir/database/genes/sequences/*csv
 
