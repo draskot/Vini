@@ -133,24 +133,26 @@ sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugba
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
-echo "Vini can predict protein structuress with AlphaFold[A], Rosetta[R], or SWISS-MODEL[S]."
-read -e -p "Which prediction model Vini will use (A,R,S) in this analysis? Press enter to accept default: " -i "A" prediction_model
+#echo "Vini can predict protein structures with AlphaFold[A], Rosetta[R], or SWISS-MODEL[S]."
+#read -e -p "Which prediction model Vini will use (A,R,S) in this analysis? Press enter to accept default: " -i "A" prediction_model
+echo "Vini can predict protein structures either with AlphaFold[A] or SWISS-MODEL[S]."
+read -e -p "Use AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "A" prediction_model
 echo ${prediction_model} > $WORKDIR/prediction_model
 if [ ${prediction_model} == A ]
 then 
-    cpu_partition=`cat $WORKDIR/cpu_partition`
-    gpu_partition=`cat $WORKDIR/gpu_partition`
+    #cpu_partition=`cat $WORKDIR/cpu_partition`
+    #gpu_partition=`cat $WORKDIR/gpu_partition`
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        read -e -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "$gpu_partition" partition
+        read -e -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
         if [ $partition == cpu ]
         then
-            echo $cpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
             cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
             cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
         else
-            echo $gpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
             cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
             cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
         fi
@@ -163,24 +165,24 @@ then
         exit
     fi
 else
-    if  [ ${prediction_model} == R ]
-    then
-        grep Rosetta $vini_dir/sourceme > tmp
-        if  [ -s tmp ]
-        then
-            echo "Rosetta will be used for protein structure predictions."
-        else
-            echo "Huh, can not find Rosetta. Check for installation. Then rerun <install.sh> script and start Vini again."
-            exit
-        fi
-    else
+    #if  [ ${prediction_model} == R ]
+    #then
+    #    grep Rosetta $vini_dir/sourceme > tmp
+    #    if  [ -s tmp ]
+    #    then
+    #        echo "Rosetta will be used for protein structure predictions."
+    #    else
+    #        echo "Huh, can not find Rosetta. Check for installation. Then rerun <install.sh> script and start Vini again."
+    #        exit
+    #    fi
+    #else
         echo "SWISS-MODEL will be used for prediction of protein structures."
         read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
         read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
         read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
         chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
         sh download_SWISS_MODEL_metadata
-    fi
+    #fi
 fi
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic

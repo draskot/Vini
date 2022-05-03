@@ -145,7 +145,7 @@ else
 fi
 
 echo -n "checking if Vina is installed..."
-grep Vina sourceme > tmp
+grep Vina $vini_dir/sourceme > tmp
 nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
