@@ -1,11 +1,9 @@
-dots=:
 email=`cat $WORKDIR/Drugbank_email`
 password=`cat $WORKDIR/Drugbank_password`
 
 if [ ! -e drug?links.csv ]
 then
     echo -n "drug?links.csv file missing, trying to download it from Drugbank, please wait... "
-    #curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
     wget -O filename.zip --user $email --password $password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links 
     if [ -e filename.zip ]
     then
@@ -20,7 +18,6 @@ else
     if (( file_time <= hundred_days_ago ))
     then
       echo -n "drug?links.csv file is more than 7 days old, updating..."
-      #curl -Lfs -o filename.zip -u $email$dots$password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
       wget -O filename.zip --user $email --password $password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
       if  [ -e filename.zip ]
       then

@@ -26,7 +26,6 @@ do
         then
             echo "not exists on RCSB."
         else
-            #curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf $prefix${rcsb_code}$suffix
             wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf $prefix${rcsb_code}$suffix
         fi
         if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
@@ -42,7 +41,6 @@ do
             then
                 inline=`head -1 $WORKDIR/tmp`
                 DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-                #curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
                 wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
                 if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
                 then
@@ -50,7 +48,6 @@ do
                 else
                     echo "failed."
                     echo -n "trying to download ${drug}.2D-SDF structure from Drugbank..."
-                    #curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf
                     wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf
                     if [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
                     then
@@ -58,7 +55,6 @@ do
                     else
                         echo  "failed."
                         echo -n "trying to download ${drug}.pdb structure from Drugbank..."
-                        #curl -Lfs -o $vini_dir/database/ligands/pdb_files/${drug}.pdb https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.pdb
                         wget -q -O $vini_dir/database/ligands/pdb_files/${drug}.pdb https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.pdb
                         if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.pdb ]
                         then

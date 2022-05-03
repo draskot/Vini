@@ -6,7 +6,7 @@ cpus=`cat $WORKDIR/AlphaFold_cpus`
 mem=`cat $WORKDIR/AlphaFold_mem`
 partition=`cat  $WORKDIR/AlphaFold_partition`
 base=`cat $WORKDIR/AlphaFold_base`
-model=`cat $WORKDIR/AlphaFold_model`
+model=multimer
 
 
 MAX_NODES=`cat $WORKDIR/nodes`

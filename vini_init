@@ -298,14 +298,14 @@ then
     echo $cell_line > $WORKDIR/cell_line
     echo "Creating ligands_list file with drugs in NCI-60 database."
     sh $vini_dir/create_NSC_numbers_file
-    > NCI-60_ligands_list
+    > $WORKDIR/NCI-60_ligands_list
     while read -r line
     do
         drugname=`echo $line | awk -F','  '{print $1}'`
         grep -w ${drugname} $vini_dir/database/ligands/ligands_list > tmp
         if [ -s tmp ]
         then
-            cat tmp >> NCI-60_ligands_list
+            cat tmp >> $WORKDIR/NCI-60_ligands_list
             echo $drugname "will be analysed."
         fi
     done < $vini_dir/database/NSC_numbers
@@ -313,7 +313,7 @@ then
     read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
-        mv NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
+        mv $WORKDIR/NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
         echo "yes" > $WORKDIR/validate_NCI-60_data
     else
         echo "no" > $WORKDIR/validate_NCI-60_data

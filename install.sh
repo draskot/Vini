@@ -90,7 +90,6 @@ else
     echo "yes."
 fi
 
-
 echo -n "checking if UCSF Chimera is installed..."
 grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
@@ -169,7 +168,6 @@ then
     echo -n "no. Please wait while ADFR suite 1.0 is installed..."
     rm -f $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz
     rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-    #curl -Lfs -o $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
     wget -O $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -q https://ccsb.scripps.edu/adfr/download/1038/
     tar -xzf $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
     cd $INSTALL/ADFRsuite_x86_64Linux_1.0
@@ -214,12 +212,13 @@ then
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
         source $vini_dir/sourceme
     else
-        echo "no module found. Will use AlphaFold local installation."
+        read -p "no module found. Enter path where AlphaFold is installed:" AlphaFold
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	echo "export PATH=$SHARED:\$PATH"  >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$SHARED" >> $vini_dir/sourceme
-	echo "export AlphaFoldBASE=$SHARED/alphafold-data" >> $vini_dir/sourceme
+	#echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
+	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
+	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
+        echo "export AlphaFoldIMAGE=$AlphaFold" >> $vini_dir/sourceme
     fi
 else
     echo "yes."

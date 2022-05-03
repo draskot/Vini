@@ -47,8 +47,6 @@ then
        exit
     fi
       
-    #STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
-    #eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
     echo -n "activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
     conda activate env27
@@ -60,8 +58,8 @@ then
             if  [ ! -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ] #get expressions
             then
                 sh get_gene_expressions_from_CosmicDB ${cores}
-                $job_submit genex
-                sh wait_until_jobs_finish ; rm genex.out
+                $job_submit $WORKDIR/genex
+                sh wait_until_jobs_finish ; rm $WORKDIR/genex.out
                     cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
             else
                 cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/database/genes

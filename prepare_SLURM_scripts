@@ -141,17 +141,17 @@ echo "#SBATCH --error=rosetta_log.err"       >> rosetta_log
 cat $vini_dir/rosetta_log                    >> rosetta_log
 chmod u+x rosetta_log
 
-echo "#! /bin/bash"                           > $vini_dir/genex
-echo "#SBATCH --job-name=genex"              >> $vini_dir/genex
-echo "#SBATCH --nodes=1"                     >> $vini_dir/genex
-echo "#SBATCH --ntasks-per-node="$cores      >> $vini_dir/genex
-echo "#SBATCH --cpus-per-task=1"             >> $vini_dir/genex
-echo "#SBATCH --mem=48gb"                    >> $vini_dir/genex
-echo "#SBATCH --partition="$cpu_partition    >> $vini_dir/genex
-echo "#SBATCH --time=24:00:00"               >> $vini_dir/genex
-echo "#SBATCH --output=genex.out"            >> $vini_dir/genex
-cat $vini_dir/calculate_z_scores_script      >> $vini_dir/genex
-chmod u+x                                       $vini_dir/genex
+echo "#! /bin/bash"                           > genex
+echo "#SBATCH --job-name=genex"              >> genex
+echo "#SBATCH --nodes=1"                     >> genex
+echo "#SBATCH --ntasks-per-node="$cores      >> genex
+echo "#SBATCH --cpus-per-task=1"             >> genex
+echo "#SBATCH --mem=48gb"                    >> genex
+echo "#SBATCH --partition="$cpu_partition    >> genex
+echo "#SBATCH --time=24:00:00"               >> genex
+echo "#SBATCH --output=genex.out"            >> genex
+cat $vini_dir/calculate_z_scores_script      >> genex
+chmod u+x                                       genex
 
 #echo "#! /bin/bash"                           > sander
 #echo "#SBATCH --job-name=sander"             >> sander

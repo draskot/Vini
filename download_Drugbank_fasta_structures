@@ -31,7 +31,6 @@ do
                 echo "drug found." 
                 DBID=`head -1 $vini_dir/tmp`
                 DBID=`echo $DBID | tr "," " " | awk '{print $1}'`
-                #curl -Lfs -o $vini_dir/database/ligands/fasta_files/${drug}.fasta https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
                 wget -O $vini_dir/database/ligands/fasta_files/${drug}.fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
             else
                 echo -n $drugname "not found in Drugbank. Entry will be commented." 

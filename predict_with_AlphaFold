@@ -22,22 +22,17 @@ echo "#SBATCH --time=04-00:00:00"                          >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=A_"${name}                        >> $WORKDIR/AlphaFold
 echo "#SBATCH --output=$WORKDIR/alphafold.out."${name}     >> $WORKDIR/AlphaFold
 echo "#SBATCH --error=$WORKDIR/alphafold.err."${name}      >> $WORKDIR/AlphaFold
+
 if  [ ${node_type} == gpu ]
 then
     gpus=`cat $WORKDIR/number_gpu_cards`
     echo "#SBATCH --gres=gpu:"$gpus                        >> $WORKDIR/AlphaFold
 fi
 
-run_singularity=`uname -a | grep vega`
-if [ -z "$run_singularity" ] 
-then
-    run_singularity=run_singularity_vega.py
-else 
-    run_singularity=run_singularity_vega.py
-fi
 
-#echo "python3 $AlphaFoldSTART/run_singularity_vega.py --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                           >> $WORKDIR/AlphaFold
-echo "python3 $AlphaFoldSTART/$run_singularity --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                           >> $WORKDIR/AlphaFold
+echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                           >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold
 
 ${job_submit} $WORKDIR/AlphaFold
+
+echo "brakepoint" ; sleep 1000
