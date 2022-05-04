@@ -7,7 +7,7 @@ fasta_file=$6
 
 job_submit=`cat $WORKDIR/job_submit`
 
-name=`basename ${fasta_file} .fasta`
+drugname=`basename ${fasta_file} .fasta`
 
 node_type=`cat $WORKDIR/AlphaFold_partition`
 
@@ -18,22 +18,21 @@ echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
 echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
-echo "#SBATCH --job-name=A_"${name}                        >> $WORKDIR/AlphaFold
-echo "#SBATCH --output=$WORKDIR/alphafold.out."${name}     >> $WORKDIR/AlphaFold
-echo "#SBATCH --error=$WORKDIR/alphafold.err."${name}      >> $WORKDIR/AlphaFold
+echo "#SBATCH --job-name=A_"${drugname}                    >> $WORKDIR/AlphaFold
+echo "#SBATCH --output=$WORKDIR/alphafold.${drugname}.out" >> $WORKDIR/AlphaFold
+echo "#SBATCH --error=$WORKDIR/alphafold.${drugname}.err"  >> $WORKDIR/AlphaFold
 
 if  [ ${node_type} == gpu ]
 then
     gpus=`cat $WORKDIR/number_gpu_cards`
     echo "#SBATCH --gres=gpu:"$gpus                        >> $WORKDIR/AlphaFold
 fi
+AlphaFoldSTART=/ceph/hpc/data/d2203-0100-users/run_singularity_vega.py #for debug only
 
-
-echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                           >> $WORKDIR/AlphaFold
+echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                         >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold
 
-echo "brakepoint "; sleep 1000 
-
-
 ${job_submit} $WORKDIR/AlphaFold
+
+echo "brakepoint "; sleep 1000 
 

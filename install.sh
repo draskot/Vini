@@ -219,6 +219,7 @@ then
 	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
 	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
         echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+        echo "export DATA_DIRECTORY=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
