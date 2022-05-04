@@ -27,7 +27,6 @@ then
     gpus=`cat $WORKDIR/number_gpu_cards`
     echo "#SBATCH --gres=gpu:"$gpus                        >> $WORKDIR/AlphaFold
 fi
-AlphaFoldSTART=/ceph/hpc/data/d2203-0100-users/run_singularity_vega.py #for debug only
 
 echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                         >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold
