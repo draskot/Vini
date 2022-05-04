@@ -20,15 +20,6 @@ echo "#SBATCH --mem=2gb"                   >> meeko
 echo "#SBATCH --partition="$cpu_partition  >> meeko
 chmod u+x                                     meeko
 
-#echo "#!/bin/bash"                              > alphafold  #prepare SLURM script for AlphaFold
-#echo "#SBATCH --nodes=1"                       >> alphafold
-#echo "#SBATCH --exclusive"                     >> alphafold
-#echo "#SBATCH --ntasks-per-node=1"             >> alphafold
-#echo "#SBATCH --cpus-per-task=48"              >> alphafold
-#echo "#SBATCH --partition="$Vini_queue         >> alphafold
-#echo "#SBATCH --time=05-00:00:00"              >> alphafold
-#chmod u+x                                         alphafold
-
 echo "#!/bin/bash"                            > rosetta_relax #prepare relax static script
 echo "#SBATCH --job-name=relax"              >> rosetta_relax
 echo "#SBATCH --nodes=1"                     >> rosetta_relax
