@@ -216,9 +216,9 @@ then
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
 	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
 	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-        #echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+        echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
         #echo "export DATA_DIRECTORY=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
     fi
 else
@@ -226,50 +226,63 @@ else
 fi
 rm -f alphafold tmp
 
-exit
 
-grep rosetta $vini_dir/sourceme > tmp
+echo -n "Checking if BLAST is installed..."
+grep BLAST $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
-    module avail Rosetta 2> tmp
-    grep Rosetta tmp > rosetta
-    if [ -s rosetta ]
+    echo "no." ; echo -n "Checking if BLAST module(s) exists..."
+    module spider blast 2> tmp
+    grep -w error tmp > blast
+    if [ ! -s blast ]
     then
-        echo "Found the following module(s) that may be associated with Rosetta:" ; cat rosetta
-    fi
-    read -p "Write the Rosetta module name or q to quit:" rosetta
-    if  [ $rosetta != q ] ; then
-        module avail 2> tmp
-        grep "$rosetta" tmp > tmp2
-        if [ -s tmp2 ] ; then
-            echo "#*****Rosetta section******" >> $vini_dir/sourceme
-            echo "module load" $rosetta >> $vini_dir/sourceme
-            module load $rosetta
-            which docking_protocol.linuxgccrelease > tmp          #defining ROSETTA var
-            var=`cat tmp`
-            var2=${var::-48}
-            echo "export ROSETTA=$var2" >> $vini_dir/sourceme
-            command -v docking_protocol.mpi.linuxgccrelease > tmp #checking for MPI support
-            if  [ -s tmp ] ; then
-                echo "mpi" > $WORKDIR/rosie
-            else
-                echo "static" > $WORKDIR/rosie
-            fi
-            source $vini_dir/sourceme
-        else
-            > $WORKDIR/rosie
-            echo "module" $rosetta "does not exist."
-            echo "Rosetta is used for the analysis of mAb drugs and can be installed later."
-            echo "However, to activate Rosetta you must restart this install.sh script."
-            read -p "Press <enter> to continue." anykey
-        fi
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" blast
+        echo "module load" $blast >> $vini_dir/sourceme
+        echo "#*****BLAST section******" >> $vini_dir/sourceme
     else
-        echo "Rosetta is used for the analysis of mAb drugs and can be installed later."
-        echo "However, to activate Rosetta you must restart this install.sh script."
-        read -p "Press <enter> to continue." anykey
+	echo "BLAST module not found. Please wait while compiling and installing BLAST, may take several hours."
+	wget -O $INSTALL/ncbi-blast-2.13.0+-src.tar.gz --no-check-certificate -q https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.13.0+-src.tar.gz 
+	cd $INSTALL/ncbi-blast-2.13.0+-src/c++
+	./configure
+	cd ReleaseMT/build
+	make all_r
+	echo "#*****BLAST section******" >> $vini_dir/sourceme
+	echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
     fi
+    source $vini_dir/sourceme
+else
+    echo "yes."
 fi
-rm -f rosetta tmp tmp2
+
+echo -n "Checking if Rosetta is installed..."
+grep Rosetta $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no." ; echo -n "Checking if Rosetta module(s) exists..."
+    module spider rosetta 2> tmp
+    grep -w error tmp > rosetta
+    if [ ! -s rosetta ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select the Rosetta module:" rosetta
+        echo "module load" $rosetta >> $vini_dir/sourceme
+    else
+	cd $INSTALL
+        if  [ -e rosetta.source.release-314.tar.bz2 ]
+	then	
+	    echo "Please wait while compiling and installing Rosetta, may take several hours to finish."
+	else
+            read -p "you must download rosetta.source.release-314.tar.bz2 file to $INSTALL folder. Then press enter to continue." enter 
+	fi
+        tar -xvf rosetta.source.release-314.tar.bz2
+	cd  rosetta.source.release-314/main/source
+	./scons.py -j 4 mode=release bin
+    fi
+else
+    echo "yes."
+fi
+rm -f rosetta tmp
 
 echo "The downloaded source packages are in" $vini_dir/software
 echo "Installation is done. You may want to put source" $vini_dir"/sourceme in your .bashrc file."
