@@ -8,8 +8,6 @@ then
 else
     partition=`cat $WORKDIR/gpu_partition`
 fi
-#walltime=120
-
 
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -20,7 +18,7 @@ echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
-echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
+#echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
