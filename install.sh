@@ -268,14 +268,11 @@ then
         read -p "Select the Rosetta module:" rosetta
         echo "module load" $rosetta >> $vini_dir/sourceme
     else
+	rosetta_username=`cat $WORKDIR/rosetta_username`
+	rosetta_password=`cat $WORKDIR/rosetta_password`
+	wget -O $INSTALL/rosetta_src_3.13_bundle --user=${rosetta_username} --password=${rosetta_password} https://www.rosettacommons.org/downloads/academic/3.13/rosetta_src_3.13_bundle.tgz
 	cd $INSTALL
-        if  [ -e rosetta.source.release-314.tar.bz2 ]
-	then	
-	    echo "Please wait while compiling and installing Rosetta, may take several hours to finish."
-	else
-            read -p "you must download rosetta.source.release-314.tar.bz2 file to $INSTALL folder. Then press enter to continue." enter 
-	fi
-        tar -xvf rosetta.source.release-314.tar.bz2
+        tar -xf rosetta.source.release-314.tar.bz2
 	cd  rosetta.source.release-314/main/source
 	./scons.py -j 4 mode=release bin
     fi
