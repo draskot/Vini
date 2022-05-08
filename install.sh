@@ -207,7 +207,6 @@ then
 	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
 	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
         echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-        #echo "export DATA_DIRECTORY=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
@@ -217,17 +216,25 @@ rm -f alphafold tmp
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
-then
-    echo "****** Rosetta *******" >> $vini_dir/sourceme
+then    #file is empty and Rosetta is not installed
     echo "no." ; echo -n "Checking if Rosetta module(s) exists..."
     module spider rosetta 2> tmp
     grep -w error tmp > rosetta
-    #if [ ! -s rosetta ] #commented for debug
-    if [ -s rosetta ]    #added for debug
+    if   [ ! -s rosetta ] #no error means module found
+    then
+        read -p "Rosetta module found. Use[u] or install[i] your own Rosetta copy? (u/i)" use
+        if  [ $use == u ] 
+        then
+            echo " " > rosetta
+        else
+            > rosetta
+        fi
+    fi
+    if [ -s rosetta ] 
     then
         echo "module(s) found" ; cat tmp
         read -p "Select the Rosetta module:" rosetta
-        echo "******* Rosetta *******" $vini_dir/sourceme
+        echo "******* Rosetta *******" >> $vini_dir/sourceme
         echo "module load" $rosetta >> $vini_dir/sourceme
     else
         echo ; echo "If you never registered for Rosetta Common download before, go to https://els2.comotion.uw.edu/product/rosetta  and request license. Obtaining a license is free for academic users. Upon receiving a license, enter your username and password here."
