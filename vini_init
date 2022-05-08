@@ -54,7 +54,6 @@ else
 fi
 echo $JSS > $WORKDIR/JSS
 
-
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -104,27 +103,6 @@ echo $jobs > $WORKDIR/max_jobs
 cores=`cat $WORKDIR/cpu_cores`
 read -e -p "How many Alphafold jobs can run in parallel (each job will use $cores CPU threads)? Press enter to accept default: " -i "30" nodes
 echo $nodes > $WORKDIR/nodes
-
-
-echo ; echo "If you never registered for Rosetta Common download before, go to https://els2.comotion.uw.edu/product/rosetta  and order academic licence. Upon receiving a license, enter your username and password here."
-read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
-if  [ $yesno == "n" ]
-then
-    read -p "Enter username:" username
-    echo -n "Enter password:"; read -s password ; echo ""
-    echo $username > $WORKDIR/Rosetta_username
-    echo $password > $WORKDIR/Rosetta_password
-    chmod g-r,o-r $WORKDIR/Rosetta_password
-else
-    if [ ! -e $WORKDIR/Rosetta_username ] || [ ! -e $WORKDIR/Rosetta_password ] ; then
-       echo "no data found. You will need to enter data for the first time. "
-       read -p "Enter username:" username
-       echo -n "Enter password:"; read -s password ; echo ""
-       echo $username > $WORKDIR/Rosetta_username
-       echo $password > $WORKDIR/Rosetta_password
-       chmod g-r,o-r $WORKDIR/Rosetta_password
-    fi
-fi
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno

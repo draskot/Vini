@@ -12,25 +12,14 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
-        
-    name=`uname -n | grep vega`
-    if [[ ! -z "$name" ]]
-    then
-        WORKDIR=/exa5/scratch/user/$USER
-        echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-        SHARED=/ceph/hpc/data/d2203-0100-users
-	echo "Alphafold and Rosetta installation is on CEPH filesystem, mounted as $SHARED" ; echo
-        INSTALL=$SHARED/$USER
-    else
-        WORKDIR=/scratch/IRB/$USER
-        echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-        INSTALL=$WORKDIR/packages
-    fi
+    echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
+    read -p "enter full path for high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
+    read -p "enter full path for 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
-
+    SHARED=`dirname $INSTALL`
+    echo "If Alphafold module is not available on this system, consider local AlphaFold installation on $SHARED" ; echo
     mkdir -p $WORKDIR
     mkdir -p $INSTALL
-
     echo "#************General section**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
@@ -38,7 +27,7 @@ then
     echo "export INSTALL=$INSTALL" >> $vini_dir/sourceme
     source $vini_dir/sourceme
 fi
-read -p "press enter when ready to start the installation."
+read -p "press enter when ready to start the installation of 3rd party software."
 
 echo -n "checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
@@ -201,6 +190,7 @@ echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
+    echo "#*****AlphaFold section******" >> $vini_dir/sourceme
     echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
     module spider Alphafold 2> tmp
     grep -w error tmp > alphafold
@@ -209,11 +199,9 @@ then
         echo "module(s) found" ; cat tmp
         read -p "Select module:" alphafold
         echo "module load" $alphafold >> $vini_dir/sourceme
-        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
         source $vini_dir/sourceme
     else
         read -p "no module found. Enter path where AlphaFold is installed:" AlphaFold
-        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
 	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
 	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
@@ -226,55 +214,57 @@ else
 fi
 rm -f alphafold tmp
 
-
-echo -n "Checking if BLAST is installed..."
-grep BLAST $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no." ; echo -n "Checking if BLAST module(s) exists..."
-    module spider blast 2> tmp
-    grep -w error tmp > blast
-    if [ ! -s blast ]
-    then
-        echo "module(s) found" ; cat tmp
-        read -p "Select module:" blast
-        echo "module load" $blast >> $vini_dir/sourceme
-        echo "#*****BLAST section******" >> $vini_dir/sourceme
-    else
-	echo "BLAST module not found. Please wait while compiling and installing BLAST, may take several hours."
-	wget -O $INSTALL/ncbi-blast-2.13.0+-src.tar.gz --no-check-certificate -q https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.13.0+-src.tar.gz 
-	cd $INSTALL/ncbi-blast-2.13.0+-src/c++
-	./configure
-	cd ReleaseMT/build
-	make all_r
-	echo "#*****BLAST section******" >> $vini_dir/sourceme
-	echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
-    fi
-    source $vini_dir/sourceme
-else
-    echo "yes."
-fi
-
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
+    echo "****** Rosetta *******" >> $vini_dir/sourceme
     echo "no." ; echo -n "Checking if Rosetta module(s) exists..."
     module spider rosetta 2> tmp
     grep -w error tmp > rosetta
-    if [ ! -s rosetta ]
+    #if [ ! -s rosetta ] #commented for debug
+    if [ -s rosetta ]    #added for debug
     then
         echo "module(s) found" ; cat tmp
         read -p "Select the Rosetta module:" rosetta
+        echo "******* Rosetta *******" $vini_dir/sourceme
         echo "module load" $rosetta >> $vini_dir/sourceme
     else
-	rosetta_username=`cat $WORKDIR/rosetta_username`
-	rosetta_password=`cat $WORKDIR/rosetta_password`
-	wget -O $INSTALL/rosetta_src_3.13_bundle --user=${rosetta_username} --password=${rosetta_password} https://www.rosettacommons.org/downloads/academic/3.13/rosetta_src_3.13_bundle.tgz
-	cd $INSTALL
-        tar -xf rosetta.source.release-314.tar.bz2
-	cd  rosetta.source.release-314/main/source
-	./scons.py -j 4 mode=release bin
+        echo ; echo "If you never registered for Rosetta Common download before, go to https://els2.comotion.uw.edu/product/rosetta  and request license. Obtaining a license is free for academic users. Upon receiving a license, enter your username and password here."
+        read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+        if  [ $yesno == "n" ]
+        then
+            read -p "Enter username:" username
+            echo -n "Enter password:"; read -s password ; echo ""
+            echo $username > $WORKDIR/Rosetta_username
+            echo $password > $WORKDIR/Rosetta_password
+            chmod g-r,o-r $WORKDIR/Rosetta_password
+       else
+           if  [ ! -e $WORKDIR/Rosetta_username ] || [ ! -e $WORKDIR/Rosetta_password ]
+           then
+               echo "No registration data found. You will need to enter data for the first time. "
+               read -p "Enter username:" username
+               echo -n "Enter password:"; read -s password ; echo ""
+               echo $username > $WORKDIR/Rosetta_username
+               echo $password > $WORKDIR/Rosetta_password
+               chmod g-r,o-r $WORKDIR/Rosetta_password
+           fi
+       fi        
+       Rosetta_username=`cat $WORKDIR/Rosetta_username`
+       Rosetta_password=`cat $WORKDIR/Rosetta_password`
+       if  [ ! -e $INSTALL/rosetta_bin_linux_3.13_bundle.tgz ]
+       then
+           echo -n "Downloading Rosetta binaries, may take a while..." 
+           wget -O $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/3.13/rosetta_bin_linux_3.13_bundle.tgz
+           echo "done."
+       fi
+       echo "Unpacking Rosetta binaries. Will take a minutes to finish, do not interrupt."
+       tar -xf $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --checkpoint=.4000 -C $INSTALL
+       echo "Done"
+       echo -n " Cleaning up the installation files..."
+       rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
+       echo "done."
+       echo "export PATH=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:\$PATH" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
@@ -283,64 +273,3 @@ rm -f rosetta tmp
 
 echo "The downloaded source packages are in" $vini_dir/software
 echo "Installation is done. You may want to put source" $vini_dir"/sourceme in your .bashrc file."
-
-#grep Openbabel $vini_dir/sourceme > tmp
-#if  [ ! -s tmp ]
-#then
-#    #echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-#    module spider Openbabel 2> tmp
-#    grep -w error tmp > openbabel
-#    if [ ! -s openbabel ]
-#    then
-#        echo "Found the following openbabel module(s):" ; cat tmp
-#        read -p "Please select one of Openbabel modules found:" openbabel
-#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-#        echo "module load" $openbabel >> $vini_dir/sourceme
-#        source $vini_dir/sourceme
-#    else
-#        #echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
-#        #wget -P $vini_dir/software https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
-#        #mv $vini_dir/software/openbabel-3-1-1 $vini_dir/software/openbabel-3-1-1.tar.gz
-#        #tar -xvzf $vini_dir/software/openbabel-3-1-1.tar.gz -C $vini_dir/software
-#        #mkdir $vini_dir/software/openbabel-openbabel-3-1-1/build
-#        #cd $vini_dir/software/openbabel-openbabel-3-1-1/build
-#        #rm -rf $INSTALL/openbabel-3.1.1
-#        #cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-#        #make -j 4
-#        #make -j 4 install
-#        #echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-#        #echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
-#        #cd $vini_dir
-#        echo "No Openbabel module found. Will use own Openbabel version 2.4.1"
-#    fi
-#fi
-#rm -f openbabel tmp
-
-#echo -n "Checking if Reduce is installed..."
-#grep Reduce $vini_dir/sourceme > tmp #install Reduce
-#if  [ ! -s tmp ]
-#then
-#    echo "no. Please wait while installing Reduce..."
-#    wget https://codeload.github.com/rlabduke/reduce/zip/refs/heads/master
-#    mv master reduce-master.zip
-#    rm -rf reduce-master
-#    rm -rf $INSTALL/reduce ; mkdir $INSTALL/reduce
-#    unzip -oq reduce-master.zip
-#    cd reduce-master
-#    mkdir build
-#    cd build
-#    cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALL/reduce
-#    make
-#    make install
-#    echo "#***Reduce section***" >> $vini_dir/sourceme
-#    echo "export PATH=\$PATH:$INSTALL/reduce/bin" >> $vini_dir/sourceme
-#    echo "You may also want to su and place" $INSTALL/reduce/reduce_wwPDB_het_dict.txt
-#    echo "into /usr/local. If you don't, Reduce will still run, but you'll probably get the"
-#    echo "error message: ERROR CTab(/usr/local/reduce_wwPDB_het_dict.txt): could not open"
-#    #https://github.com/jaredsampson/pymolprobity
-#    read -p "Press enter to continue." enter
-#    source $vini_dir/sourceme
-#    rm -f tmp
-#else
-#    "yes."
-#fi
