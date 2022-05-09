@@ -9,4 +9,10 @@
 
 protein=$1
 
-relax.static.linuxgccrelease -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
+
+
+#relax.static.linuxgccrelease -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
+
+relax=`cat $WORKDIR/rosetta_relax_command`
+
+$relax -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads ${SLURM_CPUS_ON_NODE}

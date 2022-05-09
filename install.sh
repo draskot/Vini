@@ -217,12 +217,12 @@ echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then    #file is empty and Rosetta is not installed
-    echo "no." ; echo -n "Checking if Rosetta module(s) exists..."
+    echo "no." ; echo -n "Checking for available Rosetta module(s)..."
     module spider rosetta 2> tmp
     grep -w error tmp > rosetta
     if   [ ! -s rosetta ] #no error means module found
     then
-        read -p "Rosetta module found. Use[u] or install[i] your own Rosetta copy? (u/i)" use
+        read -p "Rosetta module found. Use Rosetta existing module[u] or install[i] Rosetta now? (u/i)" use
         if  [ $use == u ] 
         then
             echo " " > rosetta
@@ -232,10 +232,45 @@ then    #file is empty and Rosetta is not installed
     fi
     if [ -s rosetta ] 
     then
+        echo "******* Rosetta *******" >> $vini_dir/sourceme
         echo "module(s) found" ; cat tmp
         read -p "Select the Rosetta module:" rosetta
-        echo "******* Rosetta *******" >> $vini_dir/sourceme
         echo "module load" $rosetta >> $vini_dir/sourceme
+        source $vini_dir/sourceme
+        which docking_protocol.static.linuxgccrelease &> tmp #search for Rosetta docking commands and Rosetta bin directory
+        grep "no docking_protocol" tmp > tmp2
+        if  [ -s tmp2 ]
+        then
+            which docking_protocol.default.linuxgccrelease &> tmp
+            grep "no docking_protocol" tmp > tmp2
+            if  [ -s tmp2 ]
+            then
+                which  docking_protocol.mpi.linuxgccrelease 2> tmp
+                grep "no docking_protocol" tmp > tmp2
+                if  [ -s tmp2 ]
+                then
+                    echo "no Rosetta docking protocol found. Check Rosetta module for errors. Exiting."
+                    file=$vini_dir/sourceme
+                    tail -n 1 "$file" | wc -c | xargs -I {} truncate "$file" -s -{}
+                    exit
+                else
+                    echo docking_protocol.mpi.linuxgccrelease > $WORKDIR/rosetta_docking_command
+                    echo relax.mpi.linuxgccrelease > $WORKDIR/rosetta_relax_command
+                fi
+            else
+                echo docking_protocol.default.linuxgccrelease > $WORKDIR/rosetta_docking_command
+                echo relax.default.linuxgccrelease > $WORKDIR/rosetta_relax_command
+            fi
+        else
+            echo "docking_protocol.static.linuxgccrelease" > $WORKDIR/rosetta_docking_command
+            echo "" $WORKDIR/rosetta_relax_command
+        fi
+
+        which `cat $WORKDIR/rosetta_docking_command` > tmp
+        dirname `cat tmp` > $WORKDIR/rosetta_bin_directory
+        rosetta_bin=`cat $WORKDIR/rosetta_bin_directory`
+        echo "export PATH=${rosetta_bin}:\$PATH" >> $vini_dir/sourceme
+        rm tmp*
     else
         echo ; echo "If you never registered for Rosetta Common download before, go to https://els2.comotion.uw.edu/product/rosetta  and request license. Obtaining a license is free for academic users. Upon receiving a license, enter your username and password here."
         read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
@@ -272,6 +307,8 @@ then    #file is empty and Rosetta is not installed
        rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
        echo "done."
        echo "export PATH=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:\$PATH" >> $vini_dir/sourceme
+       echo "docking_protocol.static.linuxgccrelease" > $WORKDIR/rosetta_docking_command
+       echo "relax.static.linuxgccrelease" > $WORKDIR/rosetta_relax_command
     fi
 else
     echo "yes."

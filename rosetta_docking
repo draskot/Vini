@@ -1,1 +1,6 @@
-docking_protocol.static.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
+
+docking=`cat $WORKDIR/rosetta_docking_command`
+
+
+#docking_protocol.static.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
+$docking -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
