@@ -12,13 +12,12 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
+    read -p "Please enter full path for high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    read -p "enter full path for high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
-    read -p "enter full path for 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
+    read -p "Please enter full path for 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     echo "If Alphafold module is not available on this system, consider local AlphaFold installation on $SHARED" ; echo
-    mkdir -p $WORKDIR
     mkdir -p $INSTALL
     echo "#************General section**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
@@ -27,17 +26,18 @@ then
     echo "export INSTALL=$INSTALL" >> $vini_dir/sourceme
     source $vini_dir/sourceme
 fi
-read -p "press enter when ready to start the installation of 3rd party software."
+read -p "Press enter when ready to start the installation of 3rd party software."
 
-echo -n "checking if miniconda2 is installed..."
+echo -n "Checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
 if  [ ! -s tmp ]
 then
-    echo "no. Please wait while downloading and installing miniconda2..."
+    echo "no. Performing cleanup, please wait..."
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
     rm -rf  $INSTALL/miniconda2
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
-    wget -P $vini_dir/software -q https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    echo "Please wait while downloading and installing miniconda2..."
+    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
     sh $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
     source $INSTALL/miniconda2/etc/profile.d/conda.sh
     conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
@@ -47,15 +47,18 @@ else
     echo "yes."
 fi
 
-echo -n "checking if Meeko is installed..."
+echo -n "Checking if Meeko is installed..."
 grep Meeko $vini_dir/sourceme > tmp 
 if  [ ! -s tmp ]
 then
-    echo "no. Please wait while Meeko 0.3.0 is downloaded and installed..."
+    echo "no."
+    echo -n "Performing cleanup. Please be patient, this may take a while...."
     rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
     rm -rf $INSTALL/miniconda3
     rm -f $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh
-    wget -P $vini_dir/software -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    echo "done."
+    echo "Please wait while Meeko is downloaded and installed..."
+    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
     conda create -n meeko -c conda-forge numpy scipy rdkit
@@ -85,22 +88,25 @@ if  [ ! -s tmp ]
 then
     if  [ ! -e $vini_dir/software/chimera*.bin ]
     then
-        echo "Download Chimera distribution from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
+        echo "Download Chimera chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
         read -p "press enter when ready to go." enter
-        if [ ! -e $vini_dir/software/chimera*bin ]
+        if [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
         then
-            echo "Chimera distribution not found. Download and run install.sh again"
+	    read -p "Press enter to continue." enter
         fi
     fi
-    chmod u+x $vini_dir/software/chimera*.bin
+    chmod u+x $vini_dir/software/chimera-1.16-linux_x86_64.bin
     echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera
     echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
     echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
     read -p "press enter when ready to continue." enter
-    rm -rf $INSTALL/chimera
+    echo -n "Performing cleanup..."
+    rm -rf $INSTALL/chimera*
+    echo "done."
     cp $vini_dir/software/chimera*.bin $INSTALL 
     cd $INSTALL
-    ./chimera*.bin
+    echo "Chimera distribution not found. Download and run install.sh again"
+    ./chimera-1.16-linux_x86_64.bin
     cd $vini_dir
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL/chimera/bin:\$PATH" >> $vini_dir/sourceme
@@ -216,24 +222,15 @@ rm -f alphafold tmp
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
-then    #file is empty and Rosetta is not installed
-    echo "no." ; echo -n "Checking for available Rosetta module(s)..."
-    module spider rosetta 2> tmp
+then
+    echo "no." ; echo -n "Checking if Rosetta module(s) exist..."
+    module spider rosetta &> tmp
     grep -w error tmp > rosetta
     if   [ ! -s rosetta ] #no error means module found
     then
-        read -p "Rosetta module found. Use Rosetta existing module[u] or install[i] Rosetta now? (u/i)" use
-        if  [ $use == u ] 
-        then
-            echo " " > rosetta
-        else
-            > rosetta
-        fi
-    fi
-    if [ -s rosetta ] 
-    then
+	echo "yes"
+	cat tmp
         echo "******* Rosetta *******" >> $vini_dir/sourceme
-        echo "module(s) found" ; cat tmp
         read -p "Select the Rosetta module:" rosetta
         echo "module load" $rosetta >> $vini_dir/sourceme
         source $vini_dir/sourceme
@@ -272,28 +269,23 @@ then    #file is empty and Rosetta is not installed
         echo "export PATH=${rosetta_bin}:\$PATH" >> $vini_dir/sourceme
         rm tmp*
     else
-        echo ; echo "If you never registered for Rosetta Common download before, go to https://els2.comotion.uw.edu/product/rosetta  and request license. Obtaining a license is free for academic users. Upon receiving a license, enter your username and password here."
-        read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
-        if  [ $yesno == "n" ]
+	echo "no."
+        if  [ -e $WORKDIR/Rosetta_username ] && [ -e $WORKDIR/Rosetta_password ]
         then
-            read -p "Enter username:" username
-            echo -n "Enter password:"; read -s password ; echo ""
-            echo $username > $WORKDIR/Rosetta_username
-            echo $password > $WORKDIR/Rosetta_password
+	    echo "registration data exist."
+            Rosetta_username=`cat $WORKDIR/Rosetta_username`
+            Rosetta_password=`cat $WORKDIR/Rosetta_password`
+	else
+            echo "Order license for Rosetta download at https://els2.comotion.uw.edu/product/rosetta"
+	    echo "License is free for academic users."
+	    echo " Upon receiving a license, enter username and password from license here."
+            read -p "Enter username:" Rosetta_username
+            echo -n "Enter registration password:"; read -s Rosetta_password ; echo ""
+            echo $Rosetta_username > $WORKDIR/Rosetta_username
+            echo $Rosetta_password > $WORKDIR/Rosetta_password
+            chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
-       else
-           if  [ ! -e $WORKDIR/Rosetta_username ] || [ ! -e $WORKDIR/Rosetta_password ]
-           then
-               echo "No registration data found. You will need to enter data for the first time. "
-               read -p "Enter username:" username
-               echo -n "Enter password:"; read -s password ; echo ""
-               echo $username > $WORKDIR/Rosetta_username
-               echo $password > $WORKDIR/Rosetta_password
-               chmod g-r,o-r $WORKDIR/Rosetta_password
-           fi
        fi        
-       Rosetta_username=`cat $WORKDIR/Rosetta_username`
-       Rosetta_password=`cat $WORKDIR/Rosetta_password`
        if  [ ! -e $INSTALL/rosetta_bin_linux_3.13_bundle.tgz ]
        then
            echo -n "Downloading Rosetta binaries, may take a while..." 
