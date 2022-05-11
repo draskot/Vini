@@ -12,9 +12,9 @@ if  [ ! -s tmp ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
-    read -p "Please enter full path for high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
+    read -p "Please enter path for your scratch data on high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    read -p "Please enter full path for 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
+    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     echo "If Alphafold module is not available on this system, consider local AlphaFold installation on $SHARED" ; echo
@@ -33,15 +33,13 @@ grep miniconda2 $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
     echo "no. Performing cleanup, please wait..."
-    rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
-    rm -rf  $INSTALL/miniconda2
-    rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
+    rm -rvf  $INSTALL/miniconda2
     echo "Please wait while downloading and installing miniconda2..."
-    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    sh $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
+    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
     source $INSTALL/miniconda2/etc/profile.d/conda.sh
     conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
-    rm $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
+    rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
     echo "#************miniconda2 section**********" >> $vini_dir/sourceme
 else
     echo "yes."
@@ -53,19 +51,18 @@ if  [ ! -s tmp ]
 then
     echo "no."
     echo -n "Performing cleanup. Please be patient, this may take a while...."
-    rm -f $vini_dir/software/Miniconda2-latest-Linux-x86_64.sh
-    rm -rf $INSTALL/miniconda3
-    rm -f $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh
+    rm -rvf $INSTALL/miniconda3
     echo "done."
     echo "Please wait while Meeko is downloaded and installed..."
-    wget -P $vini_dir/software https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    sh $vini_dir/software/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
+    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
     conda create -n meeko -c conda-forge numpy scipy rdkit
     conda activate meeko
     pip install meeko
     conda deactivate
     echo "#***Meeko 0.3.0 section***" >> $vini_dir/sourceme
+    rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
 else
     echo "yes."
 fi
@@ -86,31 +83,24 @@ echo -n "checking if UCSF Chimera is installed..."
 grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
 then
-    if  [ ! -e $vini_dir/software/chimera*.bin ]
-    then
-        echo "Download Chimera chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $vini_dir/software
-        read -p "press enter when ready to go." enter
-        if [ ! -e $vini_dir/software/chimera-1.16-linux_x86_64.bin ]
-        then
-	    read -p "Press enter to continue." enter
-        fi
-    fi
-    chmod u+x $vini_dir/software/chimera-1.16-linux_x86_64.bin
-    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera
+    echo "no."
+    echo -n "Chimera installation directory must be empty. Performing cleanup..."
+    rm -rf $INSTALL/chimera-1.16-linux_x86_64
+    echo "done."
+    echo "Download UCSF Chimera chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
+    read -p "Press enter when chimera-1.16-linux_x86_64.bin is placed in $INSTALL directory." enter
+    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera-1.16-linux_x86_64
     echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
     echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
-    read -p "press enter when ready to continue." enter
-    echo -n "Performing cleanup..."
-    rm -rf $INSTALL/chimera*
-    echo "done."
-    cp $vini_dir/software/chimera*.bin $INSTALL 
+    read -p "press enter to continue." enter
+    chmod u+x $INSTALL/chimera-1.16-linux_x86_64.bin
     cd $INSTALL
-    echo "Chimera distribution not found. Download and run install.sh again"
     ./chimera-1.16-linux_x86_64.bin
+    rm chimera-1.16-linux_x86_64.bin
     cd $vini_dir
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/chimera/bin:\$PATH" >> $vini_dir/sourceme
-    source $vini_dir/sourceme
+    echo "export PATH=$INSTALL/chimera-1.16-linux_x86_64/bin:\$PATH" >> $vini_dir/sourceme
+    #source $vini_dir/sourceme
 else
     echo "yes."
 fi
@@ -120,20 +110,19 @@ grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.
 if  [ ! -s tmp ]
 then
     echo "no."
-    rm -rf $vini_dir/software/index*
-    wget -P $vini_dir/software -q --no-check-certificate https://ccsb.scripps.edu/download/532/
-    mv $vini_dir/software/index.html $vini_dir/software/mgltools_x86_64Linux2_1.5.7.tar.gz
-    tar -xvzf $vini_dir/software/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
+    rm -rf $INSTALL/index*
+    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
+    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
     cd $INSTALL/mgltools_x86_64Linux2_1.5.7
-    sh install.sh
+    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
     echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
     echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
     echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
     echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
-    source $vini_dir/sourceme
     echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
     echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
-    source $vini_dir/sourceme
+    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
 else
     echo "yes."
 fi
@@ -144,14 +133,11 @@ nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
-    rm -f $vini_dir/software/vina*
-    wget -P $vini_dir/software -q --no-check-certificate https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
-    chmod u+x $vini_dir/software/vina*
-    mkdir -p $INSTALL/vina
-    cp $vini_dir/software/vina* $INSTALL/vina/vina
+    rm -f $INSTALL/vina
+    wget -O $INSTALL/vina no-check-certificate https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
+    chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/vina:\$PATH" >> $vini_dir/sourceme
-    source $vini_dir/sourceme
+    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
 else
     echo "yes."
 fi
@@ -161,14 +147,15 @@ grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
 if  [ ! -s tmp ]
 then
     echo -n "no. Please wait while ADFR suite 1.0 is installed..."
-    rm -f $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz
+    rm -f $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
     rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-    wget -O $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -q https://ccsb.scripps.edu/adfr/download/1038/
-    tar -xzf $vini_dir/software/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
+    wget -O $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+    tar -xzf $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
     cd $INSTALL/ADFRsuite_x86_64Linux_1.0
     sh install.sh
     echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
+    rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
 else
     echo "yes."
 fi
@@ -230,7 +217,7 @@ then
     then
 	echo "yes"
 	cat tmp
-        echo "******* Rosetta *******" >> $vini_dir/sourceme
+        echo "#******* Rosetta *******" >> $vini_dir/sourceme
         read -p "Select the Rosetta module:" rosetta
         echo "module load" $rosetta >> $vini_dir/sourceme
         source $vini_dir/sourceme
@@ -270,17 +257,18 @@ then
         rm tmp*
     else
 	echo "no."
+	echo "#******* Rosetta *******" >> $vini_dir/sourceme
         if  [ -e $WORKDIR/Rosetta_username ] && [ -e $WORKDIR/Rosetta_password ]
         then
 	    echo "registration data exist."
             Rosetta_username=`cat $WORKDIR/Rosetta_username`
             Rosetta_password=`cat $WORKDIR/Rosetta_password`
 	else
-            echo "Order license for Rosetta download at https://els2.comotion.uw.edu/product/rosetta"
-	    echo "License is free for academic users."
-	    echo " Upon receiving a license, enter username and password from license here."
+            echo "In order to run Rosetta you must obtain license from https://els2.comotion.uw.edu/product/rosetta"
+	    echo "This license is free for academic users."
+	    echo "Upon receiving a license, enter username and password here."
             read -p "Enter username:" Rosetta_username
-            echo -n "Enter registration password:"; read -s Rosetta_password ; echo ""
+            echo -n "Enter password:"; read -s Rosetta_password ; echo ""
             echo $Rosetta_username > $WORKDIR/Rosetta_username
             echo $Rosetta_password > $WORKDIR/Rosetta_password
             chmod g-r,o-r $WORKDIR/Rosetta_username
@@ -295,7 +283,7 @@ then
        echo "Unpacking Rosetta binaries. Will take a minutes to finish, do not interrupt."
        tar -xf $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --checkpoint=.4000 -C $INSTALL
        echo "Done"
-       echo -n " Cleaning up the installation files..."
+       echo -n " Cleaning up installation files..."
        rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
        echo "done."
        echo "export PATH=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:\$PATH" >> $vini_dir/sourceme
@@ -308,4 +296,4 @@ fi
 rm -f rosetta tmp
 
 echo "The downloaded source packages are in" $vini_dir/software
-echo "Installation is done. You may want to put source" $vini_dir"/sourceme in your .bashrc file."
+echo "Installation is done.  Execute <source $vini_dir/sourceme> to changes take effect"
