@@ -10,6 +10,7 @@ job_submit=`cat $WORKDIR/job_submit`
 compute_cell_line=`cat $WORKDIR/compute_cell_line`
 cosmic=`cat $WORKDIR/cosmic`
 kit=`cat $WORKDIR/kit`
+prediction_model=`cat $WORKDIR/prediction_model`
 
 TRUE=1
 FALSE=0
@@ -37,14 +38,23 @@ therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
     sh $vini_dir/create_mab_structures
-    sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
-    sh create_receptor_structures     #Create receptors_contracted file and molecular structures
+    sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
+    sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
 
-    error=`cat $WORKDIR/error`
-    if [ $error -eq $TRUE ] ; then    #exit if error has occured
-       echo "The following structures failed to predict:"
-       cat $WORKDIR/failed_structures
-       exit
+    if  [ prediction_model == A ]
+    then
+        echo "Waiting for prediction jobs to finish. This may take a while."
+        sh $vini_dir/wait_until_jobs_finish
+
+        sh $vini_dir/check_predicted_structures
+        if [[ -s $WORKDIR/failed_drug_structures ]] || [[ -s $WORKDIR/failed_receptor_structures ]]
+        then
+            echo "AlphaFold did not succeeded to predict the following items:"
+            cat $WORKDIR/failed_drug_structures
+            cat $WORKDIR/failed_receptor_structures
+            echo "You may try to fix this by running AlphaFold on nodes with more memory."
+            exit
+        fi
     fi
       
     echo -n "activating miniconda environment..."
@@ -164,7 +174,7 @@ rm -f stop WM COSMIC_token *pdbqt drugname failed_structures
 rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
 rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
 rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
-rm -f alphafold*
+rm -f alphafold* mutated wild combo
 
 while read -r line
 do
@@ -178,4 +188,4 @@ done < $vini_dir/database/ligands/ligands_list
 
 cd $vini_dir
 rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50
-rm -f wild mutated combo seqnames predict exist tmp log ligand_wH.pdb #cleanup
+rm -f seqnames predict exist tmp log ligand_wH.pdb #cleanup

@@ -74,7 +74,7 @@ fi
 rm -f jobs
 
 cd $WORKDIR #Cleanup
-rm -f slurm-*.out complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf
+rm -f *.err *.out complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
 cd $vini_dir
 
 cat COPYRIGHT
