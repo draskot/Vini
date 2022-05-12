@@ -35,7 +35,6 @@ echo "AlphaFoldBASE: $AlphaFoldBASE"
 echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                         >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold
 
-echo "brakepoint" ; sleep 1000
 ${job_submit} $WORKDIR/AlphaFold
 
 
