@@ -194,12 +194,12 @@ then
         echo "module load" $alphafold >> $vini_dir/sourceme
         source $vini_dir/sourceme
     else
-        read -p "no module found. Enter path where AlphaFold is installed:" AlphaFold
+        read -p "no. Enter path where AlphaFold is installed:" AlphaFold
 	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$AlphaFold/run_singularity.py" >> $vini_dir/sourceme
 	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
         echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
     fi
 else
     echo "yes."

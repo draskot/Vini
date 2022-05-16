@@ -15,7 +15,8 @@ suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename
 
 wget -O ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
 
-obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats ; mv tmp.pdb $DOWNLOAD_DIR/pubchem:${pubchem_id}.pdb
+obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats
+mv tmp.pdb $DOWNLOAD_DIR/pubchem:${pubchem_id}.pdb
 
 warning=`grep "Alias R was not chemically interpreted" $WORKDIR/stats`   #check for bable error
 echo $warning > $WORKDIR/tmp

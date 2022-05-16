@@ -40,19 +40,34 @@ then
     sh $vini_dir/create_mab_structures
     sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
+    if  [ -s $WORKDIR/failed_structures ]
+    then
+        echo "Vini failed to create the following KEGG compound structures:"
+        echo "**************************************"
+        cat $WORKDIR/failed_structures              
+        echo "Use cactus server https://cactus.nci.nih.gov/translate/. instead"
+        echo "Create missing structures manually and upload them to $vini_dir/database/genes/pdb_file directory. Then start Vini again."
+        echo "Vini will stop now."
+        exit
+    fi
+    echo "brakepoint" ; sleep 1000
 
     if  [ prediction_model == A ]
     then
         echo "Waiting for prediction jobs to finish. This may take a while."
         sh $vini_dir/wait_until_jobs_finish
-
         sh $vini_dir/check_predicted_structures
         if [[ -s $WORKDIR/failed_drug_structures ]] || [[ -s $WORKDIR/failed_receptor_structures ]]
         then
             echo "AlphaFold did not succeeded to predict the following items:"
+            echo "*****************************************************"
+            echo "failed mAb drug structures:"
             cat $WORKDIR/failed_drug_structures
+            echo "failed KEGG receptor structures:"
             cat $WORKDIR/failed_receptor_structures
-            echo "You may try to fix this by running AlphaFold on nodes with more memory."
+            echo "You may try run AlphaFold on nodes with more memory if available."
+            echo "Another approach is let Vini use Swiss-Model prediction."
+            echo "Vini will stop now."
             exit
         fi
     fi
