@@ -1,28 +1,29 @@
 #chebi_id=`curl -s http://rest.kegg.jp/conv/chebi/$KEGG_gene_name | python -mhtmllib - | awk '{print $2}'`
 
-#input parameter: Pubchem ID
-#output parameter: substance structure file in DOWNLOAD_DIR
+#input: Pubchem ID
+#output: substance structure file in $vini_dir/database/genes/pdb_files
 
 pubchem_id=$1
-DOWNLOAD_DIR=$2
 
 ONES=1
 
-pubchem_id=`echo ${pubchem_id} | tr -dc '[0-9\n]'`
+mkdir -p WORKDIR/failed_KEGG_substances
 
+pubchem_id=`echo ${pubchem_id} | tr -dc '[0-9\n]'`                       #download substance sdf file from Pubchem
 prefix="https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/SID/"
 suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename=Structure2D_SID_"
-
 wget -O ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
 
-obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats
-mv tmp.pdb $DOWNLOAD_DIR/pubchem:${pubchem_id}.pdb
+obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats               #try conversion with openbabel
 
-warning=`grep "Alias R was not chemically interpreted" $WORKDIR/stats`   #check for bable error
+warning=`grep "Alias R was not chemically interpreted" $WORKDIR/stats`   #check for success
 echo $warning > $WORKDIR/tmp
 chars=`wc -c < $WORKDIR/tmp`
 if  [ $chars -gt $ONES ]
 then
-    echo "fail"
-    rm $DOWNLOAD_DIR/pubchem:${pubchem_id}.pdb
+    echo "conversion of ${pubchem_id}.sdf to ${pubchem_id}.pdb with openbabel failed."
+    echo "${pubchem_id}.sdf saved to $WORKDIR/failed_substances directory for later conversion."
+    mv $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.sdf $WORKDIR/failed_KEGG_substances
+else
+    mv tmp.pdb $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.pdb
 fi

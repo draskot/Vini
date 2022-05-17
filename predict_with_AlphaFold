@@ -28,9 +28,9 @@ then
     echo "#SBATCH --gres=gpu:"$gpus                        >> $WORKDIR/AlphaFold
 fi
 
-echo "AlphaFoldIMAGE:    $AlphaFoldIMAGE"
-echo "AlphaFoldSTART: $AlphaFoldSTART"
-echo "AlphaFoldBASE: $AlphaFoldBASE"
+#echo "AlphaFoldIMAGE:    $AlphaFoldIMAGE"
+#echo "AlphaFoldSTART: $AlphaFoldSTART"
+#echo "AlphaFoldBASE: $AlphaFoldBASE"
 
 echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                         >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold

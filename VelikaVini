@@ -14,6 +14,11 @@ prediction_model=`cat $WORKDIR/prediction_model`
 
 TRUE=1
 FALSE=0
+
+> $WORKDIR/failed_KEGG_genes
+> $WORKDIR/failed_KEGG_substances
+mkdir -p $WORKDIR/failed_KEGG_substances
+
 if  [ $compute_cell_line -eq $TRUE ]
 then
     cell_line=`cat $WORKDIR/cell_line`
@@ -40,17 +45,6 @@ then
     sh $vini_dir/create_mab_structures
     sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
-    if  [ -s $WORKDIR/failed_structures ]
-    then
-        echo "Vini failed to create the following KEGG compound structures:"
-        echo "**************************************"
-        cat $WORKDIR/failed_structures              
-        echo "Use cactus server https://cactus.nci.nih.gov/translate/. instead"
-        echo "Create missing structures manually and upload them to $vini_dir/database/genes/pdb_file directory. Then start Vini again."
-        echo "Vini will stop now."
-        exit
-    fi
-    echo "brakepoint" ; sleep 1000
 
     if  [ prediction_model == A ]
     then
@@ -59,18 +53,41 @@ then
         sh $vini_dir/check_predicted_structures
         if [[ -s $WORKDIR/failed_drug_structures ]] || [[ -s $WORKDIR/failed_receptor_structures ]]
         then
-            echo "AlphaFold did not succeeded to predict the following items:"
-            echo "*****************************************************"
-            echo "failed mAb drug structures:"
+            echo "AlphaFold did not succeeded to predict following items:"
+            echo "*******************************************************"
             cat $WORKDIR/failed_drug_structures
-            echo "failed KEGG receptor structures:"
-            cat $WORKDIR/failed_receptor_structures
             echo "You may try run AlphaFold on nodes with more memory if available."
             echo "Another approach is let Vini use Swiss-Model prediction."
             echo "Vini will stop now."
             exit
         fi
     fi
+
+    if  [ -s $WORKDIR/failed_KEGG_genes ]
+    then
+        echo "Several KEGG genes with no Uniprot ID found:"
+        echo "**************************************"
+        cat $WORKDIR/failed_KEGG_genes
+        echo "Download their fasta sequences from from https://www.ncbi.nlm.nih.gov/ and predict structures."
+        echo "After prediction is done, upload structures to $vini_dir/database/genes/pdb_files directoryi and start Vini again."
+        echo "Vini will now stop."
+        exit
+    fi
+
+    if  [ -s $WORKDIR/failed_KEGG_substances ]
+    then
+        echo "Openbabel failed to convert some KEGG compound structures from sdf to pdb format:"
+        echo "**************************************"
+        cat $WORKDIR/failed_KEGG_substances              
+        echo "Their sdf files were saved in $WORKDIR/failed_KEGG_substances directory."
+        echo "Use cactus server at  https://cactus.nci.nih.gov/translate/. for their conversion to pdb files."
+        echo "After conversion is done, upload pdb files to $vini_dir/database/genes/pdb_file directory and start Vini again."
+        echo "Vini will now stop."
+        exit
+    fi
+
+
+    echo "brakepoint" ; sleep 1000
       
     echo -n "activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
@@ -179,27 +196,27 @@ then
 fi
 
 cd $WORKDIR #cleanup
-rm -f postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err
-rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded url
+rm -f postproc  ligand_???.pdbqt complex_???.jo*
+rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded
 rm -f ligands target_dir stats prediction_list max_jobs
 rm -f swiss_repo_entry *.pdb
 rm -f  nodes tmp success Vina_run 
 rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list
-rm -f stop WM COSMIC_token *pdbqt drugname failed_structures
+rm -f stop WM COSMIC_token *pdbqt drugname
 rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
 rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
 rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
-rm -f alphafold* mutated wild combo
+rm -f mutated wild combo
 
-while read -r line
-do
-    name=`echo $line | awk -F','  '{print $1}'`
-    type=`echo $line | awk -F','  '{print $2}'`
-    if [ $type == P ]
-    then
-        rm -rf $WORKDIR/$name
-    fi
-done < $vini_dir/database/ligands/ligands_list
+#while read -r line
+#do
+#    name=`echo $line | awk -F','  '{print $1}'`
+#    type=`echo $line | awk -F','  '{print $2}'`
+#    if [ $type == P ]
+#    then
+#        rm -rf $WORKDIR/$name
+#    fi
+#done < $vini_dir/database/ligands/ligands_list
 
 cd $vini_dir
 rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50

@@ -22,7 +22,7 @@ two=2
 
 rm -f $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
 
-> $WORKDIR/failed_structures
+> $WORKDIR/failed_KEGG_substances
 
 echo "finalizing receptor file, please wait..."
 > $WORKDIR/receptors_contracted
@@ -50,14 +50,14 @@ do
         else
             echo -n "no. Trying to obtain the structure from Pubchem..."
             echo ${pubchem_id}
-            sh download_substance_structure ${pubchem_id} $vini_dir/database/genes/pdb_files
+            sh download_substance_structure ${pubchem_id}
             if  [ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]
             then
                 echo "success. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with E flag."
             else
                 echo " failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with F flag."
                 echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "F" >> $WORKDIR/receptors_contracted
-                echo $pubchem_id >> $WORKDIR/failed_structures
+                echo "KEGG ID:" $KEGG_entry_id "   " "Pubchem ID:" $pubchem_id >> $WORKDIR/failed_KEGG_substances
             fi
         fi
     else  #KEGG entry is protein
@@ -67,14 +67,14 @@ do
 
         if  [ -z "$uniprot_id" ]
         then
-            echo "Uniprot ID for" $KEGG_gene_name "does not exists. Continuing to work with gene name."
-            uniprot_id=`grep $KEGG_gene_name nouniprotid` #fetch the gene name from nouniprotid file
-            uniprot_id=`echo $uniprot_id | awk '{print $2}'`
-            if  [ ! -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]
+            echo "Uniprot ID for" $KEGG_gene_name "does not exists. Continuing to work with COSMIC gene name."
+            COSMIC_gene_name=`grep $KEGG_gene_name nouniprotid` #fetch the gene name from nouniprotid file
+            COSMIC_gene_name=`echo $COSMIC_gene_name | awk '{print $2}'`
+            if  [ ! -e $vini_dir/database/genes/pdb_files/${COSMIC_gene_name}.pdb ]
             then
-                echo $uniprot_id >> $WORKDIR/failed_structures
+                echo "KEGG gene name:" $KEGG_gene_name  "COSMIC gene name:" $COSMIC_gene_name >> $WORKDIR/failed_KEGG_genes
             else
-                echo $uniprot "structure already in repo, continuing."
+                echo $uniprot "structure found in repo, continuing."
             fi
         else
             echo $uniprot_id >> $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST}
