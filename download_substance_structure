@@ -12,16 +12,5 @@ prefix="https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/SID/"
 suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename=Structure2D_SID_"
 wget -O ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
 
-obabel -isdf ${pubchem_id} -O tmp.pdb -h 2> $WORKDIR/stats               #try conversion with openbabel
-
-warning=`grep "Alias R was not chemically interpreted" $WORKDIR/stats`   #check for success
-echo $warning > $WORKDIR/tmp
-chars=`wc -c < $WORKDIR/tmp`
-if  [ $chars -gt $ONES ]
-then
-    echo "conversion of ${pubchem_id}.sdf to ${pubchem_id}.pdb with openbabel failed."
-    mv tmp.pdb $WORKDIR/failed_substances/pubchem:${pubchem_id}.sdf
-    echo "${pubchem_id}.sdf has beensaved to $WORKDIR/failed_substances directory for later conversion."
-else
-    mv tmp.pdb $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.pdb
-fi
+obabel -isdf ${pubchem_id} -opdb -O $WORKDIR/tmp -h --gen3d best                          #convert to pdb with openbabel
+cat $WORKDIR/tmp | grep -v XX > $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.pdb

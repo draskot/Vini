@@ -65,20 +65,19 @@ then
     then
         echo "Cannot continue as the following KEGG genes are missing entry in Uniprot:"
         cat $WORKDIR/missing_genes
-        echo "You may search for their fasta sequences at https://www.ncbi.nlm.nih.gov/ and predict their structures."
+        echo "Find their fasta sequences at https://www.ncbi.nlm.nih.gov/ and predict their structures."
         echo "Then upload structures to $vini_dir/database/genes/pdb_files directory and start Vini again."
     fi
 
-    if  [ -s $WORKDIR/failed_substances/failed_pubchem_structures ]
+    if  [ -s $WORKDIR/failed_pubchem_structures ]
     then
         echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
-        cat $WORKDIR/failed_substances/failed_pubchem_structures              
-        echo "Their pubchem_id.sdf files were saved in $WORKDIR/failed_substances directory."
-        echo "You may use Cactus server at  https://cactus.nci.nih.gov/translate/. for their conversion to pubchem_id.pdb files."
+        cat $WORKDIR/failed_pubchem_structures              
+        echo "You may try conversion with Cactus server at  https://cactus.nci.nih.gov/translate/"
         echo "Then upload strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
     fi
 
-    if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_substances/failed_pubchem_structures ]] 
+    if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_pubchem_structures ]] 
     then
         echo " Exiting now." ; exit
     fi
