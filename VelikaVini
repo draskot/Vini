@@ -15,9 +15,7 @@ prediction_model=`cat $WORKDIR/prediction_model`
 TRUE=1
 FALSE=0
 
-> $WORKDIR/failed_KEGG_genes
-> $WORKDIR/failed_KEGG_substances
-mkdir -p $WORKDIR/failed_KEGG_substances
+> $WORKDIR/missing_genes
 
 if  [ $compute_cell_line -eq $TRUE ]
 then
@@ -42,7 +40,7 @@ rm -f $WORKDIR/END
 therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
-    sh $vini_dir/create_mab_structures
+    sh $vini_dir/create_biotech_drug_structures
     sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
 
@@ -51,39 +49,38 @@ then
         echo "Waiting for prediction jobs to finish. This may take a while."
         sh $vini_dir/wait_until_jobs_finish
         sh $vini_dir/check_predicted_structures
-        if [[ -s $WORKDIR/failed_drug_structures ]] || [[ -s $WORKDIR/failed_receptor_structures ]]
+        if [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
         then
             echo "AlphaFold did not succeeded to predict following items:"
             echo "*******************************************************"
-            cat $WORKDIR/failed_drug_structures
+            cat $WORKDIR/failed_drug_predicted_structures
+            cat $WORKDIR/failed_gene_predicted_structures
             echo "You may try run AlphaFold on nodes with more memory if available."
             echo "Another approach is let Vini use Swiss-Model prediction."
-            echo "Vini will stop now."
-            exit
+            echo "Exiting now." ; exit
         fi
     fi
 
-    if  [ -s $WORKDIR/failed_KEGG_genes ]
+    if  [ -s $WORKDIR/missing_genes ]
     then
-        echo "Several KEGG genes with no Uniprot ID found:"
-        echo "**************************************"
-        cat $WORKDIR/failed_KEGG_genes
-        echo "Download their fasta sequences from from https://www.ncbi.nlm.nih.gov/ and predict structures."
-        echo "After prediction is done, upload structures to $vini_dir/database/genes/pdb_files directoryi and start Vini again."
-        echo "Vini will now stop."
-        exit
+        echo "Cannot continue as the following KEGG genes are missing entry in Uniprot:"
+        cat $WORKDIR/missing_genes
+        echo "You may search for their fasta sequences at https://www.ncbi.nlm.nih.gov/ and predict their structures."
+        echo "Then upload structures to $vini_dir/database/genes/pdb_files directory and start Vini again."
     fi
 
-    if  [ -s $WORKDIR/failed_KEGG_substances ]
+    if  [ -s $WORKDIR/failed_substances/failed_pubchem_structures ]
     then
-        echo "Openbabel failed to convert some KEGG compound structures from sdf to pdb format:"
-        echo "**************************************"
-        cat $WORKDIR/failed_KEGG_substances              
-        echo "Their sdf files were saved in $WORKDIR/failed_KEGG_substances directory."
-        echo "Use cactus server at  https://cactus.nci.nih.gov/translate/. for their conversion to pdb files."
-        echo "After conversion is done, upload pdb files to $vini_dir/database/genes/pdb_file directory and start Vini again."
-        echo "Vini will now stop."
-        exit
+        echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
+        cat $WORKDIR/failed_substances/failed_pubchem_structures              
+        echo "Their pubchem_id.sdf files were saved in $WORKDIR/failed_substances directory."
+        echo "You may use Cactus server at  https://cactus.nci.nih.gov/translate/. for their conversion to pubchem_id.pdb files."
+        echo "Then upload strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
+    fi
+
+    if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_substances/failed_pubchem_structures ]] 
+    then
+        echo " Exiting now." ; exit
     fi
 
 

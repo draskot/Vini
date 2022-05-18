@@ -22,7 +22,9 @@ two=2
 
 rm -f $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST
 
-> $WORKDIR/failed_KEGG_substances
+rm -rf $WORKDIR/failed_substances
+mkdir -p $WORKDIR/failed_substances
+> $WORKDIR/failed_substances/failed_pubchem_structures
 
 echo "finalizing receptor file, please wait..."
 > $WORKDIR/receptors_contracted
@@ -57,7 +59,7 @@ do
             else
                 echo " failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with F flag."
                 echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "F" >> $WORKDIR/receptors_contracted
-                echo "KEGG ID:" $KEGG_entry_id "   " "Pubchem ID:" $pubchem_id >> $WORKDIR/failed_KEGG_substances
+                echo "KEGG ID:" $KEGG_entry_id "   " "Pubchem ID:" $pubchem_id >> $WORKDIR/failed_substances/failed_pubchem_structures
             fi
         fi
     else  #KEGG entry is protein
@@ -72,7 +74,7 @@ do
             COSMIC_gene_name=`echo $COSMIC_gene_name | awk '{print $2}'`
             if  [ ! -e $vini_dir/database/genes/pdb_files/${COSMIC_gene_name}.pdb ]
             then
-                echo "KEGG gene name:" $KEGG_gene_name  "COSMIC gene name:" $COSMIC_gene_name >> $WORKDIR/failed_KEGG_genes
+                echo "KEGG gene name:" $KEGG_gene_name  "COSMIC gene name:" $COSMIC_gene_name >> $WORKDIR/missing_genes
             else
                 echo $uniprot "structure found in repo, continuing."
             fi

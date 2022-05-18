@@ -7,8 +7,6 @@ pubchem_id=$1
 
 ONES=1
 
-mkdir -p WORKDIR/failed_KEGG_substances
-
 pubchem_id=`echo ${pubchem_id} | tr -dc '[0-9\n]'`                       #download substance sdf file from Pubchem
 prefix="https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/SID/"
 suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename=Structure2D_SID_"
@@ -22,8 +20,8 @@ chars=`wc -c < $WORKDIR/tmp`
 if  [ $chars -gt $ONES ]
 then
     echo "conversion of ${pubchem_id}.sdf to ${pubchem_id}.pdb with openbabel failed."
-    echo "${pubchem_id}.sdf saved to $WORKDIR/failed_substances directory for later conversion."
-    mv $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.sdf $WORKDIR/failed_KEGG_substances
+    mv tmp.pdb $WORKDIR/failed_substances/pubchem:${pubchem_id}.sdf
+    echo "${pubchem_id}.sdf has beensaved to $WORKDIR/failed_substances directory for later conversion."
 else
     mv tmp.pdb $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.pdb
 fi
