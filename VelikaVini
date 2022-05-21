@@ -40,8 +40,9 @@ rm -f $WORKDIR/END
 therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
-    sh $vini_dir/predict_biotech_drug_structures
-    #sh $vini_dir/create_biotech_drug_structures_new #debug
+    #sh $vini_dir/predict_biotech_drug_structures
+    sh $vini_dir/predict_biotech_drug_structures_new
+
     sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
     sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
 
@@ -84,7 +85,6 @@ then
     fi
 
 
-    echo "brakepoint" ; sleep 1000000
       
     echo -n "activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
