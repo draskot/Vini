@@ -6,9 +6,7 @@ model=$5
 fasta_file=$6
 
 job_submit=`cat $WORKDIR/job_submit`
-
-drugname=`basename ${fasta_file} .fasta`
-
+antibody=`basename ${fasta_file} .fasta`
 node_type=`cat $WORKDIR/AlphaFold_partition`
 
 echo "#!/bin/bash"                                          > $WORKDIR/AlphaFold
@@ -18,9 +16,9 @@ echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
 echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
-echo "#SBATCH --job-name=A_"${drugname}                    >> $WORKDIR/AlphaFold
-echo "#SBATCH --output=$WORKDIR/alphafold.${drugname}.out" >> $WORKDIR/AlphaFold
-echo "#SBATCH --error=$WORKDIR/alphafold.${drugname}.err"  >> $WORKDIR/AlphaFold
+echo "#SBATCH --job-name=A_"${antibody}                    >> $WORKDIR/AlphaFold
+echo "#SBATCH --output=$WORKDIR/alphafold.${antibody}.out" >> $WORKDIR/AlphaFold
+echo "#SBATCH --error=$WORKDIR/alphafold.${antibody}.err"  >> $WORKDIR/AlphaFold
 
 if  [ ${node_type} == gpu ]
 then
@@ -28,9 +26,7 @@ then
     echo "#SBATCH --gres=gpu:"$gpus                        >> $WORKDIR/AlphaFold
 fi
 
-#echo "AlphaFoldIMAGE:    $AlphaFoldIMAGE"
-#echo "AlphaFoldSTART: $AlphaFoldSTART"
-#echo "AlphaFoldBASE: $AlphaFoldBASE"
+rm -rf $WORKDIR/${antibody}
 
 echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                         >> $WORKDIR/AlphaFold
 chmod u+x                                                     $WORKDIR/AlphaFold

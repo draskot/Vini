@@ -131,9 +131,15 @@ sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugba
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
-echo "Vini can predicts protein structures with AlphaFold and SWISS-MODEL."
+#echo "Vini can predict KEGG protein structures with AlphaFold or SWISS-MODEL."
+echo "Vini can predict protein structures with AlphaFold or SWISS-MODEL."
 read -e -p "Use AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "A" prediction_model
 echo ${prediction_model} > $WORKDIR/prediction_model
+
+#echo "Vini can predict monoclonal antibody drug (mAb) structures with Rosetta or SWISS-MODEL."
+#read -e -p "Use Rosetta Antibody[R] or SWISS-MODEL[S]? Enter to accept default: " -i "R" mAb_prediction_model
+#echo ${mab_prediction_model} > $WORKDIR/mAb_prediction_model
+
 if [ ${prediction_model} == A ]
 then 
     grep AlphaFold $vini_dir/sourceme > tmp
@@ -157,13 +163,21 @@ then
         exit
     fi
 else
-    echo "SWISS-MODEL will be used for prediction of protein structures."
     read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
     read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
     read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
     chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
     sh download_SWISS_MODEL_metadata
 fi
+
+#if  [[ ${prediction_model} == S ]] || [[ ${mab_prediction_model} == S ]]
+#then
+#    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
+#    read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
+#    read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
+#    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+#    sh download_SWISS_MODEL_metadata
+#fi
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
 

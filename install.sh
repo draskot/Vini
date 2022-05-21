@@ -199,7 +199,8 @@ then
 	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
 	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
         echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
+	#echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
@@ -287,9 +288,11 @@ then
        rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
        echo "done."
        echo "export PATH=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:\$PATH" >> $vini_dir/sourceme
+       echo "export ROSETTA=/ceph/hpc/data/d2203-0100-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main" >> $vini_dir/sourceme
        echo "docking_protocol.static.linuxgccrelease" > $WORKDIR/rosetta_docking_command
        echo "relax.static.linuxgccrelease" > $WORKDIR/rosetta_relax_command
     fi
+    echo "nompi" > $WORKDIR/rosetta_version #telling Rosetta not to use MPI
 else
     echo "yes."
 fi
