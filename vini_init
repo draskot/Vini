@@ -177,7 +177,7 @@ then
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        read -e -p "run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
+        read -e -p "Run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
         if [ $partition == cpu ]
         then
             cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition

@@ -15,7 +15,7 @@ import getopt
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "62356951098701806539879589599473005"
+TOKEN_NUMBER = "474581185078798351543902735043315731"
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 

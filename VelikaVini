@@ -40,27 +40,20 @@ rm -f $WORKDIR/END
 therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
-    #sh $vini_dir/predict_biotech_drug_structures
-    sh $vini_dir/predict_biotech_drug_structures_new
-
-    sh $vini_dir/create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
-    sh $vini_dir/create_receptor_structures       #Create receptors_contracted file and molecular structures
-
-    if  [ prediction_model == A ]
+    sh $vini_dir/predict_biotech_drug_structures
+    sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
+    sh $vini_dir/create_receptor_structures
+    echo "Waiting for prediction jobs to finish. This may take a while."
+    sh $vini_dir/wait_until_jobs_finish
+    sh $vini_dir/check_predicted_structures
+    echo "brakepoint" ; exit
+    if  [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
     then
-        echo "Waiting for prediction jobs to finish. This may take a while."
-        sh $vini_dir/wait_until_jobs_finish
-        sh $vini_dir/check_predicted_structures
-        if [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
-        then
-            echo "AlphaFold did not succeeded to predict following items:"
-            echo "*******************************************************"
-            cat $WORKDIR/failed_drug_predicted_structures
-            cat $WORKDIR/failed_gene_predicted_structures
-            echo "You may try run AlphaFold on nodes with more memory if available."
-            echo "Another approach is let Vini use Swiss-Model prediction."
-            echo "Exiting now." ; exit
-        fi
+        echo "Following structure(s) were not predicted:"
+        cat $WORKDIR/failed_drug_predicted_structures
+        cat $WORKDIR/failed_gene_predicted_structures
+        echo "Restart Vini and use Swiss-Modeli prediction."
+        echo "Exiting." ; exit
     fi
 
     if  [ -s $WORKDIR/missing_genes ]
@@ -81,7 +74,7 @@ then
 
     if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_pubchem_structures ]] 
     then
-        echo " Exiting now." ; exit
+        echo " Exiting." ; exit
     fi
 
 
@@ -179,6 +172,7 @@ then
     complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
     echo $complexes > $WORKDIR/complexes
 fi
+
 sh vini 
 end_date=`date`
 echo "Analysis completed at"  $end_date
