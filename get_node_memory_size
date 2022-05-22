@@ -1,4 +1,3 @@
-
 node_type=$1
 walltime=$2
 
@@ -18,7 +17,6 @@ echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
-#echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
@@ -27,22 +25,22 @@ chmod u+x                                       $WORKDIR/get_size_of_memory
 
 $job_submit $WORKDIR/get_size_of_memory
 
+
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 60 seconds
 if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
     memsize=`echo $line | awk '{print $2}'`
+    memsize=`echo "$memsize" | sed -r 's/[G]+/gb/g'`
     echo "found $memsize free memory per ${node_type} node."
-    memsize=`echo $memsize | awk '{ print substr( $0, 1, length($0)-2 ) }'`
 else
     $job_cancel -u $USER
     read -p "failed to get info about memory. Write memory size in [GB] per ${node_type} node:" memsize
 fi
 
-suffix=gb    
 if  [ ${node_type} == cpu ]
 then
-    echo $memsize$suffix > $WORKDIR/cpu_memsize
+    echo $memsize > $WORKDIR/cpu_memsize
 else
-    echo $memsize$suffix > $WORKDIR/gpu_memsize
+    echo $memsize > $WORKDIR/gpu_memsize
 fi

@@ -1,4 +1,3 @@
-#https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
 
 antibody=$1
 
@@ -8,4 +7,3 @@ sort -k3 -n -r H3_modeling_scores.fasc > tmp #select model with the lowest score
 line=`head -3 tmp | tail -1`
 model=`echo $line | awk  'NF>1{print $NF}'`
 cp ./H3_modeling/${model}.pdb $vini_dir/database/ligands/pdb_files/${antibody}.pdb
-rm tmp

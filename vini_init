@@ -54,6 +54,39 @@ else
 fi
 echo $JSS > $WORKDIR/JSS
 
+echo -n "Determining which Rosetta version is installed..."
+which antibody_graft.mpi.linuxgccrelease &> tmp #determining which Rosetta is installed
+grep -w no tmp > tmp2
+nolines=`wc -l < tmp2`
+if [ $nolines -eq $NULL ]
+then
+    rosetta_version=mpi
+else
+    which antibody_graft.linuxgccrelease &> tmp #determining if Rosetta multithreaded is installed
+    grep -w no tmp > tmp2
+    nolines=`wc -l < tmp2`
+    if  [ $nolines -eq $NULL ]
+    then
+        var=`cat tmp`
+        rosetta_version=multithreaded
+    else
+        which antibody_graft.static.linuxgccrelease &> tmp #determining if Rosetta static is installed
+        grep -w no tmp > tmp2
+        nolines=`wc -l < tmp2`
+        if  [ $nolines -eq $NULL ]
+        then
+            rosetta_version=static
+        else
+            echo "no Rosetta binaries found!"
+            exit
+        fi
+    fi
+fi
+ROSETTA=`cat tmp`                                #determining Rosetta install directory
+ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA`
+echo $rosetta_version > $WORKDIR/rosetta_version
+echo $ROSETTA > $WORKDIR/ROSETTA
+
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -135,9 +168,9 @@ echo "Vini can predict KEGG protein structures with AlphaFold or SWISS-MODEL."
 read -e -p "Use AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "A" prediction_model
 echo ${prediction_model} > $WORKDIR/prediction_model
 
-echo "Vini can predict monoclonal antibody drug (mAb) structures with several tools."
-read -e -p "Use Rosetta Antibody[R], AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "R" mAb_prediction_model
-echo ${mab_prediction_model} > $WORKDIR/mAb_prediction_model
+echo "Vini can predict biotech drug structures with either Rosetta+Alphafold, or with SWISS-MODEL."
+read -e -p "Use Rosetta+AlphaFold[RA] or SWISS-MODEL[S]? Enter to accept default: " -i "RA" biotech_drugs_prediction_model
+echo ${biotech_drugs_prediction_model} > $WORKDIR/biotech_drugs_prediction_model
 
 if [ ${prediction_model} == A ]
 then 
@@ -163,11 +196,16 @@ then
     fi
 fi
 
-read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
+echo ; echo "If you never registered to SWISS-MODEL before, stop now. Go to https://swissmodel.expasy.org/  and register. Upon receiving the approval, enter your registration data here."
+read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
     read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
     read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
     chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
     sh download_SWISS_MODEL_metadata
+fi
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
 
@@ -362,4 +400,4 @@ source $vini_dir/sourceme
 
 echo "You may now start Vini in the foreground with <sh VelikaVini> (output will be sent to the screen)"
 echo "or in the background with <nohup ./VelikaVini &> (output will be sent to nohup.out file)"
-echo "WARNING: If you are analyzing a specific cell line for the first time, start Vini in foreground."
+#echo "WARNING: If you are analyzing a specific cell line for the first time, start Vini in foreground."

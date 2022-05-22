@@ -44,30 +44,6 @@ echo "#SBATCH --error=rosetta_docking.err"   >> rosetta_docking
 cat $vini_dir/rosetta_docking                >> rosetta_docking
 chmod u+x rosetta_docking
 
-echo "#!/bin/bash"                            > rosetta_grafting #prepare grafting script
-echo "#SBATCH --job-name=grafting"           >> rosetta_grafting
-echo "#SBATCH --nodes=1"                     >> rosetta_grafting
-echo "#SBATCH --cpus-per-task=4"             >> rosetta_grafting
-echo "#SBATCH --mem=4gb"                     >> rosetta_grafting
-echo "#SBATCH --partition="$cpu_partition    >> rosetta_grafting
-echo "#SBATCH --time=48:00:00"               >> rosetta_grafting
-echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting
-echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting
-cat $vini_dir/rosetta_grafting               >> rosetta_grafting
-chmod u+x rosetta_grafting
-
-echo "#!/bin/bash"                            > rosetta_antibody #prepare antibody script
-echo "#SBATCH --job-name=antibody"           >> rosetta_antibody
-echo "#SBATCH --nodes=1"                     >> rosetta_antibody
-echo "#SBATCH --cpus-per-task=4"             >> rosetta_antibody
-echo "#SBATCH --mem=4gb"                     >> rosetta_antibody
-echo "#SBATCH --partition="$cpu_partition    >> rosetta_antibody
-echo "#SBATCH --time=48:00:00"               >> rosetta_antibody
-echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody
-echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody
-cat $vini_dir/rosetta_antibody               >> rosetta_antibody
-chmod u+x rosetta_antibody
-
 echo "#!/bin/bash"                            > rosetta_relax.mpi #prepare relax MPI script
 echo "#SBATCH --job-name=relax"              >> rosetta_relax.mpi
 echo "#SBATCH --nodes=1"                     >> rosetta_relax.mpi
@@ -93,32 +69,6 @@ echo "#SBATCH --output=rosetta_docking.out"  >> rosetta_docking.mpi
 echo "#SBATCH --error=rosetta_docking.err"   >> rosetta_docking.mpi
 cat $vini_dir/rosetta_docking.mpi            >> rosetta_docking.mpi
 chmod u+x rosetta_docking.mpi
-
-echo "#!/bin/bash"                            > rosetta_grafting.mpi #prepare grafting script
-echo "#SBATCH --job-name=grafting"           >> rosetta_grafting.mpi
-echo "#SBATCH --nodes=1"                     >> rosetta_grafting.mpi
-echo "#SBATCH --ntasks-per-node=12"          >> rosetta_grafting.mpi
-echo "#SBATCH --ntasks-per-core=1"           >> rosetta_grafting.mpi
-echo "#SBATCH --mem=12gb"                    >> rosetta_grafting.mpi
-echo "#SBATCH --partition="$cpu_partition    >> rosetta_grafting.mpi
-echo "#SBATCH --time=48:00:00"               >> rosetta_grafting.mpi
-echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting.mpi
-echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting.mpi
-cat $vini_dir/rosetta_grafting.mpi           >> rosetta_grafting.mpi
-chmod u+x rosetta_grafting.mpi
-
-echo "#!/bin/bash"                            > rosetta_antibody.mpi #prepare antibody script
-echo "#SBATCH --job-name=antibody"           >> rosetta_antibody.mpi
-echo "#SBATCH --nodes=1"                     >> rosetta_antibody.mpi
-echo "#SBATCH --ntasks-per-node=12"          >> rosetta_antibody.mpi
-echo "#SBATCH --ntasks-per-core=1"           >> rosetta_antibody.mpi
-echo "#SBATCH --mem=12Gb"                    >> rosetta_antibody.mpi
-echo "#SBATCH --partition="$cpu_partition    >> rosetta_antibody.mpi
-echo "#SBATCH --time=48:00:00"               >> rosetta_antibody.mpi
-echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody.mpi
-echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody.mpi
-cat $vini_dir/rosetta_antibody.mpi           >> rosetta_antibody.mpi
-chmod u+x rosetta_antibody.mpi
 
 echo "#!/bin/bash"                            > rosetta_log #prepare log script
 echo "#SBATCH --job-name=log_data"           >> rosetta_log
