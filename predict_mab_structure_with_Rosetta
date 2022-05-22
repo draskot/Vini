@@ -1,0 +1,55 @@
+#https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
+
+antibody=$1
+
+cpus=`cat $WORKDIR/cpu_cores`
+mem=`cat $WORKDIR/cpu_memsize`
+partition=`cat $WORKDIR/cpu_partition`
+MAX_NODES=`cat $WORKDIR/nodes`
+job_submit=`cat $WORKDIR/job_submit`
+rosetta_version=`cat $WORKDIR/rosetta_version`
+ROSETTA=`cat $WORKDIR/ROSETTA`
+
+NULL=0
+
+cd $WORKDIR
+
+mkdir -p Rosetta_${antibody}
+cd Rosetta_${antibody}
+rm -rf *
+mkdir -p H3_modeling
+cp $vini_dir/nodes_control_script ./
+cp $ROSETTA/tools/antibody/abH3.flags ./
+
+echo "#!/bin/bash"                            > rosetta
+echo "#SBATCH --nodes=1"                     >> rosetta
+#echo "#SBATCH --cpus-per-task="$cpus        >> rosetta
+echo "#SBATCH -n $cpus"                      >> rosetta
+echo "#SBATCH --mem="$mem                    >> rosetta
+echo "#SBATCH --partition="$partition        >> rosetta
+cat rosetta                                  >> rosetta_grafting
+echo "#SBATCH --job-name=grafting"           >> rosetta_grafting
+echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting
+echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting
+cat rosetta                                   > rosetta_antibody
+echo "#SBATCH --job-name=antibody"           >> rosetta_antibody
+echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody
+echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody
+
+if  [ $rosetta_version == mpi ]
+then
+    cat $vini_dir/rosetta_grafting.mpi >> rosetta_grafting
+    cat $vini_dir/rosetta_antibody.mpi >> rosetta_antibody
+else
+    cat $vini_dir/rosetta_grafting >> rosetta_grafting
+    cat $vini_dir/rosetta_antibody >> rosetta_antibody
+fi
+
+chmod u+x rosetta_grafting rosetta_antibody
+    
+sh nodes_control_script ${MAX_NODES}
+jobID=$(${job_submit} --parsable rosetta_grafting ${antibody})
+echo "Grafting protocol started on ${antibody}"
+sh nodes_control_script ${MAX_NODES}
+$job_submit --dependency=afterok:${jobID} rosetta_antibody ${antibody}
+echo "Antibody H3 protocol started on ${antibody}"
