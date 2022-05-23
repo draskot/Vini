@@ -128,8 +128,8 @@ do
                              cp $vini_dir/genes/pdb_files/${receptor}.pdb ./protein1.pdb
                              cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./protein2.pdb
                              cp  $WORKDIR/rosetta_log ./
-                             sh $vini_dir/protein_protein_docking_with_Rosetta ${protein1} ${protein2}
-                             ${job_submit} --dependency=afterany:${jobID3} rosetta_log ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
+                             sh $vini_dir/protein_protein_docking_with_Rosetta ${protein1} ${protein2} ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
+                             # ${job_submit} --dependency=afterany:${jobID3} rosetta_log ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
                              #if  [ $rosetta_version == mpi ]
                              #then
                              #    echo "mpirun -np ${SLURM_NTASKS} relax.mpi.linuxgccrelease -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax.mpi   #prepare protein

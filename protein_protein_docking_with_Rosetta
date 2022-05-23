@@ -1,6 +1,12 @@
 #https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
 
-antibody=$1
+protein1=$1
+protein2=$2
+receptor=$3
+ligand=$4
+target_dir=$5
+comp_index=$6
+lig_index=$7
 
 cpus=`cat $WORKDIR/cpu_cores`
 mem=`cat $WORKDIR/cpu_memsize`
@@ -9,7 +15,6 @@ MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 rosetta_version=`cat $WORKDIR/rosetta_version`
 ROSETTA=`cat $WORKDIR/ROSETTA`
-
 
 cp $vini_dir/nodes_control_script ./
 
@@ -36,6 +41,11 @@ echo "#SBATCH --job-name=docking"            >> rosetta_docking
 echo "#SBATCH --output=docking.out"          >> rosetta_docking
 echo "#SBATCH --error=docking.err"           >> rosetta_docking
 
+cat rosetta                                   > rosetta_logging
+echo "#SBATCH --job-name=logging"            >> rosetta_logging
+echo "#SBATCH --output=logging.out"          >> rosetta_logging
+echo "#SBATCH --error=logging.err"           >> rosetta_logging
+
 echo "protein=\$1"  >> rosetta_relax
 echo "protein=\$1"  >> rosetta_docking
 
@@ -57,24 +67,18 @@ else
         echo "docking_protocol.static.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
     fi
 fi
-chmod u+x rosetta_relax rosetta_docking
-    
+
+cat $vini_dir/rosetta_logging >> rosetta_logging
+chmod u+x rosetta_relax rosetta_docking rosetta_logging
 
 sh nodes_control_script ${MAX_NODES}
-receptor=protein1
-jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
+jobID1=$(${job_submit} --parsable rosetta_relax ${protein1})
 
 sh nodes_control_script ${MAX_NODES}
-receptor=protein2
-jobID2=$(${job_submit} --parsable rosetta_relaxi ${receptor})
+jobID2=$(${job_submit} --parsable rosetta_relax ${protein2})
 
 sh nodes_control_script ${MAX_NODES}
-jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
+jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking)
 
-
-
-
-
-
-
-
+sh nodes_control_script ${MAX_NODES}
+${job_submit} --dependency=afterany:${jobID3} rosetta_logging ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
