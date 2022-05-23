@@ -3,9 +3,3 @@
 antibody=$1
 
 antibody_H3.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
-
-sort -k3 -n -r H3_modeling_scores.fasc > tmp #select model with the lowest score
-line=`head -3 tmp | tail -1`
-model=`echo $line | awk  'NF>1{print $NF}'`
-cp ./H3_modeling/${model}.pdb $vini_dir/database/ligands/pdb_files/${antibody}.pdb
-rm tmp

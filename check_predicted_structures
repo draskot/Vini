@@ -3,15 +3,29 @@
 
 while read -r line
 do
-    protein=`echo $line | awk -F',' '{print $1}'`
     type=`echo $line | awk -F','    '{print $2}'`
     if  [ $type == P ]
     then
-        if  [ -e $WORKDIR/${protein}/ranked_0.pdb ]
-        then                                                      #prediction succeeded
-            cp $WORKDIR/${protein}/ranked_0.pdb ${vini_dir}/database/ligands/pdb_files/${protein}.pdb
-        else                                                      #prediction failed
-            echo ${protein} >> $WORKDIR/failed_drug_predicted_structures
+        drug=`echo $line | awk -F',' '{print $1}'`
+        subtype=`echo "$drug" | grep -oP 'mab.*?\b' | wc -l`
+        if [ $subtype == 1 ] 
+        then                                                               #drug is mAb and Rosetta Antibody was used
+            if [ -e $WORKDIR/${drug}/H3_modeling/H3_modeling_scores.fasc ] #check if prediction succeeded
+            then                                     
+                sort -k3 -n -r $WORKDIR/${drug}/H3_modeling/H3_modeling_scores.fasc > tmp #select model with the lowest score
+                line=`head -3 tmp | tail -1`
+                model=`echo $line | awk  'NF>1{print $NF}'`
+                cp $WORKDIR/${drug}/./H3_modeling/${model}.pdb $vini_dir/database/ligands/pdb_files/${antibody}.pdb
+            else
+                echo ${drug} >> $WORKDIR/failed_drug_predicted_structures
+            fi
+        else                                                              #Alphafold was used
+            if  [ -e $WORKDIR/${drug}/ranked_0.pdb ]                      #check if prediction succeeded
+            then                                                      
+                cp $WORKDIR/${drug}/ranked_0.pdb ${vini_dir}/database/ligands/pdb_files/${protein}.pdb
+            else                                                      #prediction failed
+                echo ${drug} >> $WORKDIR/failed_drug_predicted_structures
+            fi
         fi
     fi
 done < $vini_dir/database/ligands/ligands_list

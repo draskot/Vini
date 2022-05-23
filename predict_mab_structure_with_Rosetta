@@ -14,8 +14,8 @@ NULL=0
 
 cd $WORKDIR
 
-mkdir -p Rosetta_${antibody}
-cd Rosetta_${antibody}
+mkdir -p ${antibody}
+cd ${antibody}
 rm -rf *
 mkdir -p H3_modeling
 cp $vini_dir/nodes_control_script ./

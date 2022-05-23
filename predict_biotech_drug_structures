@@ -31,7 +31,7 @@ do
                     fasta_file=${vini_dir}/database/ligands/fasta_files/${drug}.fasta
                     lines=`echo "$drug" | grep -oP 'mab.*?\b' | wc -l`
                     if [ $lines -eq $NULL ]
-                    then                        #Only one chain found, not a mAb drug
+                    then                        #drug is  not mAb
                         echo "Predicting ${drug} structure with AlphaFold."
                         sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
                     else
