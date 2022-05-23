@@ -1,0 +1,80 @@
+#https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
+
+antibody=$1
+
+cpus=`cat $WORKDIR/cpu_cores`
+mem=`cat $WORKDIR/cpu_memsize`
+partition=`cat $WORKDIR/cpu_partition`
+MAX_NODES=`cat $WORKDIR/nodes`
+job_submit=`cat $WORKDIR/job_submit`
+rosetta_version=`cat $WORKDIR/rosetta_version`
+ROSETTA=`cat $WORKDIR/ROSETTA`
+
+
+cp $vini_dir/nodes_control_script ./
+
+echo "#!/bin/bash"                            > rosetta
+echo "#SBATCH --nodes=1"                     >> rosetta
+if  [ $rosetta_version == mpi ]
+then
+    echo "#SBATCH --ntasks $cpus"            >> rosetta
+    echo "#SBATCH --ntasks_per_core 1"       >> rosetta
+else
+    echo "#SBATCH --ntasks 1"                >> rosetta
+    echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
+fi
+echo "#SBATCH --mem="$mem                    >> rosetta
+echo "#SBATCH --partition="$partition        >> rosetta
+
+cat rosetta                                  >> rosetta_relax
+echo "#SBATCH --job-name=relax"              >> rosetta_relax
+echo "#SBATCH --output=relax.out"            >> rosetta_relax
+echo "#SBATCH --error=relax.err"             >> rosetta_relax
+
+cat rosetta                                   > rosetta_docking
+echo "#SBATCH --job-name=docking"            >> rosetta_docking
+echo "#SBATCH --output=docking.out"          >> rosetta_docking
+echo "#SBATCH --error=docking.err"           >> rosetta_docking
+
+echo "protein=\$1"  >> rosetta_relax
+echo "protein=\$1"  >> rosetta_docking
+
+if  [ $rosetta_version == mpi ]
+then
+    echo "mpirun -np \${SLURM_NTASKS} relax.mpi.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax
+    
+    echo "mpirun -np \${SLURM_NTASKS} docking_protocol.mpi.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb"  >> rosetta_relax
+
+else
+    if [ $rosetta_version == multithreaded ]
+    then
+        echo "relax.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+
+        echo "docking_protocol.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
+    else
+        echo "relax.static.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+
+        echo "docking_protocol.static.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
+    fi
+fi
+chmod u+x rosetta_relax rosetta_docking
+    
+
+sh nodes_control_script ${MAX_NODES}
+receptor=protein1
+jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
+
+sh nodes_control_script ${MAX_NODES}
+receptor=protein2
+jobID2=$(${job_submit} --parsable rosetta_relaxi ${receptor})
+
+sh nodes_control_script ${MAX_NODES}
+jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
+
+
+
+
+
+
+
+
