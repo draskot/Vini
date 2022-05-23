@@ -1,4 +1,0 @@
-
-antibody=$1
-
-mpirun -np ${SLURM_NTASKS} antibody_H3.mpi.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling

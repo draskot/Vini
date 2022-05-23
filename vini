@@ -13,6 +13,8 @@ job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4)
 job_submit=`cat $WORKDIR/job_submit`
 docking=`cat $WORKDIR/docking`                      #Rosetta or Hex
 rosie=`cat $WORKDIR/rosie`
+rosetta_version=`cat $WORKDIR/rosetta_version`
+ROSETTA=`cat $WORKDIR/ROSETTA`
 
 exhaustiveness=`cat $WORKDIR/exhaustiveness`
 box_size=`cat $WORKDIR/box_size`
@@ -36,7 +38,6 @@ cd $WORKDIR
 SECONDS=$NULL
 elapsed_time=$NULL
 elapsed_simulations=$NULL
-
 
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
@@ -126,29 +127,34 @@ do
                              echo ${PWD}/protein2_relaxed_0002.pdb >> pdblist
                              cp $vini_dir/genes/pdb_files/${receptor}.pdb ./protein1.pdb
                              cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./protein2.pdb
-                             if  [ $rosie == mpi ]
-                             then
-                                 cp $WORKDIR/rosetta_relax.mpi $WORKDIR/rosetta_docking.mpi $WORKDIR/rosetta_log ./
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein1
-                                 jobID1=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein2
-                                 jobID2=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
-                             else
-                                 cp $WORKDIR/rosetta_relax $WORKDIR/rosetta_docking $WORKDIR/rosetta_log ./
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein1
-                                 jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein2
-                                 jobID2=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking )
-                             fi
-                             sh nodes_control_script ${MAX_NODES}
+                             cp  $WORKDIR/rosetta_log ./
+                             sh $vini_dir/protein_protein_docking_with_Rosetta ${protein1} ${protein2}
                              ${job_submit} --dependency=afterany:${jobID3} rosetta_log ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
+                             #if  [ $rosetta_version == mpi ]
+                             #then
+                             #    echo "mpirun -np ${SLURM_NTASKS} relax.mpi.linuxgccrelease -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax.mpi   #prepare protein
+                                 #cp $WORKDIR/rosetta_relax.mpi $WORKDIR/rosetta_docking.mpi
+
+
+                                 #sh nodes_control_script ${MAX_NODES}
+                                 #receptor=protein1
+                                 #jobID1=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
+                                 #sh nodes_control_script ${MAX_NODES}
+                                 #receptor=protein2
+                                 #jobID2=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
+                                 #sh nodes_control_script ${MAX_NODES}
+                                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
+                             #else
+                                 #cp $WORKDIR/rosetta_relax $WORKDIR/rosetta_docking $WORKDIR/rosetta_log ./
+                                 #sh nodes_control_script ${MAX_NODES}
+                                 #receptor=protein1
+                                 #jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
+                                 #sh nodes_control_script ${MAX_NODES}
+                                 #receptor=protein2
+                                 #jobID2=$(${job_submit} --parsable rosetta_relax ${receptor})
+                                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking )
+                             #fi
+                             #sh nodes_control_script ${MAX_NODES}
                          else
                              FBE=`cat $WORKDIR/random_affinity`
                              echo $FBE > ${target_dir}/log_${comp_index}.txt

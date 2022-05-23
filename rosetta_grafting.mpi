@@ -1,4 +1,0 @@
-
-antibody=$1
-
-mpirun -np ${SLURM_NTASKS} antibody.mpi.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log

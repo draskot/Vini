@@ -12,25 +12,31 @@ ROSETTA=`cat $WORKDIR/ROSETTA`
 
 NULL=0
 
-cd $WORKDIR
-
-mkdir -p ${antibody}
-cd ${antibody}
+mkdir -p $WORKDIR/${antibody}
+cd $WORKDIR/${antibody}
 rm -rf *
 mkdir -p H3_modeling
-cp $vini_dir/nodes_control_script ./
-cp $ROSETTA/tools/antibody/abH3.flags ./
+cp $vini_dir/nodes_control_script $ROSETTA/tools/antibody/abH3.flags ./
 
 echo "#!/bin/bash"                            > rosetta
 echo "#SBATCH --nodes=1"                     >> rosetta
-#echo "#SBATCH --cpus-per-task="$cpus        >> rosetta
-echo "#SBATCH -n $cpus"                      >> rosetta
+if  [ $rosetta_version == mpi ]
+then
+    echo "#SBATCH --ntasks $cpus"            >> rosetta
+    echo "#SBATCH --ntasks_per_core 1"       >> rosetta
+else
+    echo "#SBATCH --ntasks 1"                >> rosetta
+    echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
+fi
 echo "#SBATCH --mem="$mem                    >> rosetta
 echo "#SBATCH --partition="$partition        >> rosetta
+
 cat rosetta                                  >> rosetta_grafting
 echo "#SBATCH --job-name=grafting"           >> rosetta_grafting
 echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting
 echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting
+echo "antibody=\$1"                          >> rosetta_grafting
+
 cat rosetta                                   > rosetta_antibody
 echo "#SBATCH --job-name=antibody"           >> rosetta_antibody
 echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody
@@ -38,18 +44,22 @@ echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody
 
 if  [ $rosetta_version == mpi ]
 then
-    cat $vini_dir/rosetta_grafting.mpi >> rosetta_grafting
-    cat $vini_dir/rosetta_antibody.mpi >> rosetta_antibody
-else
-    cat $vini_dir/rosetta_grafting >> rosetta_grafting
-    cat $vini_dir/rosetta_antibody >> rosetta_antibody
-fi
+    echo "mpirun -np \${SLURM_NTASKS} antibody_graft.mpi.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
 
+    echo "mpirun -np \${SLURM_NTASKS} antibody_H3.mpi.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling" >> rosetta_antibody
+else
+    if [ $rosetta_version == multithreaded ]
+    then
+        echo "antibody_graft.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
+        echo "antibody_H3.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
+    else
+        echo "antibody_graft.static.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
+        echo "antibody_H3.static.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
+    fi
+fi
 chmod u+x rosetta_grafting rosetta_antibody
     
-sh nodes_control_script ${MAX_NODES}
-jobID=$(${job_submit} --parsable rosetta_grafting ${antibody})
-echo "Grafting protocol started on ${antibody}"
-sh nodes_control_script ${MAX_NODES}
-$job_submit --dependency=afterok:${jobID} rosetta_antibody ${antibody}
+sh nodes_control_script ${MAX_NODES} ; jobID=$(${job_submit} --parsable rosetta_grafting ${antibody})
+echo "Grafting started on ${antibody}"
+sh nodes_control_script ${MAX_NODES} ; $job_submit --dependency=afterok:${jobID} rosetta_antibody ${antibody}
 echo "Antibody H3 protocol started on ${antibody}"
