@@ -299,4 +299,3 @@ fi
 rm -f rosetta tmp
 
 echo "The downloaded source packages are in" $vini_dir/software
-echo "Installation is done.  Execute <source $vini_dir/sourceme> to changes take effect"
