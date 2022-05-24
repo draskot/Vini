@@ -46,15 +46,15 @@ if  [ $rosetta_version == mpi ]
 then
     echo "mpirun -np \${SLURM_NTASKS} antibody_graft.mpi.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
 
-    echo "mpirun -np \${SLURM_NTASKS} antibody_H3.mpi.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling" >> rosetta_antibody
+    echo "mpirun -np \${SLURM_NTASKS} antibody_H3.mpi.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc  -out:path:pdb H3_modeling" >> rosetta_antibody
 else
     if [ $rosetta_version == multithreaded ]
     then
         echo "antibody_graft.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
-        echo "antibody_H3.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
+        echo "antibody_H3.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
     else
         echo "antibody_graft.static.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
-        echo "antibody_H3.static.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
+        echo "antibody_H3.static.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
     fi
 fi
 chmod u+x rosetta_grafting rosetta_antibody
