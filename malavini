@@ -35,8 +35,6 @@ cd $WORKDIR
 > SLEM_values    #delete SLEM values from the previous run
 
 SECONDS=$NULL
-elapsed_time=$NULL
-elapsed_simulations=$NULL
 
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
@@ -147,7 +145,7 @@ do
 
                  sh $vini_dir/wait_until_jobs_finish
 
-                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}    #create affinity vector
+                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}         #create affinity vector
                  echo "#SBATCH --job-name=vec_${lig_index}"   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  cat $vini_dir/create_vector >> ${target_dir}/vec_${lig_index}
@@ -155,7 +153,7 @@ do
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir}
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 echo $target_dir > target_dir #create SLEM
+                 echo $target_dir > target_dir                                #create SLEM
                  cat $WORKDIR/Vina > ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --job-name=mat_${lig_index}"   >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
