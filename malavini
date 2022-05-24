@@ -21,8 +21,10 @@ max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 ligands=`wc -l < $vini_dir/database/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
-export target_dir comp_index #vars for (SGE) compute_FBE/Vina script
-NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prep scripts will use
+NTOMP=`cat $WORKDIR/Gromacs_threads`
+
+#export target_dir comp_index #vars for (SGE) compute_FBE/Vina script
+# export NTOMP #nr OMP threads (SGE) MD_run/MD_prep scripts will use
 
 DIR=$WORKDIR/${CANCER_TYPE}_data 
 lig_source=$WORKDIR
@@ -150,10 +152,6 @@ do
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  cat $vini_dir/create_vector >> ${target_dir}/vec_${lig_index}
                  chmod u+x ${target_dir}/vec_${lig_index}
-                 #sed -i '0,/./s/^.//' ${target_dir}/listID_${lig_index} #remove the first :
-                 #listID_lig_index=`cat ${target_dir}/listID_${lig_index}`
-                 #jobID3=jobID_${lig_index}
-                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${listID_lig_index} ${target_dir}/vec_${lig_index} ${target_dir} )
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir}
                  sh $vini_dir/wait_until_jobs_finish
                  
@@ -167,8 +165,6 @@ do
                  echo "python2 $vini_dir/compute_eigenvalues_old.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/mat_${lig_index}
                  echo "conda deactivate" >> ${target_dir}/mat_${lig_index}
                  chmod u+x ${target_dir}/mat_${lig_index}
-                 #jobID4=jobID_${lig_index}
-                 #jobID4=$(${job_submit} --parsable --dependency=afterany:${jobID3} ${target_dir}/mat_${lig_index} )
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
 
@@ -176,7 +172,6 @@ do
                  echo "#SBATCH --job-name=SLEM_${lig_index}"   >> ${target_dir}/SLEM_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/SLEM_${lig_index}
                  cat $vini_dir/store_SLEM_value >> ${target_dir}/SLEM_${lig_index}
-                 #${job_submit} --dependency=afterany:${jobID4} ${target_dir}/SLEM_${lig_index} ${M} ${L} ${J} ${I} ${target_dir}
                  ${job_submit} ${target_dir}/SLEM_${lig_index} ${M} ${L} ${J} ${I} ${target_dir} 
                  sh $vini_dir/wait_until_jobs_finish
 
