@@ -48,7 +48,7 @@ then
         echo "Following structure(s) were not predicted:"
         cat $WORKDIR/failed_drug_predicted_structures
         cat $WORKDIR/failed_gene_predicted_structures
-        echo "Restart Vini and use Swiss-Modeli prediction."
+        echo "You may try to use Swiss-Model instead."
         echo "Exiting." ; exit
     fi
 
@@ -64,8 +64,9 @@ then
     then
         echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
         cat $WORKDIR/failed_pubchem_structures              
-        echo "You may try conversion with Cactus server at  https://cactus.nci.nih.gov/translate/"
-        echo "Then upload strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
+        echo "You may try convert them with Cactus server: https://cactus.nci.nih.gov/translate/"
+        echo "Then upload these strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
+        echo "Exiting." ; exit
     fi
 
     if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_pubchem_structures ]] 
@@ -73,7 +74,7 @@ then
         echo " Exiting." ; exit
     fi
       
-    echo -n "activating miniconda environment..."
+    echo -n "Activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
     conda activate env27
     echo "done."
@@ -86,7 +87,7 @@ then
                 sh get_gene_expressions_from_CosmicDB ${cores}
                 $job_submit $WORKDIR/genex
                 sh wait_until_jobs_finish ; rm $WORKDIR/genex.out
-                    cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
+                cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
             else
                 cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/database/genes
             fi
@@ -192,16 +193,6 @@ rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
 rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
 rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
 rm -f mutated wild combo
-
-#while read -r line
-#do
-#    name=`echo $line | awk -F','  '{print $1}'`
-#    type=`echo $line | awk -F','  '{print $2}'`
-#    if [ $type == P ]
-#    then
-#        rm -rf $WORKDIR/$name
-#    fi
-#done < $vini_dir/database/ligands/ligands_list
 
 cd $vini_dir
 rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50
