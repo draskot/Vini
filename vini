@@ -12,9 +12,6 @@ cell_line=`cat $WORKDIR/cell_line`                  #getting the cell line name
 job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
 job_submit=`cat $WORKDIR/job_submit`
 docking=`cat $WORKDIR/docking`                      #Rosetta or Hex
-rosie=`cat $WORKDIR/rosie`
-rosetta_version=`cat $WORKDIR/rosetta_version`
-ROSETTA=`cat $WORKDIR/ROSETTA`
 
 exhaustiveness=`cat $WORKDIR/exhaustiveness`
 box_size=`cat $WORKDIR/box_size`
@@ -106,59 +103,42 @@ do
                              chmod u+x Vina_run
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} Vina_run
-                            
-                             #jobID=jobID_${lig_index} 
-                             #jobID=$(${job_submit} --parsable Vina_run)
-                             #echo -n ":"${jobID} >> ${target_dir}/listID_${lig_index} 
                          fi
                          cd $WORKDIR
                      else
-                         cp $vini_dir/nodes_control_script $vini_dir/wait_until_jobs_finish ./
-                         receptor=`head -"$N" $WORKDIR/receptors_contracted | tail -1`
-                         receptor=`echo $receptor | awk '{print $3}'`
-                         ligand=`head -"$M" $vini_dir/database/ligands/ligands_list | tail -1`
-                         ligand=`echo $ligand | awk -F','  '{print $1}'`
                          flag=`head -$N $WORKDIR/receptors_contracted | tail -1`
                          flag=`echo $flag | awk '{print $4}'`
-                         
-                         if  [ $flag != F ]     #do not compute FBE if receptor is with F flag
+                         if  [ $flag == F ]     #do not compute FBE if receptor is with F flag
                          then
-                             echo ${PWD}/protein1_relaxed_0002.pdb > pdblist
-                             echo ${PWD}/protein2_relaxed_0002.pdb >> pdblist
-                             cp $vini_dir/genes/pdb_files/${receptor}.pdb ./protein1.pdb
-                             cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./protein2.pdb
-                             cp  $WORKDIR/rosetta_log ./
-                             sh $vini_dir/protein_protein_docking_with_Rosetta ${protein1} ${protein2} ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
-                             # ${job_submit} --dependency=afterany:${jobID3} rosetta_log ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
-                             #if  [ $rosetta_version == mpi ]
-                             #then
-                             #    echo "mpirun -np ${SLURM_NTASKS} relax.mpi.linuxgccrelease -s ./${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax.mpi   #prepare protein
-                                 #cp $WORKDIR/rosetta_relax.mpi $WORKDIR/rosetta_docking.mpi
-
-
-                                 #sh nodes_control_script ${MAX_NODES}
-                                 #receptor=protein1
-                                 #jobID1=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 #sh nodes_control_script ${MAX_NODES}
-                                 #receptor=protein2
-                                 #jobID2=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 #sh nodes_control_script ${MAX_NODES}
-                                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
-                             #else
-                                 #cp $WORKDIR/rosetta_relax $WORKDIR/rosetta_docking $WORKDIR/rosetta_log ./
-                                 #sh nodes_control_script ${MAX_NODES}
-                                 #receptor=protein1
-                                 #jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 #sh nodes_control_script ${MAX_NODES}
-                                 #receptor=protein2
-                                 #jobID2=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking )
-                             #fi
-                             #sh nodes_control_script ${MAX_NODES}
-                         else
                              FBE=`cat $WORKDIR/random_affinity`
                              echo $FBE > ${target_dir}/log_${comp_index}.txt
                              echo "ligand:" $ligand  "receptor:" $receptor "FBE: not_computed" >> $WORKDIR/free_binding_energy_data
+                         else
+                             cp $vini_dir/nodes_control_script ./
+                             receptor=`head -"$N" $WORKDIR/receptors_contracted | tail -1 | awk '{print $3}' `
+                             ligand=`head -"$M" $vini_dir/database/ligands/ligands_list | tail -1 | awk -F',' '{print $1}' `
+                             cp $vini_dir/database/genes/pdb_files/${receptor}.pdb ./receptor.pdb
+                             cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./ligand.pdb
+                         
+                             if  [ $docking == rosetta ]
+                             then
+                                 echo ${PWD}/protein1_relaxed_0002.pdb > pdblist #create pdblist for Rosetta relax
+                                 echo ${PWD}/protein2_relaxed_0002.pdb >> pdblist
+                                 sh $vini_dir/Rosetta_protein_docking ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
+                             else
+                                 hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log # prepare complex.pdb file
+                                 sh $vini_dir/Hex_protein_docking
+
+                                 cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./      #clean complex.pdb
+                                 accession_code=complex ; ligand=BNZ
+                                 sh chimera_script ${accession_code} ${ligand}
+                                 if  [ -e protein_clean.pdb ]
+                                 then
+                                     mv protein_clean.pdb complex.pdb
+                                 else
+                                     mv complex_clean.pdb complex.pdb
+                                 fi
+                             fi
                          fi
                      fi
     	         done # end of 5th loop

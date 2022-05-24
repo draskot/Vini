@@ -1,12 +1,18 @@
 #https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
+#https://new.rosettacommons.org/demos/latest/tutorials/Relax_Tutorial/Relax
+#https://new.rosettacommons.org/demos/latest/tutorials/input_and_output/input_and_output
+#check numer of processors Rosetta use: squeue -o"%.7i %.9P %.8j %.8u %.2t %.10M %.6D %C"
+#Rosetta with SLURM https://wiki.rc.usf.edu/index.php/Rosetta
+#Performance https://hpc.nih.gov/apps/rosetta.html
 
-protein1=$1
-protein2=$2
-receptor=$3
-ligand=$4
-target_dir=$5
-comp_index=$6
-lig_index=$7
+
+receptor=$1
+ligand=$2
+target_dir=$3
+comp_index=$4
+lig_index=$5
+
+output: Free binding energies in $WORKDIR/free_binding_energy_data file
 
 cpus=`cat $WORKDIR/cpu_cores`
 mem=`cat $WORKDIR/cpu_memsize`
@@ -19,12 +25,15 @@ ROSETTA=`cat $WORKDIR/ROSETTA`
 cp $vini_dir/nodes_control_script ./
 
 echo "#!/bin/bash"                            > rosetta
-echo "#SBATCH --nodes=1"                     >> rosetta
 if  [ $rosetta_version == mpi ]
 then
-    echo "#SBATCH --ntasks $cpus"            >> rosetta
+    #echo "#SBATCH --nodes=1"                >> rosetta
+    #echo "#SBATCH --ntasks $cpus"           >> rosetta
+    echo "#SBATCH --nodes=2"                 >> rosetta
+    echo "#SBATCH --ntasks 48"               >> rosetta
     echo "#SBATCH --ntasks_per_core 1"       >> rosetta
 else
+    echo "#SBATCH --nodes=1"                 >> rosetta
     echo "#SBATCH --ntasks 1"                >> rosetta
     echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
 fi
@@ -47,22 +56,21 @@ echo "#SBATCH --output=logging.out"          >> rosetta_logging
 echo "#SBATCH --error=logging.err"           >> rosetta_logging
 
 echo "protein=\$1"  >> rosetta_relax
-echo "protein=\$1"  >> rosetta_docking
 
 if  [ $rosetta_version == mpi ]
 then
-    echo "mpirun -np \${SLURM_NTASKS} relax.mpi.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax
+    echo "mpirun -np \${SLURM_NTASKS} relax.mpi.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite" >> rosetta_relax
     
     echo "mpirun -np \${SLURM_NTASKS} docking_protocol.mpi.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb"  >> rosetta_relax
 
 else
     if [ $rosetta_version == multithreaded ]
     then
-        echo "relax.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+        echo "relax.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
 
         echo "docking_protocol.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
     else
-        echo "relax.static.linuxgccrelease -s ${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+        echo "relax.static.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 2 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
 
         echo "docking_protocol.static.linuxgccrelease -in:file:l pdblist -spin -randomize1 -randomize2 -ignore_unrecognized_res -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
     fi
@@ -71,11 +79,11 @@ fi
 cat $vini_dir/rosetta_logging >> rosetta_logging
 chmod u+x rosetta_relax rosetta_docking rosetta_logging
 
-sh nodes_control_script ${MAX_NODES}
-jobID1=$(${job_submit} --parsable rosetta_relax ${protein1})
+sh nodes_control_script ${MAX_NODES} ; protein=receptor
+jobID1=$(${job_submit} --parsable rosetta_relax ${protein})
 
-sh nodes_control_script ${MAX_NODES}
-jobID2=$(${job_submit} --parsable rosetta_relax ${protein2})
+sh nodes_control_script ${MAX_NODES} ; protein=ligand
+jobID2=$(${job_submit} --parsable rosetta_relax ${protein})
 
 sh nodes_control_script ${MAX_NODES}
 jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking)
