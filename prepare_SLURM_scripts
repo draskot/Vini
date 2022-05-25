@@ -21,31 +21,31 @@ echo "#SBATCH --partition="$cpu_partition  >> meeko
 chmod u+x                                     meeko
 
 
-echo "#!/bin/bash"                            > rosetta_relax.mpi #prepare relax MPI script
-echo "#SBATCH --job-name=relax"              >> rosetta_relax.mpi
-echo "#SBATCH --nodes=1"                     >> rosetta_relax.mpi
-echo "#SBATCH --ntasks=12"                   >> rosetta_relax.mpi
-echo "#SBATCH --ntasks-per-core=1"           >> rosetta_relax.mpi
-echo "#SBATCH --mem=12gb"                    >> rosetta_relax.mpi
-echo "#SBATCH --partition="$cpu_partition   >> rosetta_relax.mpi
-echo "#SBATCH --time=24:00:00"               >> rosetta_relax.mpi
-echo "#SBATCH --output=rosetta_relax.out"    >> rosetta_relax.mpi
-echo "#SBATCH --error=rosetta_relax.err"     >> rosetta_relax.mpi
-cat $vini_dir/rosetta_relax.mpi              >> rosetta_relax.mpi
-chmod u+x rosetta_relax.mpi
+#echo "#!/bin/bash"                            > rosetta_relax.mpi #prepare relax MPI script
+#echo "#SBATCH --job-name=relax"              >> rosetta_relax.mpi
+#echo "#SBATCH --nodes=1"                     >> rosetta_relax.mpi
+#echo "#SBATCH --ntasks=12"                   >> rosetta_relax.mpi
+#echo "#SBATCH --ntasks-per-core=1"           >> rosetta_relax.mpi
+#echo "#SBATCH --mem=12gb"                    >> rosetta_relax.mpi
+#echo "#SBATCH --partition="$cpu_partition   >> rosetta_relax.mpi
+#echo "#SBATCH --time=24:00:00"               >> rosetta_relax.mpi
+#echo "#SBATCH --output=rosetta_relax.out"    >> rosetta_relax.mpi
+#echo "#SBATCH --error=rosetta_relax.err"     >> rosetta_relax.mpi
+#cat $vini_dir/rosetta_relax.mpi              >> rosetta_relax.mpi
+#chmod u+x rosetta_relax.mpi
 
-echo "#!/bin/bash"                            > rosetta_docking.mpi #prepare docking MPI script
-echo "#SBATCH --job-name=docking"            >> rosetta_docking.mpi
-echo "#SBATCH --nodes=1"                     >> rosetta_docking.mpi
-echo "#SBATCH --ntasks=12"                   >> rosetta_docking.mpi
-echo "#SBATCH --ntasks-per-core=1"           >> rosetta_docking.mpi
-echo "#SBATCH --mem=12gb"                    >> rosetta_docking.mpi
-echo "#SBATCH --partition="$cpu_partition    >> rosetta_docking.mpi
-echo "#SBATCH --time=24:00:00"               >> rosetta_docking.mpi
-echo "#SBATCH --output=rosetta_docking.out"  >> rosetta_docking.mpi
-echo "#SBATCH --error=rosetta_docking.err"   >> rosetta_docking.mpi
-cat $vini_dir/rosetta_docking.mpi            >> rosetta_docking.mpi
-chmod u+x rosetta_docking.mpi
+#echo "#!/bin/bash"                            > rosetta_docking.mpi #prepare docking MPI script
+#echo "#SBATCH --job-name=docking"            >> rosetta_docking.mpi
+#echo "#SBATCH --nodes=1"                     >> rosetta_docking.mpi
+#echo "#SBATCH --ntasks=12"                   >> rosetta_docking.mpi
+#echo "#SBATCH --ntasks-per-core=1"           >> rosetta_docking.mpi
+#echo "#SBATCH --mem=12gb"                    >> rosetta_docking.mpi
+#echo "#SBATCH --partition="$cpu_partition    >> rosetta_docking.mpi
+#echo "#SBATCH --time=24:00:00"               >> rosetta_docking.mpi
+#echo "#SBATCH --output=rosetta_docking.out"  >> rosetta_docking.mpi
+#echo "#SBATCH --error=rosetta_docking.err"   >> rosetta_docking.mpi
+#cat $vini_dir/rosetta_docking.mpi            >> rosetta_docking.mpi
+#chmod u+x rosetta_docking.mpi
 
 echo "#! /bin/bash"                           > genex
 echo "#SBATCH --job-name=genex"              >> genex

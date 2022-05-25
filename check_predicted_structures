@@ -10,9 +10,9 @@ do
         subtype=`echo "$drug" | grep -oP 'mab.*?\b' | wc -l`
         if [ $subtype == 1 ] 
         then                                                               #drug is mAb and Rosetta Antibody was used
-            if [ -e $WORKDIR/${drug}/H3_modeling/H3_modeling_scores.fasc ] #check if prediction succeeded
+            if [ -e $WORKDIR/${drug}/H3_modeling_scores.fasc ] #check if prediction succeeded
             then                                     
-                sort -k3 -n -r $WORKDIR/${drug}/H3_modeling/H3_modeling_scores.fasc > tmp #select model with the lowest score
+                sort -k3 -n -r $WORKDIR/${drug}/H3_modeling_scores.fasc > tmp #select model with the lowest score
                 line=`head -3 tmp | tail -1`
                 model=`echo $line | awk  'NF>1{print $NF}'`
                 cp $WORKDIR/${drug}/./H3_modeling/${model}.pdb $vini_dir/database/ligands/pdb_files/${antibody}.pdb

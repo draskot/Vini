@@ -100,6 +100,7 @@ ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSE
 echo $rosetta_version > $WORKDIR/rosetta_version
 echo $ROSETTA > $WORKDIR/ROSETTA
 
+
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -408,7 +409,8 @@ echo ${box_size} > $WORKDIR/box_size
 
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
+./VelikaVini
 
-echo "Vini will now continue to work in the background."
-echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
-nohup ./VelikaVini &
+#echo "Vini will now continue to work in the background."
+#echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
+#nohup ./VelikaVini &

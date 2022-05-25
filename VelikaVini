@@ -42,7 +42,6 @@ then
     echo "Waiting for prediction jobs to finish. This may take a while."
     sh $vini_dir/wait_until_jobs_finish
     sh $vini_dir/check_predicted_structures
-    echo "brakepoint" ; exit
     if  [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
     then
         echo "Following structure(s) were not predicted:"
@@ -169,6 +168,7 @@ then
 fi
 
 sh malavini 
+
 end_date=`date`
 echo "Analysis completed at"  $end_date
 if  [ $compute_cell_line -eq $TRUE ]    #prepare the data for Pearson analysis
