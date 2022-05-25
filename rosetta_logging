@@ -4,7 +4,6 @@ target_dir=$3
 comp_index=$4
 lig_index=$5
 
-
 if [ ! -s rosetta_docking.err ]
 then                     #no errors, create complex and get interraction energy
     mv protein2_relaxed_0002_0001.pdb COMPLEX.pdb

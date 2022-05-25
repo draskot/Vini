@@ -22,10 +22,10 @@ echo "#!/bin/bash"                            > rosetta
 echo "#SBATCH --nodes=1"                     >> rosetta
 if  [ $rosetta_version == mpi ]
 then
-    echo "#SBATCH --ntasks $cpus"            >> rosetta
-    echo "#SBATCH --ntasks_per_core 1"       >> rosetta
+    echo "#SBATCH --ntasks="$cpus            >> rosetta
+    #echo "#SBATCH --ntasks_per_core=1"       >> rosetta
 else
-    echo "#SBATCH --ntasks 1"                >> rosetta
+    echo "#SBATCH --ntasks=1"                >> rosetta
     echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
 fi
 echo "#SBATCH --mem="$mem                    >> rosetta
