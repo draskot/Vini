@@ -18,13 +18,17 @@ rm -rf *
 mkdir -p H3_modeling
 cp $vini_dir/nodes_control_script $ROSETTA/tools/antibody/abH3.flags ./
 
+NODES=`cat $WORKDIR/R_nodes`
+NTASKS=`echo ${NODES} $cpus | awk '{print $1 * $2}'`
+
 echo "#!/bin/bash"                            > rosetta
 echo "#SBATCH --nodes=1"                     >> rosetta
 if  [ $rosetta_version == mpi ]
 then
-    echo "#SBATCH --ntasks="$cpus            >> rosetta
-    #echo "#SBATCH --ntasks_per_core=1"       >> rosetta
+    echo "#SBATCH --nodes="$NODES            >> rosetta
+    echo "#SBATCH --ntasks="$NTASKS          >> rosetta
 else
+    echo "#SBATCH --nodes=1"                 >> rosetta
     echo "#SBATCH --ntasks=1"                >> rosetta
     echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
 fi

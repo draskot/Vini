@@ -74,6 +74,8 @@ nolines=`wc -l < tmp2`
 if [ $nolines -eq $NULL ]
 then
     rosetta_version=mpi
+    read -e -p "Enter the number of compute nodes each Rosetta job will use. Press enter to accept default: " -i "4" R_nodes
+    echo ${R_nodes} > $WORKDIR/R_nodes
 else
     which antibody_graft.linuxgccrelease &> tmp #determining if Rosetta multithreaded is installed
     grep -w no tmp > tmp2

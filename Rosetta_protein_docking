@@ -24,21 +24,20 @@ ROSETTA=`cat $WORKDIR/ROSETTA`
 
 cp $vini_dir/nodes_control_script ./
 
+NODES=`cat $WORKDIR/R_nodes`
+NTASKS=`echo ${NODES} $cpus | awk '{print $1 * $2}'`
 
 echo "#!/bin/bash"                            > rosetta
 if  [ $rosetta_version == mpi ]
 then
-    #echo "#SBATCH --nodes=1"                >> rosetta
-    #echo "#SBATCH --ntasks="$cpus           >> rosetta
-    echo "#SBATCH --nodes=2"                 >> rosetta
-    echo "#SBATCH --ntasks=48"               >> rosetta
-    #echo "#SBATCH --ntasks_per_core=1"       >> rosetta
+    echo "#SBATCH --nodes="$NODES            >> rosetta
+    echo "#SBATCH --ntasks="$NTASKS          >> rosetta
 else
     echo "#SBATCH --nodes=1"                 >> rosetta
     echo "#SBATCH --ntasks=1"                >> rosetta
     echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
 fi
-echo "#SBATCH --mem="$mem                    >> rosetta
+echo "#SBATCH --mem="${mem}                  >> rosetta
 echo "#SBATCH --partition="$partition        >> rosetta
 
 cat rosetta                                  >> rosetta_relax
@@ -90,5 +89,3 @@ jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rose
 
 sh nodes_control_script ${MAX_NODES}
 ${job_submit} --dependency=afterany:${jobID3} rosetta_logging ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
-
-echo "brakepoint" ; sleep 1000
