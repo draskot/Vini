@@ -321,12 +321,10 @@ then
        echo -n " Cleaning up installation files..."
        rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
        echo "done."
-       echo "export PATH=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:\$PATH" >> $vini_dir/sourceme
-       echo "export ROSETTA=/ceph/hpc/data/d2203-0100-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main" >> $vini_dir/sourceme
-       echo "docking_protocol.static.linuxgccrelease" > $WORKDIR/rosetta_docking_command
-       echo "relax.static.linuxgccrelease" > $WORKDIR/rosetta_relax_command
+       echo "export ROSETTA_BIN=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin" >> $vini_dir/sourceme
+       echo "export ROSETTA_DB=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/database" 
     fi
-    echo "nompi" > $WORKDIR/rosetta_version #telling Rosetta not to use MPI
+    echo "nompi" > $WORKDIR/rosetta_version #tell Rosetta not to use MPI
 else
     echo "yes."
 fi
