@@ -207,6 +207,40 @@ else
 fi
 rm -f alphafold tmp
 
+echo -n "Checking if Blast is installed..."
+grep Blast $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no." echo -n "Checking if Blast module(s) exist on this system..."
+    module spider blast &> tmp
+    grep -w error tmp > blast
+    if   [ ! -s blast ] #no error means module found
+    then
+        echo "yes"
+        cat tmp
+        echo "#******* Blast *******" >> $vini_dir/sourceme
+        read -p "Select the Blast module:" blast
+        echo "module load" $blast >> $vini_dir/sourceme
+        source $vini_dir/sourceme
+    else
+        echo "no. Installing local Blast, please wait."
+        rm -f $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
+        rm -rf $INSTALL/ncbi-blast-2.13.0+-src
+        wget -P $INSTALL https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.13.0+-src.tar.gz
+        tar -xzf $INSTALL/ncbi-blast-2.13.0+-src.tar.gz -C $INSTALL
+        cd $INSTALL/ncbi-blast-2.13.0+-src/c++
+        ./configure
+        cd ReleaseMT/build
+        make all_r
+        echo "#***BLAST***" >> $vini_dir/sourceme
+        echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
+        source $vini_dir/sourceme
+        rm $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
+    fi
+else
+    echo "yes."
+fi
+
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
