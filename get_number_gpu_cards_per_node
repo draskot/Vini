@@ -2,36 +2,54 @@ node_type=$1
 walltime=$2
 
 partition=`cat $WORKDIR/gpu_partition`
-rm -f $WORKDIR/number_gpu_cards
+rm -f $WORKDIR/gpus.out
+rm -f $WORKDIR/gpus.err
 
-echo "Determining number of Nvidia gpu cards per ${node_type} node. This may last up to ${walltime} seconds."
+echo "Trying to determine the  number of Nvidia gpu cards per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
-echo "#! /bin/bash"                           > $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --job-name=gpus"               >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --output=$WORKDIR/gpus.out"    >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --error=$WORKDIR/gpus.err"     >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_gpus_per_node
-echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_gpus_per_node
-#echo "nvidia-smi --list-gpus > $WORKDIR/number_gpu_cards" >> $WORKDIR/get_number_gpus_per_node
-echo "nvidia-smi --query-gpu=name --format=csv,noheader > $WORKDIR/number_gpu_cards" >> $WORKDIR/get_number_gpus_per_node
-chmod u+x                                       $WORKDIR/get_number_gpus_per_node
+echo "#! /bin/bash"                                        > $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --job-name=gpus"                            >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --output=$WORKDIR/gpus.out"                 >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --error=$WORKDIR/gpus.err"                  >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --time=00:00:"$walltime                     >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --cpus-per-task=1"                          >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --mem=2gb"                                  >> $WORKDIR/get_number_gpus_per_node
+echo "#SBATCH --partition="$partition                     >> $WORKDIR/get_number_gpus_per_node
+echo "nvidia-smi --list-gpus > $WORKDIR/number_gpu_cards" >> $WORKDIR/get_number_gpus_per_node
+#echo "nvidia-smi --query-gpu=name --format=csv,noheader" >> $WORKDIR/get_number_gpus_per_node
+chmod u+x                                                    $WORKDIR/get_number_gpus_per_node
 
 sbatch $WORKDIR/get_number_gpus_per_node
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 
-grep -w "No devices were found" $WORKDIR/number_gpu_cards > tmp
 
-if [ -s tmp ]
+if  [ ! -e $WORKDIR/gpus.out ] 
 then
+    echo "Failed to get info. The reasons may be that nodes are busy or down."
+    read -p "Do you want to use them? (y/n)" yesno
+    if [ $yesno == y ]
+    then
+        read -e -p "Write number of gpu cards per ${node_type} node. Press enter to accept default: " -i "2" gpus
+    else
+        gpus=0
+    fi
     scancel -u $USER
-    read -e -p "failed to get info. Write number of gpu cards per ${node_type} node. Press enter to accept default: " -i "2" gpus
-    echo $gpus > $WORKDIR/number_gpu_cards
 else
-    gpus=`wc -l < $WORKDIR/number_gpu_cards`
-    echo "found $gpus gpu cards per ${node_type} node."
+    if  [ -e $WORKDIR/gpus.err ]
+    then
+        echo "Something went wrong and I was unable to retrieve info from $nodes_type nodes."
+        read -p "However, if you are sure that they are OK, Vini can use them. Use them? (y/n)" yesno
+        if [ $yesno == y ]
+        then
+            read -e -p "Write number of gpu cards per ${node_type} node. Press enter to accept default: " -i "2" gpus
+        else
+            gpus=0
+        fi
+    else
+        gpus=`wc -l < $WORKDIR/gpus.out`
+        echo "Found $gpus NVIDIA cards on ${node_type} node."
+    fi
 fi
 
-echo $gpus > $WORKDIR/number_gpu_cards
+echo $gpus > $WORKDIR/gpus

@@ -11,7 +11,7 @@ fi
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 
-echo "Determining memory size per ${node_type} node. This may last up to ${walltime} seconds."
+echo "Trying to determine the memory size per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
 echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
@@ -23,10 +23,13 @@ echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
+rm -f $WORKDIR/memory.out
+
 $job_submit $WORKDIR/get_size_of_memory
 
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 60 seconds
+
 if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
@@ -35,7 +38,7 @@ then
     echo "found $memsize free memory per ${node_type} node."
 else
     $job_cancel -u $USER
-    read -p "failed to get info about memory. Write memory size in [GB] per ${node_type} node:" memsize
+    read -p "failed to get info. Write memory size in [GB] per ${node_type} node:" memsize
 fi
 
 if  [ ${node_type} == cpu ]

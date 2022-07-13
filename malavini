@@ -122,10 +122,9 @@ do
                          
                              if  [ $docking == rosetta ]
                              then
-                                 echo ${PWD}/receptor_relaxed_0002.pdb > pdblist #create pdblist for Rosetta docking
-                                 echo ${PWD}/ligand_relaxed_0002.pdb >> pdblist
+                                 echo ${PWD}/receptor_relaxed_0001.pdb > pdblist1 #create pdblist for Rosetta docking
+                                 echo ${PWD}/ligand_relaxed_0001.pdb >> pdblist2
                                  sh $vini_dir/Rosetta_protein_docking ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
-                                 echo "brakepoint ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}" ; sleep 100000
                              else
                                  hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log # prepare complex.pdb file
                                  sh $vini_dir/Hex_protein_docking

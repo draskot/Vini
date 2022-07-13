@@ -1,4 +1,4 @@
-echo " The VINI in silico model of cancer is supercomputing application  for computing the efficacy of existing drugs and their 2, 3, and 4 combinations."
+echo " The Vini in silico model of cancer is supercomputing application for performing multi-drug pathway based virtual drug screening."
 echo "If using this program in your academic research , please cite:"                                                   #
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
@@ -74,6 +74,7 @@ nolines=`wc -l < tmp2`
 if [ $nolines -eq $NULL ]
 then
     rosetta_version=mpi
+    echo "MPI version found."
     read -e -p "Enter the number of compute nodes each Rosetta job will use. Press enter to accept default: " -i "4" R_nodes
     echo ${R_nodes} > $WORKDIR/R_nodes
 else
@@ -84,6 +85,7 @@ else
     then
         var=`cat tmp`
         rosetta_version=multithreaded
+        echo "multithreaded version found."
     else
         which antibody_graft.static.linuxgccrelease &> tmp #determining if Rosetta static is installed
         grep -w no tmp > tmp2
@@ -91,6 +93,7 @@ else
         if  [ $nolines -eq $NULL ]
         then
             rosetta_version=static
+            echo "static version found."
         else
             echo "no Rosetta binaries found!"
             exit
@@ -124,7 +127,7 @@ rm -f jobs
 
 cd $WORKDIR #Cleanup
 rm -f complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
-rm *err *out
+rm -f *err *out
 cd $vini_dir
 
 cat COPYRIGHT
@@ -136,11 +139,12 @@ walltime=120  #seconds
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
+
 node_type=gpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-node_type=gpu
 sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
+
 
 sh $vini_dir/prepare_SLURM_scripts
 
@@ -177,6 +181,8 @@ sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugb
 sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
 sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
 
+
+
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
@@ -188,21 +194,31 @@ echo "Vini can predict biotech drug structures with either Rosetta+Alphafold, or
 read -e -p "Use Rosetta+AlphaFold[RA] or SWISS-MODEL[S]? Enter to accept default: " -i "RA" biotech_drugs_prediction_model
 echo ${biotech_drugs_prediction_model} > $WORKDIR/biotech_drugs_prediction_model
 
+
 if [ ${prediction_model} == A ]
 then 
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        read -e -p "Run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
-        if [ $partition == cpu ]
+        gpus=`cat $WORKDIR/gpus`
+        if [ $gpus -ne $NULL ]
         then
+            read -e -p "Run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
+            if [ $partition == cpu ]
+            then
+                cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
+                cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+            else
+                cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
+                cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
+            fi
+        else
+            echo "AlphaFold will run on CPU nodes"
             cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
             cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
             cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
-        else
-            cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
-            cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
-            cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
         fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base

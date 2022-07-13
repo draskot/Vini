@@ -26,7 +26,7 @@ fi
     echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
     chmod u+x                                       $WORKDIR/get_number_of_cores
 
-echo "Determining number of CPU threads per ${node_type} node. This may last up to ${walltime} seconds."
+echo "Trying to determine the number of CPU threads per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
 $job_submit $WORKDIR/get_number_of_cores
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish

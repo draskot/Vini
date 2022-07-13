@@ -129,7 +129,7 @@ do
                     noentries=`wc -l < $WORKDIR/completeness_list`
                     if  [ $noentries -ne $NULL ]
                     then
-                        sh prepare_protein_with_chimera ${uniprot_id}    
+                        sh $vini_dir/prepare_protein_with_chimera ${uniprot_id}    
                         chim_status=`cat $WORKDIR/chim_status`
                         if  [ $chim_status -eq $ONES ] #check for  success
                         then
