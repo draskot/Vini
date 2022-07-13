@@ -18,6 +18,10 @@ echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
+if  [ ${node_type} == gpu ]
+then
+    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_number_of_cores
+fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
