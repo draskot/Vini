@@ -17,10 +17,11 @@ echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
 if  [ ${node_type} == gpu ]
 then
-    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_size_of_memory
 fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
@@ -28,6 +29,7 @@ echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
 rm -f $WORKDIR/memory.out
+rm -f $WORKDIR/memory.err
 
 $job_submit $WORKDIR/get_size_of_memory
 

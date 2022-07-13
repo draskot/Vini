@@ -32,6 +32,9 @@ fi
 
 echo "Trying to determine the number of CPU threads per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
+rm -f $WORKDIR/cores.out
+rm -f $WORKDIR/cores.err
+
 $job_submit $WORKDIR/get_number_of_cores
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 if [ -e $WORKDIR/cores.out ]
