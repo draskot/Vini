@@ -23,13 +23,13 @@ if  [ ${node_type} == gpu ]
 then
     echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_size_of_memory
 fi
-echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
+#echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --mem=2G"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
 rm -f $WORKDIR/memory.out
-rm -f $WORKDIR/memory.err
 
 $job_submit $WORKDIR/get_size_of_memory
 
@@ -40,12 +40,24 @@ if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
     memsize=`echo $line | awk '{print $2}'`
-    memsize=`echo "$memsize" | sed -r 's/[G]+/gb/g'`
-    echo "found $memsize free memory per ${node_type} node."
+    suffix=G
+    factor=1024
+    echo $memsize > tmp
+    memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
+    grep G tmp > tmp2                    #now check what we have
+    if [ -e tmp2 ]
+    then                                 #we have Gigabytes
+        memsize=${memsize}${suffix}
+    else                                 #we have Terabytes. Multiply with 1024 
+        memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
+    fi
 else
     $job_cancel -u $USER
     read -p "failed to get info. Write memory size in [GB] per ${node_type} node:" memsize
 fi
+  
+
+  echo "found $memsize free memory per ${node_type} node."
 
 if  [ ${node_type} == cpu ]
 then

@@ -5,7 +5,8 @@ user=`echo ${USER:0:8}` #for long partition names last characters may be lost
 cd $WORKDIR
 
 > $WORKDIR/all_user_jobs
-echo -n $user "jobs remaining: "
+#echo -n $user "jobs remaining: "
+echo -n $USER "jobs remaining: "
 while true
 do
      sleep 1
