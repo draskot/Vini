@@ -1,9 +1,9 @@
-job_submit=`cat $WORKDIR/job_submit`
-job_cancel=`cat $WORKDIR/job_cancel`
-
 
 node_type=$1
 walltime=$2
+
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
 
 rm -f $WORKDIR/cores.out
 
@@ -30,10 +30,9 @@ fi
     echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
     chmod u+x                                       $WORKDIR/get_number_of_cores
 
-echo "Trying to determine the number of CPU threads per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
+echo "Trying to determine the number of CPU threads per ${node_type} node. May last up to ${walltime} seconds. Do not interrupt."
 
-rm -f $WORKDIR/cores.out
-rm -f $WORKDIR/cores.err
+rm -f $WORKDIR/cores.*
 
 $job_submit $WORKDIR/get_number_of_cores
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
@@ -42,10 +41,14 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    echo "found $cores CPU threads per ${node_type} node."
+    read -p  "Found $cores CPU threads per ${node_type} node. Accept [y] or enter the new value?" accept
+    if  [ $accept != y ]
+    then
+        read -p "Enter the new value:" cores
+    fi
 else
-    $job_cancel -u $USER
-    read -p "failed to get info. Write number of CPU threads per ${node_type} node here:" cores
+    ${job_cancel} -u $USER ; echo
+    read -p "Failed to access any ${node_type} node. They may be busy or down. Check their status and write the number of CPU threads per ${node_type} node here:" cores
 fi
 
 if  [ ${node_type} == cpu ]

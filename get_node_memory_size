@@ -1,15 +1,15 @@
 node_type=$1
 walltime=$2
 
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
+
 if [ ${node_type} == cpu ]
 then
     partition=`cat $WORKDIR/cpu_partition`
 else
     partition=`cat $WORKDIR/gpu_partition`
 fi
-
-job_submit=`cat $WORKDIR/job_submit`
-job_cancel=`cat $WORKDIR/job_cancel`
 
 echo "Trying to determine the memory size per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
@@ -23,16 +23,14 @@ if  [ ${node_type} == gpu ]
 then
     echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_size_of_memory
 fi
-#echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
-echo "#SBATCH --mem=2G"                     >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
-rm -f $WORKDIR/memory.out
+rm -f $WORKDIR/memory.*
 
 $job_submit $WORKDIR/get_size_of_memory
-
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 60 seconds
 
@@ -40,7 +38,7 @@ if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
     memsize=`echo $line | awk '{print $2}'`
-    suffix=G
+    suffix=gb
     factor=1024
     echo $memsize > tmp
     memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
@@ -51,13 +49,15 @@ then
     else                                 #we have Terabytes. Multiply with 1024 
         memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
     fi
+    read -p "Found $memsize free memory per ${node_type} node. Accept [y] or enter the new value?" accept
+    if [ $accept != y ]
+    then
+        read -p "Enter the new values in [GB]:" memsize
+    fi 
 else
-    $job_cancel -u $USER
-    read -p "failed to get info. Write memory size in [GB] per ${node_type} node:" memsize
+    ${job_cancel} -u $USER ; echo
+    read -p "Failed to access any ${node_type} node. They may be busy or down. Check their status and write free memory size in [GB] per ${node_type} node:" memsize
 fi
-  
-
-  echo "found $memsize free memory per ${node_type} node."
 
 if  [ ${node_type} == cpu ]
 then

@@ -1,11 +1,14 @@
 node_type=$1
 walltime=$2
 
-partition=`cat $WORKDIR/gpu_partition`
-rm -f $WORKDIR/gpus.out
-rm -f $WORKDIR/gpus.err
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
 
-echo "Trying to determine the  number of Nvidia gpu cards per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
+partition=`cat $WORKDIR/gpu_partition`
+
+rm -f $WORKDIR/gpus.*
+
+echo "Trying to determine the number of Nvidia gpu cards per ${node_type} node. This may last up to ${walltime} seconds, do not interrupt."
 
 echo "#! /bin/bash"                                        > $WORKDIR/get_number_gpus_per_node
 echo "#SBATCH --job-name=gpus"                            >> $WORKDIR/get_number_gpus_per_node
@@ -19,35 +22,28 @@ then
 fi
 echo "#SBATCH --mem=2gb"                                  >> $WORKDIR/get_number_gpus_per_node
 echo "#SBATCH --partition="$partition                     >> $WORKDIR/get_number_gpus_per_node
-echo "nvidia-smi --list-gpus > $WORKDIR/number_gpu_cards" >> $WORKDIR/get_number_gpus_per_node
-#echo "nvidia-smi --query-gpu=name --format=csv,noheader" >> $WORKDIR/get_number_gpus_per_node
+echo "lspci"                                              >> $WORKDIR/get_number_gpus_per_node
 chmod u+x                                                    $WORKDIR/get_number_gpus_per_node
+
+rm -f $WORKDIR/gpus.*
 
 sbatch $WORKDIR/get_number_gpus_per_node
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 
 
-if  [ ! -e $WORKDIR/gpus.out ] 
+if  [ -e $WORKDIR/gpus.out ] 
 then
-    echo "Failed to get info. The reasons may be that nodes are busy or down."
-    read -p "Do you want to use them? (y/n)" yesno
-    if [ $yesno == y ]
+    grep NVIDIA gpus.out > tmp
+    gpus=`wc -l < tmp`
+    read -p "Found $gpus NVIDIA cards per gpu node. Accept [y] or enter the new value?" accept
+    if  [ $accept != y ]
     then
-        read -e -p "Write number of gpu cards per ${node_type} node. Press enter to accept default: " -i "2" gpus
-    else
-        gpus=0
+        read -p "Enter the new value:" gpus
     fi
-    scancel -u $USER
 else
-    if  [ -e $WORKDIR/gpus.err ]
-    then
-        echo "Failed to retrieve info from $node_type node."
-        read -e -p "Write number of gpu cards per ${node_type} node. Press enter to accept default: " -i "2" gpus
-    else
-        gpus=`wc -l < $WORKDIR/gpus.out`
-        echo "Found $gpus NVIDIA cards on ${node_type} node."
-    fi
+    ${job_cancel} -u $USER ; echo
+    read -p "Failed to access any ${node_type} node. They may be busy or down. Check their status and write the number of gpu cards per ${node_type} node." gpus
 fi
 
 echo $gpus > $WORKDIR/gpus
