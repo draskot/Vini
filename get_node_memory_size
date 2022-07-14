@@ -1,8 +1,12 @@
 node_type=$1
 walltime=$2
 
+scheduler=`cat $WORKDIR/scheduler`
+version=`cat $WORKDIR/version`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
+
+
 
 if [ ${node_type} == cpu ]
 then
@@ -19,9 +23,12 @@ echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
-if  [ ${node_type} == gpu ]
+if  [[ ${node_type} == gpu ]] && [[ ${scheduler} == SLURM ]]
 then
-    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_size_of_memory
+    if  [ $version == 20.11.9-Bull.1.1 ]
+    then
+        echo "#SBATCH --gres=gpu:1"          >> $WORKDIR/get_size_of_memory
+    fi
 fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory

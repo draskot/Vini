@@ -1,4 +1,4 @@
-echo " The Vini in silico model of cancer is supercomputing application for performing multi-drug pathway based virtual drug screening."
+echo "The Vini in silico model of cancer is supercomputing application for performing multi-drug pathway based virtual drug screening."
 echo "If using this program in your academic research , please cite:"                                                   #
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
@@ -57,10 +57,13 @@ nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
 then
     echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel ; sh determine_SLURM_environment
+    echo "SLURM" > $WORKDIR/scheduler
+    version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
 else
     if [ -d /opt/sge ]
     then
         echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
+        echo "SGE" > $WORKDIR/scheduler
     else
         echo "not supported, exiting" ; exit
     fi

@@ -2,8 +2,12 @@
 node_type=$1
 walltime=$2
 
+scheduler=`cat $WORKDIR/scheduler`
+version=`cat $WORKDIR/version`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
+
+
 
 rm -f $WORKDIR/cores.out
 
@@ -19,9 +23,12 @@ fi
     echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_of_cores
     echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_of_cores
     echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_number_of_cores
-    if [ ${node_type} == gpu ]
+    if  [[ ${node_type} == gpu ]] && [[ ${scheduler} == SLURM ]]
     then
-        echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_number_of_cores
+        if  [ $version == "20.11.9-Bull.1.1" ]
+        then
+            echo "#SBATCH --gres=gpu:1"          >> $WORKDIR/get_number_of_cores
+        fi
     fi
     echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_of_cores
     echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_of_cores
