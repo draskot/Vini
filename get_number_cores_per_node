@@ -37,7 +37,7 @@ fi
     echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
     chmod u+x                                       $WORKDIR/get_number_of_cores
 
-echo "Trying to determine the number of CPU threads per ${node_type} node. May last up to ${walltime} seconds. Do not interrupt."
+echo "Trying to determine the available number of CPU threads per ${node_type} node. This may last up to $walltime seconds, please do not interrupt."
 
 rm -f $WORKDIR/cores.*
 
@@ -48,19 +48,31 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    read -p  "Found $cores CPU threads per ${node_type} node. Accept [y] or enter the new value?" accept
-    if  [ $accept != y ]
+    read -p  "Found $cores CPU threads per ${node_type} node. Accept [y] or enter the new value? " accept
+    if  [ $accept == y ]
     then
-        read -p "Enter the new value:" cores
+        if  [ ${node_type} == cpu ]
+        then
+            echo $cores > $WORKDIR/cpu_cores
+        else
+            echo $cores > $WORKDIR/gpu_cores
+        fi
+    else
+        if  [ ${node_type} == cpu ]
+        then
+            echo $accept > $WORKDIR/cpu_cores
+        else
+            echo $accept > $WORKDIR/gpu_cores
+        fi
     fi
 else
     ${job_cancel} -u $USER ; echo
-    read -p "Failed to access any ${node_type} node. They may be busy or down. Check their status and write the number of CPU threads per ${node_type} node here:" cores
+    read -p "Failed to access any ${node_type} node. The possible reason is that nodes are temporarily allocated or unavailable. Write the number of CPU threads per ${node_type} node here:" cores
+    if  [ ${node_type} == cpu ]
+    then
+        echo $cores > $WORKDIR/cpu_cores
+    else
+        echo $cores > $WORKDIR/gpu_cores
+    fi
 fi
 
-if  [ ${node_type} == cpu ]
-then
-    echo $cores > $WORKDIR/cpu_cores
-else
-    echo $cores > $WORKDIR/gpu_cores
-fi

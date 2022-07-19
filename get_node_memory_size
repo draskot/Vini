@@ -15,7 +15,7 @@ else
     partition=`cat $WORKDIR/gpu_partition`
 fi
 
-echo "Trying to determine the memory size per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
+echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
 echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
@@ -39,12 +39,12 @@ rm -f $WORKDIR/memory.*
 
 $job_submit $WORKDIR/get_size_of_memory
 
-timeout ${walltime}s $vini_dir/wait_until_jobs_finish #wait for job to finish maximum 60 seconds
+timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 
 if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
-    memsize=`echo $line | awk '{print $2}'`
+    memsize=`echo $line | awk '{print $7}'`
     suffix=gb
     factor=1024
     echo $memsize > tmp
@@ -56,19 +56,32 @@ then
     else                                 #we have Terabytes. Multiply with 1024 
         memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
     fi
-    read -p "Found $memsize free memory per ${node_type} node. Accept [y] or enter the new value?" accept
-    if [ $accept != y ]
+
+    read -p "Found $memsize available memory per ${node_type} node. Accept [y] or enter the new value (in GB): " accept
+    if [ $accept == y ]
     then
-        read -p "Enter the new values in [GB]:" memsize
-    fi 
+        if  [ ${node_type} == cpu ]
+        then
+            echo $memsize > $WORKDIR/cpu_memsize
+        else
+            echo $memsize > $WORKDIR/gpu_memsize
+        fi
+    else
+        if  [ ${node_type} == cpu ]
+        then
+            echo $accept > $WORKDIR/cpu_memsize
+        else
+            echo $accept > $WORKDIR/gpu_memsize
+        fi
+    fi
 else
     ${job_cancel} -u $USER ; echo
-    read -p "Failed to access any ${node_type} node. They may be busy or down. Check their status and write free memory size in [GB] per ${node_type} node:" memsize
+    read -p "Failed to access any ${node_type} node. The possible reason is that nodes are temporarily allocated or unavailable. Write the free memory size (in GB) per ${node_type} node here:" memsize
+    if  [ ${node_type} == cpu ]
+    then
+        echo $memsize > $WORKDIR/cpu_memsize
+    else
+        echo $memsize > $WORKDIR/gpu_memsize
+    fi
 fi
 
-if  [ ${node_type} == cpu ]
-then
-    echo $memsize > $WORKDIR/cpu_memsize
-else
-    echo $memsize > $WORKDIR/gpu_memsize
-fi

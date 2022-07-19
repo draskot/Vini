@@ -137,7 +137,7 @@ cat COPYRIGHT
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
-walltime=240  #seconds
+walltime=120  #seconds
 
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
