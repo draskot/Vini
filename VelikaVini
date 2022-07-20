@@ -107,26 +107,44 @@ then
         sh add_expressions_to_receptors
         sh add_expressions_to_relations
     else
-        if  [[ ! -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv ]] || [[ ! -d $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations ]] || [[ ! -d $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/sequences ]]
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+        rm -f $vini_dir/database/genes/expressions/* $vini_dir/database/genes/mutations/* $vini_dir/database/genes/sequences/*
+
+        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv ]
         then
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
-            #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
-            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/genes/expressions/ #using preloaded file
-            echo "getting mutations for" $cell_line ", please wait..."
-            python get_gene_mutation_cell_line.py -g $vini_dir/database/genes/Uniprot_ID_list -c $cell_line
-            python generateMutatedFASTAseqCellLine.py -g $vini_dir/database/genes/Uniprot_ID_list
-            cp $vini_dir/database/genes/expressions/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
-            cp $vini_dir/database/genes/mutations/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
-            cp $vini_dir/database/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv $vini_dir/database/genes/expressions
         else
-            rm -f $vini_dir/database/genes/expressions/* $vini_dir/database/genes/mutations/* $vini_dir/database/genes/sequences/*
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions/* $vini_dir/database/genes/expressions
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations/* $vini_dir/database/genes/mutations
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences/* $vini_dir/database/genes/sequences
+            #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
+            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/genes/expressions
+            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions
         fi
+          
+        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv ]
+        then
+            echo "mutations for $cell_line found in the database." 
+            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv $vini_dir/database/genes/mutations
+        else
+            echo "getting mutations for $cell_line, please wait..."
+            python get_gene_mutation_cell_line.py -g $vini_dir/database/genes/Uniprot_ID_list -c $cell_line
+            cp $vini_dir/database/genes/mutations/* $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/mutations
+        fi
+
+        ls $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/sequences > tmp #check if sequences already exist
+        if  [ -s tmp ]
+        then
+            echo "sequences for ${cell_line} found in the database."
+            cp $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences/* $vini_dir/database/genes/sequences
+        else
+            echo "getting sequences for ${cell_line}, please wait..."
+            python generateMutatedFASTAseqCellLine.py -g $vini_dir/database/genes/Uniprot_ID_list
+            cp $vini_dir/database/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences
+        fi
+
+        echo "brakepoint" ; sleep 10000
+
 
         if  [ $cosmic == y ]
         then
