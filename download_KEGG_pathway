@@ -1,6 +1,5 @@
 #This subroutine is called from main program Vini and is checking for KEGG pathway updates 
 
-
 ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting cancer type from the main script
 c=.xml
 
@@ -8,7 +7,8 @@ CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from th
 CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
 PATHWAY_FILE=${CANCER_PATHWAY}.xml
 
-curl -s http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml -o $WORKDIR/$PATHWAY_FILE
+wget -O $WORKDIR/$PATHWAY_FILE --no-check-certificate http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml
+
 cd $WORKDIR
 sed -i.bak '/SYSTEM/d' $WORKDIR/$PATHWAY_FILE       #Remove the line trying to make outbound connection
 if [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE ]   #check if cancer pathway exists

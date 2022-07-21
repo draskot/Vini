@@ -1,9 +1,11 @@
 #https://swissmodel.expasy.org/coreapi/
-#input params: fasta_file
+#input params: fasta_file, output folder where predicted pdb file is placed 
 #output: $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
 
 six=6
 fasta_file=$1
+outdir=$2
+
 uniprot_id=`basename ${fasta_file} .fasta`
 
 size=${#uniprot_id}
@@ -57,5 +59,5 @@ echo $model_id | sed 's/.$//' > tmp
 model_id=`cat tmp | sed 's/^.//;s/.$//'`
 
 echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tom
-sh tom > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+sh tom > ${outdir}/${uniprot_id}.pdb
 rm -f tmp tmp2 tom project_id ${uniprot_id}.fasta

@@ -1,22 +1,22 @@
-echo " The VINI in silico model of cancer is supercomputing application  for computing the efficacy of existing drugs and their 2, 3, and 4 combinations."
-echo "If using this program in your academic research , please cite:"                                                   #
-echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
-echo ; sleep 1
-
 HSA=hsa
 ORGANISM=`cat $WORKDIR/ORGANISM`
-cores=`cat $WORKDIR/cores`
+cores=`cat $WORKDIR/cpu_cores`
 job_submit=`cat $WORKDIR/job_submit`
 compute_cell_line=`cat $WORKDIR/compute_cell_line`
 cosmic=`cat $WORKDIR/cosmic`
 kit=`cat $WORKDIR/kit`
+prediction_model=`cat $WORKDIR/prediction_model`
 
 TRUE=1
 FALSE=0
+
+> $WORKDIR/missing_genes
+
 if  [ $compute_cell_line -eq $TRUE ]
 then
     cell_line=`cat $WORKDIR/cell_line`
 fi
+
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
 
@@ -27,6 +27,7 @@ tissue=`echo $line | awk '{print $2}'`
 CANCER_PATHWAY=$ORGANISM$cancer_type
 mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
 sh download_KEGG_pathway
+
 echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
 start_date=`date`
 echo "Analysis of therapy level " $therapy_level "started at" $start_date
@@ -35,17 +36,47 @@ rm -f $WORKDIR/END
 therapy_level=`cat $WORKDIR/therapy_level`
 if  [ $therapy_level -eq 1 ]
 then
-    sh create_relations_receptors_files #Creates relations, receptors and receptors_expanded files
-    sh create_receptor_structures     #Create receptors_contracted file and molecular structures
-    error=`cat $WORKDIR/error`
-    if [ $error -eq $TRUE ] ; then    #exit if error has occured
-       echo "failed to create receptor_structures, exiting...." ; exit
+    sh $vini_dir/predict_biotech_drug_structures
+    sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
+    sh $vini_dir/create_receptor_structures
+    echo "Waiting for prediction jobs to finish. This may take a while."
+    sh $vini_dir/wait_until_jobs_finish
+    sh $vini_dir/check_predicted_structures
+    if  [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
+    then
+        echo "Following structure(s) were not predicted:"
+        cat $WORKDIR/failed_drug_predicted_structures
+        cat $WORKDIR/failed_gene_predicted_structures
+        echo "You may try to use Swiss-Model instead."
+        echo "Exiting." ; exit
+    fi
+
+    if  [ -s $WORKDIR/missing_genes ]
+    then
+        echo "Cannot continue as the following KEGG genes are missing entry in Uniprot:"
+        cat $WORKDIR/missing_genes
+        echo "Find their fasta sequences at https://www.ncbi.nlm.nih.gov/ and predict their structures."
+        echo "Then upload structures to $vini_dir/database/genes/pdb_files directory and start Vini again."
+    fi
+
+    if  [ -s $WORKDIR/failed_pubchem_structures ]
+    then
+        echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
+        cat $WORKDIR/failed_pubchem_structures              
+        echo "You may try convert them with Cactus server: https://cactus.nci.nih.gov/translate/"
+        echo "Then upload these strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
+        echo "Exiting." ; exit
+    fi
+
+    if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_pubchem_structures ]] 
+    then
+        echo " Exiting." ; exit
     fi
       
-    STORE1=$PYTHONPATH ; unset PYTHONPATH  #calculate gene expressions
-    eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
+    echo -n "Activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
     conda activate env27
+    echo "done."
     if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
     then
         if [ $cosmic == y ]
@@ -53,9 +84,9 @@ then
             if  [ ! -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ] #get expressions
             then
                 sh get_gene_expressions_from_CosmicDB ${cores}
-                $job_submit genex
-                sh wait_until_jobs_finish ; rm genex.out
-                    cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
+                $job_submit $WORKDIR/genex
+                sh wait_until_jobs_finish ; rm $WORKDIR/genex.out
+                cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
             else
                 cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/database/genes
             fi
@@ -76,26 +107,57 @@ then
         sh add_expressions_to_receptors
         sh add_expressions_to_relations
     else
-        if  [[ ! -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv ]] || [[ ! -d $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations ]] || [[ ! -d $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/sequences ]]
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
+        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+        
+        rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/*
+
+        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv ]
         then
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
-            #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
-            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/genes/expressions/ #using preloaded file
-            echo "getting mutations for" $cell_line ", please wait..."
-            python get_gene_mutation_cell_line.py -g $vini_dir/database/genes/Uniprot_ID_list -c $cell_line
-            python generateMutatedFASTAseqCellLine.py -g $vini_dir/database/genes/Uniprot_ID_list
-            cp $vini_dir/database/genes/expressions/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
-            cp $vini_dir/database/genes/mutations/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
-            cp $vini_dir/database/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions
         else
-            rm -f $vini_dir/database/genes/expressions/* $vini_dir/database/genes/mutations/* $vini_dir/database/genes/sequences/*
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions/* $vini_dir/database/genes/expressions
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations/* $vini_dir/database/genes/mutations
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences/* $vini_dir/database/genes/sequences
+            #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
+            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions
+            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions
         fi
+          
+        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv ]
+        then
+            echo "mutations for $cell_line found in the database." 
+            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv $vini_dir/database/genes/mutations
+        else
+            echo "trying to get mutations from Cosmic for $cell_line, please wait..."
+            python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
+            if  [ -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
+            then
+                cp $vini_dir/genes/mutations/${cell_line}_mutations.csv $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/mutations
+            else
+                exit
+            fi
+        fi
+
+        ls $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/sequences > tmp #check if sequences already exist
+        if  [ -s tmp ]
+        then
+            echo "sequences for ${cell_line} found in the database."
+            cp $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences/* $vini_dir/genes/sequences
+        else
+            echo "getting sequences for ${cell_line}, please wait..."
+            python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+        echo "brakepoint" ; sleep 10000
+            ls $vini_dir/genes/sequences > tmp
+            if  [ -s tmp ]
+            then
+                cp $vini_dir/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences
+            else
+                echo $cell_line
+                echo "no sequences found."
+            fi
+        fi
+
+
 
         if  [ $cosmic == y ]
         then
@@ -135,7 +197,9 @@ then
     complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
     echo $complexes > $WORKDIR/complexes
 fi
-sh vini 
+
+sh malavini 
+
 end_date=`date`
 echo "Analysis completed at"  $end_date
 if  [ $compute_cell_line -eq $TRUE ]    #prepare the data for Pearson analysis
@@ -149,17 +213,18 @@ then
 fi
 
 cd $WORKDIR #cleanup
-rm -f postproc  ligand_???.pdbqt complex_???.jo* slurm-*.out *.err
-rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded url
+rm -f postproc  ligand_???.pdbqt complex_???.jo*
+rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded
 rm -f ligands target_dir stats prediction_list max_jobs
 rm -f swiss_repo_entry *.pdb
 rm -f  nodes tmp success Vina_run 
 rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list
-rm -f stop WM COSMIC_token *pdbqt drugname failed_structures
+rm -f stop WM COSMIC_token *pdbqt drugname
 rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
 rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
 rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
+rm -f mutated wild combo
 
 cd $vini_dir
 rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50
-rm -f wild mutated combo seqnames predict exist tmp log ligand_wH.pdb #cleanup
+rm -f seqnames predict exist tmp log ligand_wH.pdb #cleanup

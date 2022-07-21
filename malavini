@@ -12,7 +12,6 @@ cell_line=`cat $WORKDIR/cell_line`                  #getting the cell line name
 job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
 job_submit=`cat $WORKDIR/job_submit`
 docking=`cat $WORKDIR/docking`                      #Rosetta or Hex
-rosie=`cat $WORKDIR/rosie`
 
 exhaustiveness=`cat $WORKDIR/exhaustiveness`
 box_size=`cat $WORKDIR/box_size`
@@ -22,8 +21,10 @@ max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 ligands=`wc -l < $vini_dir/database/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
-export target_dir comp_index #vars for (SGE) compute_FBE/Vina script
-NTOMP=`cat $WORKDIR/Gromacs_threads` ; export NTOMP #nr OMP threads (SGE) MD_run/MD_prep scripts will use
+NTOMP=`cat $WORKDIR/Gromacs_threads`
+
+#export target_dir comp_index #vars for (SGE) compute_FBE/Vina script
+# export NTOMP #nr OMP threads (SGE) MD_run/MD_prep scripts will use
 
 DIR=$WORKDIR/${CANCER_TYPE}_data 
 lig_source=$WORKDIR
@@ -34,9 +35,6 @@ cd $WORKDIR
 > SLEM_values    #delete SLEM values from the previous run
 
 SECONDS=$NULL
-elapsed_time=$NULL
-elapsed_simulations=$NULL
-
 
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
@@ -105,73 +103,57 @@ do
                              chmod u+x Vina_run
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} Vina_run
-                            
-                             #jobID=jobID_${lig_index} 
-                             #jobID=$(${job_submit} --parsable Vina_run)
-                             #echo -n ":"${jobID} >> ${target_dir}/listID_${lig_index} 
                          fi
                          cd $WORKDIR
                      else
-                         cp $vini_dir/nodes_control_script $vini_dir/wait_until_jobs_finish ./
-                         receptor=`head -"$N" $WORKDIR/receptors_contracted | tail -1`
-                         receptor=`echo $receptor | awk '{print $3}'`
-                         ligand=`head -"$M" $vini_dir/database/ligands/ligands_list | tail -1`
-                         ligand=`echo $ligand | awk -F','  '{print $1}'`
                          flag=`head -$N $WORKDIR/receptors_contracted | tail -1`
                          flag=`echo $flag | awk '{print $4}'`
-                         
-                         if  [ $flag != F ]     #do not compute FBE if receptor is with F flag
+                         if  [ $flag == F ]     #do not compute FBE if receptor is with F flag
                          then
-                             echo ${PWD}/protein1_relaxed_0002.pdb > pdblist
-                             echo ${PWD}/protein2_relaxed_0002.pdb >> pdblist
-                             cp $vini_dir/genes/pdb_files/${receptor}.pdb ./protein1.pdb
-                             cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./protein2.pdb
-                             if  [ $rosie == mpi ]
-                             then
-                                 cp $WORKDIR/rosetta_relax.mpi $WORKDIR/rosetta_docking.mpi $WORKDIR/rosetta_log ./
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein1
-                                 jobID1=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein2
-                                 jobID2=$(${job_submit} --parsable rosetta_relax.mpi ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking.mpi )
-                             else
-                                 cp $WORKDIR/rosetta_relax $WORKDIR/rosetta_docking $WORKDIR/rosetta_log ./
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein1
-                                 jobID1=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 sh nodes_control_script ${MAX_NODES}
-                                 receptor=protein2
-                                 jobID2=$(${job_submit} --parsable rosetta_relax ${receptor})
-                                 jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking )
-                             fi
-                             sh nodes_control_script ${MAX_NODES}
-                             ${job_submit} --dependency=afterany:${jobID3} rosetta_log ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
-                         else
                              FBE=`cat $WORKDIR/random_affinity`
                              echo $FBE > ${target_dir}/log_${comp_index}.txt
                              echo "ligand:" $ligand  "receptor:" $receptor "FBE: not_computed" >> $WORKDIR/free_binding_energy_data
+                         else
+                             cp $vini_dir/nodes_control_script ./
+                             receptor=`head -"$N" $WORKDIR/receptors_contracted | tail -1 | awk '{print $3}' `
+                             ligand=`head -"$M" $vini_dir/database/ligands/ligands_list | tail -1 | awk -F',' '{print $1}' `
+                             cp $vini_dir/database/genes/pdb_files/${receptor}.pdb ./receptor.pdb
+                             cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./ligand.pdb
+                         
+                             if  [ $docking == rosetta ]
+                             then
+                                 echo ${PWD}/receptor_relaxed_0001.pdb > pdblist1 #create pdblist for Rosetta docking
+                                 echo ${PWD}/ligand_relaxed_0001.pdb >> pdblist2
+                                 sh $vini_dir/Rosetta_protein_docking ${receptor} ${ligand} ${target_dir} ${comp_index} ${lig_index}
+                             else
+                                 hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log # prepare complex.pdb file
+                                 sh $vini_dir/Hex_protein_docking
+
+                                 cp $vini_dir/chimera_script $vini_dir/prep_prot_lig.py ./      #clean complex.pdb
+                                 accession_code=complex ; ligand=BNZ
+                                 sh chimera_script ${accession_code} ${ligand}
+                                 if  [ -e protein_clean.pdb ]
+                                 then
+                                     mv protein_clean.pdb complex.pdb
+                                 else
+                                     mv complex_clean.pdb complex.pdb
+                                 fi
+                             fi
                          fi
                      fi
     	         done # end of 5th loop
 
                  sh $vini_dir/wait_until_jobs_finish
 
-                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}    #create affinity vector
+                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}         #create affinity vector
                  echo "#SBATCH --job-name=vec_${lig_index}"   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  cat $vini_dir/create_vector >> ${target_dir}/vec_${lig_index}
                  chmod u+x ${target_dir}/vec_${lig_index}
-                 #sed -i '0,/./s/^.//' ${target_dir}/listID_${lig_index} #remove the first :
-                 #listID_lig_index=`cat ${target_dir}/listID_${lig_index}`
-                 #jobID3=jobID_${lig_index}
-                 #jobID3=$(${job_submit} --parsable --dependency=afterany:${listID_lig_index} ${target_dir}/vec_${lig_index} ${target_dir} )
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir}
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 echo $target_dir > target_dir #create SLEM
+                 echo $target_dir > target_dir                                #create SLEM
                  cat $WORKDIR/Vina > ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --job-name=mat_${lig_index}"   >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
@@ -181,8 +163,6 @@ do
                  echo "python2 $vini_dir/compute_eigenvalues_old.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/mat_${lig_index}
                  echo "conda deactivate" >> ${target_dir}/mat_${lig_index}
                  chmod u+x ${target_dir}/mat_${lig_index}
-                 #jobID4=jobID_${lig_index}
-                 #jobID4=$(${job_submit} --parsable --dependency=afterany:${jobID3} ${target_dir}/mat_${lig_index} )
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
 
@@ -190,7 +170,6 @@ do
                  echo "#SBATCH --job-name=SLEM_${lig_index}"   >> ${target_dir}/SLEM_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/SLEM_${lig_index}
                  cat $vini_dir/store_SLEM_value >> ${target_dir}/SLEM_${lig_index}
-                 #${job_submit} --dependency=afterany:${jobID4} ${target_dir}/SLEM_${lig_index} ${M} ${L} ${J} ${I} ${target_dir}
                  ${job_submit} ${target_dir}/SLEM_${lig_index} ${M} ${L} ${J} ${I} ${target_dir} 
                  sh $vini_dir/wait_until_jobs_finish
 
