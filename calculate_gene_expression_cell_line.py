@@ -11,6 +11,7 @@ t0 = time.time()
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def filterGeneExpression (WORKING_DIR, cell_line_name, genes_list):
+    cosmicTools.mapUniprotIDToCosmicID('P17252')
     print "genes_list: ", genes_list
     gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapCosmicIDToUniprotID(gene), gene) for gene in genes_list)
     # load CSV with expressions

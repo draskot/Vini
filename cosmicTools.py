@@ -8,7 +8,7 @@ from time import sleep
 TOKEN_NUMBER = "80949446543985533989431871587937377"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
-def mapUniprotIDtoCosmicID(UNIPROT_ID):
+def mapUniprotIDToCosmicID(UNIPROT_ID):
     dict_path = os.path.join(WORKING_DIR, 'cosmic_ids.csv')
     if not os.path.exists(dict_path):
         with open(dict_path, 'a+') as dict_csv:
@@ -22,31 +22,33 @@ def mapUniprotIDtoCosmicID(UNIPROT_ID):
         next(f)  # Skip the header
         reader = csv.reader(f, skipinitialspace=True)
         id_dict = dict(reader)
-        if UNIPROT_ID in id_dict.keys():
-            return id_dict[UNIPROT_ID]
-        else:
-            #try:
-            url_submit_job = "https://rest.uniprot.org/idmapping/run?from=Gene_Name&to=UniProtKB-Swiss-Prot&ids=%s" % (UNIPROT_ID)
-            response = requests.request("POST", url_submit_job, headers={}, data={})
-            response = response.json()
-            job_id = response["jobId"]
+        #try:
+        url_submit_job = "https://rest.uniprot.org/idmapping/run?from=UniProtKB_AC-ID&to=Gene_Name&ids=%s" % (UNIPROT_ID)
+        response = requests.request("POST", url_submit_job, headers={}, data={})
+        response = response.json()
+        job_id = response["jobId"]
+        def check_status(job_id):
             url_fetch_status = "https://rest.uniprot.org/idmapping/status/%s" % (job_id)
-            response = requests.request("POST", url_fetch_status, headers={}, data={})
-            response = response.json()
-            print (response)
+            response = requests.request("GET", url_fetch_status, headers={}, data={})
+            return response
+        response = check_status(job_id)
+        response_payload = response.json()
+        print response_payload
+        while "jobStatus" in response_payload.keys():
+            sleep (0.5)
+            print "Checking ID mapping job status for ", UNIPROT_ID
+            response = check_status(job_id)
+            response_payload = response.json()
 
-
-            if response.status_code == 200:
-                COSMIC_ID = "bla"
-                print "Mapped Uniprot ID %s to CosmicID: % s" % (UNIPROT_ID, COSMIC_ID)
-                writer = csv.writer(f)
-                writer.writerow([UNIPROT_ID, COSMIC_ID])
-                return COSMIC_ID
-            #except:
-            #    print ('Error while contacting Uniprot service')
-            #    return False
-    # TODO if unsuccessful try again after sleep(3)
-    # TODO save already retrieved key in local storage
+        if response.status_code == 200:
+            COSMIC_ID =  response_payload["results"][0]["to"]
+            print "Mapped UniprotID %s to CosmicID: % s" % (UNIPROT_ID, COSMIC_ID)
+            writer = csv.writer(f)
+            writer.writerow([UNIPROT_ID, COSMIC_ID])
+            return COSMIC_ID
+        #except:
+        #    print ('Error while contacting Uniprot mapping service')
+        #    return False
 
 def mapCosmicIDToUniprotID(COSMIC_ID):
     dict_path = os.path.join(WORKING_DIR, 'cosmic_ids.csv')
@@ -62,9 +64,6 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
         next(f)  # Skip the header
         reader = csv.reader(f, skipinitialspace=True)
         id_dict = dict(reader)
-        #if COSMIC_ID in id_dict.values():
-        #    return id_dict[UNIPROT_ID]
-        #else:
         try:
             url_submit_job = "https://rest.uniprot.org/idmapping/run?from=UniProtKB_AC-ID&to=Gene_Name&ids=%s" % (COSMIC_ID)
             response = requests.request("POST", url_submit_job, headers={}, data={})
@@ -86,7 +85,7 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
                 UNIPROT_ID =  response_payload["results"][0]["to"]
                 print "Mapped Cosmic ID %s to UniprotID: % s" % (COSMIC_ID, UNIPROT_ID)
                 writer = csv.writer(f)
-                writer.writerow([UNIPROT_ID, COSMIC_ID])
+                writer.writerow([COSMIC_ID, UNIPROT_ID])
                 return UNIPROT_ID
         except:
             print ('Error while contacting Uniprot mapping service')
