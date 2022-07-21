@@ -1,0 +1,79 @@
+
+node_type=$1
+walltime=$2
+
+scheduler=`cat $WORKDIR/scheduler`
+version=`cat $WORKDIR/version`
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
+
+
+
+rm -f $WORKDIR/cores.out
+
+if [ ${node_type} == cpu ]
+then
+    partition=`cat $WORKDIR/cpu_partition`
+else
+    partition=`cat $WORKDIR/gpu_partition`
+fi
+
+    echo "#! /bin/bash"                           > $WORKDIR/get_number_of_cores
+    echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_number_of_cores
+    if  [[ ${node_type} == gpu ]] && [[ ${scheduler} == SLURM ]]
+    then
+        if  [ $version == "20.11.9-Bull.1.1" ]
+        then
+            echo "#SBATCH --gres=gpu:1"          >> $WORKDIR/get_number_of_cores
+        fi
+    fi
+    echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_of_cores
+    echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_of_cores
+    echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
+    chmod u+x                                       $WORKDIR/get_number_of_cores
+
+echo "Trying to determine the number of CPU cores per ${node_type} node. This may last up to $walltime seconds, please do not interrupt."
+
+rm -f $WORKDIR/cores.*
+
+$job_submit $WORKDIR/get_number_of_cores
+timeout ${walltime}s $vini_dir/wait_until_jobs_finish
+if [ -e $WORKDIR/cores.out ]
+then
+    grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
+    grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
+    cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
+    read -p  "Found $cores CPU cores per ${node_type} node. Accept [y] or enter the new value? " accept
+    if  [ $accept == y ]
+    then
+        if  [ ${node_type} == cpu ]
+        then
+            echo $cores > $WORKDIR/cpu_cores
+        else
+            echo $cores > $WORKDIR/gpu_cores
+        fi
+    else
+        if  [ ${node_type} == cpu ]
+        then
+            echo $accept > $WORKDIR/cpu_cores
+        else
+            echo $accept > $WORKDIR/gpu_cores
+        fi
+    fi
+else
+    ${job_cancel} -u $USER ; echo
+    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
+    read -p "Write the number of CPU cores per ${node_type} node here:" cores
+    if  [ ${node_type} == cpu ]
+    then
+        echo $cores > $WORKDIR/cpu_cores
+    else
+        echo $cores > $WORKDIR/gpu_cores
+    fi
+fi
+

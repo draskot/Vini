@@ -8,8 +8,8 @@ import pandas as pd
 import csv
 
 t0 = time.time()
-WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
-WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
+WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'database' , 'genes', 'mutations')
+WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'database' , 'genes', 'sequences')
 
 # this method applies mutations from CSVs to wild type FASTA sequence
 def filterMutations(filename):

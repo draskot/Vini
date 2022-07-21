@@ -1,0 +1,114 @@
+#https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
+#https://new.rosettacommons.org/demos/latest/tutorials/Relax_Tutorial/Relax
+#https://www.rosettacommons.org/docs/latest/application_documentation/docking/docking-prepack-protocol
+#https://www.rosettacommons.org/docs/latest/application_documentation/docking/docking-protocol#standard-docking-options
+
+#https://new.rosettacommons.org/demos/latest/tutorials/input_and_output/input_and_output
+#check number of processors Rosetta use: squeue -o"%.7i %.9P %.8j %.8u %.2t %.10M %.6D %C"
+#Rosetta with SLURM https://wiki.rc.usf.edu/index.php/Rosetta
+#Performance https://hpc.nih.gov/apps/rosetta.html
+
+#/scratch/opt2/Rosetta/MULTI_rosetta_src_2021.16.61629_bundle/main/tests/integration/tests/docking_ensemble
+
+#input parameters:
+receptor=$1
+ligand=$2
+target_dir=$3
+comp_index=$4
+
+#output parameter: Free binding energy in $WORKDIR/free_binding_energy_data file
+
+cpus=`cat $WORKDIR/cpu_cores`
+mem=`cat $WORKDIR/cpu_memsize`
+partition=`cat $WORKDIR/cpu_partition`
+MAX_NODES=`cat $WORKDIR/nodes`
+job_submit=`cat $WORKDIR/job_submit`
+rosetta_version=`cat $WORKDIR/rosetta_version`
+ROSETTA=`cat $WORKDIR/ROSETTA`
+
+
+NODES=`cat $WORKDIR/R_nodes`
+NTASKS=`echo ${NODES} $cpus | awk '{print $1 * $2}'`
+
+echo "#!/bin/bash"                            > rosetta
+if  [ $rosetta_version == mpi ]
+then
+    echo "#SBATCH --nodes="$NODES            >> rosetta
+    echo "#SBATCH --ntasks="$NTASKS          >> rosetta
+else
+    echo "#SBATCH --nodes=1"                 >> rosetta
+    echo "#SBATCH --ntasks=1"                >> rosetta
+    echo "#SBATCH --cpus-per-task="$cpus     >> rosetta
+fi
+echo "#SBATCH --mem="${mem}                  >> rosetta
+echo "#SBATCH --partition="$partition        >> rosetta
+
+cat rosetta                                  >> rosetta_relax
+echo "#SBATCH --job-name=relax"              >> rosetta_relax
+echo "#SBATCH --output=relax.out"            >> rosetta_relax
+echo "#SBATCH --error=relax.err"             >> rosetta_relax
+echo "protein=\$1"                           >> rosetta_relax
+
+cat rosetta                                   > rosetta_docking_prepack
+echo "#SBATCH --job-name=prepack"            >> rosetta_docking_prepack
+echo "#SBATCH --output=prepack.out"          >> rosetta_docking_prepack
+echo "#SBATCH --error=prepack.err"           >> rosetta_docking_prepack
+
+cat rosetta                                   > rosetta_docking
+echo "#SBATCH --job-name=docking"            >> rosetta_docking
+echo "#SBATCH --output=docking.out"          >> rosetta_docking
+echo "#SBATCH --error=docking.err"           >> rosetta_docking
+
+echo "#!/bin/bash"                            > rosetta_logging
+echo "#SBATCH --nodes=1"                     >> rosetta_logging
+echo "#SBATCH --ntasks=1"                    >> rosetta_logging
+echo "#SBATCH --mem=2gb"                     >> rosetta_logging
+echo "#SBATCH --job-name=logging"            >> rosetta_logging
+echo "#SBATCH --output=logging.out"          >> rosetta_logging
+echo "#SBATCH --error=logging.err"           >> rosetta_logging
+cat $vini_dir/rosetta_logging                >> rosetta_logging
+
+if  [ $rosetta_version == mpi ]
+then
+    echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/relax.mpi.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 1 -out:path:pdb -overwrite" >> rosetta_relax
+
+    echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/docking_prepack_protocol.mpi.linuxgccrelease  -database ${ROSETTA3_DB} -ensemble1 pdblist1 -ensemble2 pdblist2 -out:overwrite"  >> rosetta_docking_prepack
+
+    echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/docking_protocol.mpi.linuxgccrelease -ensemble1 pdblist1 -ensemble2 pdblist2 -spin -randomize1 -randomize2 -ignore_unrecognized_res -ex1 -ex2aro -out:overwrite -out:pdb"  >> rosetta_docking
+else
+    if [ $rosetta_version == multithreaded ]
+    then
+        echo "${ROSETTA_BIN}/relax.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 1 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+
+        echo "${ROSETTA_BIN}/docking_prepack_protocol.linuxgccrelease -database ${ROSETTA3_DB} -ensemble1 pdblist1 -ensemble2 pdblist2 -out:overwrite" >> rosetta_docking_prepack
+
+        echo "${ROSETTA_BIN}/docking_protocol.linuxgccrelease -ensemble1 pdblist1 -ensemble2 pdblist2 -spin -randomize1 -randomize2 -ignore_unrecognized_res -ex1 -ex2aro -out:overwrite -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
+    else
+        echo "${ROSETTA_BIN}/relax.static.linuxgccrelease -s \${protein}.pdb -out:suffix _relaxed -nstruct 1 -out:path:pdb -overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_relax
+
+        echo "${ROSETTA_BIN}/docking_prepack_protocol.static.linuxgccrelease -database ${ROSETTA3_DB} -ensemble1 pdblist1 -ensemble2 pdblist2 -out:overwrite -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking_prepack
+
+        echo "${ROSETTA_BIN}/docking_protocol.static.linuxgccrelease -ensemble1 pdblist1 -ensemble2 pdblist2 -spin -randomize1 -randomize2 -ignore_unrecognized_res -ex1 -ex2aro -out:overwrite -out:pdb -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_docking
+    fi
+fi
+
+chmod u+x rosetta_relax rosetta_docking_prepack rosetta_docking rosetta_logging
+
+sh nodes_control_script ${MAX_NODES} ; protein=receptor                                              #relax receptor
+jobID1=$(${job_submit} --parsable rosetta_relax ${protein})                                          #relax ligand
+
+sh nodes_control_script ${MAX_NODES} ; protein=ligand
+jobID2=$(${job_submit} --parsable rosetta_relax ${protein})
+
+sh nodes_control_script ${MAX_NODES} ; protein=ligand
+jobID3=$(${job_submit} --parsable --dependency=afterany:${jobID1}:${jobID2} rosetta_docking_prepack) #prepack
+
+sh nodes_control_script ${MAX_NODES}                                                                 #dock
+jobID4=$(${job_submit} --parsable --dependency=afterany:${jobID3} rosetta_docking)                   
+
+sh nodes_control_script ${MAX_NODES}                                                                 #log
+${job_submit} --dependency=afterany:${jobID4} rosetta_logging ${receptor} ${ligand} ${target_dir} ${comp_index}
+
+echo "brakepoint" ; sleep 1000
+
+

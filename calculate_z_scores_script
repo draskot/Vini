@@ -6,6 +6,6 @@ rm $WORKDIR/tmp
 
 source $vini_dir/miniconda2/bin/activate
 
-python batch_calculate_gene_expressions.py -g ./database/genes/Uniprot_ID_list -t $tissue -o ./genes/expression_scores.csv -n ${SLURM_NTASKS}
+python batch_calculate_gene_expressions.py -g $vini_dir/genes/Uniprot_ID_list -t $tissue -o ./genes/expression_scores.csv -n ${SLURM_NTASKS}
 
 source $vini_dir/miniconda2/bin/deactivate

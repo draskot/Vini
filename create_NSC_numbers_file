@@ -62,7 +62,7 @@ else
 fi
 
 > tmp
-while read -r line                                        #create NSC_number file
+while read -r line                                        #create NSC_numbers file
 do
     drugname=`echo $line | awk -F',' '{print $1}'`                   
     grep $drugname $vini_dir/database/AgentInfo > lines
@@ -101,5 +101,11 @@ do
         echo $line >> tmp
     fi
 done < $vini_dir/database/NSC_numbers
-mv tmp $vini_dir/database/NSC_numbers
+if  [ -s tmp ]
+then
+    mv tmp $vini_dir/database/NSC_numbers
+else
+    echo "no drugs in your ligands_list have been evaluated with NCI-60 GI protocol!"
+    echo "SLEM values will be computed but the correlation analysis with GI50 data will be not performed!"
+fi
 rm lines

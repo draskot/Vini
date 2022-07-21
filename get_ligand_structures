@@ -1,5 +1,5 @@
 #This script looks for 3D ligands structures.
-#If no 3D (SDF) structure on RCSB is found, we continue are search for it on Drugbank.
+#If no 3D (SDF) structure on RCSB is found, we search for it on Drugbank.
 #If no 3D (SDF) structure on Drugbank is found, we search for pdb structure on Drugbank.
 #If found, we convert this structure to 3D (SDF) with Openbabel. Otherwise, we delete this drug from ligands_list.
 #Input param: structure type on RCSB (can be "model" or "ideal")
@@ -8,9 +8,9 @@ structure_type=$1
 NULL=0
 
 
-rm -rf $vini_dir/database/ligands/sdf_files/*       #cleanup
-rm -rf $vini_dir/database/ligands/pdb_files/*       #cleanup
-rm -rf $vini_dir/database/ligands/pdbqt_files/*     #cleanup
+#rm -rf $vini_dir/database/ligands/sdf_files/*       #cleanup
+#rm -rf $vini_dir/database/ligands/pdb_files/*       #cleanup
+#rm -rf $vini_dir/database/ligands/pdbqt_files/*     #cleanup
 
 prefix=https://files.rcsb.org/ligands/view/
 suffix=_${structure_type}.sdf
@@ -26,7 +26,7 @@ do
         then
             echo "not exists on RCSB."
         else
-            curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf $prefix${rcsb_code}$suffix
+            wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf $prefix${rcsb_code}$suffix
         fi
         if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
         then
@@ -41,21 +41,21 @@ do
             then
                 inline=`head -1 $WORKDIR/tmp`
                 DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-                curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
+                wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
                 if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
                 then
                     echo "done."
                 else
                     echo "failed."
                     echo -n "trying to download ${drug}.2D-SDF structure from Drugbank..."
-                    curl -Lfs -o $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf
+                    wget -q -O $vini_dir/database/ligands/sdf_files/${drug}.sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf
                     if [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ]
                     then
                         echo "done."
                     else
                         echo  "failed."
                         echo -n "trying to download ${drug}.pdb structure from Drugbank..."
-                        curl -Lfs -o $vini_dir/database/ligands/pdb_files/${drug}.pdb https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.pdb
+                        wget -q -O $vini_dir/database/ligands/pdb_files/${drug}.pdb https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.pdb
                         if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.pdb ]
                         then
                             echo  -n "done. Trying to convert pdb to sdf file with Openbabel..."

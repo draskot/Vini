@@ -1,0 +1,93 @@
+node_type=$1
+walltime=$2
+
+percentage=90
+scheduler=`cat $WORKDIR/scheduler`
+version=`cat $WORKDIR/version`
+job_submit=`cat $WORKDIR/job_submit`
+job_cancel=`cat $WORKDIR/job_cancel`
+
+
+
+if [ ${node_type} == cpu ]
+then
+    partition=`cat $WORKDIR/cpu_partition`
+else
+    partition=`cat $WORKDIR/gpu_partition`
+fi
+
+echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
+
+echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
+echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
+if  [[ ${node_type} == gpu ]] && [[ ${scheduler} == SLURM ]]
+then
+    if  [ $version == 20.11.9-Bull.1.1 ]
+    then
+        echo "#SBATCH --gres=gpu:1"          >> $WORKDIR/get_size_of_memory
+    fi
+fi
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
+echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
+echo "free -h"                               >> $WORKDIR/get_size_of_memory
+chmod u+x                                       $WORKDIR/get_size_of_memory
+
+rm -f $WORKDIR/memory.*
+
+$job_submit $WORKDIR/get_size_of_memory
+
+timeout ${walltime}s $vini_dir/wait_until_jobs_finish
+
+if [ -e $WORKDIR/memory.out ]
+then
+    line=`head -2  $WORKDIR/memory.out | tail -1`
+    memsize=`echo $line | awk '{print $2}'`
+    suffix=gb
+    factor=1024
+    echo $memsize > tmp
+    memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
+    grep G tmp > tmp2                    #now check what we have
+    if [ -e tmp2 ]
+    then                                 #we have Gigabytes
+        memsize=$(( memsize*${percentage}/100 ))
+        memsize=${memsize}${suffix}
+    else                                 #we have Terabytes. Multiply with 1024 
+        memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
+        memsize=$(( memsize*${percentage}/100 ))
+        memsize=${memsize}${suffix}
+    fi
+
+    read -p "Calculated $memsize available memory per ${node_type} node (90% of total memory). Accept [y] or enter the new value (in GB): " accept
+    if [ $accept == y ]
+    then
+        if  [ ${node_type} == cpu ]
+        then
+            echo $memsize > $WORKDIR/cpu_memsize
+        else
+            echo $memsize > $WORKDIR/gpu_memsize
+        fi
+    else
+        if  [ ${node_type} == cpu ]
+        then
+            echo $accept > $WORKDIR/cpu_memsize
+        else
+            echo $accept > $WORKDIR/gpu_memsize
+        fi
+    fi
+else
+    ${job_cancel} -u $USER ; echo
+    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
+    echo "You may consider at least 90% of the total installed memory as available."
+    read -p "Write the available memory size (in GB) per ${node_type} node here:" memsize
+    if  [ ${node_type} == cpu ]
+    then
+        echo $memsize > $WORKDIR/cpu_memsize
+    else
+        echo $memsize > $WORKDIR/gpu_memsize
+    fi
+fi
+

@@ -1,3 +1,8 @@
+echo "The Vini in silico model of cancer is supercomputing application for performing multi-drug pathway based virtual drug screening."
+echo "If using this program in your academic research , please cite:"                                                   #
+echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
+echo ; sleep 1
+
 NULL=0
 ONES=1
 THREE=3
@@ -5,11 +10,7 @@ HSA=hsa
 TRUE=1
 FALSE=0
 
-echo 
-
-sh $vini_dir/clean
-
-echo -n "checking for user..." 
+echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
 then
     echo "Please run Vini as an ordinary user, not as a root! Exiting..."
@@ -18,7 +19,19 @@ else
     echo passed.
 fi
 
-echo -n "checking for ligands_list file..."
+echo -n "Checking for the installation of the  3rd party software..."
+if  [ -e sourceme ]
+then
+    echo "installed."
+else
+    sh install.sh
+    echo "Installation done. Execute <source $vini_dir/sourceme> to changes make effect and start Vini again."
+    exit
+fi
+
+sh $vini_dir/clean
+
+echo -n "Checking for ligands_list file..."
 if [ -e $vini_dir/database/ligands/ligands_list ]
 then
     echo passed.
@@ -29,13 +42,16 @@ fi
 mkdir -p $vini_dir/database/ligands/pdb_files #preparing directories
 mkdir -p $vini_dir/database/ligands/sdf_files
 mkdir -p $vini_dir/database/ligands/pdbqt_files
-mkdir -p $vini_dir/database/genes/pdb_files
-mkdir -p $vini_dir/database/genes/expressions 
-mkdir -p $vini_dir/database/genes/mutations
-mkdir -p $vini_dir/database/genes/sequences
-rm -f $vini_dir/database/genes/mutations/*   
-rm -f $vini_dir/database/genes/expressions/*
-rm -f $vini_dir/database/genes/sequences/*
+
+mkdir -p $vini_dir/genes
+mkdir -p $vini_dir/genes/pdb_files
+mkdir -p $vini_dir/genes/expressions 
+mkdir -p $vini_dir/genes/mutations
+mkdir -p $vini_dir/genes/sequences
+
+rm -f $vini_dir/genes/mutations/*   
+rm -f $vini_dir/genes/expressions/*
+rm -f $vini_dir/genes/sequences/*
 
 echo -n "Determining workload manager..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
@@ -44,15 +60,57 @@ nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
 then
     echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel ; sh determine_SLURM_environment
+    echo "SLURM" > $WORKDIR/scheduler
+    version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
 else
     if [ -d /opt/sge ]
     then
         echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
+        echo "SGE" > $WORKDIR/scheduler
     else
         echo "not supported, exiting" ; exit
     fi
 fi
 echo $JSS > $WORKDIR/JSS
+
+echo -n "Determining which Rosetta version is installed..."
+which antibody_graft.mpi.linuxgccrelease &> tmp #determining which Rosetta is installed
+grep -w no tmp > tmp2
+nolines=`wc -l < tmp2`
+if [ $nolines -eq $NULL ]
+then
+    rosetta_version=mpi
+    echo "MPI version found."
+    read -e -p "Enter the number of compute nodes each Rosetta job will use. Press enter to accept default: " -i "4" R_nodes
+    echo ${R_nodes} > $WORKDIR/R_nodes
+else
+    which antibody_graft.linuxgccrelease &> tmp #determining if Rosetta multithreaded is installed
+    grep -w no tmp > tmp2
+    nolines=`wc -l < tmp2`
+    if  [ $nolines -eq $NULL ]
+    then
+        var=`cat tmp`
+        rosetta_version=multithreaded
+        echo "multithreaded version found."
+    else
+        which antibody_graft.static.linuxgccrelease &> tmp #determining if Rosetta static is installed
+        grep -w no tmp > tmp2
+        nolines=`wc -l < tmp2`
+        if  [ $nolines -eq $NULL ]
+        then
+            rosetta_version=static
+            echo "static version found."
+        else
+            echo "no Rosetta binaries found!"
+            #exit
+        fi
+    fi
+fi
+ROSETTA=`cat tmp`                                #determining Rosetta install directory
+ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA`
+echo $rosetta_version > $WORKDIR/rosetta_version
+echo $ROSETTA > $WORKDIR/ROSETTA
+
 
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
@@ -74,54 +132,37 @@ fi
 rm -f jobs
 
 cd $WORKDIR #Cleanup
-rm -f slurm-*.out complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* nohup.out temp_buf
+rm -f complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
+rm -f *err *out
 cd $vini_dir
 
 cat COPYRIGHT
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
-sh $vini_dir/get_compute_node_cores
+walltime=120  #seconds
 
-Gromacs_threads=`cat $WORKDIR/cores` #setting number of OMP threads to max number of cores
-echo $Gromacs_threads > $WORKDIR/Gromacs_threads
+node_type=cpu
+sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
+sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
 
-case $JSS in
-     1) sh prepare_SLURM_scripts ;;
-     2) sh prepare_SGE_scripts ;;
-#    3) sh prepare_PBS_scripts ;; #not tested
-esac
+node_type=gpu
+sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
+sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
+sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
+
+
+sh $vini_dir/prepare_SLURM_scripts
 
 echo "rosetta" > $WORKDIR/docking
-jobs=60
-echo "Number of concurrent Vina/Rosetta jobs (each job using 4 processors) has been set to" $jobs
-read -p "Accept or choose a new value [a/c]:" accept
-if [ $accept  != a ]
-then
-    read -p "Please choose a new value:" jobs
-fi
+read -e -p "How many Vina/Rosetta jobs can run in parallel (each job using 4 processors). Press enter to accept default: " -i "100" jobs
 echo $jobs > $WORKDIR/max_jobs
-read -p "How many compute nodes Vini can use?" nodes
+cores=`cat $WORKDIR/cpu_cores`
+read -e -p "How many Alphafold jobs can run in parallel (each job will use $cores CPU threads)? Press enter to accept default: " -i "100" nodes
 echo $nodes > $WORKDIR/nodes
 
-prediction_model=`cat $WORKDIR/prediction`
-if [ $prediction_model == S ]
-then 
-    echo "SWISS-MODEL will be used for prediction of protein structures."
-    if  [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ]
-    then
-        read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
-        read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
-        read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
-        chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-        sh download_SWISS_MODEL_metadata
-    fi
-else
-    echo "AlphaFold will be used for protein structure predictions."
-fi
-
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
-read -p "Already registered (y/n)?" yesno
+read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
 if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
@@ -130,7 +171,8 @@ then
     echo $password > $WORKDIR/Drugbank_password
     chmod g-r,o-r $WORKDIR/Drugbank_password
 else
-    if [ ! -e $WORKDIR/Drugbank_email ] || [ ! -e $WORKDIR/Drugbank_password ] ; then
+    if [ ! -e $WORKDIR/Drugbank_email ] || [ ! -e $WORKDIR/Drugbank_password ]
+    then
        echo "no data found. You will need to enter data for the first time. "
        read -p "Enter email:" email
        echo -n "Enter password:"; read -s password ; echo ""
@@ -140,34 +182,76 @@ else
     fi
 fi
 
-MAX_NODES=`cat $WORKDIR/nodes`
-job_submit=`cat $WORKDIR/job_submit`
+sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
+sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
+sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
+sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
 
 
-if  [ -s $WORKDIR/rosie ] #if Rosetta is installed mab structures will be predicted with Rosetta Antibody
-then
-    sh $vini_dir/predict_mab_structures_with_Rosetta
-else
-    sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
+
+#structure_type=model #get pdb structures from RCSB
+#sh $vini_dir/get_ligand_structures ${structure_type}
+
+echo "Vini can predict KEGG protein structures with AlphaFold or SWISS-MODEL."
+read -e -p "Use AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "A" prediction_model
+echo ${prediction_model} > $WORKDIR/prediction_model
+
+echo "Vini can predict biotech drug structures with either Rosetta+Alphafold, or with SWISS-MODEL."
+read -e -p "Use Rosetta+AlphaFold[RA] or SWISS-MODEL[S]? Enter to accept default: " -i "RA" biotech_drugs_prediction_model
+echo ${biotech_drugs_prediction_model} > $WORKDIR/biotech_drugs_prediction_model
+
+
+if [ ${prediction_model} == A ]
+then 
+    grep AlphaFold $vini_dir/sourceme > tmp
+    if  [ -s tmp ]
+    then
+        gpus=`cat $WORKDIR/gpus`
+        if [ $gpus -ne $NULL ]
+        then
+            read -e -p "Run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
+            if [ $partition == cpu ]
+            then
+                cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
+                cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+            else
+                cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
+                cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
+            fi
+        else
+            echo "AlphaFold will run on CPU nodes"
+            cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
+            cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+        fi
+        read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
+        echo $base > $WORKDIR/AlphaFold_base
+    else
+        echo "AlphaFold not found, check if it is installed. Then rerun <install.sh> script and start Vini again."
+        exit
+    fi
 fi
 
-sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
-#sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
-#sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
-#sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
+echo ; echo "If you never registered to SWISS-MODEL before, stop now. Go to https://swissmodel.expasy.org/  and register. Upon receiving the approval, enter your registration data here."
+read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
+    read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
+    read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
+    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+    sh download_SWISS_MODEL_metadata
+fi
 
-rm -rf $vini_dir/database/ligands/sdf_files/*       #cleanup
-rm -rf $vini_dir/database/ligands/pdb_files/* 
-rm -rf $vini_dir/database/ligands/pdbqt_files/* 
-structure_type=model
-sh $vini_dir/get_ligand_structures ${structure_type}
-
-read -p "Do you want to include cancer gene expressions and mutations from COSMIC database into analysis (y/n)?" cosmic
+read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
 
 if  [ $cosmic == "y" ]
 then
     echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
-    read -p "Already registered (y/n)?" yesno
+    
+    read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
     if  [ $yesno == "n" ]
     then
         read -p "Enter email:" email
@@ -207,9 +291,7 @@ echo $exp > $WORKDIR/exp
 
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds
 
-
-echo -n "Delete all the data previously created by Vini? (y/n)"
-read erase
+read -e -p "Delete all the data previously created by Vini (y/n)? Press enter to accept default: " -i "y" erase
 if  [[ $erase == "y" ]]
 then
     rm -rf $WORKDIR/*_data
@@ -217,7 +299,7 @@ then
 fi
 
 echo -n "Trying to retrieve the list of available organisms from KEGG, please wait..."
-curl -Lfs -o tmp http://rest.kegg.jp/list/organism
+wget -O tmp --no-check-certificate -q http://rest.kegg.jp/list/organism
 echo "done."
 awk '{$1=""}1' tmp | awk '{$1=$1}1' > tmp2
 awk 'NF{NF--};1' <tmp2 > $WORKDIR/organisms
@@ -227,18 +309,19 @@ echo ""
 echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/organisms | less
 echo "" ; rm tmp tmp2
-read -p "Please enter the abbreviation for organism you want to analyse:" ORGANISM
+read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept default: " -i "hsa" ORGANISM
+
 echo $ORGANISM > $WORKDIR/ORGANISM
 
 echo -n "Trying to retrieve the list of available metabolic pathways from KEGG, please wait..."
-curl -Lfs -o $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
+wget -O $vini_dir/tmp --no-check-certificate -q $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
 echo "done."
 cat tmp | sed "s/path:hsa//g" > $WORKDIR/pathways ; rm tmp
 
 echo "Next will be shown the list of available pathways (use bar to scroll and <q> to exit)."
 echo "Then choose the pathway number and press <enter>. Example: For screening collorectal cancer, enter 05210 ."
 echo ""
-echo "tip: For cancer type not in the list, choose 05200 (Pathways in cancer)."
+echo "tip: For cancer type not in the list, choose 05200 (general cancer pathway)."
 echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/pathways | less
 echo ""
@@ -246,12 +329,11 @@ read -p "Please enter the pathway number:" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
 
-
-read -p "Include the analysis of the specific cancer cell line (y/n)?" yesno #checking if cell line analysis will be performed
+read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept default: " -i "y" yesno
 if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
-    read -p "Please enter a cell line name (e.g. MDA-MB-231):" cell_line
+    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept default: " -i "EKVX" cell_line
     if  [ $cosmic == "y" ]
     then
         if  [ ! -e $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv ]
@@ -276,22 +358,22 @@ then
     echo $cell_line > $WORKDIR/cell_line
     echo "Creating ligands_list file with drugs in NCI-60 database."
     sh $vini_dir/create_NSC_numbers_file
-    > NCI-60_ligands_list
+    > $WORKDIR/NCI-60_ligands_list
     while read -r line
     do
         drugname=`echo $line | awk -F','  '{print $1}'`
         grep -w ${drugname} $vini_dir/database/ligands/ligands_list > tmp
         if [ -s tmp ]
         then
-            cat tmp >> NCI-60_ligands_list
+            cat tmp >> $WORKDIR/NCI-60_ligands_list
             echo $drugname "will be analysed."
         fi
     done < $vini_dir/database/NSC_numbers
 
-    read -p "Use ligands_list or NCI-60_ligands_list file [ligands_list/NCI-60_ligands_list]?" file
+    read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
-        mv NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
+        mv $WORKDIR/NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
         echo "yes" > $WORKDIR/validate_NCI-60_data
     else
         echo "no" > $WORKDIR/validate_NCI-60_data
@@ -310,7 +392,6 @@ ligands=`wc -l < $vini_dir/database/ligands/ligands_list` ; echo $ligands > $WOR
 #AD4_parameters.dat is located in $MGLTOOLS directory
 #Copy it to the working directory : http://autodock.scripps.edu/faqs-help/faq/how-do-i-add-new-atom-types-to-autodock-4
 
-
 echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
 if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
 then
@@ -321,7 +402,7 @@ else
     echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
 fi
 
-read -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, 3 with three drugs therapy etc):" therapy_level
+read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo $therapy_level > $WORKDIR/therapy_level
 
 grep -w "S" $vini_dir/database/ligands/ligands_list > tmp #create pdbqt files in case we are analyzing small molecules
@@ -332,7 +413,6 @@ else
 fi
 
 #sh $vini_dir/prepare_ligands
-
 sh $vini_dir/prepare_ligands_with_meeko
 
 rm -rf $WORKDIR/$cancer_type$data
@@ -345,25 +425,16 @@ cp $vini_dir/prep_prot_lig.py $WORKDIR
 num_modes=9
 echo $num_modes > $WORKDIR/num_modes
 
-read -p "enter the number of Vina exhaustive searches (default=8):" exhaustiveness
+read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept default : " -i "8" exhaustiveness
 echo $exhaustiveness > $WORKDIR/exhaustiveness
-echo $exhaustiveness "exhaustiveness will be used."
 
 box_size=40
 echo ${box_size} > $WORKDIR/box_size
 
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
+./VelikaVini
 
-squeue -u namd5 > tmp #checking for Rosetta antibody jobs
-grep rose tmp > tmp2 
-nolines=`wc -l < tmp2`
-rm tmp tmp2
-if  [ $nolines -gt $NULL ]
-then
-    echo "wait for Rosetta jobs to finish before starting Vini!"
-else
-    echo "You may now start Vini in the foreground with <sh VelikaVini> (output will be sent to the screen)"
-    echo "or in the background with <nohup ./VelikaVini &> (output will be sent to nohup.out file)"
-    echo "WARNING: If you are analyzing a specific cell line for the first time, start Vini in foreground."
-fi
+#echo "Vini will now continue to work in the background."
+#echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
+#nohup ./VelikaVini &

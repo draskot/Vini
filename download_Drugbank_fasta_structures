@@ -1,6 +1,5 @@
 NULL=0
 ONES=1
-DOWNLOAD_DIR=$vini_dir/database/ligands/pdb_files
 
 echo -n "checking if fasta files for mAb drugs are in place, please wait..."
 lineno=1
@@ -21,7 +20,7 @@ do
         fi
         if  [ -e $vini_dir/database/ligands/fasta_files/${drug}.fasta ] #check if drug is in repo
         then
-            echo $drug "found in repo."
+            echo "fasta sequence for $drug found in repo."
         else
             echo -n "searching for" $drug "in Drugbank..."
             echo "grep -w" "\"$drug\"" "drug?links.csv" > search
@@ -32,7 +31,7 @@ do
                 echo "drug found." 
                 DBID=`head -1 $vini_dir/tmp`
                 DBID=`echo $DBID | tr "," " " | awk '{print $1}'`
-                curl -Lfs -o $vini_dir/database/ligands/fasta_files/${drug}.fasta https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
+                wget -O $vini_dir/database/ligands/fasta_files/${drug}.fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
             else
                 echo -n $drugname "not found in Drugbank. Entry will be commented." 
                 awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/database/ligands/ligands_list > tmp

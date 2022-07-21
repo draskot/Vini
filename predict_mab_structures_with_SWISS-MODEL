@@ -1,1 +1,26 @@
-echo "The prediction of mab structures with SWISS-MODEL still not implemented." 
+echo -n "Predicting mAb structures with SWISS-MODEL, please wait..."
+outdir=$vini_dir/database/ligands/pdb_files
+FALSE=0
+TRUE=1
+
+echo $NULL > $WORKDIR/error
+while read -r line
+do
+    type=`echo $line | awk -F','  '{print $2}'`
+    if [ $type == P ]
+    then
+        antibody=`echo $line | awk -F','  '{print $1}'`
+        if [ ! -e $vini_dir/database/ligands/pdb_files/${antibody}.pdb ]
+        then
+            if [ ! -e $vini_dir/database/ligands/fasta_files/${antibody}.fasta ]
+            then
+                echo ${antibody}.fasta "not found in" $vini_dir/database/ligands/fasta_files folder 
+                echo $TRUE > $WORKDIR/error
+                break
+            else
+                fasta_file=$vini_dir/database/ligands/fasta_files/${antibody}.fasta
+                sh $vini_dir/test/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
+            fi
+        fi
+    fi
+done < $vini_dir/database/ligands/ligands_list

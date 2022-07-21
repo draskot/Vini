@@ -1,81 +1,45 @@
-
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
-#curl -s -d "dna_sequence=ATCG....AGCTAG&output_format=fasta" https://web.expasy.org/cgi-bin/translate/dna2aa.cgi > my_output.frame
-
 
 cell_line=$1
 
-NULL=0
-
-prediction_model=`cat $WORKDIR/prediction_model`
+prediction_model=`cat $WORKDIR/prediction_model` #AlphaFold parameters
+cpus=`cat $WORKDIR/AlphaFold_cpus`
+mem=`cat $WORKDIR/AlphaFold_mem`
+partition=`cat  $WORKDIR/AlphaFold_partition`
+base=`cat $WORKDIR/AlphaFold_base`
+model=monomer
 
 SEQDIR=$vini_dir/database/genes/sequences/
 
 echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
 rm -f $vini_dir/database/genes/sequences/*csv
 
+> $WORKDIR/mutated #create file with mutated gene names
+> $WORKDIR/combo
 ls $vini_dir/database/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
-i=1   #create and run job for DNA --> protein sequence translation
-while read -r line
+while read -r line              #DNA --> protein sequence translation
 do
-    CMD="curl -s -d"
-    A=\"dna_sequence=
-    SEQ=`cat $line`
-    FORMAT=\&output_format=fasta\"
-    LINK=https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
-    OUT=" > "
-    FILENAME=`basename "$line"`
-    echo $CMD $A$SEQ$FORMAT $LINK $OUT ${SEQDIR}_${FILENAME} > translate
-    chmod u+x translate
-    sh translate 
-    FRAMES=`basename -s .fasta ${SEQDIR}_${FILENAME} | cut -c2-`
-    mv ${SEQDIR}_${FRAMES}.fasta $SEQDIR${FRAMES}.frame
-    let "i++"
+    uniprot_id=`basename ${line} .fasta`
+    mutated_gene_name=${uniprot_id}-${cell_line}
+    echo $mutated_gene_name >> $WORKDIR/mutated
+    echo $uniprot_id $mutated_gene_name >> $WORKDIR/combo
+    dnaseq=`cat $line`
+    wget -O $SEQDIR${uniprot_id}.frame --post-data="dna_sequence=${dnaseq}&output_format=fasta" -q  https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
+    rm $SEQDIR/${uniprot_id}.fasta
     echo -n "."
 done < $WORKDIR/tmp
 echo "done."
 
+
 python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
 
-rm -f $vini_dir/database/genes/sequences/*frame
-ls $SEQDIR > seqnames             #rename proteins to include cell line name
-
-ls $vini_dir/database/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
-while read -r line
-do
-    FILENAME=`basename "$line"`
-    BASE=`basename -s .fasta $SEQDIR$FILENAME`
-    PROTNAME=${BASE}-${cell_line}.fasta
-    mv $SEQDIR$FILENAME $SEQDIR$PROTNAME
-done < $WORKDIR/tmp
-
-> tmp                            #create file with wild gene names
-while read -r line
-do
-    suffix=".fasta";
-    string=${line%$suffix};
-    echo $string >> tmp
-done < seqnames
-mv tmp wild
-
-> tmp
-ls $SEQDIR > mutated          #create file with mutated gene names
-while read -r line
-do
-    suffix=".fasta";
-    string=${line%$suffix};
-    echo $string >> tmp
-done < mutated
-mv tmp mutated
-
-paste -d' ' wild mutated > combo
-
-while read -r line #replacing wild genes  with mutated receptors_contracted file
+while read -r line #replacing wild genes with mutated in receptors_contracted file
 do
     wild=`echo $line | awk '{print $1}'`
     mutated=`echo $line | awk '{print $2}'`
+    mv $SEQDIR/${wild}.fasta $SEQDIR/${mutated}.fasta
     sed -i "s/$wild/$mutated/" $WORKDIR/receptors_contracted
-done < combo
+done < $WORKDIR/combo
 
 
 while read -r line
@@ -86,36 +50,30 @@ do
         then 
             cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
         else
+            fasta_file=$vini_dir/database/genes/sequences/${line}.fasta
             if  [ ${prediction_model} == A ]
             then
-                echo "Trying to predict" mutated $line "structure with AlphaFold."
-                cat $WORKDIR/alphafold > $WORKDIR/AlphaFold
-                echo "#SBATCH --job-name=A_"${uniprot_id} >> $WORKDIR/AlphaFold
-                echo "#SBATCH --output=$WORKDIR/alphafold.out."${uniprot_id} >> $WORKDIR/AlphaFold
-                echo "#SBATCH --error=$WORKDIR/alphafold.err."${uniprot_id}  >> $WORKDIR/AlphaFold
-                echo "python3 $AlphaFoldSTART --fasta-paths=${fasta_file} --cpus 48 --db-preset=full_dbs --model-preset=monomer --output-dir=$WORKDIR" >> $WORKDIR/AlphaFold
-                rm -rf $WORKDIR/${uniprot_id}
-                sh nodes_control_script ${MAX_NODES}
-                ${job_submit} $WORKDIR/AlphaFold
+                echo "Predicting mutated $line structure with AlphaFold."
+                sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
             else
-                echo "Trying to predict" mutated $line "structure with SWISS-MODEL."
-                fasta_file=$vini_dir/database/genes/sequences/${line}.fasta
+                echo "Predicting mutated $line structure with SWISS-MODEL."
                 sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
                 cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
             fi
         fi
     fi
-done < mutated
+done < $WORKDIR/mutated
 
 if  [ ${prediction_model} == A ]
 then
-    sh $vini_dir/wait_until_jobs_finish
-    while read -r line
+    sh $vini_dir/wait_until_jobs_finish #wait and then copy gene structures if predicted with AlphaFold
+    while read -r line    
     do
-        uniprot_id=$line #Ovo treba sve ispraviti!!!!!!!!!!!!!!!!!!!!!!!!!1
-        cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
-        cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
-    done < mutated
+        if  [[ ! -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]] && [[ ! -e $vini_dir/database/genes/pdb_files/${line}.pdb ]]
+        then
+            uniprot_id=$line 
+            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+            cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
+        fi
+    done < $WORKDIR/mutated
 fi
-
-rm -f wild mutated combo seqnames #cleanup
