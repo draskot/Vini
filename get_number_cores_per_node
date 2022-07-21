@@ -37,7 +37,7 @@ fi
     echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
     chmod u+x                                       $WORKDIR/get_number_of_cores
 
-echo "Trying to determine the available number of CPU threads per ${node_type} node. This may last up to $walltime seconds, please do not interrupt."
+echo "Trying to determine the number of CPU cores per ${node_type} node. This may last up to $walltime seconds, please do not interrupt."
 
 rm -f $WORKDIR/cores.*
 
@@ -48,7 +48,7 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    read -p  "Found $cores CPU threads per ${node_type} node. Accept [y] or enter the new value? " accept
+    read -p  "Found $cores CPU cores per ${node_type} node. Accept [y] or enter the new value? " accept
     if  [ $accept == y ]
     then
         if  [ ${node_type} == cpu ]
@@ -67,7 +67,8 @@ then
     fi
 else
     ${job_cancel} -u $USER ; echo
-    read -p "Failed to access any ${node_type} node. The possible reason is that nodes are temporarily allocated or unavailable. Write the number of CPU threads per ${node_type} node here:" cores
+    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
+    read -p "Write the number of CPU cores per ${node_type} node here:" cores
     if  [ ${node_type} == cpu ]
     then
         echo $cores > $WORKDIR/cpu_cores

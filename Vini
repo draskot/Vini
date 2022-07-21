@@ -42,13 +42,16 @@ fi
 mkdir -p $vini_dir/database/ligands/pdb_files #preparing directories
 mkdir -p $vini_dir/database/ligands/sdf_files
 mkdir -p $vini_dir/database/ligands/pdbqt_files
-mkdir -p $vini_dir/database/genes/pdb_files
-mkdir -p $vini_dir/database/genes/expressions 
-mkdir -p $vini_dir/database/genes/mutations
-mkdir -p $vini_dir/database/genes/sequences
-rm -f $vini_dir/database/genes/mutations/*   
-rm -f $vini_dir/database/genes/expressions/*
-rm -f $vini_dir/database/genes/sequences/*
+
+mkdir -p $vini_dir/genes
+mkdir -p $vini_dir/genes/pdb_files
+mkdir -p $vini_dir/genes/expressions 
+mkdir -p $vini_dir/genes/mutations
+mkdir -p $vini_dir/genes/sequences
+
+rm -f $vini_dir/genes/mutations/*   
+rm -f $vini_dir/genes/expressions/*
+rm -f $vini_dir/genes/sequences/*
 
 echo -n "Determining workload manager..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM

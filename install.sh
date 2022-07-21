@@ -232,7 +232,7 @@ then
         ./configure
         cd ReleaseMT/build
         make all_r
-        echo "#***BLAST***" >> $vini_dir/sourceme
+        echo "#***Blast***" >> $vini_dir/sourceme
         echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
         source $vini_dir/sourceme
         rm $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
@@ -323,6 +323,7 @@ then
        echo "done."
        echo "export ROSETTA_BIN=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin" >> $vini_dir/sourceme
        echo "export ROSETTA_DB=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/database" 
+       echo "export PATH=${ROSETTA_BIN}:\$PATH" >> $vini_dir/sourceme
     fi
     echo "nompi" > $WORKDIR/rosetta_version #tell Rosetta not to use MPI
 else

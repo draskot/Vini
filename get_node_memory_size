@@ -1,6 +1,7 @@
 node_type=$1
 walltime=$2
 
+percentage=90
 scheduler=`cat $WORKDIR/scheduler`
 version=`cat $WORKDIR/version`
 job_submit=`cat $WORKDIR/job_submit`
@@ -44,7 +45,7 @@ timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 if [ -e $WORKDIR/memory.out ]
 then
     line=`head -2  $WORKDIR/memory.out | tail -1`
-    memsize=`echo $line | awk '{print $7}'`
+    memsize=`echo $line | awk '{print $2}'`
     suffix=gb
     factor=1024
     echo $memsize > tmp
@@ -52,12 +53,15 @@ then
     grep G tmp > tmp2                    #now check what we have
     if [ -e tmp2 ]
     then                                 #we have Gigabytes
+        memsize=$(( memsize*${percentage}/100 ))
         memsize=${memsize}${suffix}
     else                                 #we have Terabytes. Multiply with 1024 
         memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
+        memsize=$(( memsize*${percentage}/100 ))
+        memsize=${memsize}${suffix}
     fi
 
-    read -p "Found $memsize available memory per ${node_type} node. Accept [y] or enter the new value (in GB): " accept
+    read -p "Calculated $memsize available memory per ${node_type} node (90% of total memory). Accept [y] or enter the new value (in GB): " accept
     if [ $accept == y ]
     then
         if  [ ${node_type} == cpu ]
@@ -76,7 +80,9 @@ then
     fi
 else
     ${job_cancel} -u $USER ; echo
-    read -p "Failed to access any ${node_type} node. The possible reason is that nodes are temporarily allocated or unavailable. Write the free memory size (in GB) per ${node_type} node here:" memsize
+    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
+    echo "You may consider at least 90% of the total installed memory as available."
+    read -p "Write the available memory size (in GB) per ${node_type} node here:" memsize
     if  [ ${node_type} == cpu ]
     then
         echo $memsize > $WORKDIR/cpu_memsize
