@@ -11,7 +11,7 @@ WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations'
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 
 def filterMutations(filename, genes_list):
-    gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapUniprotIDtoCosmicID(gene), gene) for gene in genes_list)
+    gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapUniprotIDToCosmicID(gene), gene) for gene in genes_list)
     mutation_samples_file = os.path.join(WORKING_DIR_MUTATIONS, filename)
     df = pd.read_csv(mutation_samples_file, sep=',', header=0, usecols=['GENE_NAME', ' ACCESSION_NUMBER',
                                                                         ' MUTATION_CDS', ' MUTATION_DESCRIPTION'])
@@ -48,15 +48,15 @@ def main(argv):
 
     mutation_file = os.listdir(WORKING_DIR_MUTATIONS)[0] # there should be only single file in working dir if working with cell lines
     mutations_df = filterMutations(mutation_file, genes_list)
+    print mutations_df
     for gene in genes_list:
-        try:
+        print "gene: ", gene
+        mutations = mutations_df[mutations_df['GENE_NAME'] == gene]
+        if not mutations.empty:
             sequence_filename = os.path.join(WORKING_DIR_SEQUENCES, gene + '_sequence.csv')
-            mutations = mutations_df[mutations_df['GENE_NAME'] == gene]
-            if not mutations.empty:
-                new_sequence = cosmicTools.applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES,sequence_filename))
-                cosmicTools.saveSequenceToFASTA(gene, new_sequence, WORKING_DIR_SEQUENCES)
-        except ValueError as e:
-            print "Unsuccessful applying of FASTA mutations for file %s" % mutation_file
+            new_sequence = cosmicTools.applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES,sequence_filename))
+            cosmicTools.saveSequenceToFASTA(gene, new_sequence, WORKING_DIR_SEQUENCES)
+
 
 
 if __name__ == "__main__":
