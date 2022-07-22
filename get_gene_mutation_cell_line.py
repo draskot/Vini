@@ -49,8 +49,8 @@ def getCellLineMutations(CELL_LINE):
                 global failed_downloads
                 failed_downloads.append("%s" % CELL_LINE)
                 return False
-        print "Unsuccessful download of mutations for cell line %s" % CELL_LINE
     except:
+        print "Unsuccessful download of mutations for cell line %s" % CELL_LINE
         return False
 
 
@@ -81,8 +81,9 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
                 global failed_downloads
                 failed_downloads.append("%s-%s" % (GENE_NAME, COSMIC_GENE_ID))
                 return False
-        print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
+        
     except:
+        print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
         return False
 
 def main(argv):
@@ -118,11 +119,14 @@ def main(argv):
     num_successful_downloads = 0
     for GENE_NAME in gene_list:
         try:
-            COSMIC_GENE_ID = cosmicTools.mapUniprotIDtoCosmicID(GENE_NAME)
+            print GENE_NAME
+            COSMIC_GENE_ID = cosmicTools.mapUniprotIDToCosmicID(GENE_NAME)
             fastaSeq = getFASTAseq(GENE_NAME, COSMIC_GENE_ID)
             if fastaSeq:
                 num_successful_downloads += 1
                 print 'FASTA sequence saved in file: %s' % fastaSeq
+            else:
+                print 'FASTA sequence not downloaded for ', GENE_NAME
         except:
             pass
     print ("Downloaded %s of %s FASTA sequences from list." % (num_successful_downloads, len(gene_list)))
