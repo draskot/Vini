@@ -234,22 +234,26 @@ then
     fi
 fi
 
-echo ; echo "If you never registered to SWISS-MODEL before, stop now. Go to https://swissmodel.expasy.org/  and register. Upon receiving the approval, enter your registration data here."
-read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
-if  [ $yesno == "n" ]
+if  [ $prediction_model == S ]
 then
-    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
-    read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
-    read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
-    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-    sh download_SWISS_MODEL_metadata
+    echo ; echo "If you have never registered with SWISS-MODEL before, stop now.. Go to https://swissmodel.expasy.org/  and register."
+    echo "Upon receiving approval, enter your registration data here."
+    read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+    if  [ $yesno == "n" ]
+    then
+        read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
+        read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
+        read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
+        chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+        sh download_SWISS_MODEL_metadata
+    fi
 fi
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
 
 if  [ $cosmic == "y" ]
 then
-    echo ; echo "If you never registered to COSMIC before, stop here. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving the approval, enter your registration email and password here."
+    echo ; echo "If you have never registered for COSMIC before, stop here.. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving approval, enter your registration email and password here."
     
     read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
     if  [ $yesno == "n" ]
@@ -274,7 +278,7 @@ then
     exp=exp
     kit="n"
 else
-    read -p "Do you want to include your own cancer gene expression data into analysis (y/n)?" kit
+    read -p "Do you want to include your own cancer gene expression data into the analysis (y/n)?" kit
     if   [ $kit == "y" ]
     then
         echo "vi editor will open. Write the data in the form: genename uniprotID expression. Then press <:wq!> to save the data!."
