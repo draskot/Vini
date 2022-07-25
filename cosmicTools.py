@@ -5,7 +5,7 @@ import time
 import csv
 from time import sleep
 
-TOKEN_NUMBER = "273903343529121845422409247389031449"
+TOKEN_NUMBER = "19411684925892402225170493140970502"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
 def mapUniprotIDToCosmicID(UNIPROT_ID):
@@ -82,15 +82,13 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
 
             if response.status_code == 200:
                 UNIPROT_ID =  response_payload["results"][0]["to"]
-                print "Mapped Cosmic ID %s to UniprotID: % s" % (COSMIC_ID, UNIPROT_ID)
+                print "Mapped Uniprot ID %s to Cosmic ID: % s" % (COSMIC_ID, UNIPROT_ID)
                 writer = csv.writer(f)
                 writer.writerow([COSMIC_ID, UNIPROT_ID])
                 return UNIPROT_ID
         except:
             print ('Error while contacting Uniprot mapping service')
             return False
-
-
 
 
 def getMutationFileName(GENE_NAME, WORKING_DIR):
