@@ -107,54 +107,43 @@ then
         sh add_expressions_to_receptors
         sh add_expressions_to_relations
     else
-        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
-        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/expressions
-        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/mutations
-        mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line/sequences
+        echo "cell line is ${cell_line} "
+        echo -n "Activating miniconda environment..."
+        source $INSTALL/miniconda2/bin/activate
+        conda activate env27
+        echo "done."
+        rm -f $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* #cleanup
+
+        cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions #as getting cell line expression file from COSMIC via API does not work, we are downloading it manually
+        echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
+        echo "If successfull, the results will be saved in the $vini_dir/genes/expressions directory. Please wait, this may take a while..."
+        python2 calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
+        if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
+        then
+            echo "Failed! Vini will stop now." ; exit
+        else
+            echo "success."
+        fi
+
+        echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
+        python2 get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
+        if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
+        then
+            echo "failed to download mutations from Cosmic! Vini will stop now." exit
+        else
+            echo "success."
+        fi
+
+        echo "brakepoint" ; sleep 1000
         
-        rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/*
 
-        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv ]
-        then
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions
-        else
-            #sh calculate_gene_expression_cell_line #unable to get cell line expression file from COSMIC via API
-            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions
-            cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/expressions
-        fi
-          
-        if  [ -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv ]
-        then
-            echo "mutations for $cell_line found in the database." 
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/mutations/${cell_line}_mutations.csv $vini_dir/database/genes/mutations
-        else
-            echo "trying to get mutations from Cosmic for $cell_line, please wait..."
-            python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
-            if  [ -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
-            then
-                cp $vini_dir/genes/mutations/${cell_line}_mutations.csv $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/mutations
-            else
-                exit
-            fi
-        fi
+        python2 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
 
-        ls $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/${cell_line}/sequences > tmp #check if sequences already exist
-        if  [ -s tmp ]
+
+        ls $vini_dir/genes/sequences > tmp
+        if  [ ! -s tmp ]
         then
-            echo "sequences for ${cell_line} found in the database."
-            cp $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences/* $vini_dir/genes/sequences
-        else
-            echo "getting sequences for ${cell_line}, please wait..."
-            python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
-        echo "brakepoint" ; sleep 10000
-            ls $vini_dir/genes/sequences > tmp
-            if  [ -s tmp ]
-            then
-                cp $vini_dir/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${cell_line}/sequences
-            else
-                echo $cell_line
-                echo "no sequences found."
-            fi
+            echo "failed to get any sequence." ; exit
         fi
 
 
