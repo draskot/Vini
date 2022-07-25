@@ -50,7 +50,6 @@ def main(argv):
     mutations_df = filterMutations(mutation_file, genes_list)
     print mutations_df
     for gene in genes_list:
-        print "gene: ", gene
         mutations = mutations_df[mutations_df['GENE_NAME'] == gene]
         if not mutations.empty:
             sequence_filename = os.path.join(WORKING_DIR_SEQUENCES, gene + '_sequence.csv')
