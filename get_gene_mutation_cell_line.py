@@ -120,17 +120,19 @@ def main(argv):
     # get CSV with wild type FASTA sequence from CosmicDB
     num_successful_downloads = 0
     for GENE_NAME in gene_list:
-        #try:
-        print GENE_NAME
-        COSMIC_GENE_ID = cosmicTools.mapUniprotIDToCosmicID(GENE_NAME)
-        fastaSeq = getFASTAseq(GENE_NAME, COSMIC_GENE_ID)
-        if fastaSeq:
-            num_successful_downloads += 1
-            print 'FASTA sequence saved in file: %s' % fastaSeq
-        else:
-            print 'FASTA sequence not downloaded for ', GENE_NAME
-        #except:
-        #    pass
+        while current_attempt < 5:
+            current_attempt += 1
+            try:
+                print GENE_NAME
+                COSMIC_GENE_ID = cosmicTools.mapUniprotIDToCosmicID(GENE_NAME)
+                fastaSeq = getFASTAseq(GENE_NAME, COSMIC_GENE_ID)
+                if fastaSeq:
+                    num_successful_downloads += 1
+                    print 'FASTA sequence saved in file: %s' % fastaSeq
+                else:
+                    print 'FASTA sequence not downloaded for ', GENE_NAME
+            except:
+                pass
     print ("Downloaded %s of %s FASTA sequences from list." % (num_successful_downloads, len(gene_list)))
     if failed_downloads:
         print ("These genes/cell-lines were not downloaded: %s" % ','.join(failed_downloads))
