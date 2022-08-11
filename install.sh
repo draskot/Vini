@@ -45,23 +45,23 @@ else
     echo "yes."
 fi
 
-echo -n "Checking if Meeko is installed..."
-grep Meeko $vini_dir/sourceme > tmp 
+echo -n "Checking if miniconda3 is installed..."
+grep miniconda3 $vini_dir/sourceme > tmp 
 if  [ ! -s tmp ]
 then
     echo "no."
     echo -n "Performing cleanup. Please be patient, this may take a while...."
     rm -rvf $INSTALL/miniconda3
     echo "done."
-    echo "Please wait while Meeko is downloaded and installed..."
+    echo "Please wait while downloading and installing miniconda3..."
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n meeko -c conda-forge numpy scipy rdkit
+    conda create -n meeko -c conda-forge numpy scipy rdkit absl
     conda activate meeko
     pip install meeko
     conda deactivate
-    echo "#***Meeko 0.3.0 section***" >> $vini_dir/sourceme
+    echo "#***miniconda3 section***" >> $vini_dir/sourceme
     rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
 else
     echo "yes."
@@ -173,6 +173,7 @@ then
     tar -xvf database.tar.bz2
     echo "done."
     echo "#***database***" >> $vini_dir/sourceme
+    rm database.tar.bz2
 else
     echo "yes."
 fi
