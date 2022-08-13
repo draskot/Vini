@@ -10,7 +10,11 @@ import requests
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
+<<<<<<< HEAD
 TOKEN_NUMBER = "67349757917521356248203254557134488"
+=======
+TOKEN_NUMBER = "19411684925892402225170493140970502"
+>>>>>>> 6b79163c8555d40ca440e41d8b979597d22b5114
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 
@@ -26,9 +30,10 @@ def getCellLineMutations(CELL_LINE):
     try:
         # print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                        "table=V92_38_MUTANT" + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
-        number_of_attempts = 10
+                        "table=V96_38_MUTANT" + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
+        number_of_attempts = 5
         current_attempt = 0
+        print "getCellLineMutations URL: ", download_url
         print ('Downloading gene mutations for cell line %s' % CELL_LINE)
         while current_attempt < number_of_attempts:
             current_attempt += 1
@@ -49,8 +54,8 @@ def getCellLineMutations(CELL_LINE):
                 global failed_downloads
                 failed_downloads.append("%s" % CELL_LINE)
                 return False
-        print "Unsuccessful download of mutations for cell line %s" % CELL_LINE
     except:
+        print "Unsuccessful download of mutations for cell line %s" % CELL_LINE
         return False
 
 
@@ -58,9 +63,10 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
     try:
         # print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                        "table=V92_38_ALLGENES" + "&" + "genename=" + COSMIC_GENE_ID + "&" + "token=" + TOKEN_NUMBER)
+                        "table=V96_38_ALLGENES" + "&" + "genename=" + COSMIC_GENE_ID + "&" + "token=" + TOKEN_NUMBER)
         number_of_attempts = 10
         current_attempt = 0
+        print download_url
         print ('Downloading FASTA sequence from CosmicDB for gene %s' % GENE_NAME)
         while current_attempt < number_of_attempts:
             current_attempt += 1
@@ -81,8 +87,9 @@ def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
                 global failed_downloads
                 failed_downloads.append("%s-%s" % (GENE_NAME, COSMIC_GENE_ID))
                 return False
-        print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
+        
     except:
+        print "Unsuccessful download of FASTA sequence from CosmicDB for gene % s" % GENE_NAME
         return False
 
 def main(argv):
@@ -117,14 +124,19 @@ def main(argv):
     # get CSV with wild type FASTA sequence from CosmicDB
     num_successful_downloads = 0
     for GENE_NAME in gene_list:
-        try:
-            COSMIC_GENE_ID = cosmicTools.mapUniprotIDtoCosmicID(GENE_NAME)
-            fastaSeq = getFASTAseq(GENE_NAME, COSMIC_GENE_ID)
-            if fastaSeq:
-                num_successful_downloads += 1
-                print 'FASTA sequence saved in file: %s' % fastaSeq
-        except:
-            pass
+        while current_attempt < 5:
+            current_attempt += 1
+            try:
+                print GENE_NAME
+                COSMIC_GENE_ID = cosmicTools.mapUniprotIDToCosmicID(GENE_NAME)
+                fastaSeq = getFASTAseq(GENE_NAME, COSMIC_GENE_ID)
+                if fastaSeq:
+                    num_successful_downloads += 1
+                    print 'FASTA sequence saved in file: %s' % fastaSeq
+                else:
+                    print 'FASTA sequence not downloaded for ', GENE_NAME
+            except:
+                pass
     print ("Downloaded %s of %s FASTA sequences from list." % (num_successful_downloads, len(gene_list)))
     if failed_downloads:
         print ("These genes/cell-lines were not downloaded: %s" % ','.join(failed_downloads))

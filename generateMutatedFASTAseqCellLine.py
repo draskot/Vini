@@ -50,14 +50,13 @@ def main(argv):
     mutations_df = filterMutations(mutation_file, genes_list)
     print mutations_df
     for gene in genes_list:
-        print "gene: ", gene
         mutations = mutations_df[mutations_df['GENE_NAME'] == gene]
         if not mutations.empty:
             sequence_filename = os.path.join(WORKING_DIR_SEQUENCES, gene + '_sequence.csv')
-            new_sequence = cosmicTools.applyMutationsToFASTA(mutations, os.path.join(WORKING_DIR_SEQUENCES,sequence_filename))
+            new_sequence = cosmicTools.applyMutationsToFASTA(mutations=mutations, FASTAfile=os.path.join(WORKING_DIR_SEQUENCES,sequence_filename))
             cosmicTools.saveSequenceToFASTA(gene, new_sequence, WORKING_DIR_SEQUENCES)
 
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(sys.argv[1:]) 

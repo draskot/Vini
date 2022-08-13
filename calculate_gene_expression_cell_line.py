@@ -12,7 +12,6 @@ WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes', 'expressions')
 
 def filterGeneExpression (WORKING_DIR, cell_line_name, genes_list):
     cosmicTools.mapUniprotIDToCosmicID('P17252')
-    print "genes_list: ", genes_list
     gene_list_cosmic_uniprot_dict = dict((cosmicTools.mapCosmicIDToUniprotID(gene), gene) for gene in genes_list)
     # load CSV with expressions
     expressions_file = os.path.join(WORKING_DIR, cell_line_name + '.csv')
@@ -22,7 +21,6 @@ def filterGeneExpression (WORKING_DIR, cell_line_name, genes_list):
     df = df[df[' GENE_NAME'].isin(gene_list_cosmic_uniprot_dict.keys())]
     print df[' GENE_NAME']
     #df = df[df[' GENE_NAME'].isin(genes_list)]
-    print df
     df = df.drop_duplicates()
     # mapping list of gene UNIPROT IDs to Cosmic IDs
     df[' GENE_NAME'] = df[' GENE_NAME'].apply(lambda name: gene_list_cosmic_uniprot_dict[name])

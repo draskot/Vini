@@ -5,7 +5,11 @@ import time
 import csv
 from time import sleep
 
+<<<<<<< HEAD
 TOKEN_NUMBER = "67349757917521356248203254557134488"
+=======
+TOKEN_NUMBER = "19411684925892402225170493140970502"
+>>>>>>> 6b79163c8555d40ca440e41d8b979597d22b5114
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
 def mapUniprotIDToCosmicID(UNIPROT_ID):
@@ -33,7 +37,6 @@ def mapUniprotIDToCosmicID(UNIPROT_ID):
             return response
         response = check_status(job_id)
         response_payload = response.json()
-        print response_payload
         while "jobStatus" in response_payload.keys():
             sleep (0.5)
             print "Checking ID mapping job status for ", UNIPROT_ID
@@ -83,15 +86,13 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
 
             if response.status_code == 200:
                 UNIPROT_ID =  response_payload["results"][0]["to"]
-                print "Mapped Cosmic ID %s to UniprotID: % s" % (COSMIC_ID, UNIPROT_ID)
+                print "Mapped Uniprot ID %s to Cosmic ID: % s" % (COSMIC_ID, UNIPROT_ID)
                 writer = csv.writer(f)
                 writer.writerow([COSMIC_ID, UNIPROT_ID])
                 return UNIPROT_ID
         except:
             print ('Error while contacting Uniprot mapping service')
             return False
-
-
 
 
 def getMutationFileName(GENE_NAME, WORKING_DIR):
@@ -175,7 +176,8 @@ def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
 
 def saveSequenceToFASTA(GENE_NAME, sequence, WORKING_DIR):
     try:
-        file_path = os.path.join(WORKING_DIR, GENE_NAME + '.fasta')
+        file_path = os.path.join(WORKING_DIR, GENE_NAME + '_mutated.fasta')
+        print file_path
         with open(file_path, 'w') as fasta_file:
             fasta_file.write(sequence)
             print "Mutated sequence saved to %s" %file_path
@@ -188,6 +190,7 @@ def saveSequenceToFASTA(GENE_NAME, sequence, WORKING_DIR):
 def applyMutationsToFASTA(mutations, FASTAfile):
     # mutations are expected as pandas dataframe output
     try:
+        print "FASTAfile: ", FASTAfile
         with open(FASTAfile) as csvfile:
             reader = csv.reader(csvfile, delimiter='\n')
             header = next(reader)
