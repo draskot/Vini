@@ -29,7 +29,7 @@ do
     if [ $entry != pubchem ]
     then
         echo -n "Uniprot ID is" $Uniprot_ID "Trying to find gene name for protein" $Uniprot_ID
-        grep -w "$Uniprot_ID" $vini_dir/database/genes/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
+        grep -w "$Uniprot_ID" $vini_dir/genes/Uniprot_gene_table > $WORKDIR/tmp #check if gene already exists
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -ne $NULL  ]
         then
@@ -44,7 +44,7 @@ do
                 gene=`grep $entry $vini_dir/nouniprotid`
                 gene=`echo $gene | awk '{print $2}'`
                 Uniprot_ID=$gene
-                echo $Uniprot_ID $gene  >> $vini_dir/database/genes/Uniprot_gene_table #add entry to the table
+                echo $Uniprot_ID $gene  >> $vini_dir/genes/Uniprot_gene_table #add entry to the table
             else
                 echo -n " searching for gene in Uniprot..."
                 echo ${Uniprot_ID}
@@ -53,7 +53,7 @@ do
                 if  [ $gene != "Error" ]
                 then
                     echo "gene" $gene "found in Uniprot."
-                    echo $Uniprot_ID $gene >> $vini_dir/database/genes/Uniprot_gene_table #add entry to the table
+                    echo $Uniprot_ID $gene >> $vini_dir/genes/Uniprot_gene_table #add entry to the table
                 else
                     echo "ERROR! gene" $gene "not found in Uniprot and not exists in nouniprotid list! STOP and clear this gene!" ; sleep 1000000
                 fi
@@ -69,14 +69,14 @@ do
     then
         z_score=0.000
     else
-        grep -w "$gene" $vini_dir/database/genes/expressions/${cell_line}.csv > $WORKDIR/tmp
+        grep -w "$gene" $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv > $WORKDIR/tmp
         nolines=`wc -l < $WORKDIR/tmp`
         if  [ $nolines -eq $NULL  ] #check if gene found in the expression table
         then
-            echo "gene" $gene "NOT FOUND in" $vini_dir/database/genes/expressions/${cell_line}.csv 
+            echo "gene" $gene "NOT FOUND in" $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv 
             z_score=0.000          
         else
-            echo "gene" $gene "FOUND in" $vini_dir/genes/expressions/${cell_line}.csv
+            echo "gene" $gene "FOUND in" $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv
             if [ $cosmic == y ] #wether we take gene expressions or not into the consideration
             then
                 z_score=`cat $WORKDIR/tmp | awk -F',' '{print $5}'`

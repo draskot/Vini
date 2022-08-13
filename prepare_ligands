@@ -4,6 +4,9 @@ job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
 
+
+echo "Preparing ligand pdbqt files, please wait..."
+
 cd $WORKDIR
 i=1
 while  read -r line
