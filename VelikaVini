@@ -118,13 +118,7 @@ then
         echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
         echo "If successfull, the results will be saved in the $vini_dir/genes/expressions directory. Please wait, this may take a while..."
         python2 calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
-        if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
-        then
-            echo "Failed! Vini will stop now." ; exit
-        else
-            echo "success."
-        fi
-
+        
         echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
         python2 get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
         if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
@@ -134,11 +128,7 @@ then
             echo "success."
         fi
 
-        echo "brakepoint" ; sleep 1000
-        
-
         python2 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
-
 
         ls $vini_dir/genes/sequences > tmp
         if  [ ! -s tmp ]

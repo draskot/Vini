@@ -81,17 +81,16 @@ do
     fi
 done < $WORKDIR/mutated
 
-if  [ ${prediction_model} == A ]
+if  [[ ${prediction_model} == A ]] && [[ -e $WORKDIR/mutated ]]
 then
     sh $vini_dir/wait_until_jobs_finish #wait and then copy gene structures if predicted with AlphaFold
     while read -r line    
     do
-        if  [[ ! -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]] && [[ ! -e $vini_dir/database/genes/pdb_files/${line}.pdb ]]
+        if  [ ! -e $vini_dir/database/genes/pdb_files/${line}.pdb ]
         then
-            uniprot_id=$line 
-            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
-            cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
+            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${line}.pdb
         fi
     done < $WORKDIR/mutated
+    rm $WORKDIR/mutated
 fi
 
