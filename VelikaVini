@@ -73,10 +73,13 @@ then
         echo " Exiting." ; exit
     fi
       
+    rm -f $vini_dir/genes/cosmic_ids.csv
+    rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* 
     echo -n "Activating miniconda environment..."
     source $INSTALL/miniconda2/bin/activate
     conda activate env27
     echo "done."
+
     if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
     then
         if [ $cosmic == y ]
@@ -108,19 +111,18 @@ then
         sh add_expressions_to_relations
     else
         echo "cell line is ${cell_line} "
-        echo -n "Activating miniconda environment..."
-        source $INSTALL/miniconda2/bin/activate
-        conda activate env27
-        echo "done."
-        rm -f $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* #cleanup
-
-        cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions #as getting cell line expression file from COSMIC via API does not work, we are downloading it manually
+        cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
         echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
         echo "If successfull, the results will be saved in the $vini_dir/genes/expressions directory. Please wait, this may take a while..."
         python2 calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
         
         echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
+        rm $vini_dir/genes/cosmic_ids.csv
+
         python2 get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
+        
+        rm $vini_dir/genes/cosmic_ids.csv
+    
         if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
         then
             echo "failed to download mutations from Cosmic! Vini will stop now." exit
@@ -129,7 +131,7 @@ then
         fi
 
         python2 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
-        echo "brakepoint" ; sleep 1000
+        
 
         ls $vini_dir/genes/sequences > tmp
         if  [ ! -s tmp ]
@@ -137,12 +139,12 @@ then
             echo "failed to get any sequence." ; exit
         fi
 
-
-
         if  [ $cosmic == y ]
         then
             sh predict_mutated_proteins ${cell_line}
         fi
+        
+
         echo -n "Adding gene expressions to receptors and relations..."
         sh add_cell_expressions_to_receptors
         sh add_expressions_to_relations
@@ -172,6 +174,7 @@ then
     sh copy_genes_to_stage              #Copy pdb receptor files to the stage
     drugtype=`cat $WORKDIR/drugtype`
     if [ $drugtype == small ] ; then #create receptor pdbqt files
+       echo "Preparing pdbqt files for Vina docking. Please wait, may take a while."
        sh $vini_dir/create_receptor_pdbqt_files
     fi
     complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
@@ -179,6 +182,7 @@ then
 fi
 
 sh malavini 
+
 
 end_date=`date`
 echo "Analysis completed at"  $end_date

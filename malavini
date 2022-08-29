@@ -21,10 +21,6 @@ max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 ligands=`wc -l < $vini_dir/database/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
-NTOMP=`cat $WORKDIR/Gromacs_threads`
-
-#export target_dir comp_index #vars for (SGE) compute_FBE/Vina script
-# export NTOMP #nr OMP threads (SGE) MD_run/MD_prep scripts will use
 
 DIR=$WORKDIR/${CANCER_TYPE}_data 
 lig_source=$WORKDIR

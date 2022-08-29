@@ -48,35 +48,40 @@ dos2unix $vini_dir/genes/cosmic_ids.csv
 
 while read -r line
 do
-    uniprot_id=`echo $line | cut -f1 -d"-"`
-    gene=`grep ${uniprot_id} ${vini_dir}/genes/cosmic_ids.csv | head -1`     #add header line
-    gene=`echo $gene | awk -F','  '{print $2}'`
-    echo ">sp|${line}|mutated gene ${gene} OS=Homo sapiens OX=9606 GN=${gene} PE=1 SV=4" > $WORKDIR/tmp
-    grep - $vini_dir/genes/sequences/${line}.fasta > hyphen
-    if  [ -s hyphen ]    #remove hiphen if exists in fasta sequence
-    then 
-        cat $vini_dir/genes/sequences/${line}.fasta | tr -d - >> $WORKDIR/tmp
-        rm hyphen
+    if  [ -e $vini_dir/database/genes/pdb_files/${line}.pdb ]
+    then
+        echo "The structure for mutated ${uniprot_id} exist in database, no need for prediction"
     else
-        cat $vini_dir/genes/sequences/${line}.fasta >> $WORKDIR/tmp
-    fi
-    mv $WORKDIR/tmp $vini_dir/genes/sequences/${line}.fasta
-
-    if  [ -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]
-    then 
-        cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
-    else
-        fasta_file=$vini_dir/genes/sequences/${line}.fasta
-
-        if  [ ${prediction_model} == A ]
-        then
-            echo "Predicting mutated $line structure with AlphaFold."
-            #echo "cpus: ${cpus} mem: ${mem} partition: ${partition} base: ${base} model: ${model} fasta: ${fasta_file}"
-            sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
+        echo "Trying to predict the structure for mutated ${uniprot_id}..."
+        uniprot_id=`echo $line | cut -f1 -d"-"`
+        gene=`grep ${uniprot_id} ${vini_dir}/genes/cosmic_ids.csv | head -1`     #add header line
+        gene=`echo $gene | awk -F','  '{print $2}'`
+        echo ">sp|${line}|mutated gene ${gene} OS=Homo sapiens OX=9606 GN=${gene} PE=1 SV=4" > $WORKDIR/tmp
+        grep - $vini_dir/genes/sequences/${line}.fasta > hyphen
+        if  [ -s hyphen ]    #remove hiphen if exists in fasta sequence
+        then 
+            cat $vini_dir/genes/sequences/${line}.fasta | tr -d - >> $WORKDIR/tmp
+            rm hyphen
         else
-            echo "Predicting mutated $line structure with SWISS-MODEL."
-            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
-            cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
+            cat $vini_dir/genes/sequences/${line}.fasta >> $WORKDIR/tmp
+        fi
+        mv $WORKDIR/tmp $vini_dir/genes/sequences/${line}.fasta
+
+        if  [ -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]
+        then 
+            cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
+        else
+            fasta_file=$vini_dir/genes/sequences/${line}.fasta
+
+            if  [ ${prediction_model} == A ]
+            then
+                echo "Predicting mutated $line structure with AlphaFold."
+                sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
+            else
+                echo "Predicting mutated $line structure with SWISS-MODEL."
+                sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file}
+                cp $vini_dir/database/genes/pdb_files/${line}.pdb $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations
+            fi
         fi
     fi
 done < $WORKDIR/mutated
@@ -93,4 +98,3 @@ then
     done < $WORKDIR/mutated
     rm $WORKDIR/mutated
 fi
-
