@@ -177,6 +177,7 @@ do
                  fi
                  echo "source $INSTALL/miniconda2/bin/activate" >> ${target_dir}/mat_${lig_index}
                  echo "conda activate env27"  >> ${target_dir}/mat_${lig_index}
+                 echo "WORKDIR=${WORKDIR}" >> ${target_dir}/mat_${lig_index}
                  echo "python2 $vini_dir/create_energy_binding_matrix.py" >> ${target_dir}/mat_${lig_index}
                  echo "conda deactivate" >> ${target_dir}/mat_${lig_index}
                  ${job_submit} ${target_dir}/mat_${lig_index}
