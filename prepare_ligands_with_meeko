@@ -22,6 +22,11 @@ do
             cat $WORKDIR/meeko > meeko_run
             echo "source $INSTALL/miniconda3/bin/activate" >> meeko_run
             echo "conda activate meeko" >> meeko_run
+            if [ -e $WORKDIR/failed_nodes ]
+            then
+                failed_nodes=`cat $WORKDIR/failed_nodes`
+                echo "#SBATCH --exclude=${failed_nodes}" >> meeko_run  #node not working properly 
+            fi
             echo "mk_prepare_ligand.py -i $vini_dir/database/ligands/sdf_files/${drugname}.sdf -o $WORKDIR/ligand_${lig_index}.pdbqt" >> meeko_run
             echo "if [ -e $WORKDIR/ligand_${lig_index}.pdbqt ] ; then" >> meeko_run
             echo "cp $WORKDIR/ligand_${lig_index}.pdbqt $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt" >> meeko_run

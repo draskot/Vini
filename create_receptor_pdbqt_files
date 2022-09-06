@@ -1,3 +1,4 @@
+
 cancer_type=`cat $WORKDIR/cancer_type`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
@@ -25,9 +26,15 @@ do
     b=`basename $j .pdb`
     cat $WORKDIR/Vina > Vina_run
     echo "#SBATCH --job-name=create_pdbqt"   >> Vina_run
-    echo "#SBATCH --output=create_pdbqt.out" >> Vina_run
-    #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run
+    echo "#SBATCH --output=$dir/prepare.out" >> Vina_run
+    echo "#SBATCH --output=$dir/prepare.err" >> Vina_run
+    if [ -e $WORKDIR/failed_nodes ]
+    then
+        failed_nodes=`cat $WORKDIR/failed_nodes`
+        echo "#SBATCH --exclude=${failed_nodes}" >> Vina_run  #node not working properly
+    fi
     echo "prepare_receptor -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run
+    #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run
     chmod +x Vina_run
     $job_submit Vina_run
     sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}

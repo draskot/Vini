@@ -59,8 +59,9 @@ grep "command not found" tmp > tmp2 ; mv tmp2 tmp
 nolines=`wc -l < tmp`
 if  [ $nolines -eq $NULL ]
 then
-    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel ; sh determine_SLURM_environment
+    echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel
     echo "SLURM" > $WORKDIR/scheduler
+    sh determine_SLURM_environment
     version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
 else
     if [ -d /opt/sge ]
@@ -137,6 +138,16 @@ rm -f *err *out
 cd $vini_dir
 
 cat COPYRIGHT
+
+read -p "If you aware of node(s) not working properly (e.g. cn0048), type in their names in a comma-separated list (e.g. cn0048, cn0049, ...) or <enter> to skip:" failed_nodes
+echo ${failed_nodes} > $WORKDIR/failed_nodes
+chars=`wc -c < $WORKDIR/failed_nodes`
+if [ $chars -ne $ONES ]
+then
+    echo ${failed_nodes} > $WORKDIR/failed_nodes
+else
+    rm -f $WORKDIR/failed_nodes
+fi
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
@@ -374,7 +385,7 @@ then
         fi
     done < $vini_dir/database/NSC_numbers
 
-    read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "ligands_list" file
+    read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "NCI-60_ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
         mv $WORKDIR/NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
@@ -417,6 +428,7 @@ else
 fi
 
 #sh $vini_dir/prepare_ligands
+echo "Creating ligand pdbqt files with meeko, please wait."
 sh $vini_dir/prepare_ligands_with_meeko
 
 rm -rf $WORKDIR/$cancer_type$data
@@ -437,8 +449,8 @@ echo ${box_size} > $WORKDIR/box_size
 
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
-./VelikaVini
 
+./VelikaVini
+#nohup ./VelikaVini &
 #echo "Vini will now continue to work in the background."
 #echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
-#nohup ./VelikaVini &

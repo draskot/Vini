@@ -4,6 +4,7 @@
 #  modification date: 09/03/2022
 
 target_dir=$1
+WORKDIR=$2
 
 random_affinity=`cat $WORKDIR/random_affinity`
 complexes=`cat $WORKDIR/complexes`
@@ -19,7 +20,7 @@ then
         #printf -v n "%03d" $N
         printf -v log_index "%03d" $N
         
-        if  [[ -e ${target_dir}/log_${log_index}.txt ]]
+        if  [ -e ${target_dir}/log_${log_index}.txt ]
         then
             nolines=`wc -l < ${target_dir}/log_${log_index}.txt`
             if  [ $nolines -ne $ONES ]

@@ -42,6 +42,8 @@ esac
 
 ligand_number=1                #initializing ligand index
 
+echo "Calculating free binding energies. This may take a while, please be patient."
+
 for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
     for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
@@ -52,7 +54,6 @@ do
              for (( M=1; M<$((L4+1)); M++ )) #4th loop - 1st thl
              do
                  printf -v lig_index "%03d" $M  
-                 
                  case $therapy_level in
                      1) comp_source=$DIR;          target_dir=$DIR/$M ;;
                      2) comp_source=$DIR/$M;       target_dir=$DIR/$M/$L ;;
@@ -95,6 +96,11 @@ do
                              cat $WORKDIR/Vina > Vina_run
                              echo "#SBATCH --job-name=Vina_${M}_${N}"   >> Vina_run
                              echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> Vina_run
+                             if [ -e $WORKDIR/failed_nodes ]
+                             then
+                                 failed_nodes=`cat $WORKDIR/failed_nodes`
+                                 echo "#SBATCH --exclude=${failed_nodes}" >> Vina_run 
+                             fi
                              echo "vina --cpu 4 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt" >> Vina_run
                              chmod u+x Vina_run
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
@@ -141,30 +147,73 @@ do
 
                  sh $vini_dir/wait_until_jobs_finish
 
-                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}         #create affinity vector
+                 echo "Creating binding energy vector, please wait."
+                 rm -f ${target_dir}/vec*
+                 cat $WORKDIR/Vina > ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --job-name=vec_${lig_index}"   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err" >> ${target_dir}/vec_${lig_index}
+                 if [ -e $WORKDIR/failed_nodes ]
+                 then
+                     failed_nodes=`cat $WORKDIR/failed_nodes`
+                     echo "#SBATCH --exclude=${failed_nodes}" >> ${target_dir}/vec_${lig_index} 
+                 fi
                  cat $vini_dir/create_vector >> ${target_dir}/vec_${lig_index}
                  chmod u+x ${target_dir}/vec_${lig_index}
-                 ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir}
+                 ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir} ${WORKDIR}
                  sh $vini_dir/wait_until_jobs_finish
+
                  
-                 echo $target_dir > target_dir                                #create SLEM
+                 echo "Creating binding energy matrix, please wait."
+                 echo ${target_dir} > target_dir
                  cat $WORKDIR/Vina > ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --job-name=mat_${lig_index}"   >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err" >> ${target_dir}/mat_${lig_index}
+                 if [ -e $WORKDIR/failed_nodes ]
+                 then
+                     failed_nodes=`cat $WORKDIR/failed_nodes`
+                     echo "#SBATCH --exclude=${failed_nodes}" >> ${target_dir}/mat_${lig_index} 
+                 fi
                  echo "source $INSTALL/miniconda2/bin/activate" >> ${target_dir}/mat_${lig_index}
                  echo "conda activate env27"  >> ${target_dir}/mat_${lig_index}
                  echo "python2 $vini_dir/create_energy_binding_matrix.py" >> ${target_dir}/mat_${lig_index}
+                 echo "conda deactivate" >> ${target_dir}/mat_${lig_index}
+                 ${job_submit} ${target_dir}/mat_${lig_index}
+                 sh $vini_dir/wait_until_jobs_finish
+
+
+                 echo "brakepoint target_dir: ${target_dir}" ; sleep 1000
+                 
+                 echo "Calculating SLEM."
+                 cat $WORKDIR/Vina > ${target_dir}/SLEM_${lig_index}
+                 echo "#SBATCH --job-name=SLEM_${lig_index}"   >> ${target_dir}/SLEM_${lig_index}
+                 echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/SLEM_${lig_index}
+                 echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err" >> ${target_dir}/SLEM_${lig_index}
+                 if [ -e $WORKDIR/failed_nodes ]
+                 then
+                     failed_nodes=`cat $WORKDIR/failed_nodes`
+                     echo "#SBATCH --exclude=${failed_nodes}" >> ${target_dir}/SLEM_${lig_index} 
+                 fi
+                 echo "source $INSTALL/miniconda2/bin/activate" >> ${target_dir}/SLEM_${lig_index}
+                 echo "conda activate env27"  >> ${target_dir}/mat_${lig_index}
                  echo "python2 $vini_dir/compute_eigenvalues_old.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/mat_${lig_index}
                  echo "conda deactivate" >> ${target_dir}/mat_${lig_index}
                  chmod u+x ${target_dir}/mat_${lig_index}
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
 
+
+
+                 echo "Writing computed SLEM values, please wait."
                  cat $WORKDIR/Vina > ${target_dir}/SLEM_${lig_index} #store SLEM
                  echo "#SBATCH --job-name=SLEM_${lig_index}"   >> ${target_dir}/SLEM_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/SLEM_${lig_index}
+                 if [ -e $WORKDIR/failed_nodes ]
+                 then
+                     failed_nodes=`cat $WORKDIR/failed_nodes`
+                     echo "#SBATCH --exclude=${failed_nodes}" >> ${target_dir}/SLEM_${lig_index} 
+                 fi
                  cat $vini_dir/store_SLEM_value >> ${target_dir}/SLEM_${lig_index}
                  ${job_submit} ${target_dir}/SLEM_${lig_index} ${M} ${L} ${J} ${I} ${target_dir} 
                  sh $vini_dir/wait_until_jobs_finish
@@ -175,6 +224,7 @@ do
     done            #end of 2nd loop
 done                #end of 1st loop
 
+
 sh $vini_dir/wait_until_jobs_finish
 
 if  [ $cosmic == y ] ; then
@@ -183,34 +233,54 @@ else
     exp=noexp
 fi
 cp SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
-echo "deleting equal SLEM entries with equal indices, please wait..."
+echo "Deleting equal SLEM entries with equal indices, please wait..."
 cat $WORKDIR/Vina > $WORKDIR/postproc                 
+if [ -e $WORKDIR/failed_nodes ]
+then
+    failed_nodes=`cat $WORKDIR/failed_nodes`
+    echo "#SBATCH --exclude=${failed_nodes}" >>  $WORKDIR/postproc
+fi
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 chmod u+x $WORKDIR/postproc
 $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
-echo "creating SLEM named lists, please wait..."
+echo "Creating SLEM named lists, please wait."
 cat $WORKDIR/Vina > $WORKDIR/postproc   
+if [ -e $WORKDIR/failed_nodes ]
+then
+    failed_nodes=`cat $WORKDIR/failed_nodes`
+    echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/postproc 
+fi
 cat $vini_dir/create_SLEM_named_list >> $WORKDIR/postproc
 chmod u+x $WORKDIR/postproc
 $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
 if [ $therapy_level -ne $ONES ] ; then  
-   echo "creating SLEM wings list, please wait..."
+   echo "Creating SLEM wings list, please wait."
    cat $WORKDIR/Vina > $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_list >> $WORKDIR/postproc
+   if [ -e $WORKDIR/failed_nodes ]
+   then
+       failed_nodes=`cat $WORKDIR/failed_nodes`
+       echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/postproc 
+   fi
    chmod u+x postproc
    $job_submit $WORKDIR/postproc
    sh $vini_dir/wait_until_jobs_finish
 
-   echo "creating SLEM wings named list, please wait..."
+   echo "Creating SLEM wings named list, please wait."
    cat $WORKDIR/Vina > $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_named_list >> $WORKDIR/postproc
+   if [ -e $WORKDIR/failed_nodes ]
+   then
+       failed_nodes=`cat $WORKDIR/failed_nodes`
+       echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/postproc 
+   fi
    chmod u+x postproc
    $job_submit $WORKDIR/postproc
    sh $vini_dir/wait_until_jobs_finish
 fi
 
-echo "done. The results are in " $WORKDIR/${CANCER_PATHWAY}_results "directory."
+echo "Done. The results are in " $WORKDIR/${CANCER_PATHWAY}_results "directory."
