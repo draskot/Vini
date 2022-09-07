@@ -9,7 +9,7 @@ dir=$WORKDIR/${cancer_type}_data
 cd $WORKDIR/${cancer_type}_data
 rm -f *pdbqt
 
-echo -n "renaming receptors to complexes..."
+echo "Renaming receptors to complexes, please wait."
 ls receptor_???.pdb > rlist
 n=1
 while read -r line
@@ -18,25 +18,29 @@ do
     cp $line complex_${i}.pdb
     let "n++"
 done < rlist
-echo "done."
 
-echo "Creating receptor pdbqt files..."
-for j in complex_???.pdb  #create pdbqt files
+echo "Creating receptor pdbqt files.Please wait."
+partition=`cat $WORKDIR/cpu_partition`
+for j in complex_???.pdb 
 do
     b=`basename $j .pdb`
-    cat $WORKDIR/Vina > Vina_run
-    echo "#SBATCH --job-name=create_pdbqt"   >> Vina_run
-    echo "#SBATCH --output=$dir/prepare.out" >> Vina_run
-    echo "#SBATCH --output=$dir/prepare.err" >> Vina_run
+    echo "#!/bin/bash"                                                            > prepare_receptor
+    echo "#SBATCH --time=00:60:00"                                               >> prepare_receptor
+    echo "#SBATCH --partition="$partition                                        >> prepare_receptor
+    echo "#SBATCH --cpus-per-task=1"                                             >> prepare_receptor
+    echo "#SBATCH --mem=2gb"                                                     >> prepare_receptor
+    echo "#SBATCH --job-name=create_pdbqt"                                       >> prepare_receptor
+    echo "#SBATCH --output=$dir/prepare_receptor.out"                            >> prepare_receptor
+    echo "#SBATCH --error=$dir/prepare_receptor.err"                             >> prepare_receptor
     if [ -e $WORKDIR/failed_nodes ]
     then
         failed_nodes=`cat $WORKDIR/failed_nodes`
-        echo "#SBATCH --exclude=${failed_nodes}" >> Vina_run  #node not working properly
+        echo "#SBATCH --exclude=${failed_nodes}"                                 >> prepare_receptor
     fi
-    echo "prepare_receptor -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run
-    #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> Vina_run
-    chmod +x Vina_run
-    $job_submit Vina_run
+    echo "prepare_receptor -r $dir/$b.pdb -o $dir/$b.pdbqt "                     >> prepare_receptor
+    #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> prepare_receptor
+    chmod +x prepare_receptor
+    $job_submit prepare_receptor
     sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
 done
 sh $vini_dir/wait_until_jobs_finish

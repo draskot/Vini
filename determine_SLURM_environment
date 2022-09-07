@@ -1,6 +1,3 @@
-
-
-
 if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]
 then
     cpu_partition=`cat $WORKDIR/cpu_partition`

@@ -27,6 +27,7 @@ then
     failed_nodes=`cat $WORKDIR/failed_nodes`
     echo "#SBATCH --exclude=${failed_nodes}"                >> $WORKDIR/AlphaFold  #failed nodes
 fi
+echo "WORKDIR=${WORKDIR}"                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=A_"${antibody}                    >> $WORKDIR/AlphaFold
 echo "#SBATCH --output=$WORKDIR/alphafold.${antibody}.out" >> $WORKDIR/AlphaFold
