@@ -31,12 +31,12 @@ fi
 
 sh $vini_dir/clean
 
-echo -n "Checking for ligands_list file..."
+echo -n "Checking for the ligands_list file..."
 if [ -e $vini_dir/ligands/ligands_list ]
 then
     echo passed.
 else
-    echo "you must provide ligand list. Exiting..." ; exit
+    echo "you must provide ligand list. Exiting." ; exit
 fi
 
 mkdir -p $vini_dir/ligands/pdb_files #preparing directories
@@ -139,30 +139,37 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-if [ -e $WORKDIR/failed_nodes ]
+#if [ -e $WORKDIR/failed_nodes ]
+#then
+#    failed_nodes=`cat $WORKDIR/failed_nodes`
+#    echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
+#    echo "If you aware of any additional node(s) in failure, type their names in a comma-separated list."
+#    read -p "(e.g. cn0048,cn0617 etc. ) or <enter> to skip:" add_nodes
+#    length=`echo ${add_nodes} | wc -c`
+#    if  [ $length -gt $ONES ]
+#    then
+#        comma=,
+#        echo ${failed_nodes}${comma}${add_nodes} > $WORKDIR/failed_nodes
+#    fi
+#else
+#    echo "If you aware of any node(s) in failure, type their names here in a comma-separated list."
+#    read -p "E.g. cn0048,cn0617 etc. or press <enter> to skip:" add_nodes
+#    length=`echo ${add_nodes} | wc -c`
+#    if  [ $length -gt $ONES ]
+#    then
+#        echo ${add_nodes} > $WORKDIR/failed_nodes
+#        echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
+#    fi
+#fi
+
+sh $vini_dir/nodetest
+if  [ -s $WORKDIR/failed_nodes ]
 then
-    failed_nodes=`cat $WORKDIR/failed_nodes`
-    echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
-    echo "If you aware of any additional node(s) in failure, type their names in a comma-separated list."
-    read -p "(e.g. cn0048,cn0617 etc. ) or <enter> to skip:" add_nodes
-    length=`echo ${add_nodes} | wc -c`
-    if  [ $length -gt $ONES ]
-    then
-        comma=,
-        echo ${failed_nodes}${comma}${add_nodes} > $WORKDIR/failed_nodes
-    fi
-else
-    echo "If you aware of any node(s) in failure, type their names here in a comma-separated list."
-    read -p "E.g. cn0048,cn0617 etc. or press <enter> to skip:" add_nodes
-    length=`echo ${add_nodes} | wc -c`
-    if  [ $length -gt $ONES ]
-    then
-        echo ${add_nodes} > $WORKDIR/failed_nodes
-        echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
-    fi
+    echo "The following comupute nodes experience problems. Vini will not use them."
+    cat $WORKDIR/failed_nodes
 fi
 
-
+echo "brakepoint!" ; sleep 1000
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 

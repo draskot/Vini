@@ -80,6 +80,19 @@ else
     echo "yes."
 fi
 
+echo -n "Checking if rdkit is installed..."
+grep rdkit $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
+    conda install -c conda-forge rdkit
+    conda deactivate
+    echo "#***rdkit section***" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
 
 echo -n "Checking if coreapi-cli is installed..."
 grep coreapi $vini_dir/sourceme > tmp #install coreapi

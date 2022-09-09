@@ -14,26 +14,29 @@ do
     flag=`echo $line | awk -F',' '{print $2}'`
     if [ $flag == S ]
     then
-        if  [ -e $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt ]
+        if  [ -e $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt ]     #check if drugname.pdbqt file already exists
         then
             cp $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
-        else                                                                                      #create pdbqt file
+        else                                                            
+            echo "Creating $drugname pdbqt file from 3D sdf file, please wait."
             cp $vini_dir/ligands/sdf_files/${drugname}.sdf $WORKDIR #create pdbqt file
+            rm -f meeko.out meeko.err
+
             cat $WORKDIR/meeko                                                                            > meeko_run
-            echo "source $INSTALL/miniconda3/bin/activate"                                               >> meeko_run
-            echo "conda activate 310"                                                                    >> meeko_run
             if [ -e $WORKDIR/failed_nodes ]
             then
                 failed_nodes=`cat $WORKDIR/failed_nodes`
                 echo "#SBATCH --exclude=${failed_nodes}"   >> meeko_run  #node not working properly 
             fi
             echo "WORKDIR=$WORKDIR"                        >> meeko_run
+            echo "source $INSTALL/miniconda3/bin/activate"                                               >> meeko_run
+            echo "conda activate env310"                                                                 >> meeko_run
             echo "mk_prepare_ligand.py -i $vini_dir/ligands/sdf_files/${drugname}.sdf -o $WORKDIR/ligand_${lig_index}.pdbqt" >> meeko_run
             echo "if [ -e $WORKDIR/ligand_${lig_index}.pdbqt ] ; then"                                   >> meeko_run
             echo "cp $WORKDIR/ligand_${lig_index}.pdbqt $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt" >> meeko_run
             echo "fi"                                                                                    >> meeko_run
-
             echo "conda deactivate"                                                                      >> meeko_run
+
             chmod u+x                                                                                       meeko_run
             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
             $job_submit meeko_run

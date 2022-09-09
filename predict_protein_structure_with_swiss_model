@@ -25,7 +25,7 @@ uname=`cat $WORKDIR/SWISS-MODEL_email`
 pwd=`cat $WORKDIR/SWISS-MODEL_password`
 
 source $INSTALL/miniconda3/bin/activate
-conda activate 310
+conda activate env310
 
 coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
 coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
