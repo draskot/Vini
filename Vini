@@ -22,7 +22,7 @@ fi
 echo -n "Checking for the installation of the  3rd party software..."
 if  [ -e sourceme ]
 then
-    echo "installed."
+    echo "installed."cn0048,cn0617
 else
     sh install.sh
     echo "Installation done. Execute <source $vini_dir/sourceme> to changes make effect and start Vini again."
@@ -32,16 +32,16 @@ fi
 sh $vini_dir/clean
 
 echo -n "Checking for ligands_list file..."
-if [ -e $vini_dir/database/ligands/ligands_list ]
+if [ -e $vini_dir/ligands/ligands_list ]
 then
     echo passed.
 else
     echo "you must provide ligand list. Exiting..." ; exit
 fi
 
-mkdir -p $vini_dir/database/ligands/pdb_files #preparing directories
-mkdir -p $vini_dir/database/ligands/sdf_files
-mkdir -p $vini_dir/database/ligands/pdbqt_files
+mkdir -p $vini_dir/ligands/pdb_files #preparing directories
+mkdir -p $vini_dir/ligands/sdf_files
+mkdir -p $vini_dir/ligands/pdbqt_files
 
 mkdir -p $vini_dir/genes
 mkdir -p $vini_dir/genes/pdb_files
@@ -139,15 +139,30 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-read -p "If you aware of node(s) not working properly (e.g. cn0048), type in their names in a comma-separated list (e.g. cn0048, cn0049, ...) or <enter> to skip:" failed_nodes
-echo ${failed_nodes} > $WORKDIR/failed_nodes
-chars=`wc -c < $WORKDIR/failed_nodes`
-if [ $chars -ne $ONES ]
+if [ -e $WORKDIR/failed_nodes ]
 then
-    echo ${failed_nodes} > $WORKDIR/failed_nodes
+    failed_nodes=`cat $WORKDIR/failed_nodes`
+    echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
+    echo "If you aware of any additional node(s) in failure, type their names in a comma-separated list."
+    read -p "(e.g. cn0048,cn0617 etc. ) or <enter> to skip:" add_nodes
+    length=`echo ${add_nodes} | wc -c`
+    if  [ $length -gt $ONES ]
+    then
+        comma=,
+        echo ${failed_nodes}${comma}${add_nodes} > $WORKDIR/failed_nodes
+    fi
 else
-    rm -f $WORKDIR/failed_nodes
+    echo "If you aware of any node(s) in failure, type their names here in a comma-separated list."
+    read -p "E.g. cn0048,cn0617 etc. or press <enter> to skip:" add_nodes
+    length=`echo ${add_nodes} | wc -c`
+    if  [ $length -gt $ONES ]
+    then
+        echo ${add_nodes} > $WORKDIR/failed_nodes
+        echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
+    fi
 fi
+
+
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
@@ -377,7 +392,7 @@ then
     while read -r line
     do
         drugname=`echo $line | awk -F','  '{print $1}'`
-        grep -w ${drugname} $vini_dir/database/ligands/ligands_list > tmp
+        grep -w ${drugname} $vini_dir/ligands/ligands_list > tmp
         if [ -s tmp ]
         then
             cat tmp >> $WORKDIR/NCI-60_ligands_list
@@ -388,7 +403,7 @@ then
     read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "NCI-60_ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
-        mv $WORKDIR/NCI-60_ligands_list $vini_dir/database/ligands/ligands_list
+        mv $WORKDIR/NCI-60_ligands_list $vini_dir/ligands/ligands_list
         echo "yes" > $WORKDIR/validate_NCI-60_data
     else
         echo "no" > $WORKDIR/validate_NCI-60_data
@@ -400,7 +415,7 @@ else
     echo $cell_line > $WORKDIR/cell_line
 fi
 
-ligands=`wc -l < $vini_dir/database/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
+ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
 
 #Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
 #We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat
@@ -420,7 +435,7 @@ fi
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo $therapy_level > $WORKDIR/therapy_level
 
-grep -w "S" $vini_dir/database/ligands/ligands_list > tmp #create pdbqt files in case we are analyzing small molecules
+grep -w "S" $vini_dir/ligands/ligands_list > tmp #create pdbqt files in case we are analyzing small molecules
 if  [ -s tmp ] ; then
     echo "small" > $WORKDIR/drugtype
 else

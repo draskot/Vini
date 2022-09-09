@@ -84,7 +84,7 @@ do
         fi
         printf "%s%s%s%s\n" "$drugname" "," " " "$NSC_NUMBER" >> tmp
     fi
-done <  $vini_dir/database/ligands/ligands_list 
+done <  $vini_dir/ligands/ligands_list 
 sed -e "s/\r//g" tmp > $vini_dir/database/NSC_numbers               #remove ^M from file
 
 grep $cell_line $vini_dir/database/GI50.csv > tmp    #extract cell line entries from GI50.csv file

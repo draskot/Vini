@@ -19,7 +19,8 @@ random_affinity=`cat $WORKDIR/random_affinity`
 
 max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
-ligands=`wc -l < $vini_dir/database/ligands/ligands_list`
+
+ligands=`wc -l < $vini_dir/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
 
 DIR=$WORKDIR/${CANCER_TYPE}_data 
@@ -68,7 +69,7 @@ do
                      comp_index=$n
                      conf_index=$comp_index
                      log_index=$comp_index
-                     moltype=`head -"$ligand_number" $vini_dir/database/ligands/ligands_list | tail -1`
+                     moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
                      moltype=`echo $moltype | awk -F','  '{print $2}'`
                      mkdir -p $WORKDIR/$comp_index
                      cd $WORKDIR/$comp_index
@@ -118,7 +119,7 @@ do
                          else
                              cp $vini_dir/nodes_control_script ./
                              receptor=`head -"$N" $WORKDIR/receptors_contracted | tail -1 | awk '{print $3}' `
-                             ligand=`head -"$M" $vini_dir/database/ligands/ligands_list | tail -1 | awk -F',' '{print $1}' `
+                             ligand=`head -"$M" $vini_dir/ligands/ligands_list | tail -1 | awk -F',' '{print $1}' `
                              cp $vini_dir/database/genes/pdb_files/${receptor}.pdb ./receptor.pdb
                              cp $vini_dir/database/ligands/pdb_files/${ligand}.pdb ./ligand.pdb
                          
@@ -236,7 +237,7 @@ else
     exp=noexp
 fi
 
-mv $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
+cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
 
 echo "Deleting equal SLEM entries with equal indices, please wait..."
 cat $WORKDIR/Vina                                     > $WORKDIR/postproc                 

@@ -15,8 +15,8 @@ echo "#SBATCH --job-name=meeko"            >> meeko
 echo "#SBATCH --time=01:00:00"             >> meeko
 echo "#SBATCH --output=$WORKDIR/meeko.out" >> meeko
 echo "#SBATCH --error=$WORKDIR/meeko.err"  >> meeko
-echo "#SBATCH --cpus-per-task=1"           >> meeko
-echo "#SBATCH --mem=2gb"                   >> meeko
+echo "#SBATCH --cpus-per-task=4"           >> meeko
+echo "#SBATCH --mem=8gb"                   >> meeko
 echo "#SBATCH --partition="$cpu_partition  >> meeko
 chmod u+x                                     meeko
 

@@ -27,6 +27,14 @@ then
 fi
 echo "#SBATCH --mem=2gb"                                  >> $WORKDIR/get_number_gpus_per_node
 echo "#SBATCH --partition="$partition                     >> $WORKDIR/get_number_gpus_per_node
+
+if [ -e $WORKDIR/failed_nodes ]
+then
+    failed_nodes=`cat $WORKDIR/failed_nodes`
+    echo "#SBATCH --exclude=${failed_nodes}"              >> $WORKDIR/get_number_gpus_per_node
+fi
+echo "WORKDIR=$WORKDIR"                                   >> $WORKDIR/get_number_gpus_per_node
+
 echo "lspci"                                              >> $WORKDIR/get_number_gpus_per_node
 chmod u+x                                                    $WORKDIR/get_number_gpus_per_node
 

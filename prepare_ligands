@@ -29,7 +29,7 @@ do
     fi
     cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
     let i++
-done < $vini_dir/database/ligands/ligands_list
+done < $vini_dir/ligands/ligands_list
 
 sh $vini_dir/wait_until_jobs_finish #wait until all jobs finish
 
@@ -51,6 +51,6 @@ do
     else
         echo $line >> $WORKDIR/tmp
     fi
-done < $vini_dir/database/ligands/ligands_list
-    mv $WORKDIR/tmp $vini_dir/database/ligands/ligands_list
+done < $vini_dir/ligands/ligands_list
+    mv $WORKDIR/tmp $vini_dir/ligands/ligands_list
     echo "done."

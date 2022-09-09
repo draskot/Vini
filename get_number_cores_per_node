@@ -33,6 +33,11 @@ fi
     echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_of_cores
     echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_of_cores
     echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_of_cores
+    if [ -e $WORKDIR/failed_nodes ]
+    then
+        failed_nodes=`cat $WORKDIR/failed_nodes`
+        echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/get_number_of_cores
+    fi
     echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_of_cores
     echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
     chmod u+x                                       $WORKDIR/get_number_of_cores

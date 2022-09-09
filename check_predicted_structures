@@ -28,7 +28,7 @@ do
             fi
         fi
     fi
-done < $vini_dir/database/ligands/ligands_list
+done < $vini_dir/ligands/ligands_list
 
 > tmp                     #update receptors_contracted file and copy predicted structures to repo
 while read -r line

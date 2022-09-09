@@ -18,7 +18,7 @@ do
         else
             drug=$drugname
         fi
-        if  [ -e $vini_dir/database/ligands/fasta_files/${drug}.fasta ] #check if drug is in repo
+        if  [ -e $vini_dir/ligands/fasta_files/${drug}.fasta ] #check if drug is in repo
         then
             echo "fasta sequence for $drug found in repo."
         else
@@ -31,15 +31,15 @@ do
                 echo "drug found." 
                 DBID=`head -1 $vini_dir/tmp`
                 DBID=`echo $DBID | tr "," " " | awk '{print $1}'`
-                wget -O $vini_dir/database/ligands/fasta_files/${drug}.fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
+                wget -O $vini_dir/ligands/fasta_files/${drug}.fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
             else
                 echo -n $drugname "not found in Drugbank. Entry will be commented." 
-                awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/database/ligands/ligands_list > tmp
-                mv tmp $vini_dir/database/ligands/ligands_list
+                awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+                mv tmp $vini_dir/ligands/ligands_list
             fi
         fi
         let "lineno++"
     fi
-done < $vini_dir/database/ligands/ligands_list
+done < $vini_dir/ligands/ligands_list
 echo "done."
 rm -f tmp.csv tmp search

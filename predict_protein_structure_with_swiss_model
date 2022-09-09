@@ -24,7 +24,8 @@ project_id=${uniprot_id}
 uname=`cat $WORKDIR/SWISS-MODEL_email`
 pwd=`cat $WORKDIR/SWISS-MODEL_password`
 
-source $INSTALL/miniconda3/bin/activate coreapi
+source $INSTALL/miniconda3/bin/activate
+conda activate 310
 
 coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
 coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
@@ -61,3 +62,4 @@ model_id=`cat tmp | sed 's/^.//;s/.$//'`
 echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tom
 sh tom > ${outdir}/${uniprot_id}.pdb
 rm -f tmp tmp2 tom project_id ${uniprot_id}.fasta
+conda deactivate

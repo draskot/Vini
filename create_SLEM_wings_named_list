@@ -26,37 +26,37 @@ do
     
     if [[ $therapy_level == 1 ]]
     then
-        drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #get drug name 
+        drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #get drug name 
         drug1=`echo $drug1 | awk -F',' '{print $1}'`       
         printf "%s%s%s%s\n" "SLEM_" $drug1 " " $SLEM >> ${SLEM_WINGS}_named 
     else
         if  [[ $therapy_level == 2 ]]  
         then
-            drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" to name 
+            drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
             drug1=`echo $drug1 | awk -F',' '{print $1}'`       
-            drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+            drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
             drug2=`echo $drug2 | awk -F',' '{print $1}'`       
             printf "%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 " " $SLEM >> ${SLEM_WINGS}_named 
         else
             if   [[ $therapy_level == 3 ]] 
             then
-                drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" to name 
+                drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
                 drug1=`echo $drug1 | awk -F',' '{print $1}'`       
-                drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+                drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                 drug2=`echo $drug2 | awk -F',' '{print $1}'`
-                drug3=`head -"$k" $vini_dir/database/ligands/ligands_list | tail -1` #convert "k" to name 
+                drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                 drug3=`echo $drug3 | awk -F',' '{print $1}'`
                 printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 " " $SLEM >> ${SLEM_WINGS}_named 
             else
                 if  [[ $therapy_level == 4 ]]
                 then
-                drug1=`head -"$i" $vini_dir/database/ligands/ligands_list | tail -1` #convert "i" 
+                drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" 
                 drug1=`echo $drug1 | awk -F',' '{print $1}'`
-                drug2=`head -"$j" $vini_dir/database/ligands/ligands_list | tail -1` #convert "j" to name 
+                drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                 drug2=`echo $drug2 | awk -F',' '{print $1}'`
-                drug3=`head -"$k" $vini_dir/database/ligands/ligands_list | tail -1` #convert "k" to name 
+                drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                 drug3=`echo $drug3 | awk -F',' '{print $1}'`
-                drug4=`head -"$l" $vini_dir/database/ligands/ligands_list | tail -1` #convert "l" to name 
+                drug4=`head -"$l" $vini_dir/ligands/ligands_list | tail -1` #convert "l" to name 
                 drug4=`echo $drug4 | awk -F',' '{print $1}'`
                 printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 "." $drug4 " " $SLEM >> ${SLEM_WINGS}_named 
                 fi

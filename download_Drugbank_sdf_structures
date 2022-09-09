@@ -22,7 +22,7 @@ then
     else
         drug=$drugname
     fi
-    if  [ ! -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ] #check if drug is in repo
+    if  [ ! -e $vini_dir/ligands/sdf_files/${drug}.sdf ] #check if drug is in repo
     then
         echo "grep -w" "\"$drug\"" "drug?links.csv" > search
         sh search > tmp
@@ -32,24 +32,24 @@ then
             inline=`head -1 $vini_dir/tmp`
             DBID=`echo $inline | tr "," " " | awk '{print $1}'`
             dtype=`echo $line | awk -F',' '{print $2}'`
-                wget -O $vini_dir/database/ligands/sdf_files/${drug}.sdf -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
-                if  [ -e $vini_dir/database/ligands/sdf_files/${drug}.sdf ] #check if download was ok
+                wget -O $vini_dir/ligands/sdf_files/${drug}.sdf -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
+                if  [ -e $vini_dir/ligands/sdf_files/${drug}.sdf ] #check if download was ok
                 then
                     echo " ${drug}.sdf downloaded from Drugbank!"
                 else
                     echo "3D sdf structure for" ${drug} "not found. Entry will be commented." ; echo
-                    awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/database/ligands/ligands_list > tmp
-                    mv tmp $vini_dir/database/ligands/ligands_list
+                    awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+                    mv tmp $vini_dir/ligands/ligands_list
                 fi
         else
             echo "drug" ${drug} "not found and will not be analysed." 
-            awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/database/ligands/ligands_list > tmp
-            mv tmp $vini_dir/database/ligands/ligands_list
+            awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+            mv tmp $vini_dir/ligands/ligands_list
         fi
     fi
     let "lineno++"
 fi
-done < $vini_dir/database/ligands/ligands_list
+done < $vini_dir/ligands/ligands_list
 sh $vini_dir/wait_until_jobs_finish
 echo "done."
 rm -f tmp.csv tmp search

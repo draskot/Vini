@@ -57,9 +57,9 @@ then
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n meeko -c conda-forge numpy scipy rdkit absl
-    conda activate meeko
-    pip install meeko
+    conda create -n env310 --yes numpy scipy pandas requests mpi4py pyqt
+    conda activate env310
+    conda install -c conda-forge rdkit
     conda deactivate
     echo "#***miniconda3 section***" >> $vini_dir/sourceme
     rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
@@ -67,13 +67,29 @@ else
     echo "yes."
 fi
 
+echo -n "Checking if meeko is installed..."
+grep meeko $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
+    pip install meeko
+    conda deactivate
+    echo "#***meeko section***" >> $vini_dir/sourceme
+else  
+    echo "yes."
+fi
+
+
 echo -n "Checking if coreapi-cli is installed..."
 grep coreapi $vini_dir/sourceme > tmp #install coreapi
 if  [ ! -s tmp ]
 then
     echo -n "no. Please wait while coreapi-cli is installed..."
-    source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n coreapi --yes -c conda-forge coreapi-cli
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
+    conda install -c conda-forge coreapi-cli
+    conda deactivate
     echo "#***coreapi***" >> $vini_dir/sourceme
 else
     echo "yes."

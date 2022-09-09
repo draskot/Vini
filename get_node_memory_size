@@ -33,6 +33,14 @@ then
 fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
+
+if [ -e $WORKDIR/failed_nodes ]
+then
+    failed_nodes=`cat $WORKDIR/failed_nodes`
+    echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/get_size_of_memory
+fi
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_size_of_memory
+
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
