@@ -22,7 +22,7 @@ fi
 echo -n "Checking for the installation of the  3rd party software..."
 if  [ -e sourceme ]
 then
-    echo "installed."cn0048,cn0617
+    echo "installed."
 else
     sh install.sh
     echo "Installation done. Execute <source $vini_dir/sourceme> to changes make effect and start Vini again."
@@ -139,37 +139,12 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-#if [ -e $WORKDIR/failed_nodes ]
-#then
-#    failed_nodes=`cat $WORKDIR/failed_nodes`
-#    echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
-#    echo "If you aware of any additional node(s) in failure, type their names in a comma-separated list."
-#    read -p "(e.g. cn0048,cn0617 etc. ) or <enter> to skip:" add_nodes
-#    length=`echo ${add_nodes} | wc -c`
-#    if  [ $length -gt $ONES ]
-#    then
-#        comma=,
-#        echo ${failed_nodes}${comma}${add_nodes} > $WORKDIR/failed_nodes
-#    fi
-#else
-#    echo "If you aware of any node(s) in failure, type their names here in a comma-separated list."
-#    read -p "E.g. cn0048,cn0617 etc. or press <enter> to skip:" add_nodes
-#    length=`echo ${add_nodes} | wc -c`
-#    if  [ $length -gt $ONES ]
-#    then
-#        echo ${add_nodes} > $WORKDIR/failed_nodes
-#        echo "The following nodes are in failure and Vini will not use them: ${failed_nodes}"
-#    fi
-#fi
-
 sh $vini_dir/nodetest
 if  [ -s $WORKDIR/failed_nodes ]
 then
     echo "The following comupute nodes experience problems. Vini will not use them."
     cat $WORKDIR/failed_nodes
 fi
-
-echo "brakepoint!" ; sleep 1000
 
 alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
 
