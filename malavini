@@ -19,6 +19,7 @@ random_affinity=`cat $WORKDIR/random_affinity`
 
 max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
+failed_nodes=`cat $WORKDIR/cpu_failed_nodes`
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
@@ -97,11 +98,7 @@ do
                              cat $WORKDIR/Vina                                         > Vina_run
                              echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> Vina_run
                              echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> Vina_run
-                             if [ -e $WORKDIR/failed_nodes ]
-                             then
-                                 failed_nodes=`cat $WORKDIR/failed_nodes`
-                                 echo "#SBATCH --exclude=${failed_nodes}"             >> Vina_run 
-                             fi
+                             echo "#SBATCH --exclude=${failed_nodes}"                 >> Vina_run 
                              echo "vina --cpu 4 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt"                    >> Vina_run
                              chmod u+x Vina_run
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
@@ -154,11 +151,7 @@ do
                  echo "#SBATCH --job-name=vec_${lig_index}"                 >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err" >> ${target_dir}/vec_${lig_index}
-                 if [ -e $WORKDIR/failed_nodes ]
-                 then
-                     failed_nodes=`cat $WORKDIR/failed_nodes`
-                     echo "#SBATCH --exclude=${failed_nodes}"               >> ${target_dir}/vec_${lig_index} 
-                 fi
+                 echo "#SBATCH --exclude=${failed_nodes}"                   >> ${target_dir}/vec_${lig_index} 
                  cat $vini_dir/create_vector                                >> ${target_dir}/vec_${lig_index}
                  chmod u+x ${target_dir}/vec_${lig_index}
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir} ${WORKDIR}
@@ -171,11 +164,7 @@ do
                  echo "#SBATCH --job-name=mat_${lig_index}"                 >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
-                 if [ -e $WORKDIR/failed_nodes ]
-                 then
-                     failed_nodes=`cat $WORKDIR/failed_nodes`
-                     echo "#SBATCH --exclude=${failed_nodes}"               >> ${target_dir}/mat_${lig_index} 
-                 fi
+                 echo "#SBATCH --exclude=${failed_nodes}"                   >> ${target_dir}/mat_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                  >> ${target_dir}/mat_${lig_index}
                  echo "source $INSTALL/miniconda2/bin/activate"             >> ${target_dir}/mat_${lig_index}
                  echo "conda activate env27"                                >> ${target_dir}/mat_${lig_index}
@@ -190,11 +179,7 @@ do
                  echo "#SBATCH --job-name=eigen_${lig_index}"                 >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --output=${target_dir}/eigen_${lig_index}.out" >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen_${lig_index}
-                 if [ -e $WORKDIR/failed_nodes ]
-                 then
-                     failed_nodes=`cat $WORKDIR/failed_nodes`
-                     echo "#SBATCH --exclude=${failed_nodes}"                 >> ${target_dir}/eigen_${lig_index} 
-                 fi
+                 echo "#SBATCH --exclude=${failed_nodes}"                     >> ${target_dir}/eigen_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                    >> ${target_dir}/eigen_${lig_index}
                  echo "source $INSTALL/miniconda2/bin/activate"               >> ${target_dir}/eigen_${lig_index}
                  echo "conda activate env27"                                  >> ${target_dir}/eigen_${lig_index}
@@ -210,11 +195,7 @@ do
                  echo "#SBATCH --job-name=SLEM_${lig_index}"                 >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err"  >> ${target_dir}/select_${lig_index}
-                 if [ -e $WORKDIR/failed_nodes ]
-                 then
-                     failed_nodes=`cat $WORKDIR/failed_nodes`
-                     echo "#SBATCH --exclude=${failed_nodes}"                >> ${target_dir}/select_${lig_index} 
-                 fi
+                 echo "#SBATCH --exclude=${failed_nodes}"                    >> ${target_dir}/select_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/select_${lig_index}
                  cat $vini_dir/select_SLEM_value                             >> ${target_dir}/select_${lig_index}
                  chmod u+x ${target_dir}/select_${lig_index}
@@ -241,25 +222,16 @@ cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_li
 
 echo "Deleting equal SLEM entries with equal indices, please wait..."
 cat $WORKDIR/Vina                                     > $WORKDIR/postproc                 
-if [ -e $WORKDIR/failed_nodes ]
-then
-    failed_nodes=`cat $WORKDIR/failed_nodes`
-    echo "#SBATCH --exclude=${failed_nodes}"         >> $WORKDIR/postproc
-fi
+echo "#SBATCH --exclude=${failed_nodes}"             >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 chmod u+x $WORKDIR/postproc
 $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
-
 echo "Creating SLEM named lists, please wait."
 cat $WORKDIR/Vina                                     > $WORKDIR/postproc   
-if [ -e $WORKDIR/failed_nodes ]
-then
-    failed_nodes=`cat $WORKDIR/failed_nodes`
-    echo "#SBATCH --exclude=${failed_nodes}"         >> $WORKDIR/postproc 
-fi
+echo "#SBATCH --exclude=${failed_nodes}"             >> $WORKDIR/postproc 
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
 chmod u+x $WORKDIR/postproc
@@ -270,11 +242,7 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "Creating SLEM wings list, please wait."
    cat $WORKDIR/Vina                                  > $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_list              >> $WORKDIR/postproc
-   if [ -e $WORKDIR/failed_nodes ]
-   then
-       failed_nodes=`cat $WORKDIR/failed_nodes`
-       echo "#SBATCH --exclude=${failed_nodes}"      >> $WORKDIR/postproc 
-   fi
+   echo "#SBATCH --exclude=${failed_nodes}"          >> $WORKDIR/postproc 
    echo "WORKDIR=${WORKDIR}"                         >> $WORKDIR/postproc
    chmod u+x postproc
    $job_submit $WORKDIR/postproc
@@ -283,11 +251,7 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "Creating SLEM wings named list, please wait."
    cat $WORKDIR/Vina                                  > $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_named_list        >> $WORKDIR/postproc
-   if [ -e $WORKDIR/failed_nodes ]
-   then
-       failed_nodes=`cat $WORKDIR/failed_nodes`
-       echo "#SBATCH --exclude=${failed_nodes}"      >> $WORKDIR/postproc 
-   fi
+   echo "#SBATCH --exclude=${failed_nodes}"          >> $WORKDIR/postproc 
    echo "WORKDIR=${WORKDIR}"                         >> $WORKDIR/postproc
    chmod u+x postproc
    $job_submit $WORKDIR/postproc

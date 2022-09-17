@@ -19,7 +19,7 @@ else
     echo passed.
 fi
 
-echo -n "Checking for the installation of the  3rd party software..."
+echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
     echo "installed."
@@ -126,6 +126,7 @@ then
         job=`echo $line | awk '{print $1}'`
         $job_cancel $job
     done < jobs
+    sh $vini_dir/wait_until_jobs_finish
     echo "done."
 else
     echo "no remaining jobs."
@@ -424,9 +425,8 @@ else
     echo "biotech" > $WORKDIR/drugtype
 fi
 
-#sh $vini_dir/prepare_ligands
-echo "Creating ligand pdbqt files with meeko, please wait."
-sh $vini_dir/prepare_ligands_with_meeko
+sh $vini_dir/prepare_ligands
+#sh $vini_dir/prepare_ligands_with_meeko
 
 rm -rf $WORKDIR/$cancer_type$data
 
@@ -450,4 +450,4 @@ echo $affinity > $WORKDIR/random_affinity
 ./VelikaVini
 #nohup ./VelikaVini &
 #echo "Vini will now continue to work in the background."
-#echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
+echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."

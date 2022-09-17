@@ -7,11 +7,20 @@ MAX_NODES=`cat $WORKDIR/nodes`                   #maximum number of compute node
 job_submit=`cat $WORKDIR/job_submit`
 outdir=$vini_dir/database/genes/pdb_files  #where the predicted structures are placed
 
-cpus=`cat $WORKDIR/AlphaFold_cpus`
-mem=`cat $WORKDIR/AlphaFold_mem`
-partition=`cat  $WORKDIR/AlphaFold_partition`
-base=`cat $WORKDIR/AlphaFold_base`
-model=monomer
+prediction_model=`cat $WORKDIR/prediction_model`
+if [ $prediction_model == A ]
+then
+    partition=`cat  $WORKDIR/AlphaFold_partition`      #Define AlphaFold parameters
+    if [ $partition == cpu ]
+    then
+        cpus=`cat $WORKDIR/AlphaFold_cpus`
+    else
+        cpus=`cat $WORKDIR/AlphaFold_gpus`
+    fi
+    mem=`cat $WORKDIR/AlphaFold_mem`
+    base=`cat $WORKDIR/AlphaFold_base`
+    model=monomer
+fi
 
 NULL=0
 ONES=1
@@ -97,6 +106,7 @@ do
                     fasta_file=$vini_dir/database/genes/fasta_files/${uniprot_id}.fasta
                     if  [ ${prediction_model} == A ]
                     then
+                        echo "cpus ${cpus} mem ${mem} partition ${partition} base ${base} model ${model} fasta_file ${fasta_file} "
                         sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
                         echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
                         echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "W" >> $WORKDIR/receptors_contracted

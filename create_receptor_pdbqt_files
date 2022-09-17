@@ -3,6 +3,7 @@ cancer_type=`cat $WORKDIR/cancer_type`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
+failed_nodes=`cat $WORKDIR/cpu_failed_nodes`
 
 dir=$WORKDIR/${cancer_type}_data
 
@@ -32,11 +33,7 @@ do
     echo "#SBATCH --job-name=create_pdbqt"                                       >> prepare_receptor
     echo "#SBATCH --output=$dir/prepare_receptor.out"                            >> prepare_receptor
     echo "#SBATCH --error=$dir/prepare_receptor.err"                             >> prepare_receptor
-    if [ -e $WORKDIR/failed_nodes ]
-    then
-        failed_nodes=`cat $WORKDIR/failed_nodes`
-        echo "#SBATCH --exclude=${failed_nodes}"                                 >> prepare_receptor
-    fi
+    echo "#SBATCH --exclude=${failed_nodes}"                                     >> prepare_receptor
     echo "prepare_receptor -r $dir/$b.pdb -o $dir/$b.pdbqt "                     >> prepare_receptor
     #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> prepare_receptor
     chmod +x prepare_receptor

@@ -16,18 +16,18 @@ do
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
 
-    if  [ -e $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt ]
+    if  [ -e $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt ]
     then
-        cp $vini_dir/database/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
-    else                                                                                      #create pdbqt file
-        cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR #create pdbqt file
+        cp $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
+    else                                                                  #create pdbqt file
+        cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR #create pdbqt file
         cat Vina > Vina_run
-        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/database/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/ligand_${lig_index}.pdbqt"  >> Vina_run
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/ligand_${lig_index}.pdbqt"  >> Vina_run
         chmod +x Vina_run
         sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
         $job_submit Vina_run
     fi
-    cp $vini_dir/database/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
+    cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
     let i++
 done < $vini_dir/ligands/ligands_list
 

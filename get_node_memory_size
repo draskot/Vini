@@ -12,8 +12,10 @@ job_cancel=`cat $WORKDIR/job_cancel`
 if [ ${node_type} == cpu ]
 then
     partition=`cat $WORKDIR/cpu_partition`
+    failed_nodes=`cat $WORKDIR/cpu_failed_nodes`
 else
     partition=`cat $WORKDIR/gpu_partition`
+    failed_nodes=`cat $WORKDIR/gpu_failed_nodes`
 fi
 
 echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
@@ -33,14 +35,8 @@ then
 fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
-
-if [ -e $WORKDIR/failed_nodes ]
-then
-    failed_nodes=`cat $WORKDIR/failed_nodes`
-    echo "#SBATCH --exclude=${failed_nodes}" >> $WORKDIR/get_size_of_memory
-fi
+echo "#SBATCH --exclude=${failed_nodes}"     >> $WORKDIR/get_size_of_memory
 echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_size_of_memory
-
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 

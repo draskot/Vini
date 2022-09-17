@@ -9,9 +9,14 @@ antibody=`basename ${fasta_file} .fasta`
 
 job_submit=`cat $WORKDIR/job_submit`
 node_type=`cat $WORKDIR/AlphaFold_partition`
-#gpus=`wc -l < $WORKDIR/gpus`
-#gpus=`cat $WORKDIR/gpus`
-gpus=1
+gpus=1                                                   #AlphaFold working with only 1 gpu
+
+if [ $partition == cpu ]
+then
+    failed_nodes=`cat $WORKDIR/cpu_failed_nodes`
+else
+    failed_nodes=`cat $WORKDIR/gpu_failed_nodes`
+fi
 
 rm -rf $WORKDIR/${antibody} #cleanup
 
@@ -22,11 +27,7 @@ echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
 echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --exclusive"                                 >> $WORKDIR/AlphaFold
-if [ -e $WORKDIR/failed_nodes ]
-then
-    failed_nodes=`cat $WORKDIR/failed_nodes`
-    echo "#SBATCH --exclude=${failed_nodes}"                >> $WORKDIR/AlphaFold  #failed nodes
-fi
+echo "#SBATCH --exclude=${failed_nodes}"                   >> $WORKDIR/AlphaFold
 echo "WORKDIR=${WORKDIR}"                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=A_"${antibody}                    >> $WORKDIR/AlphaFold

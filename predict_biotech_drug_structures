@@ -1,11 +1,20 @@
-cpus=`cat $WORKDIR/AlphaFold_cpus`
-mem=`cat $WORKDIR/AlphaFold_mem`
-partition=`cat  $WORKDIR/AlphaFold_partition`
-base=`cat $WORKDIR/AlphaFold_base`
-model=monomer
+
+prediction_model=`cat $WORKDIR/prediction_model`
+if [ $prediction_model == A ]
+then
+    partition=`cat  $WORKDIR/AlphaFold_partition`      #Define AlphaFold parameters
+    if [ $partition == cpu ]
+    then
+        cpus=`cat $WORKDIR/AlphaFold_cpus`
+    else
+        cpus=`cat $WORKDIR/AlphaFold_gpus`
+    fi
+    mem=`cat $WORKDIR/AlphaFold_mem`
+    base=`cat $WORKDIR/AlphaFold_base`
+    model=monomer
+fi
 
 NULL=0   
-
 MAX_NODES=`cat $WORKDIR/nodes`
 biotech_drugs_prediction_model=`cat $WORKDIR/biotech_drugs_prediction_model`
 while read -r line
