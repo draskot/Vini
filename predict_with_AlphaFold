@@ -13,9 +13,10 @@ gpus=1                                                   #AlphaFold working with
 
 if [ $partition == cpu ]
 then
-    failed_nodes=`cat $WORKDIR/cpu_failed_nodes`
+    excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 else
-    failed_nodes=`cat $WORKDIR/gpu_failed_nodes`
+    
+    excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
 fi
 
 rm -rf $WORKDIR/${antibody} #cleanup
@@ -27,15 +28,14 @@ echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
 echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --exclusive"                                 >> $WORKDIR/AlphaFold
-echo "#SBATCH --exclude=${failed_nodes}"                   >> $WORKDIR/AlphaFold
+echo "#SBATCH --exclude=${excluded_nodes}"                 >> $WORKDIR/AlphaFold
 echo "WORKDIR=${WORKDIR}"                                  >> $WORKDIR/AlphaFold
 echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=A_"${antibody}                    >> $WORKDIR/AlphaFold
 echo "#SBATCH --output=$WORKDIR/alphafold.${antibody}.out" >> $WORKDIR/AlphaFold
 echo "#SBATCH --error=$WORKDIR/alphafold.${antibody}.err"  >> $WORKDIR/AlphaFold
 
-if  [ ${node_type} == gpu ]
-then
+if  [ ${node_type} == gpu ] ; then
     echo "#SBATCH --gres=gpu:$gpus"                         >> $WORKDIR/AlphaFold
 fi
 

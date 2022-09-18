@@ -3,6 +3,7 @@ FALSE=0
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
+excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 
 cd $WORKDIR
 i=1
@@ -23,11 +24,7 @@ do
         echo "#SBATCH --cpus-per-task=4"                                  >> meeko.$i
         echo "#SBATCH --mem=8gb"                                          >> meeko.$i
         echo "#SBATCH --partition=cpu"                                    >> meeko.$i
-        if [ -e $WORKDIR/failed_nodes ]
-        then
-            failed_nodes=`cat $WORKDIR/failed_nodes`
-            echo "#SBATCH --exclude=${failed_nodes}"                      >> meeko.$i  
-        fi
+        echo "#SBATCH --exclude=${excluded_nodes}"                        >> meeko.$i  
         echo "WORKDIR=$WORKDIR"                                           >> meeko.$i
         echo "source $INSTALL/miniconda3/bin/activate"                    >> meeko.$i
         echo "conda activate env310"                                      >> meeko.$i
