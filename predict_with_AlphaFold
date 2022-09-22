@@ -23,7 +23,7 @@ fi
 rm -rf $WORKDIR/${antibody} #cleanup
 
 echo "#!/bin/bash"                                                   > $WORKDIR/AlphaFold
-echo "#SBATCH --time=24:00:00"                                      >> $WORKDIR/AlphaFold
+echo "#SBATCH --time=48:00:00"                                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --job-name=$antibody"                                 >> $WORKDIR/AlphaFold
 echo "#SBATCH --output=$WORKDIR/$antibody.out"                      >> $WORKDIR/AlphaFold
 echo "#SBATCH --error=$WORKDIR/$antibody.err"                       >> $WORKDIR/AlphaFold
