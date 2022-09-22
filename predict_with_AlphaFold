@@ -10,6 +10,7 @@ antibody=`basename ${fasta_file} .fasta`
 job_submit=`cat $WORKDIR/job_submit`
 node_type=`cat $WORKDIR/AlphaFold_partition`
 gpus=1                                                   #AlphaFold working with only 1 gpu
+kb=1024
 
 if [ $partition == cpu ]
 then
@@ -21,25 +22,37 @@ fi
 
 rm -rf $WORKDIR/${antibody} #cleanup
 
-echo "#!/bin/bash"                                          > $WORKDIR/AlphaFold
-echo "#SBATCH --nodes=1"                                   >> $WORKDIR/AlphaFold
-echo "#SBATCH --ntasks-per-node=1"                         >> $WORKDIR/AlphaFold
-echo "#SBATCH --cpus-per-task="$cpus                       >> $WORKDIR/AlphaFold
-echo "#SBATCH --mem="$mem                                  >> $WORKDIR/AlphaFold
-echo "#SBATCH --partition="$partition                      >> $WORKDIR/AlphaFold
-echo "#SBATCH --exclusive"                                 >> $WORKDIR/AlphaFold
-echo "#SBATCH --exclude=${excluded_nodes}"                 >> $WORKDIR/AlphaFold
-echo "WORKDIR=${WORKDIR}"                                  >> $WORKDIR/AlphaFold
-echo "#SBATCH --time=02-00:00:00"                          >> $WORKDIR/AlphaFold
-echo "#SBATCH --job-name=A_"${antibody}                    >> $WORKDIR/AlphaFold
-echo "#SBATCH --output=$WORKDIR/alphafold.${antibody}.out" >> $WORKDIR/AlphaFold
-echo "#SBATCH --error=$WORKDIR/alphafold.${antibody}.err"  >> $WORKDIR/AlphaFold
+echo "#!/bin/bash"                                                   > $WORKDIR/AlphaFold
+echo "#SBATCH --time=24:00:00"                                      >> $WORKDIR/AlphaFold
+echo "#SBATCH --job-name=$antibody"                                 >> $WORKDIR/AlphaFold
+echo "#SBATCH --output=$WORKDIR/$antibody.out"                      >> $WORKDIR/AlphaFold
+echo "#SBATCH --error=$WORKDIR/$antibody.err"                       >> $WORKDIR/AlphaFold
+echo "#SBATCH --nodes=1"                                            >> $WORKDIR/AlphaFold
+echo "#SBATCH --ntasks-per-node=1"                                  >> $WORKDIR/AlphaFold
+echo "#SBATCH --cpus-per-task="$cpus                                >> $WORKDIR/AlphaFold
+echo "#SBATCH --mem="$mem                                           >> $WORKDIR/AlphaFold
+echo "#SBATCH --partition="$partition                               >> $WORKDIR/AlphaFold
+echo "#SBATCH --exclude=${excluded_nodes}"                          >> $WORKDIR/AlphaFold
+
+echo "WORKDIR=${WORKDIR}"                                           >> $WORKDIR/AlphaFold
 
 if  [ ${node_type} == gpu ] ; then
-    echo "#SBATCH --gres=gpu:$gpus"                         >> $WORKDIR/AlphaFold
+    echo "#SBATCH --gres=gpu:$gpus"                                 >> $WORKDIR/AlphaFold
 fi
 
-echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                                        >> $WORKDIR/AlphaFold
-chmod u+x                                                     $WORKDIR/AlphaFold
+echo "memable=`grep MemAvailable /proc/meminfo | awk '{print $2}'`" >> $WORKDIR/AlphaFold 
+
+memory=`echo $mem | sed 's/[^0-9]*//g'`
+memory=`echo $memory $kb $kb | awk '{print $1 * $2 *$3}'`
+echo "memory=$memory"                                               >> $WORKDIR/AlphaFold
+
+echo "if  [  \${memable} -gt \${memory} ]"                          >> $WORKDIR/AlphaFold
+echo "then"                                                         >> $WORKDIR/AlphaFold
+echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                                                                   >> $WORKDIR/AlphaFold
+echo "else"                                                         >> $WORKDIR/AlphaFold
+echo "echo Not enough memory to run AlphaFold"                      >> $WORKDIR/AlphaFold
+echo "fi"                                                           >> $WORKDIR/AlphaFold
+
+chmod u+x                                                             $WORKDIR/AlphaFold
 
 ${job_submit} $WORKDIR/AlphaFold

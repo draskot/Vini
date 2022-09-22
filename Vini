@@ -55,24 +55,27 @@ rm -f $vini_dir/genes/sequences/*
 
 echo -n "Determining workload manager..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
-grep "command not found" tmp > tmp2 ; mv tmp2 tmp
-nolines=`wc -l < tmp`
-if  [ $nolines -eq $NULL ]
+grep "command not found" tmp > tmp2
+if [ -s tmp2 ]
 then
+    echo "SLURM not found. Exiting."
+    exit
+else
     echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh determine_SLURM_environment
-    version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
-else
-    if [ -d /opt/sge ]
-    then
-        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
-        echo "SGE" > $WORKDIR/scheduler
-    else
-        echo "not supported, exiting" ; exit
-    fi
-fi
+#    version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
+#else
+#    if [ -d /opt/sge ]
+#    then
+#        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
+#        echo "SGE" > $WORKDIR/scheduler
+#    else
+#        echo "not supported, exiting" ; exit
+#    fi
 echo $JSS > $WORKDIR/JSS
+fi
+
 
 echo -n "Determining which Rosetta version is installed..."
 which antibody_graft.mpi.linuxgccrelease &> tmp #determining which Rosetta is installed
@@ -86,7 +89,6 @@ then
     echo ${R_nodes} > $WORKDIR/R_nodes
 else
     which antibody_graft.linuxgccrelease &> tmp #determining if Rosetta multithreaded is installed
-    grep -w no tmp > tmp2
     nolines=`wc -l < tmp2`
     if  [ $nolines -eq $NULL ]
     then
