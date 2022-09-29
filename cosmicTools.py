@@ -1,14 +1,74 @@
 import os
+import pathlib
 import csv_splitter
 import requests
 import time
 import csv
 from time import sleep
 
-TOKEN_NUMBER = "24193350667037724458978516380685463"
+TOKEN_NUMBER = "57557486070206353272202790192452234"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
+def mapUniprotIDToCosmicID_fromList(UNIPROT_LIST):
+    """
+    Function for converting genes Uniprot ID name to Cosmic ID name by 
+    rest api to uniprot.org.
+    Saves pair of Uniprot ID & Cosmic ID to automatically creates csv file "cosmic_ids.csv".
+    
+    Parameter
+    ---------
+    UNIPROT_LIST : str
+        File with list Uniprot ID gene names
+ 
+    """
+    
+    cosmic_id_csv_file = pathlib.Path(WORKING_DIR, "cosmic_ids.csv")
+    
+    if not cosmic_id_csv_file.exists():
+        with open(cosmic_id_csv_file, 'a+') as csvFile:
+            writer = csv.writer(csvFile)
+            writer.writerow(["UNIPROT_ID", "COSMIC_ID"])
+
+    uniport_id_list = []
+    
+    with open("genes/Uniprot_ID_list", "r") as f:
+        allIds = f.readlines()
+        for i in allIds:
+            uniport_id_list.append(i)
+    
+    id_size = len(uniport_id_list)
+            
+    request = requests.post(f"https://rest.uniprot.org/idmapping/run", data={"from": "UniProtKB_AC-ID", "to": "Gene_Name", "ids": ",".join(uniport_id_list)})
+    
+    job_id = request.json()["jobId"]
+    
+    results = requests.get(f"https://rest.uniprot.org/idmapping/results/{job_id}?size={id_size}")
+    
+    results_json = results.json()["results"]
+    cosmic_id_list = []
+    with open(cosmic_id_csv_file, "a+") as csvFile:
+        writer = csv.writer(csvFile)
+        
+        for i in results_json:
+            UNIPROT_ID = i["from"]
+            COSMIC_ID  = i["to"]
+            cosmic_id_list.append(COSMIC_ID)
+            writer.writerow([UNIPROT_ID, COSMIC_ID])
+    return cosmic_id_list
+            
+   
 def mapUniprotIDToCosmicID(UNIPROT_ID):
+    """
+    Function fostatus_codeonverting genes Uniprot ID name to Cosmic ID name by 
+    rest api to uniprot.org.
+    Saves pair of Uniprot ID & Cosmic ID to automatically creates csv file "cosmic_ids.csv".
+    
+    Parameter
+    ---------
+    UNIPROT_ID : str
+        Uniprot ID gene name
+    """
+        
     dict_path = os.path.join(WORKING_DIR, 'cosmic_ids.csv')
     if not os.path.exists(dict_path):
         with open(dict_path, 'a+') as dict_csv:
@@ -19,7 +79,7 @@ def mapUniprotIDToCosmicID(UNIPROT_ID):
     with open(dict_path, "a+") as f:
         csv_reader = csv.reader(f)
         # Iterate over each row in the csv using reader object
-        next(f)  # Skip the header
+        #next(f)  # Skip the header
         reader = csv.reader(f, skipinitialspace=True)
         id_dict = dict(reader)
         #try:
@@ -35,13 +95,13 @@ def mapUniprotIDToCosmicID(UNIPROT_ID):
         response_payload = response.json()
         while "jobStatus" in response_payload.keys():
             sleep (0.5)
-            print "Checking ID mapping job status for ", UNIPROT_ID
+            print ("Checking ID mapping job status for ", UNIPROT_ID)
             response = check_status(job_id)
             response_payload = response.json()
 
         if response.status_code == 200:
             COSMIC_ID =  response_payload["results"][0]["to"]
-            print "Mapped UniprotID %s to CosmicID: % s" % (UNIPROT_ID, COSMIC_ID)
+            print ("Mapped UniprotID %s to CosmicID: % s" % (UNIPROT_ID, COSMIC_ID))
             writer = csv.writer(f)
             writer.writerow([UNIPROT_ID, COSMIC_ID])
             return COSMIC_ID
@@ -60,10 +120,10 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
     with open(dict_path, "a+") as f:
         csv_reader = csv.reader(f)
         # Iterate over each row in the csv using reader object
-        next(f)  # Skip the header
         reader = csv.reader(f, skipinitialspace=True)
         id_dict = dict(reader)
         try:
+            print("i am here")
             url_submit_job = "https://rest.uniprot.org/idmapping/run?from=UniProtKB_AC-ID&to=Gene_Name&ids=%s" % (COSMIC_ID)
             response = requests.request("POST", url_submit_job, headers={}, data={})
             response = response.json()
@@ -76,13 +136,13 @@ def mapCosmicIDToUniprotID(COSMIC_ID):
             response_payload = response.json()
             while "jobStatus" in response_payload.keys():
                 sleep (0.5)
-                print "Checking ID mapping job status for ", COSMIC_ID
+                print ("Checking ID mapping job status for ", COSMIC_ID)
                 response = check_status(job_id)
                 response_payload = response.json()
 
             if response.status_code == 200:
                 UNIPROT_ID =  response_payload["results"][0]["to"]
-                print "Mapped Uniprot ID %s to Cosmic ID: % s" % (COSMIC_ID, UNIPROT_ID)
+                print ("Mapped Uniprot ID %s to Cosmic ID: % s" % (COSMIC_ID, UNIPROT_ID))
                 writer = csv.writer(f)
                 writer.writerow([COSMIC_ID, UNIPROT_ID])
                 return UNIPROT_ID
@@ -114,7 +174,7 @@ def countLinesCSV(filename):
 def splitGeneExpressionCSV(GENE_NAME, nprocs, WORKING_DIR):
     filename = getGeneExpressionFileName(GENE_NAME, WORKING_DIR)
     ave, res = divmod(countLinesCSV(filename), int(nprocs))
-    print 'Splitting file %s ' % filename
+    print ('Splitting file %s ' % filename)
     csv_splitter.split(filehandler=open(filename), output_name_template=GENE_NAME + '_part_%s.csv',
                        output_path=WORKING_DIR, row_limit=ave)
 
@@ -124,7 +184,7 @@ def checkCosmicEnvironment():
         cosmicdb_pass = os.environ.get('COSMICDB_PASS')
         return cosmicdb_user, cosmicdb_pass
     except:
-        print "No environment variables COSMICDB_USER and/or COSMICDB_PASS"
+        print ("No environment variables COSMICDB_USER and/or COSMICDB_PASS")
 
 def makeGeneListFromInput(GENE_INPUT):
     try:
@@ -136,7 +196,7 @@ def makeGeneListFromInput(GENE_INPUT):
         return gene_list
     except:
         # if GENE_INPUT is not a list it must be a single gene name
-        print "Can't open file with list of genes."
+        print ("Can't open file with list of genes.")
         gene_list = [GENE_INPUT]
         return gene_list
 
@@ -161,7 +221,7 @@ def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
                 return filename
             elif r.status_code == 401:
                 # trying again, Cosmic sometimes randomly responds with 401 Unauthorized
-                print "Unsuccessful download of data from CosmicDB for gene % s" % GENE_NAME
+                print ("Unsuccessful download of data from CosmicDB for gene % s" % GENE_NAME)
                 time.sleep(3)
             else:
                 print ("No data for gene under such name in CosmicDB: %s" % GENE_NAME)
@@ -173,26 +233,26 @@ def getDataFromCosmic(GENE_NAME, COSMIC_GENE_ID, URL_TEMPLATE, filename):
 def saveSequenceToFASTA(GENE_NAME, sequence, WORKING_DIR):
     try:
         file_path = os.path.join(WORKING_DIR, GENE_NAME + '_mutated.fasta')
-        print file_path
+        print (file_path)
         with open(file_path, 'w') as fasta_file:
             fasta_file.write(sequence)
-            print "Mutated sequence saved to %s" %file_path
+            print ("Mutated sequence saved to %s" %file_path)
             return True
     except:
-        print "Unsuccessful saving of FASTA file for gene %s" % GENE_NAME
+        print ("Unsuccessful saving of FASTA file for gene %s" % GENE_NAME)
         return False
 
 
 def applyMutationsToFASTA(mutations, FASTAfile):
     # mutations are expected as pandas dataframe output
     try:
-        print "FASTAfile: ", FASTAfile
+        print ("FASTAfile: ", FASTAfile)
         with open(FASTAfile) as csvfile:
             reader = csv.reader(csvfile, delimiter='\n')
             header = next(reader)
             sequence = list(next(reader)[0])
     except:
-        print "Can't open file with FASTA sequence"
+        print ("Can't open file with FASTA sequence")
         return False
     # saving deletions for last
     deletions = []
@@ -200,9 +260,9 @@ def applyMutationsToFASTA(mutations, FASTAfile):
     for mutation in mutations[' MUTATION_CDS']:
         mutation = mutation.split('.')[1]
         if 'dup' in mutation:
-            print mutation
+            print (mutation)
         elif 'ins' in mutation:
-            print mutation
+            print (mutation)
         elif 'del' in mutation:
             deletions.append(mutation.replace('del', ''))
         else:
@@ -213,17 +273,17 @@ def applyMutationsToFASTA(mutations, FASTAfile):
             # applying mutation to sequence
             if sequence[nucleotide_index] == nucleotide_before:
                 sequence[nucleotide_index] = nucleotide_after
-                print "Mutation applied: %s" % mutation
+                print ("Mutation applied: %s" % mutation)
             else:
-                print "No nucleotide match on given index. Expected %s but received %s" \
-                      % (nucleotide_before, sequence[nucleotide_index])
+                print ("No nucleotide match on given index. Expected %s but received %s" \
+                      % (nucleotide_before, sequence[nucleotide_index]))
     for mutation in deletions:
         try:
             range = mutation.split("_")
             start = range[0]
             finish = range[0] if len(range) == 1 else range[1]
             del sequence[int(start):int(finish)+1]
-            print "Mutation applied: %s" % mutation
+            print ("Mutation applied: %s" % mutation)
         except:
             # mutation format is probably not as expected
             pass

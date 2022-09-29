@@ -87,6 +87,8 @@ else
         nodename=${gpu_node_suffix}$node
         echo "#! /bin/bash"                                   > $WORKDIR/gpu_nodetest
         echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/gpu_nodetest
+        echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/gpu_nodetest
+        echo "#SBATCH --mem=1gb"                             >> $WORKDIR/gpu_nodetest
         echo "#SBATCH --partition="$partition                >> $WORKDIR/gpu_nodetest
         echo "#SBATCH --output=$WORKDIR/nodetest.$node.out"  >> $WORKDIR/gpu_nodetest
         echo "#SBATCH --error=$WORKDIR/nodetest.$node.err"   >> $WORKDIR/gpu_nodetest

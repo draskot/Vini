@@ -1,5 +1,5 @@
 
-rm -f cancer_type temp_buf max_jobs job_submit job_status receptors receptors_expanded relations therapy_level Vina nohup.out sum SLEM_values GI50_avg
+rm -f temp_buf max_jobs job_submit job_status Vina sum SLEM_values GI50_avg
 
 cd $WORKDIR
 rm -f ligand* complexes ligands max_jobs recepto* workload* job_submit job_status relations computed*
@@ -7,3 +7,24 @@ rm -f therapy_level cancer_type complex_* cores nodes cell_line NCI-60_GI50_valu
 rm -f amber FBE.log NCI60_cell_line ORGANISM therapy_level *pdb *pdbqt validate_NCI-60_data
 rm -f mutated
 rm -f *out *err
+rm -f postproc  ligand_???.pdbqt complex_???.jo*
+rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded
+rm -f ligands target_dir stats prediction_list max_jobs
+rm -f swiss_repo_entry *.pdb
+rm -f  nodes tmp success Vina_run
+rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list
+rm -f stop WM COSMIC_token *pdbqt drugname
+rm -f job_status job_status job_cancel cores temp2_buf tmp prep_prot_lig.py
+rm -f apolar compute_FBE create_index_file FBE g_mmpbsa_apolar_energy g_mmpbsa_polar_energy g_mmpbsa_potential_energy
+rm -f compute_Gibbs MD_prep MD_run ndx polar apolar potential validate_NCI-60_data drugtype
+rm -f mutated wild combo
+rm -f cancer_type receptors receptors_expanded relations
+
+cd $vini_dir
+rm -f partition workdir tmp tmp2 genename get_cores GI50.csv ${cell_line}_GI50
+rm -f seqnames predict exist tmp log ligand_wH.pdb #cleanup
+rm -f nohup.out
+
+rm -f $vini_dir/genes/mutations/*
+rm -f $vini_dir/genes/expressions/*
+rm -f $vini_dir/genes/sequences/*
