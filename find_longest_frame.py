@@ -4,7 +4,7 @@ import operator
 
 def find_frames(filename):
 	with open(filename) as f:
-		print filename
+		print (filename)
 		frames = []
 		frame = []
 		for line in f.readlines():
@@ -47,14 +47,14 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt(argv, "hi:", ["input-dir="])
 	except getopt.GetoptError:
-		print 'Usage: python2 find_longest_frame.py --input-dir <inputdirectory>'
+		print ('Usage: python2 find_longest_frame.py --input-dir <inputdirectory>')
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'Usage: python2 find_longest_frame.py --input-dir <inputdirectory>'
+			print ('Usage: python2 find_longest_frame.py --input-dir <inputdirectory>')
 		if opt in ("-i", "--input-dir"):
 			inputdir = arg
-	print 'Input directory is ', inputdir
+	print ('Input directory is ', inputdir)
 	
 	for filename in os.listdir(inputdir):
 		if '.frame' in filename:

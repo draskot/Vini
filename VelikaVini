@@ -74,6 +74,11 @@ fi
 rm -f $vini_dir/genes/cosmic_ids.csv
 rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* 
 
+echo -n "Activating miniconda3 environment..."
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
+
 if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
 then
     if [ $cosmic == y ]
@@ -108,23 +113,12 @@ else
     cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
     echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
     rm -f $vini_dir/genes/cosmic_ids.csv
-    echo -n "Activating miniconda3 environment..."
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    echo "done."
     python3 calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
-    conda deactivate
-        
 
     echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic. Please wait."
     rm -f $vini_dir/genes/cosmic_ids.csv
-    echo -n "Activating miniconda3 environment..."
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
     python3 get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
-    conda deactivate
 
-        
     if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
     then
         echo "failed to download mutations from Cosmic! Vini will stop now." exit
@@ -133,15 +127,8 @@ else
     fi
 
     echo -n "Generating  mutated fasta sequences for ${cell_line} cell line. Please wait."
-    echo -n "Activating miniconda3 environment..."
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    echo "done."
     python3 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
-    conda deactivate
         
-echo "brakepoint" ; sleep 1000
-
     ls $vini_dir/genes/sequences > tmp
     if  [ ! -s tmp ]
     then
@@ -158,6 +145,8 @@ echo "brakepoint" ; sleep 1000
     sh add_expressions_to_relations
     echo "done."
 fi
+
+conda deactivate
 
 if [ $kit == y ]
 then
@@ -193,7 +182,6 @@ sh malavini
 
 end_date=`date`
 echo "Analysis completed at"  $end_date
-
 
 if  [ $compute_cell_line -eq $TRUE ]    #prepare the data for Pearson analysis
 then 

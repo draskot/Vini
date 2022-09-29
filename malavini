@@ -46,11 +46,6 @@ ligand_number=1                #initializing ligand index
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
-if  [ $therapy_level -ne $ONES ]
-then
-    echo "brakepoint:" ; sleep 1000
-fi
-
 for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
     for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level

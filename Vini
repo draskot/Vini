@@ -440,8 +440,8 @@ echo ${box_size} > $WORKDIR/box_size
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
 
-read -e -p "By default, Vini operates in background (bg) mode. Accept or change to foreground (fg)?" -i "bg" mode
-if  [ $mode == bg ]
+read -e -p "Run Vini in debug mode (output will be redirected to screen) (y/n)?. Press enter to accept default (no debug): " -i "n" mode
+if  [ $mode == n ]
 then
     nohup ./VelikaVini &
     echo "Vini will now continue to work in the background."
