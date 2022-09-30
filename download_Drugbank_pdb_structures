@@ -28,8 +28,9 @@ do
             then   
                 inline=`head -1 $vini_dir/tmp`
                 DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-                echo -n "downloading" $drug "pdb file from Drugbank..."
+                echo -n "Downloading" $drug "pdb file from Drugbank..."
                 wget -O $vini_dir/ligands/pdb_files/${drug}.pdb -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.pdb
+                echo "done."
             else
                 echo "drug" $drug "not found in Drugbank and will not be analysed." 
                 awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
