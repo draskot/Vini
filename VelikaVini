@@ -166,8 +166,6 @@ then
     done < $vini_dir/database/genes/custom_genes
 fi
 
-#conda deactivate
-export PYTHONPATH=$STORE1 
 sh copy_genes_to_stage              #Copy pdb receptor files to the stage
 drugtype=`cat $WORKDIR/drugtype`
 if [ $drugtype == small ] ; then #create receptor pdbqt files
@@ -178,7 +176,12 @@ fi
 complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
 echo $complexes > $WORKDIR/complexes
 
-sh malavini
+max_therapy_level=`cat $WORKDIR/max_therapy_level`
+for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
+do
+    echo $therapy_level > $WORKDIR/therapy_level
+    sh $vini_dir/malavini
+done
 
 end_date=`date`
 echo "Analysis completed at"  $end_date

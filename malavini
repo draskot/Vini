@@ -48,11 +48,13 @@ echo "Calculating free binding energies for therapy level ${therapy_level}. This
 
 for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
+    #echo "processing 1st loop - 4th therapy level" 
     for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
     do
+         #echo "processing 2nd loop - 3rd therapy level" 
          for (( L=1; L<$((L3+1)); L++ )) #3rd loop -2nd thl
          do
-              
+             #echo "processing  3rd loop - 2nd therapy level"
              for (( M=1; M<$((L4+1)); M++ )) #4th loop - 1st thl
              do
                  printf -v lig_index "%03d" $M  
@@ -66,6 +68,8 @@ do
                  #> ${target_dir}/listID_${lig_index}
                  for (( N=1; N<$((complexes+1)); N++ )) #5th loop
        	         do
+                     #echo "comp_source: $comp_source target_dir: $target_dir"
+                     #echo "processing 4th loop - 1st therapy level" ; sleep 1000
                      printf -v n "%03d" $N
                      comp_index=$n
                      conf_index=$comp_index

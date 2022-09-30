@@ -409,7 +409,7 @@ else
 fi
 
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
-echo ${therapy_level} > $WORKDIR/therapy_level
+echo ${therapy_level} > $WORKDIR/max_therapy_level
 
 grep -w "S" $vini_dir/ligands/ligands_list > tmp #create pdbqt files in case we are analyzing small molecules
 if  [ -s tmp ] ; then
