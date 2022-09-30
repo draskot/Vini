@@ -10,6 +10,7 @@ max_therapy_level=`cat $WORKDIR/max_therapy_level`
 
 TRUE=1
 FALSE=0
+ONES=1
 
 > $WORKDIR/missing_genes
 
@@ -186,7 +187,7 @@ done
 end_date=`date`
 echo "Analysis completed at"  $end_date
 
-if  [ $compute_cell_line -eq $TRUE ]    #prepare the data for Pearson analysis
+if  [[ ${compute_cell_line} -eq $TRUE ]] && [[ ${therapy_level} -eq $ONES ]]    #prepare the data for Pearson analysis
 then 
     NCI60=`cat $WORKDIR/validate_NCI-60_data`
     if  [ $NCI60 == yes ]
