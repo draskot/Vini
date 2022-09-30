@@ -138,12 +138,29 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-sh $vini_dir/nodetest
+walltime=240  #seconds
 
-#alias python=$HOME/mgltools_x86_64Linux2_1.5.6/bin/python
+timeout ${walltime}s $vini_dir/cpu_nodetest
+if [ -e $WORKDIR/passed ]
+then
+    echo "cpu node test passed"
+    rm -f $WORKDIR/*out $WORKDIR/*err
+else
+    echo "cpu node test failed"
+    exit
+fi
+
+timeout ${walltime}s $vini_dir/gpu_nodetest
+if [ -e $WORKDIR/passed ]
+then
+    echo "gpu node test passed"
+    rm -f $WORKDIR/*out $WORKDIR/*err
+else
+    echo "gpu node test failed"
+    exit
+fi
 
 walltime=120  #seconds
-
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
