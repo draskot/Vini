@@ -147,7 +147,10 @@ then
     rm -f $WORKDIR/*out $WORKDIR/*err
 else
     echo "cpu node test failed"
-    exit
+    hey=`cat $WORKDIR/available_cpu_nodes | awk '{print $1}'`
+    cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+    echo $cpu_node_suffix$hey > $WORKDIR/excluded_cpu_nodes
+    $job_cancel -u $USER
 fi
 
 timeout ${walltime}s $vini_dir/gpu_nodetest
@@ -157,7 +160,10 @@ then
     rm -f $WORKDIR/*out $WORKDIR/*err
 else
     echo "gpu node test failed"
-    exit
+    hey=`cat $WORKDIR/available_gpu_nodes | awk '{print $1}'`
+    gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+    echo $gpu_node_suffix$hey > $WORKDIR/excluded_gpu_nodes
+    $job_cancel -u $USER
 fi
 
 walltime=120  #seconds
