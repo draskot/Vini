@@ -16,7 +16,7 @@ if  [ ! -s $WORKDIR/available_cpu_nodes ]
 then
     echo -e  "\nNo available CPU nodes present at this time. Will not perform the test."
 else
-    echo -e "\nTesting available CPU nodes. Do not interrupt."
+    echo -e "\nTesting CPU nodes. Do not interrupt."
     partition=`cat $WORKDIR/cpu_partition`
     for node in $(<$WORKDIR/available_cpu_nodes)
     do

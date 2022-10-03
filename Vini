@@ -140,30 +140,58 @@ cat COPYRIGHT
 
 walltime=240  #seconds
 
+cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 timeout ${walltime}s $vini_dir/cpu_nodetest
 if [ -e $WORKDIR/passed ]
 then
-    echo "cpu node test passed"
-    rm -f $WORKDIR/*out $WORKDIR/*err
+    echo ; rm -f $WORKDIR/*out $WORKDIR/*err
 else
     echo "cpu node test failed"
     hey=`cat $WORKDIR/available_cpu_nodes | awk '{print $1}'`
-    cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
     echo $cpu_node_suffix$hey > $WORKDIR/excluded_cpu_nodes
     $job_cancel -u $USER
+    $vini_dir/wait_until_jobs_finish
 fi
 
+read -p "Do you want to add any other node(s) to the excluded_cpu_nodes_list? (y/n) " yesno
+if  [ $yesno == y ]
+then
+    read -p "Write cpu node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
+    echo $nodes > tmp
+    for word in $(<tmp)
+    do
+        nodes=$(echo $word | sed 's/[^0-9]*//g')
+        word=${cpu_node_suffix}$nodes
+        sed -i -e "s/$/,$word/" $WORKDIR/excluded_cpu_nodes 
+        sed -i "s/$nodes //" $WORKDIR/available_cpu_nodes
+    done
+fi
+
+gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 timeout ${walltime}s $vini_dir/gpu_nodetest
 if [ -e $WORKDIR/passed ]
 then
-    echo "gpu node test passed"
-    rm -f $WORKDIR/*out $WORKDIR/*err
+    echo ; rm -f $WORKDIR/*out $WORKDIR/*err
 else
     echo "gpu node test failed"
     hey=`cat $WORKDIR/available_gpu_nodes | awk '{print $1}'`
-    gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
     echo $gpu_node_suffix$hey > $WORKDIR/excluded_gpu_nodes
     $job_cancel -u $USER
+    $vini_dir/wait_until_jobs_finish
+fi
+
+read -p "Do you want to add any other node(s) to the excluded_gpu_nodes_list? (y/n) " yesno
+if  [ $yesno == y ]
+then
+    read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
+    echo $nodes > tmp
+    for word in $(<tmp)
+    do
+        nodes=$(echo $word | sed 's/[^0-9]*//g')
+        word=${gpu_node_suffix}$nodes
+        sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
+        sed -i "s/$nodes //" $WORKDIR/available_gpu_nodes
+    done
 fi
 
 walltime=120  #seconds

@@ -21,7 +21,7 @@ if  [ ! -s $WORKDIR/available_gpu_nodes ]
 then
     echo -e  "\nNo available GPU nodes present at this time. Will not perform the test."
 else
-    echo -e "\n\nTesting available GPU nodes. Do not interrupt."
+    echo -e "\n\nTesting GPU nodes. Do not interrupt."
     partition=`cat $WORKDIR/gpu_partition`
     for node in $(<$WORKDIR/available_gpu_nodes)
     do
