@@ -3,6 +3,8 @@ FALSE=0
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
+partition=`cat $WORKDIR/cpu_partition`
+excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 
 
 echo "Preparing ligand pdbqt files, please wait..."
@@ -21,11 +23,20 @@ do
         cp $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
     else                                                                  #create pdbqt file
         cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR #create pdbqt file
-        cat Vina > Vina_run
-        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/ligand_${lig_index}.pdbqt"  >> Vina_run
-        chmod +x Vina_run
+        echo "#!/bin/bash"                               > preplig
+        echo "#SBATCH --time=08:00:00"                  >> preplig
+        echo "#SBATCH --job-name=$drugname"             >> preplig
+        echo "#SBATCH --cpus-per-task=2"                >> preplig
+        echo "#SBATCH --mem=4gb"                        >> preplig
+        echo "#SBATCH --partition=cpu"                  >> preplig
+        echo "#SBATCH --partition="$partition           >> preplig
+        echo "#SBATCH --output=$WORKDIR/$drugname.out"  >> preplig
+        echo "#SBATCH --error=$WORKDIR/$drugname.err"   >> preplig
+        echo "#SBATCH --exclude=${excluded_nodes}"      >> preplig
+        echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l $vini_dir/ligands/pdb_files/${drugname}.pdb -o $WORKDIR/ligand_${lig_index}.pdbqt"                  >> preplig
+        chmod u+x preplig
         sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-        $job_submit Vina_run
+        $job_submit preplig
     fi
     cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR/ligand_${lig_index}.pdb #for Rosetta
     let i++
@@ -52,5 +63,6 @@ do
         echo $line >> $WORKDIR/tmp
     fi
 done < $vini_dir/ligands/ligands_list
-    mv $WORKDIR/tmp $vini_dir/ligands/ligands_list
-    echo "done."
+rm -f *out *err
+mv $WORKDIR/tmp $vini_dir/ligands/ligands_list
+echo "done."

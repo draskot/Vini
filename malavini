@@ -12,14 +12,13 @@ cell_line=`cat $WORKDIR/cell_line`                  #getting the cell line name
 job_status=`cat $WORKDIR/job_status`                #single or multidrug (2,3,4) cancer therapy
 job_submit=`cat $WORKDIR/job_submit`
 docking=`cat $WORKDIR/docking`                      #Rosetta or Hex
-
 exhaustiveness=`cat $WORKDIR/exhaustiveness`
 box_size=`cat $WORKDIR/box_size`
 random_affinity=`cat $WORKDIR/random_affinity`
-
 max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
+partition=`cat $WORKDIR/cpu_partition`
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
@@ -99,14 +98,18 @@ do
                              $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt #prepare gpf file for autogrid4
 
                              sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                    
-                             cat $WORKDIR/Vina                                         > Vina_run
-                             echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> Vina_run
-                             echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> Vina_run
-                             echo "#SBATCH --exclude=${excluded_nodes}"               >> Vina_run 
-                             echo "vina --cpu 4 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt"                    >> Vina_run
-                             chmod u+x Vina_run
+                             echo "#!/bin/bash"                                        > Vina
+                             echo "#SBATCH --time=08:00:00"                           >> Vina
+                             echo "#SBATCH --cpus-per-task=4"                         >> Vina
+                             echo "#SBATCH --mem=8gb"                                 >> Vina
+                             echo "#SBATCH --partition="$partition                    >> Vina
+                             echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> Vina
+                             echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> Vina
+                             echo "#SBATCH --exclude=${excluded_nodes}"               >> Vina 
+                             echo "vina --cpu 4 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt" >> Vina
+                             chmod u+x Vina
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                             ${job_submit} Vina_run
+                             ${job_submit} Vina
                          fi
                          cd $WORKDIR
                      else
@@ -151,7 +154,11 @@ do
 
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
-                 cat $WORKDIR/Vina                                           > ${target_dir}/vec_${lig_index}
+                 echo "#!/bin/bash"                                          > ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --time=08:00:00"                             >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --partition="$partition                      >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --job-name=vec_${lig_index}"                 >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err" >> ${target_dir}/vec_${lig_index}
@@ -163,7 +170,11 @@ do
                  
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir
-                 cat $WORKDIR/Vina                                           > ${target_dir}/mat_${lig_index}
+                 echo "#!/bin/bash"                                          > ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --time=08:00:00"                             >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --partition="$partition                      >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --job-name=mat_${lig_index}"                 >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
@@ -177,8 +188,14 @@ do
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
 
-                 echo "Calculating eigenvalues."
-                 cat $WORKDIR/Vina                                             > ${target_dir}/eigen_${lig_index}
+                 echo "Calculating eigenvalues, please wait."
+                 echo ${target_dir} > target_dir
+                 echo "#!/bin/bash"                                            > ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --time=08:00:00"                               >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --cpus-per-task=1"                             >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --mem=4gb"                                     >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --partition="$partition                        >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --job-name=mat_${lig_index}"                   >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --job-name=eigen_${lig_index}"                 >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --output=${target_dir}/eigen_${lig_index}.out" >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen_${lig_index}
@@ -194,8 +211,12 @@ do
                  sh $vini_dir/wait_until_jobs_finish
 
 
-                 echo "Calculating SLEM."
-                 cat $WORKDIR/Vina                                            > ${target_dir}/select_${lig_index} 
+                 echo "Calculating SLEM, please wait."
+                 echo "#!/bin/bash"                                           > ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --time=08:00:00"                              >> ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --mem=4gb"                                    >> ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --job-name=SLEM_${lig_index}"                 >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err"  >> ${target_dir}/select_${lig_index}
@@ -223,7 +244,14 @@ fi
 cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
 
 echo "Deleting equal SLEM entries with equal indices, please wait..."
-cat $WORKDIR/Vina                                     > $WORKDIR/postproc                 
+echo "#!/bin/bash"                                    > $WORKDIR/postproc
+echo "#SBATCH --time=08:00:00"                       >> $WORKDIR/postproc
+echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
+echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
+echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
+echo "#SBATCH --output=$WORKDIR/postproc1.out"       >> $WORKDIR/postproc
+echo "#SBATCH --error=$WORKDIR/postproc1.err"        >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
@@ -232,7 +260,14 @@ $job_submit $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
 
 echo "Creating SLEM named lists, please wait."
-cat $WORKDIR/Vina                                     > $WORKDIR/postproc   
+echo "#!/bin/bash"                                    > $WORKDIR/postproc
+echo "#SBATCH --time=08:00:00"                       >> $WORKDIR/postproc
+echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
+echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
+echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
+echo "#SBATCH --output=$WORKDIR/postproc2.out"       >> $WORKDIR/postproc
+echo "#SBATCH --error=$WORKDIR/postproc2.err"        >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc 
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
@@ -242,7 +277,14 @@ sh $vini_dir/wait_until_jobs_finish
 
 if [ $therapy_level -ne $ONES ] ; then  
    echo "Creating SLEM wings list, please wait."
-   cat $WORKDIR/Vina                                  > $WORKDIR/postproc
+   echo "#!/bin/bash"                                 > $WORKDIR/postproc
+   echo "#SBATCH --time=08:00:00"                    >> $WORKDIR/postproc
+   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
+   echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
+   echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
+   echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
+   echo "#SBATCH --output=$WORKDIR/postproc3.out"    >> $WORKDIR/postproc
+   echo "#SBATCH --error=$WORKDIR/postproc3.err"     >> $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_list              >> $WORKDIR/postproc
    echo "#SBATCH --exclude=${excluded_nodes}"        >> $WORKDIR/postproc 
    echo "WORKDIR=${WORKDIR}"                         >> $WORKDIR/postproc
@@ -251,7 +293,14 @@ if [ $therapy_level -ne $ONES ] ; then
    sh $vini_dir/wait_until_jobs_finish
 
    echo "Creating SLEM wings named list, please wait."
-   cat $WORKDIR/Vina                                  > $WORKDIR/postproc
+   echo "#!/bin/bash"                                 > $WORKDIR/postproc
+   echo "#SBATCH --time=08:00:00"                    >> $WORKDIR/postproc
+   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
+   echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
+   echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
+   echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
+   echo "#SBATCH --output=$WORKDIR/postproc4.out"    >> $WORKDIR/postproc
+   echo "#SBATCH --error=$WORKDIR/postproc4.err"     >> $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_named_list        >> $WORKDIR/postproc
    echo "#SBATCH --exclude=${excluded_nodes}"        >> $WORKDIR/postproc 
    echo "WORKDIR=${WORKDIR}"                         >> $WORKDIR/postproc
