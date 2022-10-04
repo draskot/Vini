@@ -54,7 +54,7 @@ do
     sed -i "s/$wild/$mutated/" $WORKDIR/receptors_contracted
 done < $WORKDIR/combo
 
-dos2unix $vini_dir/genes/cosmic_ids.csv
+#dos2unix $vini_dir/genes/cosmic_ids.csv
 
 while read -r line
 do
@@ -76,6 +76,7 @@ do
             cat $vini_dir/genes/sequences/${line}.fasta >> $WORKDIR/tmp
         fi
         mv $WORKDIR/tmp $vini_dir/genes/sequences/${line}.fasta
+        sed -i -e "s/\r//g"  $vini_dir/genes/sequences/${line}.fasta #remove ^M from fasta sequence
 
         if  [ -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]
         then 

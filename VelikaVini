@@ -129,6 +129,7 @@ else
     fi
 
     echo -n "Generating  mutated fasta sequences for ${cell_line} cell line. Please wait."
+
     python3 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
         
     ls $vini_dir/genes/sequences > tmp

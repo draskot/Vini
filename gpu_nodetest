@@ -9,7 +9,7 @@ GPU_AVAIL=$(sinfo -N -o "%N %T" -p gpu | awk '(NR>1) {  if($2=="mixed" || $2=="i
                                                 next}')
 
 echo ${GPU_AVAIL} > $WORKDIR/available_gpu_nodes
-echo ${GPU_AVAIL} > $WORKDIR/excluded_gpu_nodes
+echo ${GPU_EXCLUDED} > $WORKDIR/excluded_gpu_nodes
 gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 
