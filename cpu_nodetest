@@ -1,6 +1,6 @@
-cpu=`cat $WORKDIR/cpu_partition`
-CPU_EXCLUDED=$(sinfo -dN -p ${cpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-CPU_AVAIL=$(sinfo -N -o "%N %T" -p cpu | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
+partition=`cat $WORKDIR/cpu_partition`
+CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+CPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
                                              gsub(/[a-z]/, "", $1);print $1;}
                                             else
                                                 next}')
@@ -10,14 +10,13 @@ cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
-rm -f $WORKDIR/passed
+echo failed > $WORKDIR/test_status
 
 if  [ ! -s $WORKDIR/available_cpu_nodes ]
 then
     echo -e  "\nNo available CPU nodes present at this time. Will not perform the test."
 else
     echo -e "\nTesting CPU nodes. Do not interrupt."
-    partition=`cat $WORKDIR/cpu_partition`
     for node in $(<$WORKDIR/available_cpu_nodes)
     do
         nodename=${cpu_node_suffix}$node
@@ -30,13 +29,13 @@ else
         echo "#SBATCH --error=$WORKDIR/nodetest.$node.err"   >> $WORKDIR/cpu_nodetest
         echo "groups"                                        >> $WORKDIR/cpu_nodetest
         echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/cpu_nodetest
-        echo "> $WORKDIR/passed"                             >> $WORKDIR/cpu_nodetest
         chmod u+x $WORKDIR/cpu_nodetest
         sbatch -Q $WORKDIR/cpu_nodetest
         echo -n "."
     done
+
     echo ; sh $vini_dir/wait_until_jobs_finish
-    
+
     for node in $(<$WORKDIR/available_cpu_nodes)
     do
         nodename=${cpu_node_suffix}$node
@@ -67,5 +66,4 @@ then
     echo ; echo -e "\nThe following CPU nodes are either not available or experience some problems. Will be excluded:"
     cat $WORKDIR/excluded_cpu_nodes
 fi
-
-#rm -f $WORKDIR/*out $WORKDIR/*err
+echo passed > $WORKDIR/test_status

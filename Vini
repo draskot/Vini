@@ -139,19 +139,25 @@ cd $vini_dir
 cat COPYRIGHT
 
 walltime=240  #seconds
+partition=`cat $WORKDIR/cpu_partition`
+cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+partition=`cat $WORKDIR/gpu_partition`  
+gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
-cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 timeout ${walltime}s $vini_dir/cpu_nodetest
-if [ -e $WORKDIR/passed ]
+test_status=`cat $WORKDIR/test_status`
+if [ ${test_status} == passed ]
 then
-    echo ; rm -f $WORKDIR/*out $WORKDIR/*err
+    echo "cpu node test finished"
 else
-    echo "cpu node test failed"
-    hey=`cat $WORKDIR/available_cpu_nodes | awk '{print $1}'`
-    echo $cpu_node_suffix$hey > $WORKDIR/excluded_cpu_nodes
-    $job_cancel -u $USER
-    $vini_dir/wait_until_jobs_finish
+    echo "cpu node test aborted" #putting first unavailable cpu node on the list
+    partition=`cat $WORKDIR/cpu_partition`
+    CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
+    node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
+    echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_cpu_nodes
 fi
+rm -f $WORKDIR/*out $WORKDIR/*err
+$job_cancel -u $USER
 
 read -p "Do you want to add any other node(s) to the excluded_cpu_nodes_list? (y/n) " yesno
 if  [ $yesno == y ]
@@ -167,18 +173,20 @@ then
     done
 fi
 
-gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 timeout ${walltime}s $vini_dir/gpu_nodetest
-if [ -e $WORKDIR/passed ]
+test_status=`cat $WORKDIR/test_status`
+if [ ${test_status} == passed ]
 then
-    echo ; rm -f $WORKDIR/*out $WORKDIR/*err
+    echo "gpu node test finished"
 else
-    echo "gpu node test failed"
-    hey=`cat $WORKDIR/available_gpu_nodes | awk '{print $1}'`
-    echo $gpu_node_suffix$hey > $WORKDIR/excluded_gpu_nodes
-    $job_cancel -u $USER
-    $vini_dir/wait_until_jobs_finish
+    echo "gpu node test aborted"    #putting first unavailable gpu node on the list
+    partition=`cat $WORKDIR/gpu_partition`  
+    GPU_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+    node=`echo $GPU_EXCLUDED | awk '{print $1}'`
+    echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
 fi
+rm -f $WORKDIR/*out $WORKDIR/*err
+$job_cancel -u $USER
 
 read -p "Do you want to add any other node(s) to the excluded_gpu_nodes_list? (y/n) " yesno
 if  [ $yesno == y ]
@@ -190,11 +198,12 @@ then
         nodes=$(echo $word | sed 's/[^0-9]*//g')
         word=${gpu_node_suffix}$nodes
         sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
-        sed -i "s/$nodes //" $WORKDIR/available_gpu_nodes
+        #sed -i "s/$nodes //" $WORKDIR/available_gpu_nodes
     done
 fi
 
 walltime=120  #seconds
+
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
@@ -203,7 +212,6 @@ node_type=gpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
 sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
-
 
 sh $vini_dir/prepare_SLURM_scripts
 
@@ -240,8 +248,6 @@ sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugb
 sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
 sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
 
-
-
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
@@ -252,7 +258,6 @@ echo ${prediction_model} > $WORKDIR/prediction_model
 echo "Vini can predict biotech drug structures with either Rosetta+Alphafold, or with SWISS-MODEL."
 read -e -p "Use Rosetta+AlphaFold[RA] or SWISS-MODEL[S]? Enter to accept default: " -i "RA" biotech_drugs_prediction_model
 echo ${biotech_drugs_prediction_model} > $WORKDIR/biotech_drugs_prediction_model
-
 
 if [ ${prediction_model} == A ]
 then 

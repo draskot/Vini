@@ -1,9 +1,9 @@
-gpu=`cat $WORKDIR/gpu_partition`
+partition=`cat $WORKDIR/gpu_partition`
 
-GPU_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
 
 
-GPU_AVAIL=$(sinfo -N -o "%N %T" -p gpu | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
+GPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
                                              gsub(/[a-z]/, "", $1);print $1;}
                                             else
                                                 next}')
@@ -12,6 +12,7 @@ echo ${GPU_AVAIL} > $WORKDIR/available_gpu_nodes
 echo ${GPU_EXCLUDED} > $WORKDIR/excluded_gpu_nodes
 gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
+echo failed > $WORKDIR/test_status
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
@@ -22,7 +23,6 @@ then
     echo -e  "\nNo available GPU nodes present at this time. Will not perform the test."
 else
     echo -e "\n\nTesting GPU nodes. Do not interrupt."
-    partition=`cat $WORKDIR/gpu_partition`
     for node in $(<$WORKDIR/available_gpu_nodes)
     do
         nodename=${gpu_node_suffix}$node
@@ -41,7 +41,9 @@ else
         sbatch -Q $WORKDIR/gpu_nodetest
         echo -n "."
     done
+
     echo ; sh $vini_dir/wait_until_jobs_finish
+
     for node in $(<$WORKDIR/available_gpu_nodes)
     do
         nodename=${gpu_node_suffix}$node
@@ -71,5 +73,4 @@ then
     cat $WORKDIR/excluded_gpu_nodes
 fi
 
-
-#rm -f $WORKDIR/*out $WORKDIR/*err
+echo passed > $WORKDIR/test_status
