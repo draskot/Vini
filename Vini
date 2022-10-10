@@ -150,11 +150,16 @@ if [ ${test_status} == passed ]
 then
     echo "cpu node test finished"
 else
-    echo "cpu node test aborted" #putting first unavailable cpu node on the list
-    partition=`cat $WORKDIR/cpu_partition`
-    CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
-    node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
-    echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_cpu_nodes
+    if [ ${test_status} == nonode ]
+    then
+        exit
+    else
+        echo "cpu node test not completed" #putting first unavailable cpu node on the list
+        partition=`cat $WORKDIR/cpu_partition`
+        CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
+        node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
+        echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_cpu_nodes
+    fi
 fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 $job_cancel -u $USER

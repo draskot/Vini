@@ -5,16 +5,21 @@ CPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" 
                                             else
                                                 next}')
 echo ${CPU_AVAIL} > $WORKDIR/available_cpu_nodes
+
+
 echo ${CPU_EXCLUDED} > $WORKDIR/excluded_cpu_nodes
 cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
-echo failed > $WORKDIR/test_status
+> $WORKDIR/test_status
 
-if  [ ! -s $WORKDIR/available_cpu_nodes ]
+#if  [ ! -s $WORKDIR/available_cpu_nodes ]
+if  [ -z ${CPU_AVAIL} ]
 then
-    echo -e  "\nNo available CPU nodes present at this time. Will not perform the test."
+    echo "No available CPU nodes found on this system. Vini will stop now."
+    echo ; echo "nonode" > $WORKDIR/test_status
+    exit
 else
     echo -e "\nTesting CPU nodes. Do not interrupt."
     for node in $(<$WORKDIR/available_cpu_nodes)
