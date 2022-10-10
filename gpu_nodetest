@@ -18,9 +18,15 @@ groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
 rm -f $WORKDIR/passed
 
-if  [ ! -s $WORKDIR/available_gpu_nodes ]
+
+if  [ -z ${GPU_AVAIL} ]
 then
-    echo -e  "\nNo available GPU nodes present at this time. Will not perform the test."
+    read -p "No available GPU nodes found on this system. Run Vini without GPU nodes? (y/n)" yesno
+    if  [ $yesno == n ]
+    then
+        echo ; echo "nonode" > $WORKDIR/test_status
+        exit
+    fi
 else
     echo -e "\n\nTesting GPU nodes. Do not interrupt."
     for node in $(<$WORKDIR/available_gpu_nodes)

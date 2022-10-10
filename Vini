@@ -141,8 +141,7 @@ cat COPYRIGHT
 walltime=240  #seconds
 partition=`cat $WORKDIR/cpu_partition`
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-partition=`cat $WORKDIR/gpu_partition`  
-gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
 
 timeout ${walltime}s $vini_dir/cpu_nodetest
 test_status=`cat $WORKDIR/test_status`
@@ -178,17 +177,25 @@ then
     done
 fi
 
+partition=`cat $WORKDIR/gpu_partition`  
+gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
 timeout ${walltime}s $vini_dir/gpu_nodetest
 test_status=`cat $WORKDIR/test_status`
 if [ ${test_status} == passed ]
 then
     echo "gpu node test finished"
 else
-    echo "gpu node test aborted"    #putting first unavailable gpu node on the list
-    partition=`cat $WORKDIR/gpu_partition`  
-    GPU_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-    node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-    echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
+    if [ ${test_status} == nonode ]
+    then
+        exit
+    else
+        echo "gpu node test not completed"    #putting first unavailable gpu node on the list
+        partition=`cat $WORKDIR/gpu_partition`  
+        GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+        node=`echo $GPU_EXCLUDED | awk '{print $1}'`
+        echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
+    fi
 fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 $job_cancel -u $USER
@@ -203,9 +210,32 @@ then
         nodes=$(echo $word | sed 's/[^0-9]*//g')
         word=${gpu_node_suffix}$nodes
         sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
-        #sed -i "s/$nodes //" $WORKDIR/available_gpu_nodes
     done
 fi
+
+partition=`cat $WORKDIR/smp_partition`
+smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+timeout ${walltime}s $vini_dir/smp_nodetest
+test_status=`cat $WORKDIR/test_status`
+if [ ${test_status} == passed ]
+then
+    echo "large memory node test finished"
+else
+    if [ ${test_status} == nonode ]
+    then
+        exit
+    else
+        echo "large memory node test not completed"    #putting first unavailable large memory node on the list
+        partition=`cat $WORKDIR/smp_partition`  
+        SMP_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+        node=`echo $SMP_EXCLUDED | awk '{print $1}'`
+        echo ${smp_node_suffix}$node > $WORKDIR/excluded_smp_nodes
+    fi
+fi
+rm -f $WORKDIR/*out $WORKDIR/*err
+$job_cancel -u $USER
+
 
 walltime=120  #seconds
 
