@@ -1,0 +1,73 @@
+partition=`cat $WORKDIR/smp_partition`
+SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+SMP_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
+                                             gsub(/[a-z]/, "", $1);print $1;}
+                                            else
+                                                next}')
+echo ${SMP_AVAIL} > $WORKDIR/available_smp_nodes
+
+
+echo ${SMP_EXCLUDED} > $WORKDIR/excluded_smp_nodes
+smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+groups > $WORKDIR/tmp
+groups_login_node=`wc -w < $WORKDIR/tmp`
+> $WORKDIR/test_status
+
+if  [ -z ${CPU_AVAIL} ]
+then
+    echo "No available large memory nodes (with >512GB RAM)found on this system. Vini will stop now."
+    echo ; echo "nonode" > $WORKDIR/test_status
+    exit
+else
+    echo -e "\nTesting SMP nodes. Do not interrupt."
+    for node in $(<$WORKDIR/available_smp_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        echo "#! /bin/bash"                                   > $WORKDIR/smp_nodetest
+        echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/smp_nodetest
+        echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/smp_nodetest
+        echo "#SBATCH --mem=1gb"                             >> $WORKDIR/smp_nodetest
+        echo "#SBATCH --partition="$partition                >> $WORKDIR/smp_nodetest
+        echo "#SBATCH --output=$WORKDIR/nodetest.$node.out"  >> $WORKDIR/smp_nodetest
+        echo "#SBATCH --error=$WORKDIR/nodetest.$node.err"   >> $WORKDIR/smp_nodetest
+        echo "groups"                                        >> $WORKDIR/smp_nodetest
+        echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/smp_nodetest
+        chmod u+x $WORKDIR/smp_nodetest
+        sbatch -Q $WORKDIR/smp_nodetest
+        echo -n "."
+    done
+
+    echo ; sh $vini_dir/wait_until_jobs_finish
+
+    for node in $(<$WORKDIR/available_smp_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        grep $USER $WORKDIR/nodetest.${node}.out > $WORKDIR/nogroups
+        groups=`wc -w < $WORKDIR/nogroups`
+       
+        if  [ $groups -eq ${groups_login_node} ]
+        then
+            echo -n "$nodename ok. " ; sleep 0.025
+        else
+            echo $nodename >> $WORKDIR/excluded_smp_nodes
+            echo -n "$nodename not ok. " ; sleep 0.025
+        fi
+    done
+fi
+
+if  [ -s $WORKDIR/excluded_smp_nodes ]
+then
+    > $WORKDIR/tmp
+    for node in $(<$WORKDIR/excluded_smp_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        echo $nodename >> $WORKDIR/tmp
+    done
+    cat $WORKDIR/tmp | tr '\n' ',' > $WORKDIR/excluded_smp_nodes
+    cat $WORKDIR/excluded_smp_nodes | rev | cut -c 2- | rev > $WORKDIR/tmp
+    mv $WORKDIR/tmp $WORKDIR/excluded_smp_nodes
+    echo ; echo -e "\nThe following large memory nodes (>512GB RAM) are either not available or experience some problems. Will be excluded:"
+    cat $WORKDIR/excluded_cpu_nodes
+fi
+echo passed > $WORKDIR/test_status

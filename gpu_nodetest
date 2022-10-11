@@ -10,14 +10,13 @@ GPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" 
 
 echo ${GPU_AVAIL} > $WORKDIR/available_gpu_nodes
 echo ${GPU_EXCLUDED} > $WORKDIR/excluded_gpu_nodes
-gpu_node_suffix=`sinfo -N -o "%N %T" -p gpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 echo failed > $WORKDIR/test_status
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
 rm -f $WORKDIR/passed
-
 
 if  [ -z ${GPU_AVAIL} ]
 then

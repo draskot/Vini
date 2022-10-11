@@ -8,7 +8,7 @@ echo ${CPU_AVAIL} > $WORKDIR/available_cpu_nodes
 
 
 echo ${CPU_EXCLUDED} > $WORKDIR/excluded_cpu_nodes
-cpu_node_suffix=`sinfo -N -o "%N %T" -p cpu | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`

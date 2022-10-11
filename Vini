@@ -72,7 +72,6 @@ else
 echo $JSS > $WORKDIR/JSS
 fi
 
-
 echo -n "Determining which Rosetta version is installed..."
 which antibody_graft.mpi.linuxgccrelease &> tmp #determining which Rosetta is installed
 grep -w no tmp > tmp2
@@ -138,10 +137,10 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-walltime=240  #seconds
+walltime=120  #seconds
+
 partition=`cat $WORKDIR/cpu_partition`
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
 
 timeout ${walltime}s $vini_dir/cpu_nodetest
 test_status=`cat $WORKDIR/test_status`
@@ -163,7 +162,7 @@ fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 $job_cancel -u $USER
 
-read -p "Do you want to add any other node(s) to the excluded_cpu_nodes_list? (y/n) " yesno
+read -p "Do you want to exclude any other cpu node(s)? (y/n) " yesno
 if  [ $yesno == y ]
 then
     read -p "Write cpu node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
@@ -177,76 +176,94 @@ then
     done
 fi
 
-partition=`cat $WORKDIR/gpu_partition`  
-gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
-timeout ${walltime}s $vini_dir/gpu_nodetest
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} == passed ]
-then
-    echo "gpu node test finished"
-else
-    if [ ${test_status} == nonode ]
-    then
-        exit
-    else
-        echo "gpu node test not completed"    #putting first unavailable gpu node on the list
-        partition=`cat $WORKDIR/gpu_partition`  
-        GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-        node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-        echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
-    fi
-fi
-rm -f $WORKDIR/*out $WORKDIR/*err
-$job_cancel -u $USER
-
-read -p "Do you want to add any other node(s) to the excluded_gpu_nodes_list? (y/n) " yesno
-if  [ $yesno == y ]
-then
-    read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
-    echo $nodes > tmp
-    for word in $(<tmp)
-    do
-        nodes=$(echo $word | sed 's/[^0-9]*//g')
-        word=${gpu_node_suffix}$nodes
-        sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
-    done
-fi
-
-partition=`cat $WORKDIR/smp_partition`
-smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
-timeout ${walltime}s $vini_dir/smp_nodetest
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} == passed ]
-then
-    echo "large memory node test finished"
-else
-    if [ ${test_status} == nonode ]
-    then
-        exit
-    else
-        echo "large memory node test not completed"    #putting first unavailable large memory node on the list
-        partition=`cat $WORKDIR/smp_partition`  
-        SMP_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-        node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-        echo ${smp_node_suffix}$node > $WORKDIR/excluded_smp_nodes
-    fi
-fi
-rm -f $WORKDIR/*out $WORKDIR/*err
-$job_cancel -u $USER
-
-
-walltime=120  #seconds
-
 node_type=cpu
 sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
 sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
 
-node_type=gpu
-sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
-sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
-sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
+if  [ -e $WORKDIR/gpu_partition ]
+then
+    partition=`cat $WORKDIR/gpu_partition`  
+    gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+    timeout ${walltime}s $vini_dir/gpu_nodetest
+    test_status=`cat $WORKDIR/test_status`
+    if [ ${test_status} == passed ]
+    then
+        echo "gpu node test finished"
+    else
+        if [ ${test_status} == nonode ]
+        then
+            exit
+        else
+            echo "gpu node test not completed"    #putting first unavailable gpu node on the list
+            partition=`cat $WORKDIR/gpu_partition`  
+            GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+            node=`echo $GPU_EXCLUDED | awk '{print $1}'`
+            echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
+        fi
+    fi
+    rm -f $WORKDIR/*out $WORKDIR/*err
+    $job_cancel -u $USER
+
+    read -p "Do you want to exclude any other gpu node(s)? (y/n) " yesno
+    if  [ $yesno == y ]
+    then
+        read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
+        echo $nodes > tmp
+        for word in $(<tmp)
+        do
+            nodes=$(echo $word | sed 's/[^0-9]*//g')
+            word=${gpu_node_suffix}$nodes
+            sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
+        done
+    fi
+    node_type=gpu
+    sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
+    sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
+    sh $vini_dir/get_number_gpu_cards_per_node ${node_type} ${walltime}
+fi
+
+if  [ -e $WORKDIR/smp_partition ]
+then
+    partition=`cat $WORKDIR/smp_partition`
+    smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+    timeout ${walltime}s $vini_dir/smp_nodetest
+    test_status=`cat $WORKDIR/test_status`
+    if [ ${test_status} == passed ]
+    then
+        echo "large memory node test finished"
+    else
+        if [ ${test_status} == nonode ]
+        then
+            exit
+        else
+            echo "large memory node test not completed"    #putting first unavailable large memory node on the list
+            partition=`cat $WORKDIR/smp_partition`  
+            SMP_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+            node=`echo $SMP_EXCLUDED | awk '{print $1}'`
+            echo ${smp_node_suffix}$node > $WORKDIR/excluded_smp_nodes
+        fi
+    fi
+    rm -f $WORKDIR/*out $WORKDIR/*err
+    $job_cancel -u $USER
+
+    read -p "Do you want to exclude any other large memory node(s)? (y/n) " yesno
+    if  [ $yesno == y ]
+    then
+        read -p "Write large memory node(s) names in the form of the blank separated list (e.g. cn03 cn04 etc.):" nodes
+        echo $nodes > tmp
+        for word in $(<tmp)
+        do
+            nodes=$(echo $word | sed 's/[^0-9]*//g')
+            word=${smp_node_suffix}$nodes
+            sed -i -e "s/$/,$word/" $WORKDIR/excluded_smp_nodes 
+        done
+    fi
+    node_type=smp
+    sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
+    sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
+fi
 
 sh $vini_dir/prepare_SLURM_scripts
 
