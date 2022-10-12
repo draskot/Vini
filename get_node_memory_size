@@ -59,7 +59,7 @@ then
     memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
     grep G tmp > tmp2                    #now check what we have (GB or TB)
     nochars=`wc -l < tmp2`
-    if [ $nochars -eq $NULL ]
+    if [ $nochars -ne $NULL ]
     then                                 #we have Gigabytes
         memsize=$(( memsize*${percentage}/100 ))
         memsize=${memsize}${suffix}

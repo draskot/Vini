@@ -6,7 +6,7 @@ import time
 import csv
 from time import sleep
 
-TOKEN_NUMBER = "658897607815201234689902638499260193"
+TOKEN_NUMBER = "76510015335094415329909452113586138"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
 def mapUniprotIDToCosmicID_fromList(UNIPROT_LIST):

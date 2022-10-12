@@ -146,7 +146,7 @@ timeout ${walltime}s $vini_dir/cpu_nodetest
 test_status=`cat $WORKDIR/test_status`
 if [ ${test_status} == passed ]
 then
-    echo
+    echo "test passed"
 else
     if [ ${test_status} == nonode ]
     then
