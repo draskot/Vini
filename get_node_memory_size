@@ -7,6 +7,8 @@ version=`cat $WORKDIR/version`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 
+NULL=0
+
 if [ ${node_type} == cpu ]
 then
     partition=`cat $WORKDIR/cpu_partition`
