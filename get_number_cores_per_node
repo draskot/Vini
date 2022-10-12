@@ -13,8 +13,14 @@ then
     partition=`cat $WORKDIR/cpu_partition`
     excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 else
-    partition=`cat $WORKDIR/gpu_partition`
-    excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    if [ ${node_type} == gpu ]
+    then
+        partition=`cat $WORKDIR/gpu_partition`
+        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    else
+        partition=`cat $WORKDIR/smp_partition`
+        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
+    fi
 fi
 
 
@@ -25,7 +31,7 @@ echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --exclude=$excluded_nodes"     >> $WORKDIR/get_number_of_cores
 if  [ ${node_type} == gpu ] ; then
-    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_number_of_cores
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_number_of_cores
 fi
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_of_cores

@@ -18,7 +18,7 @@ groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
 rm -f $WORKDIR/passed
 
-if  [ -z ${GPU_AVAIL} ]
+if [ ! -s $WORKDIR/available_gpu_nodes ]
 then
     read -p "No available GPU nodes found on this system. Run Vini without GPU nodes? (y/n)" yesno
     if  [ $yesno == n ]
@@ -38,7 +38,7 @@ else
         echo "#SBATCH --partition="$partition                >> $WORKDIR/gpu_nodetest
         echo "#SBATCH --output=$WORKDIR/nodetest.$node.out"  >> $WORKDIR/gpu_nodetest
         echo "#SBATCH --error=$WORKDIR/nodetest.$node.err"   >> $WORKDIR/gpu_nodetest
-        echo "#SBATCH --gres=gpu:1"                          >> $WORKDIR/gpu_nodetest
+        echo "#SBATCH --gres=gpu:0"                          >> $WORKDIR/gpu_nodetest
         echo "groups"                                        >> $WORKDIR/gpu_nodetest
         echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/gpu_nodetest
         echo "> $WORKDIR/passed"                             >> $WORKDIR/gpu_nodetest

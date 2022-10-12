@@ -14,7 +14,8 @@ groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
 > $WORKDIR/test_status
 
-if  [ -z ${CPU_AVAIL} ]
+if [ ! -s $WORKDIR/available_gpu_nodes ]
+#if  [ -z ${CPU_AVAIL} ]
 then
     echo "No available CPU nodes found on this system. Vini will stop now."
     echo ; echo "nonode" > $WORKDIR/test_status

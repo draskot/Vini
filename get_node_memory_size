@@ -7,16 +7,21 @@ version=`cat $WORKDIR/version`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 
-
-
 if [ ${node_type} == cpu ]
 then
     partition=`cat $WORKDIR/cpu_partition`
     excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 else
-    partition=`cat $WORKDIR/gpu_partition`
-    excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    if [ ${node_type} == gpu ]
+    then
+        partition=`cat $WORKDIR/gpu_partition`
+        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    else
+        partition=`cat $WORKDIR/smp_partition`
+        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
+    fi
 fi
+
 
 echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
@@ -27,7 +32,7 @@ echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
 if  [ ${node_type} == gpu ] ; then
-    echo "#SBATCH --gres=gpu:1"              >> $WORKDIR/get_size_of_memory
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_size_of_memory
 fi
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
@@ -36,7 +41,7 @@ echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_size_of_memory
 echo "free -h"                               >> $WORKDIR/get_size_of_memory
 chmod u+x                                       $WORKDIR/get_size_of_memory
 
-rm -f $WORKDIR/memory.*
+rm -f $WORKDIR/memory.* tmp2
 
 $job_submit $WORKDIR/get_size_of_memory
 
@@ -50,8 +55,9 @@ then
     factor=1024
     echo $memsize > tmp
     memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
-    grep G tmp > tmp2                    #now check what we have
-    if [ -e tmp2 ]
+    grep G tmp > tmp2                    #now check what we have (GB or TB)
+    nochars=`wc -l < tmp2`
+    if [ $nochars -eq $NULL ]
     then                                 #we have Gigabytes
         memsize=$(( memsize*${percentage}/100 ))
         memsize=${memsize}${suffix}
