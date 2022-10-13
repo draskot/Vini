@@ -1,4 +1,4 @@
-#updated on 26042022
+
 NULL=0
 module purge
 rm -f tmp
@@ -28,22 +28,22 @@ then
 fi
 read -p "Press enter when ready to start the installation of 3rd party software."
 
-echo -n "Checking if miniconda2 is installed..."
-grep miniconda2 $vini_dir/sourceme > tmp  
-if  [ ! -s tmp ]
-then
-    echo "no. Performing cleanup, please wait..."
-    rm -rvf  $INSTALL/miniconda2
-    echo "Please wait while downloading and installing miniconda2..."
-    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
-    source $INSTALL/miniconda2/etc/profile.d/conda.sh
-    conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
-    rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
-    echo "#************miniconda2 section**********" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#echo -n "Checking if miniconda2 is installed..."
+#grep miniconda2 $vini_dir/sourceme > tmp  
+#if  [ ! -s tmp ]
+#then
+#    echo "no. Performing cleanup, please wait..."
+#    rm -rvf  $INSTALL/miniconda2
+#    echo "Please wait while downloading and installing miniconda2..."
+#    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+#    sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
+#    source $INSTALL/miniconda2/etc/profile.d/conda.sh
+#    conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
+#    rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
+#    echo "#************miniconda2 section**********" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
 echo -n "Checking if miniconda3 is installed..."
 grep miniconda3 $vini_dir/sourceme > tmp 

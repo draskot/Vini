@@ -316,26 +316,33 @@ then
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        gpus=`cat $WORKDIR/gpus`
-        if [ $gpus -ne $NULL ]
-        then
-            read -e -p "Run AlphaFold on CPU or GPU nodes (cpu/gpu)? Press enter to accept default: " -i "gpu" partition
+        #gpus=`cat $WORKDIR/gpus`
+        #if [ $gpus -ne $NULL ]
+        #then
+            read -e -p "Run AlphaFold on CPU, GPU, or SMP nodes (cpu/gpu/smp)? Press enter to accept default: " -i "gpu" partition
             if [ $partition == cpu ]
             then
                 cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
                 cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
                 cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
             else
-                cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
-                cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
-                cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
+                if  [ $partition == gpu ]
+                then
+                    cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
+                    cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
+                    cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
+                else
+                    cat $WORKDIR/smp_partition > $WORKDIR/AlphaFold_partition
+                    cat $WORKDIR/smp_cores > $WORKDIR/AlphaFold_gpus
+                    cat $WORKDIR/smp_memsize > $WORKDIR/AlphaFold_mem
+                fi
             fi
-        else
-            echo "AlphaFold will run on CPU nodes"
-            cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
-            cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
-            cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
-        fi
+        #else
+            #echo "AlphaFold will run on CPU nodes"
+            #cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
+            #cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
+            #cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+        #fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base
     else

@@ -13,11 +13,11 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hg:t:o:n:", ["gene", "tissue="])
     except getopt.GetoptError:
-        print '-g <gene list file> -t <tissue name> -o <output file path> -c <number of cores>'
+        print('-g <gene list file> -t <tissue name> -o <output file path> -c <number of cores>')
         sys.exit()
     for opt, arg in opts:
         if opt == '-h':
-            print '-g <gene list file> -t <tissue name> -o <output file path> -c <number of cores>'
+            print('-g <gene list file> -t <tissue name> -o <output file path> -c <number of cores>')
             sys.exit()
         elif opt in ("-g", "--gene"):
             GENE_LIST = arg
@@ -33,13 +33,13 @@ def main(argv):
 
     gene_count = 0
     if not os.path.isfile(WORKING_DIR + TISSUE_NAME + '_samples.csv'):
-        print "No %s tissue samples file." % TISSUE_NAME
+        print("No %s tissue samples file." % TISSUE_NAME)
         return False
 
     for gene in genes:
         if os.path.isfile(WORKING_DIR + gene + '_expressions.csv'):
             t1 = time.time()
-            print "Calculating Z-score for gene: %s" % gene
+            print("Calculating Z-score for gene: %s" % gene)
             command = "mpiexec -n " + N_CORES \
                       + " python calculate_gene_expression.py -g " + gene \
                       + " -t " + TISSUE_NAME + " -o " + OUTPUT_FILE
@@ -50,12 +50,12 @@ def main(argv):
                 gene_count += 1
                 print('calculated in {:.3f} sec'.format(time.time() - t1))
             except ValueError:
-                print "Unsuccessful calculation of expression for %s" % gene
+                print("Unsuccessful calculation of expression for %s" % gene)
                 sys.exit()
         else:
-            print "No expression data for gene %s" % gene
+            print("No expression data for gene %s" % gene)
 
-    print "Calculated %s out of %s genes." % (gene_count, len(genes))
+    print("Calculated %s out of %s genes." % (gene_count, len(genes)))
     print('calculated in {:.3f} sec'.format(time.time() - t0))
 if __name__ == "__main__":
     main(sys.argv[1:])

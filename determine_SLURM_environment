@@ -11,7 +11,7 @@ then
 
     if [ -e $WORKDIR/smp_partition ]
     then
-        gpu_partition=`cat $WORKDIR/smp_partition`
+        smp_partition=`cat $WORKDIR/smp_partition`
         echo "Vini is using $smp_partition partition for its large memory (>512GB) jobs."
     fi
 else

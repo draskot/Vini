@@ -168,6 +168,9 @@ do
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir} ${WORKDIR}
                  sh $vini_dir/wait_until_jobs_finish
                  
+                 source $INSTALL/miniconda3/bin/activate #debug
+                 conda activate env310
+
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir
                  echo "#!/bin/bash"                                          > ${target_dir}/mat_${lig_index}
@@ -180,14 +183,10 @@ do
                  echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/mat_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                  >> ${target_dir}/mat_${lig_index}
-                 #echo "source $INSTALL/miniconda2/bin/activate"            >> ${target_dir}/mat_${lig_index}
-                 #echo "conda activate env27"                               >> ${target_dir}/mat_${lig_index}
-                 #echo "python2 $vini_dir/create_energy_binding_matrix.py"  >> ${target_dir}/mat_${lig_index}
-                 #echo "conda deactivate"                                   >> ${target_dir}/mat_${lig_index}
-                 echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/mat_${lig_index}
-                 echo "conda activate env310"                               >> ${target_dir}/mat_${lig_index}
+                 #echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/mat_${lig_index}
+                 #echo "conda activate env310"                               >> ${target_dir}/mat_${lig_index}
                  echo "python3 $vini_dir/create_energy_binding_matrix.py"   >> ${target_dir}/mat_${lig_index}
-                 echo "conda deactivate"                                    >> ${target_dir}/mat_${lig_index}
+                 #echo "conda deactivate"                                    >> ${target_dir}/mat_${lig_index}
                  chmod u+x ${target_dir}/mat_${lig_index}
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
@@ -205,16 +204,15 @@ do
                  echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                   >> ${target_dir}/eigen_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                    >> ${target_dir}/eigen_${lig_index}
-                 #echo "source $INSTALL/miniconda2/bin/activate"              >> ${target_dir}/eigen_${lig_index}
-                 #echo "conda activate env27"                                 >> ${target_dir}/eigen_${lig_index}
-                 #echo "python2 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/eigen_${lig_index}
-                 echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/eigen_${lig_index}
-                 echo "conda activate env310"                                 >> ${target_dir}/eigen_${lig_index}
+                 #echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/eigen_${lig_index}
+                 #echo "conda activate env310"                                 >> ${target_dir}/eigen_${lig_index}
                  echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/eigen_${lig_index}
-                 echo "conda deactivate"                                      >> ${target_dir}/eigen_${lig_index}
+                 #echo "conda deactivate"                                      >> ${target_dir}/eigen_${lig_index}
                  chmod u+x ${target_dir}/eigen_${lig_index}
                  ${job_submit} ${target_dir}/eigen_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
+
+                 conda deactivate
 
                  echo "Calculating SLEM, please wait."
                  echo "#!/bin/bash"                                           > ${target_dir}/select_${lig_index}

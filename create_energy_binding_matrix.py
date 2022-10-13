@@ -8,7 +8,7 @@ def main(argv):
     try:
         WORKDIR = os.environ['WORKDIR']
     except KeyError:
-        print "WORKDIR environmental variable is not set"
+        print("WORKDIR environmental variable is not set")
         exit()
 
     try:
@@ -16,7 +16,7 @@ def main(argv):
             target_dir = f.read()
             TARGETDIR = os.path.join(target_dir.strip("\n"))
     except:
-        print "Can't open file with target directory"
+        print("Can't open file with target directory")
         exit()
 
     with open(os.path.join(WORKDIR, 'complexes'), 'r') as f:
@@ -28,7 +28,7 @@ def main(argv):
     try:
         os.remove(os.path.join(WORKDIR, 'temp_buf'))
     except OSError:
-        print "No temp_buf to remove"
+        print("No temp_buf to remove")
 
     # Loading files into DataFrames
     receptors_contracted_df = pd.read_csv(os.path.join(WORKDIR, 'receptors_contracted'), sep=' ', header=None)
@@ -45,7 +45,7 @@ def main(argv):
         # Adding expression values for off-diagonal elements
         result = [applyToEB(relation, receptors_contracted_df)
                   for relation in relations_df.iloc[:, :].to_numpy()]
-    print os.path.join(TARGETDIR, 'EB_matrix')
+    print(os.path.join(TARGETDIR, 'EB_matrix'))
     main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix'), sep=" ", header=False, index=False)
 
 
