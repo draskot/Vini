@@ -24,7 +24,6 @@ else
     fi
 fi
 
-
 echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
 
 echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
@@ -33,9 +32,16 @@ echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
+
 if  [ ${node_type} == gpu ] ; then
     echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_size_of_memory
 fi
+
+if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+then
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_size_of_memory
+fi
+
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --exclude=${excluded_nodes}"   >> $WORKDIR/get_size_of_memory
@@ -69,7 +75,8 @@ then
         memsize=${memsize}${suffix}
     fi
 
-    read -p "Calculated $memsize available memory per ${node_type} node (90% of total memory). Accept [y] or enter the new value (in GB): " accept
+    #read -p "Calculated $memsize available memory per ${node_type} node (90% of total memory). Accept [y] or enter the new value (in GB): " accept
+    read -e -p "Found $memsize available memory per ${node_type} node. Press enter to accept or enter the new value (in GB): " -i "y" accept
     if [ $accept == y ]
     then
         if  [ ${node_type} == cpu ]

@@ -1,0 +1,81 @@
+partition=$1
+
+CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+CPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
+                                             gsub(/[a-z]/, "", $1);print $1;}
+                                            else
+                                                next}')
+
+echo ${CPU_EXCLUDED} > $WORKDIR/excluded_${partition}_nodes
+echo ${CPU_AVAIL} > $WORKDIR/available_${partition}_nodes
+
+
+cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+groups > $WORKDIR/tmp
+groups_login_node=`wc -w < $WORKDIR/tmp`
+echo "interrupted" > $WORKDIR/test_status
+
+
+if [ ! -s $WORKDIR/available_${partition}_nodes ]
+then
+    echo "No available ${partition} nodes found on this system. Vini will stop now."
+    echo ; echo "nonode" > $WORKDIR/test_status
+    exit
+else
+    echo -e "\nTesting $partition nodes. Do not interrupt."
+    for node in $(<$WORKDIR/available_${partition}_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --mem=1gb"                             >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --partition="$partition                >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --output=$WORKDIR/nodetest.$node.out"  >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --error=$WORKDIR/nodetest.$node.err"   >> $WORKDIR/${partition}_nodetest
+        if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+        then
+            echo "#SBATCH --gres=gpu:0"                      >> $WORKDIR/${partition}_nodetest
+        fi
+        echo "groups"                                        >> $WORKDIR/${partition}_nodetest
+        echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/${partition}_nodetest
+        chmod u+x $WORKDIR/${partition}_nodetest
+        sbatch -Q $WORKDIR/${partition}_nodetest
+        echo -n "."
+    done
+
+    echo ; sh $vini_dir/wait_until_jobs_finish
+
+
+    for node in $(<$WORKDIR/available_${partition}_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        grep $USER $WORKDIR/nodetest.${node}.out > $WORKDIR/nogroups
+        groups=`wc -w < $WORKDIR/nogroups`
+       
+        if  [ $groups -eq ${groups_login_node} ]
+        then
+            echo -n "$nodename ok. " ; sleep 0.025
+        else
+            echo $nodename >> $WORKDIR/excluded_${partition}_nodes
+            echo -n "$nodename not ok. " ; sleep 0.025
+        fi
+    done
+fi
+
+if  [ -s $WORKDIR/excluded_${partition}_nodes ]
+then
+    > $WORKDIR/tmp
+    for node in $(<$WORKDIR/excluded_${partition}_nodes)
+    do
+        nodename=${cpu_node_suffix}$node
+        echo $nodename >> $WORKDIR/tmp
+    done
+    cat $WORKDIR/tmp | tr '\n' ',' > $WORKDIR/excluded_${partition}_nodes
+    cat $WORKDIR/excluded_${partition}_nodes | rev | cut -c 2- | rev > $WORKDIR/tmp
+    mv $WORKDIR/tmp $WORKDIR/excluded_${partition}_nodes
+    echo ; echo -e "\nThe following ${partition} nodes are either not available or experience some problems. Will be excluded:"
+    cat $WORKDIR/excluded_${partition}_nodes
+fi
+echo "passed" > $WORKDIR/test_status

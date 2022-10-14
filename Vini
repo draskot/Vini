@@ -109,7 +109,6 @@ ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSE
 echo $rosetta_version > $WORKDIR/rosetta_version
 echo $ROSETTA > $WORKDIR/ROSETTA
 
-
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -137,13 +136,14 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-walltime=120  #seconds
+walltime=240  #seconds
 
 partition=`cat $WORKDIR/cpu_partition`
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
-timeout ${walltime}s $vini_dir/cpu_nodetest
+timeout ${walltime}s $vini_dir/nodetest ${partition}
 test_status=`cat $WORKDIR/test_status`
+
 if [ ${test_status} == passed ]
 then
     echo "test passed"
@@ -152,60 +152,60 @@ else
     then
         exit
     else
-        echo "cpu node test not completed" #putting first unavailable cpu node on the list
+        echo "$partition nodes test not completed" #putting first unavailable node on the list
         partition=`cat $WORKDIR/cpu_partition`
         CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
         node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
-        echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_cpu_nodes
+        echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_$partition_nodes
     fi
 fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 $job_cancel -u $USER
 
-read -p "Do you want to exclude any other cpu node(s)? (y/n) " yesno
+read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
 if  [ $yesno == y ]
 then
-    read -p "Write cpu node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
+    read -p "Write $partition node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
     echo $nodes > tmp
     for word in $(<tmp)
     do
         nodes=$(echo $word | sed 's/[^0-9]*//g')
         word=${cpu_node_suffix}$nodes
-        sed -i -e "s/$/,$word/" $WORKDIR/excluded_cpu_nodes 
-        sed -i "s/$nodes //" $WORKDIR/available_cpu_nodes
+        sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
+        sed -i "s/$nodes //" $WORKDIR/available_${partition}_nodes
     done
 fi
 
-node_type=cpu
-sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
-sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
+sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+sh $vini_dir/get_node_memory_size ${partition} ${walltime}
 
 if  [ -e $WORKDIR/gpu_partition ]
 then
     partition=`cat $WORKDIR/gpu_partition`  
     gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
-    timeout ${walltime}s $vini_dir/gpu_nodetest
+    timeout ${walltime}s $vini_dir/nodetest ${partition}
+    
     test_status=`cat $WORKDIR/test_status`
     if [ ${test_status} == passed ]
     then
-        echo
+        echo "test passed "
     else
         if [ ${test_status} == nonode ]
         then
             exit
         else
-            echo "gpu node test not completed"    #putting first unavailable gpu node on the list
-            partition=`cat $WORKDIR/gpu_partition`  
+            echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
+              
             GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
             node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-            echo ${gpu_node_suffix}$node > $WORKDIR/excluded_gpu_nodes
+            echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
         fi
     fi
     rm -f $WORKDIR/*out $WORKDIR/*err
     $job_cancel -u $USER
 
-    read -p "Do you want to exclude any other gpu node(s)? (y/n) " yesno
+    read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
     if  [ $yesno == y ]
     then
         read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
@@ -228,7 +228,7 @@ then
     partition=`cat $WORKDIR/smp_partition`
     smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
-    timeout ${walltime}s $vini_dir/smp_nodetest
+    timeout ${walltime}s $vini_dir/nodetest ${partition}
     test_status=`cat $WORKDIR/test_status`
     if [ ${test_status} == passed ]
     then
@@ -240,15 +240,15 @@ then
         else
             echo "large memory node test not completed"    #putting first unavailable large memory node on the list
             partition=`cat $WORKDIR/smp_partition`  
-            SMP_EXCLUDED=$(sinfo -dN -p ${gpu} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+            SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
             node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-            echo ${smp_node_suffix}$node > $WORKDIR/excluded_smp_nodes
+            echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
         fi
     fi
     rm -f $WORKDIR/*out $WORKDIR/*err
     $job_cancel -u $USER
 
-    read -p "Do you want to exclude any other large memory node(s)? (y/n) " yesno
+    read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
     if  [ $yesno == y ]
     then
         read -p "Write large memory node(s) names in the form of the blank separated list (e.g. cn03 cn04 etc.):" nodes
@@ -257,7 +257,7 @@ then
         do
             nodes=$(echo $word | sed 's/[^0-9]*//g')
             word=${smp_node_suffix}$nodes
-            sed -i -e "s/$/,$word/" $WORKDIR/excluded_smp_nodes 
+            sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
         done
     fi
     node_type=smp
@@ -316,33 +316,24 @@ then
     grep AlphaFold $vini_dir/sourceme > tmp
     if  [ -s tmp ]
     then
-        #gpus=`cat $WORKDIR/gpus`
-        #if [ $gpus -ne $NULL ]
-        #then
-            read -e -p "Run AlphaFold on CPU, GPU, or SMP nodes (cpu/gpu/smp)? Press enter to accept default: " -i "gpu" partition
-            if [ $partition == cpu ]
+        read -e -p "Run AlphaFold on CPU, GPU, or SMP nodes (cpu/gpu/smp)? Press enter to accept default: " -i "cpu" partition
+        if [ $partition == cpu ]
+        then
+            cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
+            cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+        else
+            if  [ $partition == gpu ]
             then
-                cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
-                cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
-                cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+                cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
+                cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
             else
-                if  [ $partition == gpu ]
-                then
-                    cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
-                    cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
-                    cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
-                else
-                    cat $WORKDIR/smp_partition > $WORKDIR/AlphaFold_partition
-                    cat $WORKDIR/smp_cores > $WORKDIR/AlphaFold_gpus
-                    cat $WORKDIR/smp_memsize > $WORKDIR/AlphaFold_mem
-                fi
+                cat $WORKDIR/smp_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/smp_cores > $WORKDIR/AlphaFold_gpus
+                cat $WORKDIR/smp_memsize > $WORKDIR/AlphaFold_mem
             fi
-        #else
-            #echo "AlphaFold will run on CPU nodes"
-            #cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
-            #cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
-            #cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
-        #fi
+        fi
         read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
         echo $base > $WORKDIR/AlphaFold_base
     else

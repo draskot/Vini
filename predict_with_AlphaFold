@@ -16,8 +16,12 @@ if [ $partition == cpu ]
 then
     excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 else
-    
-    excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    if [ $partition == cpu ]
+    then
+        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
+    else
+        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
+    fi
 fi
 
 rm -rf $WORKDIR/${antibody} #cleanup
@@ -36,8 +40,9 @@ echo "#SBATCH --exclude=${excluded_nodes}"                          >> $WORKDIR/
 
 echo "WORKDIR=${WORKDIR}"                                           >> $WORKDIR/AlphaFold
 
-if  [ ${node_type} == gpu ] ; then
-    echo "#SBATCH --gres=gpu:$gpus"                                 >> $WORKDIR/AlphaFold
+if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+then
+    echo "#SBATCH --gres=gpu:1"                                     >> $WORKDIR/AlphaFold
 fi
 
 echo "memable=`grep MemAvailable /proc/meminfo | awk '{print $2}'`" >> $WORKDIR/AlphaFold 

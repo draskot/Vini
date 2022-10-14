@@ -30,9 +30,12 @@ echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --exclude=$excluded_nodes"     >> $WORKDIR/get_number_of_cores
-if  [ ${node_type} == gpu ] ; then
+
+if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+then
     echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_number_of_cores
 fi
+
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_of_cores
@@ -51,7 +54,8 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    read -p  "Found $cores CPU cores per ${node_type} node. Accept [y] or enter new value? " accept
+    #read -p  "Found $cores CPU cores per ${node_type} node. Accept [y] or enter new value? " accept
+    read -e -p "Found $cores CPU cores per ${node_type} node. Press enter to accept or enter new value: " -i "y" accept
     if  [ $accept == y ]
     then
         if  [ ${node_type} == cpu ]
