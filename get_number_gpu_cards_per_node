@@ -44,8 +44,7 @@ if  [ -e $WORKDIR/gpus.out ]
 then
     grep NVIDIA $WORKDIR/gpus.out > tmp
     gpus=`wc -l < tmp`
-    #read -p "Found $gpus NVIDIA cards per gpu node. Accept [y] or enter the new value?" accept
-    read -e -p "Found $gpus GPU cards per gpu node. Press enter to accept or enter the new value (in GB): " -i "y" accept
+    read -e -p "Found $gpus GPU cards per gpu node. Press enter to accept or enter the new value: " -i "y" accept
     if  [ $accept != y ]
     then
         read -p "Enter the new value:" gpus

@@ -131,6 +131,7 @@ else
     echo -n "Generating  mutated fasta sequences for ${cell_line} cell line. Please wait."
 
     python3 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+    echo "brakepoint" ; sleep 1000
         
     ls $vini_dir/genes/sequences > tmp
     if  [ ! -s tmp ]

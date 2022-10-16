@@ -146,10 +146,11 @@ test_status=`cat $WORKDIR/test_status`
 
 if [ ${test_status} == passed ]
 then
-    echo "test passed"
+    echo -e "\ntest passed."
 else
     if [ ${test_status} == nonode ]
     then
+        echo "All nodes failed the test! Aborting."
         exit
     else
         echo "$partition nodes test not completed" #putting first unavailable node on the list
@@ -189,10 +190,11 @@ then
     test_status=`cat $WORKDIR/test_status`
     if [ ${test_status} == passed ]
     then
-        echo "test passed "
+        echo -e "\ntest passed."
     else
         if [ ${test_status} == nonode ]
         then
+            echo "All nodes failed the test! Aborting."
             exit
         else
             echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
@@ -232,10 +234,11 @@ then
     test_status=`cat $WORKDIR/test_status`
     if [ ${test_status} == passed ]
     then
-        echo
+        echo -e "\ntest passed."
     else
         if [ ${test_status} == nonode ]
         then
+            echo "All nodes failed the test! Aborting."
             exit
         else
             echo "large memory node test not completed"    #putting first unavailable large memory node on the list
