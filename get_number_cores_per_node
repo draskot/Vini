@@ -54,24 +54,24 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    #read -p  "Found $cores CPU cores per ${node_type} node. Accept [y] or enter new value? " accept
-    read -e -p "Found $cores CPU cores per ${node_type} node. Press enter to accept or enter new value: " -i "y" accept
-    if  [ $accept == y ]
-    then
+    #read -e -p "Found $cores CPU cores per ${node_type} node. Press enter to accept or enter new value: " -i "y" accept
+    echo "Found $cores CPU cores per ${node_type} node."
+    #if  [ $accept == y ]
+    #then
         if  [ ${node_type} == cpu ]
         then
             echo $cores > $WORKDIR/cpu_cores
         else
             echo $cores > $WORKDIR/gpu_cores
         fi
-    else
-        if  [ ${node_type} == cpu ]
-        then
-            echo $accept > $WORKDIR/cpu_cores
-        else
-            echo $accept > $WORKDIR/gpu_cores
-        fi
-    fi
+    #else
+    #    if  [ ${node_type} == cpu ]
+    #    then
+    #        echo $accept > $WORKDIR/cpu_cores
+    #    else
+    #        echo $accept > $WORKDIR/gpu_cores
+    #    fi
+    #fi
 else
     ${job_cancel} -u $USER ; echo
     echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."

@@ -448,7 +448,7 @@ read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter
 if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
-    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept default: " -i "EKVX" cell_line
+    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept default: " -i "NCI-H23" cell_line
     if  [ $cosmic == "y" ]
     then
         if  [ ! -e $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv ]
