@@ -22,6 +22,8 @@ fi
 SEQDIR=$vini_dir/genes/sequences/
 
 echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
+
+
 rm -f $vini_dir/genes/sequences/*csv
 
 > $WORKDIR/mutated #create file with mutated gene names
@@ -56,13 +58,15 @@ done < $WORKDIR/combo
 
 #dos2unix $vini_dir/genes/cosmic_ids.csv
 
+
+
 while read -r line
 do
     if  [ -e $vini_dir/database/genes/pdb_files/${line}.pdb ]
     then
         echo "The structure for mutated ${uniprot_id} exist in database, no need for prediction"
     else
-        echo "Trying to predict the structure for mutated ${uniprot_id}..."
+        echo "Trying to predict the structure for mutated ${uniprot_id}."
         uniprot_id=`echo $line | cut -f1 -d"-"`
         gene=`grep ${uniprot_id} ${vini_dir}/genes/cosmic_ids.csv | head -1`     #add header line
         gene=`echo $gene | awk -F','  '{print $2}'`
@@ -77,12 +81,12 @@ do
         fi
         mv $WORKDIR/tmp $vini_dir/genes/sequences/${line}.fasta
         sed -i -e "s/\r//g"  $vini_dir/genes/sequences/${line}.fasta #remove ^M from fasta sequence
+        fasta_file=$vini_dir/genes/sequences/${line}.fasta
 
         if  [ -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]
         then 
             cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
         else
-            fasta_file=$vini_dir/genes/sequences/${line}.fasta
 
             if  [ ${prediction_model} == A ]
             then

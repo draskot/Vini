@@ -540,7 +540,8 @@ cp $vini_dir/prep_prot_lig.py $WORKDIR
 num_modes=9
 echo $num_modes > $WORKDIR/num_modes
 
-read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept default : " -i "8" exhaustiveness
+#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept default : " -i "8" exhaustiveness
+exhaustivenes=8
 echo $exhaustiveness > $WORKDIR/exhaustiveness
 
 box_size=40

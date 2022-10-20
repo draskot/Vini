@@ -47,11 +47,11 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt(argv, "hi:", ["input-dir="])
 	except getopt.GetoptError:
-		print ('Usage: python2 find_longest_frame.py --input-dir <inputdirectory>')
+		print ('Usage: python3 find_longest_frame.py --input-dir <inputdirectory>')
 		sys.exit(2)
 	for opt, arg in opts:
 		if opt == '-h':
-			print ('Usage: python2 find_longest_frame.py --input-dir <inputdirectory>')
+			print ('Usage: python3 find_longest_frame.py --input-dir <inputdirectory>')
 		if opt in ("-i", "--input-dir"):
 			inputdir = arg
 	print ('Input directory is ', inputdir)
