@@ -1,5 +1,12 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
+
+echo -n "Activating miniconda3 environment..."
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
+
+
 cell_line=$1
 
 
@@ -44,6 +51,8 @@ do
     echo -n "."
 done < $WORKDIR/tmp
 echo "done."
+
+
 
 python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
 #rm -f $SEQDIR/*frame
@@ -113,3 +122,5 @@ then
     done < $WORKDIR/mutated
     rm $WORKDIR/mutated
 fi
+
+conda deactivate

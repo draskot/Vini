@@ -142,6 +142,7 @@ partition=`cat $WORKDIR/cpu_partition`
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 timeout ${walltime}s $vini_dir/nodetest ${partition}
+
 test_status=`cat $WORKDIR/test_status`
 
 if [ ${test_status} == passed ]

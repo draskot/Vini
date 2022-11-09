@@ -40,7 +40,7 @@ else
     fi
 fi
 
-read -e -p "Good to go with the current partition setup (y/n)? Press enter for default (y): " -i "y" yesno
+read -e -p "OK to continue with the current partition setup (y/n)? Press enter for default (y): " -i "y" yesno
 if  [ $yesno == n ]
 then
     echo ""
