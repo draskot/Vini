@@ -34,6 +34,7 @@ sh $vini_dir/clean
 echo -n "Checking for the ligands_list file..."
 if [ -e $vini_dir/ligands/ligands_list ]
 then
+    cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav #backup
     echo passed.
 else
     echo "you must provide ligand list. Exiting." ; exit
@@ -164,19 +165,19 @@ fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 $job_cancel -u $USER
 
-read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
-if  [ $yesno == y ]
-then
-    read -p "Write $partition node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
-    echo $nodes > tmp
-    for word in $(<tmp)
-    do
-        nodes=$(echo $word | sed 's/[^0-9]*//g')
-        word=${cpu_node_suffix}$nodes
-        sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
-        sed -i "s/$nodes //" $WORKDIR/available_${partition}_nodes
-    done
-fi
+#read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
+#if  [ $yesno == y ]
+#then
+#    read -p "Write $partition node(s) names in the form of the blank separated list (e.g. cn0001 cn0002 etc.):" nodes
+#    echo $nodes > tmp
+#    for word in $(<tmp)
+#    do
+#        nodes=$(echo $word | sed 's/[^0-9]*//g')
+#        word=${cpu_node_suffix}$nodes
+#        sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
+#        sed -i "s/$nodes //" $WORKDIR/available_${partition}_nodes
+#    done
+#fi
 
 sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
 sh $vini_dir/get_node_memory_size ${partition} ${walltime}
@@ -208,18 +209,18 @@ then
     rm -f $WORKDIR/*out $WORKDIR/*err
     $job_cancel -u $USER
 
-    read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
-    if  [ $yesno == y ]
-    then
-        read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
-        echo $nodes > tmp
-        for word in $(<tmp)
-        do
-            nodes=$(echo $word | sed 's/[^0-9]*//g')
-            word=${gpu_node_suffix}$nodes
-            sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
-        done
-    fi
+    #read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
+    #if  [ $yesno == y ]
+    #then
+    #    read -p "Write gpu node(s) names in the form of the blank separated list (e.g. gn03 gn04 etc.):" nodes
+    #    echo $nodes > tmp
+    #    for word in $(<tmp)
+    #    do
+    #        nodes=$(echo $word | sed 's/[^0-9]*//g')
+    #        word=${gpu_node_suffix}$nodes
+    #        sed -i -e "s/$/,$word/" $WORKDIR/excluded_gpu_nodes 
+    #    done
+    #fi
     node_type=gpu
     sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
     sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
@@ -252,18 +253,18 @@ then
     rm -f $WORKDIR/*out $WORKDIR/*err
     $job_cancel -u $USER
 
-    read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
-    if  [ $yesno == y ]
-    then
-        read -p "Write large memory node(s) names in the form of the blank separated list (e.g. cn03 cn04 etc.):" nodes
-        echo $nodes > tmp
-        for word in $(<tmp)
-        do
-            nodes=$(echo $word | sed 's/[^0-9]*//g')
-            word=${smp_node_suffix}$nodes
-            sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
-        done
-    fi
+    #read -e -p "Do you want to exclude any other $partition node(s)? (y/n)? Press enter to accept default: " -i "n" yesno
+    #if  [ $yesno == y ]
+    #then
+    #    read -p "Write large memory node(s) names in the form of the blank separated list (e.g. cn03 cn04 etc.):" nodes
+    #    echo $nodes > tmp
+    #    for word in $(<tmp)
+    #    do
+    #        nodes=$(echo $word | sed 's/[^0-9]*//g')
+    #        word=${smp_node_suffix}$nodes
+    #        sed -i -e "s/$/,$word/" $WORKDIR/excluded_${partition}_nodes 
+    #    done
+    #fi
     node_type=smp
     sh $vini_dir/get_number_cores_per_node ${node_type} ${walltime}
     sh $vini_dir/get_node_memory_size ${node_type} ${walltime}
