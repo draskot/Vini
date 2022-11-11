@@ -9,8 +9,27 @@ CPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" 
 echo ${CPU_EXCLUDED} > $WORKDIR/excluded_${partition}_nodes
 echo ${CPU_AVAIL} > $WORKDIR/available_${partition}_nodes
 
-
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+
+
+> $WORKDIR/tmp
+read -a WORDS -d "" < $WORKDIR/excluded_${partition}_nodes
+for word in "${WORDS[@]}"
+do
+        node=${cpu_node_suffix}${word},
+        echo -n $node >> $WORKDIR/tmp
+done
+cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/excluded_${partition}_nodes
+
+> $WORKDIR/tmp
+read -a WORDS -d "" < $WORKDIR/available_${partition}_nodes
+for word in "${WORDS[@]}"
+do
+        node=${cpu_node_suffix}${word},
+        echo -n $node >> $WORKDIR/tmp
+done
+cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/available_${partition}_nodes
+
 
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
@@ -23,10 +42,19 @@ then
     echo ; echo "nonode" > $WORKDIR/test_status
     exit
 else
-    echo -e "\nTesting $partition nodes. Do not interrupt."
-    for node in $(<$WORKDIR/available_${partition}_nodes)
+    while read -r line      #counting the number of available nodes
     do
-        nodename=${cpu_node_suffix}$node
+        count=${line//[^,]}
+        count=`echo "${#count}"`
+    done < $WORKDIR/available_${partition}_nodes
+
+    echo -e "\nTesting $partition nodes. Do not interrupt."
+    sed 's/,/ /g' $WORKDIR/available_${partition}_nodes > $WORKDIR/tmp
+
+    #for node in $(<$WORKDIR/available_${partition}_nodes)
+    for node in $(<$WORKDIR/tmp)
+    do
+        #nodename=${cpu_node_suffix}$node
         echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
         echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/${partition}_nodetest
@@ -45,38 +73,28 @@ else
         echo -n "."
     done
 
-
-
     echo ; sh $vini_dir/wait_until_jobs_finish
 
-
-    for node in $(<$WORKDIR/available_${partition}_nodes)
+    #for node in $(<$WORKDIR/available_${partition}_nodes)        #check if all permissions are in place
+    for node in $(<$WORKDIR/tmp)
     do
-        nodename=${cpu_node_suffix}$node
         grep $USER $WORKDIR/nodetest.${node}.out > $WORKDIR/nogroups
         groups=`wc -w < $WORKDIR/nogroups`
-       
         if  [ $groups -eq ${groups_login_node} ]
         then
-            echo -n "$nodename ok. " ; sleep 0.025
+            echo -n "$node ok. " ; sleep 0.01
         else
-            echo $nodename >> $WORKDIR/excluded_${partition}_nodes
-            echo -n "$nodename not ok. " ; sleep 0.025
+            echo -n ,${node} >> $WORKDIR/excluded_${partition}_nodes #excluding node
+            available=`cat available_${partition}_nodes`
+            available=${available//${node},/}
+            echo $available > $WORKDIR/available_${partition}_nodes
+            echo -n "$node not ok. " ; sleep 0.01
         fi
     done
 fi
 
 if  [ -s $WORKDIR/excluded_${partition}_nodes ]
 then
-    > $WORKDIR/tmp
-    for node in $(<$WORKDIR/excluded_${partition}_nodes)
-    do
-        nodename=${cpu_node_suffix}$node
-        echo $nodename >> $WORKDIR/tmp
-    done
-    cat $WORKDIR/tmp | tr '\n' ',' > $WORKDIR/excluded_${partition}_nodes
-    cat $WORKDIR/excluded_${partition}_nodes | rev | cut -c 2- | rev > $WORKDIR/tmp
-    mv $WORKDIR/tmp $WORKDIR/excluded_${partition}_nodes
     echo ; echo -e "\nThe following ${partition} nodes are either not available or experience some problems. Will be excluded:"
     cat $WORKDIR/excluded_${partition}_nodes
 fi
