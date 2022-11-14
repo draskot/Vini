@@ -8,21 +8,10 @@ fasta_file=$6
 antibody=`basename ${fasta_file} .fasta`
 
 job_submit=`cat $WORKDIR/job_submit`
-node_type=`cat $WORKDIR/AlphaFold_partition`
 gpus=1                                                   #AlphaFold working with only 1 gpu
 kb=1024
 
-if [ $partition == cpu ]
-then
-    excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
-else
-    if [ $partition == cpu ]
-    then
-        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
-    else
-        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
-    fi
-fi
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
 rm -rf $WORKDIR/${antibody} #cleanup
 

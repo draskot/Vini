@@ -1,4 +1,4 @@
-node_type=$1
+partition=$1
 walltime=$2
 
 percentage=90
@@ -9,22 +9,9 @@ job_cancel=`cat $WORKDIR/job_cancel`
 
 NULL=0
 
-if [ ${node_type} == cpu ]
-then
-    partition=`cat $WORKDIR/cpu_partition`
-    excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
-else
-    if [ ${node_type} == gpu ]
-    then
-        partition=`cat $WORKDIR/gpu_partition`
-        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
-    else
-        partition=`cat $WORKDIR/smp_partition`
-        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
-    fi
-fi
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
-echo "Trying to determine the available memory per ${node_type} node. This may last up to ${walltime} seconds, please do not interrupt."
+echo "Trying to determine the available memory per ${partition} node. This may last up to ${walltime} seconds, do not interrupt."
 
 echo "#! /bin/bash"                           > $WORKDIR/get_size_of_memory
 echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_size_of_memory
@@ -33,7 +20,7 @@ echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --time=00:00:"$walltime        >> $WORKDIR/get_size_of_memory
 echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_size_of_memory
 
-if  [ ${node_type} == gpu ] ; then
+if  [ ${partition} == gpu ] ; then
     echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_size_of_memory
 fi
 
@@ -74,35 +61,13 @@ then
         memsize=$(( memsize*${percentage}/100 ))
         memsize=${memsize}${suffix}
     fi
-
-    #read -e -p "Found $memsize available memory per ${node_type} node. Press enter to accept or enter the new value (in GB): " -i "y" accept
-    echo "Found $memsize available memory per ${node_type} node."
-    #if [ $accept == y ]
-    #then
-        if  [ ${node_type} == cpu ]
-        then
-            echo $memsize > $WORKDIR/cpu_memsize
-        else
-            echo $memsize > $WORKDIR/gpu_memsize
-        fi
-    #else
-        #if  [ ${node_type} == cpu ]
-        #then
-        #    echo $accept > $WORKDIR/cpu_memsize
-        #else
-        #    echo $accept > $WORKDIR/gpu_memsize
-        #fi
-    #fi
+    echo "Found $memsize available memory per ${partition} node."
+    echo $memsize > $WORKDIR/${partition}_memsize
 else
     ${job_cancel} -u $USER ; echo
-    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
+    echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
     echo "You may consider at least 90% of the total installed memory as available."
-    read -p "Write the available memory size (in GB) per ${node_type} node here:" memsize
-    if  [ ${node_type} == cpu ]
-    then
-        echo $memsize > $WORKDIR/cpu_memsize
-    else
-        echo $memsize > $WORKDIR/gpu_memsize
-    fi
+    read -p "Write the available memory size (in GB) per ${partition} node here:" memsize
+    echo $memsize > $WORKDIR/${partition}_memsize
 fi
 

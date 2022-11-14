@@ -1,4 +1,4 @@
-node_type=$1
+partition=$1
 walltime=$2
 
 scheduler=`cat $WORKDIR/scheduler`
@@ -8,20 +8,8 @@ job_cancel=`cat $WORKDIR/job_cancel`
 
 rm -f $WORKDIR/cores.out
 
-if [ ${node_type} == cpu ]
-then
-    partition=`cat $WORKDIR/cpu_partition`
-    excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
-else
-    if [ ${node_type} == gpu ]
-    then
-        partition=`cat $WORKDIR/gpu_partition`
-        excluded_nodes=`cat $WORKDIR/excluded_gpu_nodes`
-    else
-        partition=`cat $WORKDIR/smp_partition`
-        excluded_nodes=`cat $WORKDIR/excluded_smp_nodes`
-    fi
-fi
+partition=`cat $WORKDIR/${partition}_partition`
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
 
 echo "#! /bin/bash"                           > $WORKDIR/get_number_of_cores
@@ -43,7 +31,7 @@ echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_of_cores
 echo "lscpu"                                 >> $WORKDIR/get_number_of_cores
 chmod u+x                                       $WORKDIR/get_number_of_cores
 
-echo "Trying to determine the number of CPU cores per ${node_type} node. This may last up to $walltime seconds, please do not interrupt."
+echo "Trying to determine the number of CPU cores per ${partition} node. This may last up to $walltime seconds, please do not interrupt."
 
 rm -f $WORKDIR/cores.*
 
@@ -54,33 +42,12 @@ then
     grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
-    #read -e -p "Found $cores CPU cores per ${node_type} node. Press enter to accept or enter new value: " -i "y" accept
-    echo "Found $cores CPU cores per ${node_type} node."
-    #if  [ $accept == y ]
-    #then
-        if  [ ${node_type} == cpu ]
-        then
-            echo $cores > $WORKDIR/cpu_cores
-        else
-            echo $cores > $WORKDIR/gpu_cores
-        fi
-    #else
-    #    if  [ ${node_type} == cpu ]
-    #    then
-    #        echo $accept > $WORKDIR/cpu_cores
-    #    else
-    #        echo $accept > $WORKDIR/gpu_cores
-    #    fi
-    #fi
+    echo "Found $cores CPU cores per ${partition} node."
+    echo $cores > $WORKDIR/${partition}_cores
 else
     ${job_cancel} -u $USER ; echo
-    echo "Failed to access any ${node_type} node. A probable reason is that all nodes are either busy or down."
-    read -p "Write the number of CPU cores per ${node_type} node here:" cores
-    if  [ ${node_type} == cpu ]
-    then
-        echo $cores > $WORKDIR/cpu_cores
-    else
-        echo $cores > $WORKDIR/gpu_cores
-    fi
+    echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
+    read -p "Write the number of CPU cores per ${partition} node here:" cores
+    echo $cores > $WORKDIR/${partition}_cores
 fi
 

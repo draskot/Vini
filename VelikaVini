@@ -200,5 +200,7 @@ then
     fi
 fi
 
+cp $vini_dir/ligands/ligands_list.sav $vini_dir/ligands/ligands_list #returning the original list of drugs
+
 end_date=`date`
 echo "Analysis completed at"  $end_date
