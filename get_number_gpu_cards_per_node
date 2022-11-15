@@ -39,19 +39,13 @@ sbatch $WORKDIR/get_number_gpus_per_node
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 
-
 if  [ -e $WORKDIR/gpus.out ] 
 then
     grep NVIDIA $WORKDIR/gpus.out > tmp
     gpus=`wc -l < tmp`
-    #read -e -p "Found $gpus GPU cards per gpu node. Press enter to accept or enter the new value: " -i "y" accept
     echo "Found $gpus GPU cards per gpu node."
-    #if  [ $accept != y ]
-    #then
-    #    read -p "Enter the new value:" gpus
-    #fi
 else
-    ${job_cancel} -u $USER ; echo
+    ${job_cancel} -u $USER ; sh $vini_dir/wait_until_jobs_finish ; echo
     read -p "Failed to access any ${partition} node. The possible reason is that nodes are temporarily allocated or unavailable. Write the number of gpu cards per ${partition} node here:" gpus
 fi
 

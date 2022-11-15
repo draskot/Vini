@@ -38,7 +38,7 @@ chmod u+x                                       $WORKDIR/get_size_of_memory
 
 rm -f $WORKDIR/memory.* tmp2
 
-$job_submit $WORKDIR/get_size_of_memory
+$job_submit -Q $WORKDIR/get_size_of_memory
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 

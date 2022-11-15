@@ -1,7 +1,6 @@
-ONES=1
 
 
-if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]
+if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]  && [[ -e $WORKDIR/largemem_partition ]]
 then
     cpu_partition=`cat $WORKDIR/cpu_partition`
     echo "Vini is using $cpu_partition partition for its CPU jobs."
@@ -9,60 +8,18 @@ then
     gpu_partition=`cat $WORKDIR/gpu_partition`
     echo "Vini is using $gpu_partition partition for its GPU jobs."
 
-    if [ -e $WORKDIR/smp_partition ]
-    then
-        smp_partition=`cat $WORKDIR/smp_partition`
-        echo "Vini is using $smp_partition partition for its large memory (>512GB) jobs."
-    fi
+    largemem_partition=`cat $WORKDIR/largemem_partition`
+    echo "Vini is using $smp_partition partition for its large memory (>512GB) jobs."
 else
-    echo "No queues are currently defined for Vini jobs. You will need to set it up now."
-    echo ""
-    echo "Available queues are:"
+    echo "You will need to setup partitions now."
+    echo "Available queues are:" 
     sinfo -s
 
-    read -p  "Enter the name of partition for CPU jobs:" cpu_partition
-    echo $cpu_partition > $WORKDIR/cpu_partition
+    read -p  "Enter the name of partition with CPU nodes:" cpu_partition
+    read -p "Enter the name of partition with GPU nodes:" gpu_partition
+    read -p  "Enter the name of partition with large memory nodes:" largemem_partition
 
-    read -p "Enter the name of partition for GPU jobs or enter to quit:" gpu_partition
-    echo $gpu_partition > $WORKDIR/gpu_partition    
-    tmp=`cat $WORKDIR/gpu_partition | wc -c`
-    if [ $tmp -eq $ONES ]
-    then
-        rm $WORKDIR/gpu_partition
-    fi
-
-    read -p  "Enter the name of partition for large memory jobs requiring > 512GB RAM or enter to quit:" smp_partition
-    echo $smp_partition > $WORKDIR/smp_partition
-    tmp=`cat $WORKDIR/smp_partition | wc -c`
-    if [ $tmp -eq $ONES ]
-    then
-        rm $WORKDIR/smp_partition
-    fi
-fi
-
-read -e -p "OK to continue with the current partition setup (y/n)? Press enter for default (y): " -i "y" yesno
-if  [ $yesno == n ]
-then
-    echo ""
-    echo "Available queues are:"
-    sinfo -s
-    echo $Vini_queue > $WORKDIR/Vini_queue
-    read -p  "Enter the name of partition for CPU jobs:" cpu_partition
-    echo $cpu_partition > $WORKDIR/cpu_partition
-
-    read -p "Enter the name of partition for GPU jobs or enter to quit:" gpu_partition
-    echo $gpu_partition > $WORKDIR/gpu_partition
-    tmp=`cat $WORKDIR/gpu_partition | wc -c`
-    if [ $tmp -eq $ONES ]
-    then
-        rm $WORKDIR/gpu_partition
-    fi
-
-    read -p "Enter the name of partition for large memory jobs requiring > 512GB RAM or enter to quit:" smp_partition
-    echo $smp_partition > $WORKDIR/smp_partition
-    tmp=`cat $WORKDIR/smp_partition | wc -c`
-    if [ $tmp -eq $ONES ]
-    then
-        rm $WORKDIR/smp_partition
-    fi
+    echo ${cpu_partition} > $WORKDIR/cpu_partition
+    echo ${gpu_partition} > $WORKDIR/gpu_partition    
+    echo ${largemem_partition} > $WORKDIR/largemem_partition
 fi

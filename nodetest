@@ -1,16 +1,15 @@
 partition=$1
 
-CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-CPU_AVAIL=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
+excluded_nodes=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+available_nodes=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
                                              gsub(/[a-z]/, "", $1);print $1;}
                                             else
                                                 next}')
 
-echo ${CPU_EXCLUDED} > $WORKDIR/excluded_${partition}_nodes
-echo ${CPU_AVAIL} > $WORKDIR/available_${partition}_nodes
+echo ${excluded_nodes} > $WORKDIR/excluded_${partition}_nodes
+echo ${available_nodes} > $WORKDIR/available_${partition}_nodes
 
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
 
 > $WORKDIR/tmp
 read -a WORDS -d "" < $WORKDIR/excluded_${partition}_nodes
@@ -30,11 +29,9 @@ do
 done
 cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/available_${partition}_nodes
 
-
 groups > $WORKDIR/tmp
 groups_login_node=`wc -w < $WORKDIR/tmp`
 echo "interrupted" > $WORKDIR/test_status
-
 
 if [ ! -s $WORKDIR/available_${partition}_nodes ]
 then
@@ -51,10 +48,8 @@ else
     echo -e "\nTesting $partition nodes. Do not interrupt."
     sed 's/,/ /g' $WORKDIR/available_${partition}_nodes > $WORKDIR/tmp
 
-    #for node in $(<$WORKDIR/available_${partition}_nodes)
     for node in $(<$WORKDIR/tmp)
     do
-        #nodename=${cpu_node_suffix}$node
         echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
         echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/${partition}_nodetest
@@ -75,7 +70,6 @@ else
 
     echo ; sh $vini_dir/wait_until_jobs_finish
 
-    #for node in $(<$WORKDIR/available_${partition}_nodes)        #check if all permissions are in place
     for node in $(<$WORKDIR/tmp)
     do
         grep $USER $WORKDIR/nodetest.${node}.out > $WORKDIR/nogroups
