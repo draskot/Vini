@@ -2,24 +2,40 @@
 
 if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]  && [[ -e $WORKDIR/largemem_partition ]]
 then
-    cpu_partition=`cat $WORKDIR/cpu_partition`
-    echo "Vini is using $cpu_partition partition for its CPU jobs."
+    cpu_partition_name=`cat $WORKDIR/cpu_partition`
+    echo "Vini will use ${cpu_partition_name} partition for CPU jobs."
     
-    gpu_partition=`cat $WORKDIR/gpu_partition`
-    echo "Vini is using $gpu_partition partition for its GPU jobs."
+    gpu_partition_name=`cat $WORKDIR/gpu_partition`
+    echo "Vini will use ${gpu_partition_name} partition for GPU jobs."
 
-    largemem_partition=`cat $WORKDIR/largemem_partition`
-    echo "Vini is using $smp_partition partition for its large memory (>512GB) jobs."
+    largemem_partition_name=`cat $WORKDIR/largemem_partition`
+    echo "Vini will use ${largemem_partition_name} partition for large memory (>512GB) jobs."
+
+    read -p "accept this partition setup (y/n)?" accept
+    if  [ $accept != y ]
+    then
+        echo "You will need to setup partitions now."
+        echo "Available queues are:"
+        sinfo -s
+        read -p "Enter the name of partition with CPU nodes:" cpu_partition_name
+        read -p "Enter the name of partition with GPU nodes:" gpu_partition_name
+        read -p "Enter the name of partition with large memory nodes:" largemem_partition_name
+        echo ${cpu_partition_name} > $WORKDIR/cpu_partition
+        echo ${gpu_partition_name} > $WORKDIR/gpu_partition
+        echo ${largemem_partition_name} > $WORKDIR/largemem_partition
+    fi
 else
     echo "You will need to setup partitions now."
     echo "Available queues are:" 
     sinfo -s
-
-    read -p  "Enter the name of partition with CPU nodes:" cpu_partition
-    read -p "Enter the name of partition with GPU nodes:" gpu_partition
-    read -p  "Enter the name of partition with large memory nodes:" largemem_partition
-
-    echo ${cpu_partition} > $WORKDIR/cpu_partition
-    echo ${gpu_partition} > $WORKDIR/gpu_partition    
-    echo ${largemem_partition} > $WORKDIR/largemem_partition
+    read -p "Enter the name of partition with CPU nodes:" cpu_partition_name
+    read -p "Enter the name of partition with GPU nodes:" gpu_partition_name
+    read -p "Enter the name of partition with large memory nodes:" largemem_partition_name
+    echo ${cpu_partition_name} > $WORKDIR/cpu_partition
+    echo ${gpu_partition_name} > $WORKDIR/gpu_partition    
+    echo ${largemem_partition_name} > $WORKDIR/largemem_partition
 fi
+
+echo ${cpu_partition_name} > $WORKDIR/${cpu_partition_name}_partition
+echo ${gpu_partition_name} > $WORKDIR/${gpu_partition_name}_partition
+echo ${largemem_partition_name} > $WORKDIR/${largemem_partition_name}_partition

@@ -4,8 +4,8 @@ job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
 partition=`cat $WORKDIR/cpu_partition`
-excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
-
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+walltime=`cat $WORKDIR/walltime`
 
 echo "Preparing ligand pdbqt files, please wait..."
 
@@ -24,7 +24,7 @@ do
     else                                                                  #create pdbqt file
         cp $vini_dir/ligands/pdb_files/${drugname}.pdb $WORKDIR #create pdbqt file
         echo "#!/bin/bash"                               > preplig
-        echo "#SBATCH --time=08:00:00"                  >> preplig
+        echo "#SBATCH --time=$walltime"                 >> preplig
         echo "#SBATCH --job-name=$drugname"             >> preplig
         echo "#SBATCH --cpus-per-task=2"                >> preplig
         echo "#SBATCH --mem=4gb"                        >> preplig

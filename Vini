@@ -9,6 +9,7 @@ THREE=3
 HSA=hsa
 TRUE=1
 FALSE=0
+min_memory=128 #for AlphaFold
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -61,15 +62,6 @@ else
     echo "SLURM found." ; JSS=1 ; echo squeue > $WORKDIR/job_status; echo sbatch > $WORKDIR/job_submit; echo scancel > $WORKDIR/job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh determine_SLURM_environment
-#    version=`sinfo -V | awk '{print $2}'` ; echo ${version} > $WORKDIR/version
-#else
-#    if [ -d /opt/sge ]
-#    then
-#        echo "SGE found." ; JSS=2 ; echo qstat > $WORKDIR/job_status; echo qsub > $WORKDIR/job_submit; echo qdel > $WORKDIR/job_cancel ; sh determine_SGE_environment
-#        echo "SGE" > $WORKDIR/scheduler
-#    else
-#        echo "not supported, exiting" ; exit
-#    fi
 echo $JSS > $WORKDIR/JSS
 fi
 
@@ -79,9 +71,9 @@ grep -w no tmp > tmp2
 nolines=`wc -l < tmp2`
 if [ $nolines -eq $NULL ]
 then
+    echo "MPI version found. Each Rosetta instance will use 4 compute nodes."
     rosetta_version=mpi
-    echo "MPI version found."
-    read -e -p "Enter the number of compute nodes each Rosetta job will use. Press enter to accept default: " -i "4" R_nodes
+    R_nodes=4                                 
     echo ${R_nodes} > $WORKDIR/R_nodes
 else
     which antibody_graft.linuxgccrelease &> tmp #determining if Rosetta multithreaded is installed
@@ -101,7 +93,7 @@ else
             echo "static version found."
         else
             echo "no Rosetta binaries found!"
-            #exit
+            exit
         fi
     fi
 fi
@@ -141,96 +133,86 @@ walltime=360  #seconds
 
 partition=`cat $WORKDIR/cpu_partition`
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
 timeout ${walltime}s $vini_dir/nodetest ${partition}
 
 test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} == passed ]
+if  [ ${test_status} != passed ]
 then
-    echo -e "\ntest passed."
+    echo "$partition nodes test not completed" #putting first unavailable node on the list
+    partition=`cat $WORKDIR/cpu_partition`
+    CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
+    node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
+    echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_${partition}_nodes
+    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
 else
-    if [ ${test_status} == nonode ]
+    if [ -s $WORKDIR/available_${partition}_nodes ]
     then
-        echo "All nodes failed the test! Aborting." ; exit
+        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
     else
-        echo "$partition nodes test not completed" #putting first unavailable node on the list
-        partition=`cat $WORKDIR/cpu_partition`
-        CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
-        node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
-        echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_$partition_nodes
-        $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
+        echo $NULL > $WORKDIR/${partition}_cores
+        echo $NULL > $WORKDIR/${partition}_memsize
     fi
 fi
 rm -f $WORKDIR/*out $WORKDIR/*err
 
-sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+partition=`cat $WORKDIR/gpu_partition`  
+gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+timeout ${walltime}s $vini_dir/nodetest ${partition}
 
-if  [ -e $WORKDIR/gpu_partition ]
+test_status=`cat $WORKDIR/test_status`
+if [ ${test_status} != passed ]
 then
-    partition=`cat $WORKDIR/gpu_partition`  
-    gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
-    timeout ${walltime}s $vini_dir/nodetest ${partition}
-    test_status=`cat $WORKDIR/test_status`
-    if [ ${test_status} == passed ]
+    echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
+    GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+    node=`echo $GPU_EXCLUDED | awk '{print $1}'`
+    echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
+else
+    if [ -s $WORKDIR/available_${partition}_nodes ]
     then
-        echo -e "\ntest passed."
+        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+        #sh $vini_dir/get_number_gpu_cards_per_node ${partition} ${walltime}
     else
-        if [ ${test_status} == nonode ]
-        then
-            echo "All nodes failed the test! Aborting." ; exit
-        else
-            echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
-            GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-            node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-            echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-            $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
-        fi
+        echo $NULL > $WORKDIR/${partition}_cores
+        echo $NULL > $WORKDIR/${partition}_memsize
     fi
-    rm -f $WORKDIR/*out $WORKDIR/*err
-
-    partition=gpu
-    sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-    sh $vini_dir/get_node_memory_size ${partition} ${walltime}
-    sh $vini_dir/get_number_gpu_cards_per_node ${partition} ${walltime}
 fi
+rm -f $WORKDIR/*out $WORKDIR/*err
 
-if  [ -e $WORKDIR/largemem_partition ]
+partition=`cat $WORKDIR/largemem_partition`
+smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+timeout ${walltime}s $vini_dir/nodetest ${partition}
+
+test_status=`cat $WORKDIR/test_status`
+if [ ${test_status} != passed ]
 then
-    partition=`cat $WORKDIR/largemem_partition`
-    smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-
-    timeout ${walltime}s $vini_dir/nodetest ${partition}
-    test_status=`cat $WORKDIR/test_status`
-    if [ ${test_status} == passed ]
+    echo "large memory node test not completed"    #putting first unavailable large memory node on the list
+    SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+    node=`echo $SMP_EXCLUDED | awk '{print $1}'`
+    echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
+else
+    if [ -s $WORKDIR/available_${partition}_nodes ]
     then
-        echo -e "\ntest passed."
+        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
     else
-        if [ ${test_status} == nonode ]
-        then
-            echo "All nodes failed the test! Aborting." ; exit
-        else
-            echo "large memory node test not completed"    #putting first unavailable large memory node on the list
-            partition=`cat $WORKDIR/largemem_partition`  
-            SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-            node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-            echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-            $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
-        fi
+        echo $NULL > $WORKDIR/${partition}_cores
+        echo $NULL > $WORKDIR/${partition}_memsize
     fi
-    rm -f $WORKDIR/*out $WORKDIR/*err
-
-    sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-    sh $vini_dir/get_node_memory_size ${partition} ${walltime}
 fi
+rm -f $WORKDIR/*out $WORKDIR/*err
 
 sh $vini_dir/prepare_SLURM_scripts
 
+read -e -p "Enter walltime for short SLURM jobs. Press enter to accept default: " -i "00:60:00" walltime
+echo $walltime > $WORKDIR/walltime
 echo "rosetta" > $WORKDIR/docking
 read -e -p "How many Vina/Rosetta jobs can run in parallel (each job using 4 processors). Press enter to accept default: " -i "100" jobs
 echo $jobs > $WORKDIR/max_jobs
-cores=`cat $WORKDIR/cpu_cores`
+partition=`cat $WORKDIR/cpu_partition` ; cores=`cat $WORKDIR/${partition}_cores`
 read -e -p "How many Alphafold jobs can run in parallel (each job will use $cores CPU threads)? Press enter to accept default: " -i "100" nodes
 echo $nodes > $WORKDIR/nodes
 
@@ -263,58 +245,56 @@ sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugba
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
-echo "Vini can predict KEGG protein structures with AlphaFold or SWISS-MODEL."
-read -e -p "Use AlphaFold[A] or SWISS-MODEL[S]? Enter to accept default: " -i "A" prediction_model
-echo ${prediction_model} > $WORKDIR/prediction_model
-
-echo "Vini can predict biotech drug structures with either Rosetta+Alphafold, or with SWISS-MODEL."
-read -e -p "Use Rosetta+AlphaFold[RA] or SWISS-MODEL[S]? Enter to accept default: " -i "RA" biotech_drugs_prediction_model
-echo ${biotech_drugs_prediction_model} > $WORKDIR/biotech_drugs_prediction_model
-
-if [ ${prediction_model} == A ]
-then 
-    grep AlphaFold $vini_dir/sourceme > tmp
-    if  [ -s tmp ]
+echo "Selecting the prediction tool."
+grep AlphaFold $vini_dir/sourceme > tmp #selecting tool for protein structure prediction
+if  [ -s tmp ]                          #checking if AlphaFold is installed
+then
+    echo "full_dbs" > $WORKDIR/AlphaFold_base #selecting full AlphaFold base
+    partition=`cat $WORKDIR/cpu_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+    if  [[ -s $WORKDIR/available_${partition}_nodes ]] && [[ $memsize -ge ${min_memory} ]]
     then
-        read -e -p "Run AlphaFold on CPU, GPU, or SMP nodes (cpu/gpu/smp)? Press enter to accept default: " -i "cpu" partition
-        if [ $partition == cpu ]
+        echo A > $WORKDIR/prediction_model ; echo RA > $WORKDIR/biotech_drugs_prediction_mo        del
+        cat $WORKDIR/cpu_partition          > $WORKDIR/AlphaFold_partition
+        cat $WORKDIR/"$partition"           > $WORKDIR/AlphaFold_cpus
+        cat $WORKDIR/${partition}_memsize   > $WORKDIR/AlphaFold_mem
+        echo "AlphaFold on ${partition} nodes will be used."
+    else
+        partition=`cat $WORKDIR/gpu_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+        if  [ -s $WORKDIR/available_${partition}_nodes ] && [ $memsize -ge ${min_memory} ]
         then
-            cat $WORKDIR/cpu_partition > $WORKDIR/AlphaFold_partition
-            cat $WORKDIR/cpu_cores > $WORKDIR/AlphaFold_cpus
-            cat $WORKDIR/cpu_memsize > $WORKDIR/AlphaFold_mem
+            echo A > $WORKDIR/prediction_model ; echo RA > $WORKDIR/biotech_drugs_prediction_model
+            cat $WORKDIR/gpu_partition        > $WORKDIR/AlphaFold_partition
+            cat $WORKDIR/${partition}_cores   > $WORKDIR/AlphaFold_gpus
+            cat $WORKDIR/${partition}_memsize > $WORKDIR/AlphaFold_mem
+            echo "AlphaFold on ${partition} nodes will be used."
         else
-            if  [ $partition == gpu ]
+            partition=`cat $WORKDIR/largemem_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+            if  [ -s $WORKDIR/available_${partition}_nodes ] && [ $memsize -ge ${min_memory} ]
             then
-                cat $WORKDIR/gpu_partition > $WORKDIR/AlphaFold_partition
-                cat $WORKDIR/gpu_cores > $WORKDIR/AlphaFold_gpus
-                cat $WORKDIR/gpu_memsize > $WORKDIR/AlphaFold_mem
+                echo A > $WORKDIR/prediction_model ; echo RA > $WORKDIR/biotech_drugs_prediction_model
+                cat $WORKDIR/largemem_partition > $WORKDIR/AlphaFold_partition
+                cat $WORKDIR/$partition_cores   > $WORKDIR/AlphaFold_gpus
+                cat $WORKDIR/$partition_memsize > $WORKDIR/AlphaFold_mem
+                echo "AlphaFold on ${partition} nodes will be used."
             else
-                cat $WORKDIR/smp_partition > $WORKDIR/AlphaFold_partition
-                cat $WORKDIR/smp_cores > $WORKDIR/AlphaFold_gpus
-                cat $WORKDIR/smp_memsize > $WORKDIR/AlphaFold_mem
+                echo "SWISS-MODEL will be used."
+                echo S > $WORKDIR/prediction_model ; echo S > $WORKDIR/biotech_drugs_prediction_model
+                echo ; echo "If you have never registered with SWISS-MODEL before, stop now. Go to https://swissmodel.expasy.org/  and register."
+                echo "Upon receiving approval, enter your registration data here."
+                read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+                if  [ $yesno == "n" ]
+                then
+                    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
+                    read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
+                    read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
+                    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+                    sh download_SWISS_MODEL_metadata
+                fi
             fi
         fi
-        read -e -p "Enter which database AlphaFold will use (full_dbs or reduced_dbs). Press enter to accept default: " -i "full_dbs" base
-        echo $base > $WORKDIR/AlphaFold_base
-    else
-        echo "AlphaFold not found, check if it is installed. Then rerun <install.sh> script and start Vini again."
-        exit
     fi
-fi
-
-if  [ $prediction_model == S ]
-then
-    echo ; echo "If you have never registered with SWISS-MODEL before, stop now.. Go to https://swissmodel.expasy.org/  and register."
-    echo "Upon receiving approval, enter your registration data here."
-    read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
-    if  [ $yesno == "n" ]
-    then
-        read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
-        read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
-        read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
-        chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-        sh download_SWISS_MODEL_metadata
-    fi
+else
+    echo S > $WORKDIR/prediction_model ; echo S > $WORKDIR/biotech_drugs_prediction_model
 fi
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
@@ -477,6 +457,7 @@ fi
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo ${therapy_level} > $WORKDIR/max_therapy_level
 
+
 grep -w "S" $vini_dir/ligands/ligands_list > tmp #create pdbqt files in case we are analyzing small molecules
 if  [ -s tmp ] ; then
     echo "small" > $WORKDIR/drugtype
@@ -498,7 +479,7 @@ num_modes=9
 echo $num_modes > $WORKDIR/num_modes
 
 #read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept default : " -i "8" exhaustiveness
-exhaustivenes=8
+exhaustiveness=8
 echo $exhaustiveness > $WORKDIR/exhaustiveness
 
 box_size=40
@@ -507,7 +488,7 @@ echo ${box_size} > $WORKDIR/box_size
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
 
-read -e -p "Run Vini in debug mode (output will be redirected to screen) (y/n)?. Press enter to accept default (no debug): " -i "n" mode
+read -e -p "Run Vini in debug mode (output will be redirected to screen) (y/n)?. Press enter to accept default (debug): " -i "y" mode
 if  [ $mode == n ]
 then
     nohup ./VelikaVini &

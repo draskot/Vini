@@ -11,7 +11,6 @@ rm -f $WORKDIR/cores.out
 partition=`cat $WORKDIR/${partition}_partition`
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
-
 echo "#! /bin/bash"                           > $WORKDIR/get_number_of_cores
 echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_of_cores
 echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_of_cores
@@ -50,4 +49,3 @@ else
     read -p "Write the number of CPU cores per ${partition} node here:" cores
     echo $cores > $WORKDIR/${partition}_cores
 fi
-

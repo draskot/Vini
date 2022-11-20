@@ -1,4 +1,6 @@
 partition=$1
+eval excluded_nodes=excluded_"$partition"_nodes
+eval available_nodes=available_"$partition"_nodes
 
 excluded_nodes=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
 available_nodes=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="mixed" || $2=="idle") { 
@@ -29,15 +31,14 @@ do
 done
 cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/available_${partition}_nodes
 
-groups > $WORKDIR/tmp
-groups_login_node=`wc -w < $WORKDIR/tmp`
+groups=`groups`
+groups_login_node=`echo "$groups" | wc -w`
+
 echo "interrupted" > $WORKDIR/test_status
 
 if [ ! -s $WORKDIR/available_${partition}_nodes ]
 then
-    echo "No available ${partition} nodes found on this system. Vini will stop now."
-    echo ; echo "nonode" > $WORKDIR/test_status
-    exit
+    echo "There are no available nodes in ${partition} partition. Vini will not use them."
 else
     while read -r line      #counting the number of available nodes
     do
@@ -72,8 +73,8 @@ else
 
     for node in $(<$WORKDIR/tmp)
     do
-        grep $USER $WORKDIR/nodetest.${node}.out > $WORKDIR/nogroups
-        groups=`wc -w < $WORKDIR/nogroups`
+        groups=`head -1 $WORKDIR/nodetest.${node}.out`
+        groups=`echo "$groups" | wc -w`
         if  [ $groups -eq ${groups_login_node} ]
         then
             echo -n "$node ok. " ; sleep 0.01
@@ -82,14 +83,14 @@ else
             available=`cat available_${partition}_nodes`
             available=${available//${node},/}
             echo $available > $WORKDIR/available_${partition}_nodes
-            echo -n "$node not ok. " ; sleep 0.01
+            echo -n "$node not ok. "
         fi
     done
-fi
 
-if  [ -s $WORKDIR/excluded_${partition}_nodes ]
-then
-    echo ; echo -e "\nThe following ${partition} nodes are either not available or experience some problems. Will be excluded:"
-    cat $WORKDIR/excluded_${partition}_nodes
+    if  [ -s $WORKDIR/excluded_${partition}_nodes ]
+    then
+        echo ; echo -e "\nThe following ${partition} nodes are either not available or experience some problems. Will be excluded:"
+        cat $WORKDIR/excluded_${partition}_nodes
+    fi
 fi
 echo "passed" > $WORKDIR/test_status

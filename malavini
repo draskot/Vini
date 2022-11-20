@@ -17,8 +17,9 @@ box_size=`cat $WORKDIR/box_size`
 random_affinity=`cat $WORKDIR/random_affinity`
 max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
-excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
 partition=`cat $WORKDIR/cpu_partition`
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+walltime=`cat $WORKDIR/walltime`
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 complexes=`cat $WORKDIR/complexes`
@@ -99,7 +100,7 @@ do
 
                              sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                    
                              echo "#!/bin/bash"                                        > Vina
-                             echo "#SBATCH --time=08:00:00"                           >> Vina
+                             echo "#SBATCH --time="$walltime                          >> Vina
                              echo "#SBATCH --cpus-per-task=4"                         >> Vina
                              echo "#SBATCH --mem=8gb"                                 >> Vina
                              echo "#SBATCH --partition="$partition                    >> Vina
@@ -155,7 +156,7 @@ do
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
                  echo "#!/bin/bash"                                          > ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --time=08:00:00"                             >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --time="$walltime                            >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --partition="$partition                      >> ${target_dir}/vec_${lig_index}
@@ -168,13 +169,13 @@ do
                  ${job_submit} ${target_dir}/vec_${lig_index} ${target_dir} ${WORKDIR}
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 source $INSTALL/miniconda3/bin/activate #debug
-                 conda activate env310
+                 #source $INSTALL/miniconda3/bin/activate #debug
+                 #conda activate env310
 
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir
                  echo "#!/bin/bash"                                          > ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --time=08:00:00"                             >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --time="$walltime                            >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --partition="$partition                      >> ${target_dir}/mat_${lig_index}
@@ -183,10 +184,10 @@ do
                  echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/mat_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                  >> ${target_dir}/mat_${lig_index}
-                 #echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/mat_${lig_index}
-                 #echo "conda activate env310"                               >> ${target_dir}/mat_${lig_index}
+                 echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/mat_${lig_index}
+                 echo "conda activate env310"                               >> ${target_dir}/mat_${lig_index}
                  echo "python3 $vini_dir/create_energy_binding_matrix.py"   >> ${target_dir}/mat_${lig_index}
-                 #echo "conda deactivate"                                    >> ${target_dir}/mat_${lig_index}
+                 echo "conda deactivate"                                    >> ${target_dir}/mat_${lig_index}
                  chmod u+x ${target_dir}/mat_${lig_index}
                  ${job_submit} ${target_dir}/mat_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
@@ -194,7 +195,7 @@ do
                  echo "Calculating eigenvalues, please wait."
                  echo ${target_dir} > target_dir
                  echo "#!/bin/bash"                                            > ${target_dir}/eigen_${lig_index}
-                 echo "#SBATCH --time=08:00:00"                               >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --time="$walltime                              >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --cpus-per-task=1"                             >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --mem=4gb"                                     >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --partition="$partition                        >> ${target_dir}/eigen_${lig_index}
@@ -204,19 +205,17 @@ do
                  echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                   >> ${target_dir}/eigen_${lig_index} 
                  echo "WORKDIR=${WORKDIR}"                                    >> ${target_dir}/eigen_${lig_index}
-                 #echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/eigen_${lig_index}
-                 #echo "conda activate env310"                                 >> ${target_dir}/eigen_${lig_index}
+                 echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/eigen_${lig_index}
+                 echo "conda activate env310"                                 >> ${target_dir}/eigen_${lig_index}
                  echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/E_Vina" >> ${target_dir}/eigen_${lig_index}
-                 #echo "conda deactivate"                                      >> ${target_dir}/eigen_${lig_index}
+                 echo "conda deactivate"                                      >> ${target_dir}/eigen_${lig_index}
                  chmod u+x ${target_dir}/eigen_${lig_index}
                  ${job_submit} ${target_dir}/eigen_${lig_index}
                  sh $vini_dir/wait_until_jobs_finish
 
-                 conda deactivate
-
                  echo "Calculating SLEM, please wait."
                  echo "#!/bin/bash"                                           > ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --time=08:00:00"                              >> ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --mem=4gb"                                    >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/select_${lig_index}
@@ -248,7 +247,7 @@ cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_li
 
 echo "Deleting equal SLEM entries with equal indices, please wait..."
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
-echo "#SBATCH --time=08:00:00"                       >> $WORKDIR/postproc
+echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
 echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
 echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
 echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
@@ -264,7 +263,7 @@ sh $vini_dir/wait_until_jobs_finish
 
 echo "Creating SLEM named lists, please wait."
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
-echo "#SBATCH --time=08:00:00"                       >> $WORKDIR/postproc
+echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
 echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
 echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
 echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
@@ -281,7 +280,7 @@ sh $vini_dir/wait_until_jobs_finish
 if [ $therapy_level -ne $ONES ] ; then  
    echo "Creating SLEM wings list, please wait."
    echo "#!/bin/bash"                                 > $WORKDIR/postproc
-   echo "#SBATCH --time=08:00:00"                    >> $WORKDIR/postproc
+   echo "#SBATCH --time="$walltime                   >> $WORKDIR/postproc
    echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
    echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
    echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
@@ -297,7 +296,7 @@ if [ $therapy_level -ne $ONES ] ; then
 
    echo "Creating SLEM wings named list, please wait."
    echo "#!/bin/bash"                                 > $WORKDIR/postproc
-   echo "#SBATCH --time=08:00:00"                    >> $WORKDIR/postproc
+   echo "#SBATCH --time="$walltime                   >> $WORKDIR/postproc
    echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
    echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
    echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc

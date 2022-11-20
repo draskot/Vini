@@ -1,5 +1,5 @@
-cores=`cat $WORKDIR/cpu_cores`
-cpu_partition=`cat $WORKDIR/cpu_partition`
+partition=`cat $WORKDIR/cpu_partition`
+cores=`cat $WORKDIR/${partition}_cores`
 
 cd $WORKDIR
 
@@ -7,7 +7,7 @@ echo "#! /bin/bash"                           > Vina  #prepare header file for A
 echo "#SBATCH --time=08:00:00"               >> Vina
 echo "#SBATCH --cpus-per-task=8"             >> Vina
 echo "#SBATCH --mem=4gb"                     >> Vina
-echo "#SBATCH --partition="$cpu_partition    >> Vina
+echo "#SBATCH --partition="$partition        >> Vina
 chmod u+x                                       Vina
 
 echo "#! /bin/bash"                         > meeko  #prepare SLURM script for Meeko
@@ -17,9 +17,8 @@ echo "#SBATCH --output=$WORKDIR/meeko.out" >> meeko
 echo "#SBATCH --error=$WORKDIR/meeko.err"  >> meeko
 echo "#SBATCH --cpus-per-task=4"           >> meeko
 echo "#SBATCH --mem=8gb"                   >> meeko
-echo "#SBATCH --partition="$cpu_partition  >> meeko
+echo "#SBATCH --partition="$partition      >> meeko
 chmod u+x                                     meeko
-
 
 #echo "#!/bin/bash"                            > rosetta_relax.mpi #prepare relax MPI script
 #echo "#SBATCH --job-name=relax"              >> rosetta_relax.mpi
@@ -27,7 +26,7 @@ chmod u+x                                     meeko
 #echo "#SBATCH --ntasks=12"                   >> rosetta_relax.mpi
 #echo "#SBATCH --ntasks-per-core=1"           >> rosetta_relax.mpi
 #echo "#SBATCH --mem=12gb"                    >> rosetta_relax.mpi
-#echo "#SBATCH --partition="$cpu_partition   >> rosetta_relax.mpi
+#echo "#SBATCH --partition="$partition        >> rosetta_relax.mpi
 #echo "#SBATCH --time=24:00:00"               >> rosetta_relax.mpi
 #echo "#SBATCH --output=rosetta_relax.out"    >> rosetta_relax.mpi
 #echo "#SBATCH --error=rosetta_relax.err"     >> rosetta_relax.mpi
@@ -40,7 +39,7 @@ chmod u+x                                     meeko
 #echo "#SBATCH --ntasks=12"                   >> rosetta_docking.mpi
 #echo "#SBATCH --ntasks-per-core=1"           >> rosetta_docking.mpi
 #echo "#SBATCH --mem=12gb"                    >> rosetta_docking.mpi
-#echo "#SBATCH --partition="$cpu_partition    >> rosetta_docking.mpi
+#echo "#SBATCH --partition="$partition        >> rosetta_docking.mpi
 #echo "#SBATCH --time=24:00:00"               >> rosetta_docking.mpi
 #echo "#SBATCH --output=rosetta_docking.out"  >> rosetta_docking.mpi
 #echo "#SBATCH --error=rosetta_docking.err"   >> rosetta_docking.mpi
@@ -53,7 +52,7 @@ echo "#SBATCH --nodes=1"                     >> genex
 echo "#SBATCH --ntasks-per-node="$cores      >> genex
 echo "#SBATCH --cpus-per-task=1"             >> genex
 echo "#SBATCH --mem=48gb"                    >> genex
-echo "#SBATCH --partition="$cpu_partition    >> genex
+echo "#SBATCH --partition="$partition        >> genex
 echo "#SBATCH --time=24:00:00"               >> genex
 echo "#SBATCH --output=genex.out"            >> genex
 cat $vini_dir/calculate_z_scores_script      >> genex
@@ -68,7 +67,7 @@ chmod u+x                                       genex
 #echo "#SBATCH --ntasks-per-node="$cores      >> sander
 #echo "#SBATCH --cpus-per-task=1"             >> sander
 #echo "#SBATCH --mem=48gb"                    >> sander
-#echo "#SBATCH --partition="$cpu_partition    >> sander
+#echo "#SBATCH --partition="$partition        >> sander
 #cat $vini_dir/sander_script                  >> sander
 #chmod u+x                                       sander
 
@@ -78,7 +77,7 @@ echo "#SBATCH --output=MD_prep.out"          >> MD_prep
 echo "#SBATCH --time=48:00:00"               >> MD_prep
 echo "#SBATCH --cpus-per-task=1"             >> MD_prep
 echo "#SBATCH --mem=2gb"                     >> MD_prep
-echo "#SBATCH --partition="$cpu_partition    >> MD_prep
+echo "#SBATCH --partition="$partition        >> MD_prep
 cat $vini_dir/MD_prep                        >> MD_prep
 chmod u+x                                       MD_prep
 
@@ -90,7 +89,7 @@ echo "#SBATCH --exclusive"                   >> MD_run
 echo "#SBATCH --nodes=1"                     >> MD_run
 echo "#SBATCH --cpus-per-task=24"            >> MD_run
 echo "#SBATCH --mem=48gb"                    >> MD_run
-echo "#SBATCH --partition="$cpu_partition    >> MD_run
+echo "#SBATCH --partition="$partition        >> MD_run
 echo "export GMX_MAXCONSTRWARN=-1"           >> MD_run
 cat $vini_dir/MD_run                         >> MD_run
 chmod u+x                                       MD_run
@@ -102,7 +101,7 @@ echo "#SBATCH --time=48:00:00"               >> ndx
 echo "#SBATCH --ntasks-per-node=1"           >> ndx
 echo "#SBATCH --cpus-per-task=1"             >> ndx
 echo "#SBATCH --mem=2gb"                     >> ndx
-echo "#SBATCH --partition="$cpu_partition    >> ndx
+echo "#SBATCH --partition="$partition        >> ndx
 cat $vini_dir/ndx                            >> ndx
 chmod u+x                                       ndx
 
@@ -113,7 +112,7 @@ echo "#SBATCH --time=48:00:00"                >> polar
 echo "#SBATCH --ntasks-per-node=1"            >> polar
 echo "#SBATCH --cpus-per-task=16"             >> polar
 echo "#SBATCH --mem=32gb"                     >> polar
-echo "#SBATCH --partition="$cpu_partition     >> polar
+echo "#SBATCH --partition="$partition         >> polar
 echo "export OMP_NUM_THREADS=16"              >> polar
 cat $vini_dir/polar                           >> polar
 chmod u+x polar
@@ -125,7 +124,7 @@ echo "#SBATCH --time=48:00:00"                >> apolar
 echo "#SBATCH --ntasks-per-node=1"            >> apolar
 echo "#SBATCH --cpus-per-task=8"              >> apolar
 echo "#SBATCH --mem=16gb"                     >> apolar
-echo "#SBATCH --partition="$cpu_partition     >> apolar
+echo "#SBATCH --partition="$partition         >> apolar
 echo "export OMP_NUM_THREADS=8"               >> apolar
 cat $vini_dir/apolar                          >> apolar
 chmod u+x                                        apolar
@@ -137,7 +136,7 @@ echo "#SBATCH --time=48:00:00"                >> potential
 echo "#SBATCH --ntasks-per-node=1"            >> potential
 echo "#SBATCH --cpus-per-task=8"              >> potential
 echo "#SBATCH --mem=16gb"                     >> potential
-echo "#SBATCH --partition="$cpu_partition     >> potential
+echo "#SBATCH --partition="$partition         >> potential
 echo "export OMP_NUM_THREADS=8"               >> potential
 cat $vini_dir/potent                          >> potential
 chmod u+x                                        potential
@@ -150,7 +149,7 @@ echo "#SBATCH --time=48:00:00"                >> FBE
 echo "#SBATCH --ntasks-per-node=1"            >> FBE
 echo "#SBATCH --cpus-per-task=1"              >> FBE
 echo "#SBATCH --mem=2gb"                      >> FBE
-echo "#SBATCH --partition="$cpu_partition     >> FBE
+echo "#SBATCH --partition="$partition         >> FBE
 echo "source $INSTALL/miniconda2/bin/activate" >> FBE
 cat $vini_dir/FBE                             >> FBE
 chmod u+x                                        FBE

@@ -3,8 +3,11 @@ NULL=0
 module purge
 rm -f tmp
 
-if [ -e sourceme ]
+read -p "First time installation of Vini on this system (y/n)? Note that the first time installation will remove previously installed 3rd party Vini's software:" yesno
+if [ $yesno == y ]
 then
+    rm -f sourceme
+else
     grep General sourceme > tmp
 fi
 
@@ -17,7 +20,6 @@ then
     read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
-    echo "If Alphafold module is not available on this system, consider local AlphaFold installation on $SHARED" ; echo
     mkdir -p $INSTALL
     echo "#************General section**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
@@ -28,22 +30,22 @@ then
 fi
 read -p "Press enter when ready to start the installation of 3rd party software."
 
-#echo -n "Checking if miniconda2 is installed..."
-#grep miniconda2 $vini_dir/sourceme > tmp  
-#if  [ ! -s tmp ]
-#then
-#    echo "no. Performing cleanup, please wait..."
-#    rm -rvf  $INSTALL/miniconda2
-#    echo "Please wait while downloading and installing miniconda2..."
-#    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
-#    sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
-#    source $INSTALL/miniconda2/etc/profile.d/conda.sh
-#    conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
-#    rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
-#    echo "#************miniconda2 section**********" >> $vini_dir/sourceme
-#else
-#    echo "yes."
-#fi
+echo -n "Checking if miniconda2 is installed..."
+grep miniconda2 $vini_dir/sourceme > tmp  
+if  [ ! -s tmp ]
+then
+    echo "no. Performing cleanup, please wait..."
+    rm -rvf  $INSTALL/miniconda2
+    echo "Please wait while downloading and installing miniconda2..."
+    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
+    source $INSTALL/miniconda2/etc/profile.d/conda.sh
+    conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
+    rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
+    echo "#************miniconda2 section**********" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
 
 echo -n "Checking if miniconda3 is installed..."
 grep miniconda3 $vini_dir/sourceme > tmp 
@@ -163,7 +165,7 @@ if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
     rm -f $INSTALL/vina
-    wget -O $INSTALL/vina no-check-certificate https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
+    wget -O $INSTALL/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme

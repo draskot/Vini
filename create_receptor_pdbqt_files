@@ -3,7 +3,8 @@ cancer_type=`cat $WORKDIR/cancer_type`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
-excluded_nodes=`cat $WORKDIR/excluded_cpu_nodes`
+partition=`cat $WORKDIR/cpu_partition`
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
 dir=$WORKDIR/${cancer_type}_data
 

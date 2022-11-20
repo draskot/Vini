@@ -18,9 +18,9 @@ comp_index=$4
 
 #output parameter: Free binding energy in $WORKDIR/free_binding_energy_data file
 
-cpus=`cat $WORKDIR/cpu_cores`
-mem=`cat $WORKDIR/cpu_memsize`
 partition=`cat $WORKDIR/cpu_partition`
+cpus=`cat $WORKDIR/${partition}_cores`
+mem=`cat $WORKDIR/${partition}_memsize`
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 rosetta_version=`cat $WORKDIR/rosetta_version`

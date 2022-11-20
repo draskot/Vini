@@ -1,16 +1,8 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
+cell_line=`cat $WORKDIR/cell_line`
 
-echo -n "Activating miniconda3 environment..."
-source $INSTALL/miniconda3/bin/activate
-conda activate env310
-echo "done."
-
-
-cell_line=$1
-
-
-prediction_model=`cat $WORKDIR/prediction_model` 
+prediction_model=`cat $WORKDIR/prediction_model`
 if [ $prediction_model == A ]
 then
     partition=`cat  $WORKDIR/AlphaFold_partition`      #Define AlphaFold parameters
@@ -24,15 +16,9 @@ then
     base=`cat $WORKDIR/AlphaFold_base`
     model=monomer
 fi
-
-
 SEQDIR=$vini_dir/genes/sequences/
-
-echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..." 
-
-
+echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..."
 rm -f $vini_dir/genes/sequences/*csv
-
 > $WORKDIR/mutated #create file with mutated gene names
 > $WORKDIR/combo
 ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
@@ -45,17 +31,18 @@ do
     echo $mutated_gene_name >> $WORKDIR/mutated
     echo $uniprot_id $mutated_gene_name >> $WORKDIR/combo
     dnaseq=`cat $line`
-    
+
     wget -O $SEQDIR${uniprot_id}_mutated.frame --post-data="dna_sequence=${dnaseq}&output_format=fasta" -q  https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
-    #rm $SEQDIR/${uniprot_id}_mutated.fasta
     echo -n "."
 done < $WORKDIR/tmp
 echo "done."
 
-
-
+echo -n "Activating miniconda3 environment..."
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
 python find_longest_frame.py --input-dir $SEQDIR #Finding longest ORFs (Open Reading Frames)
-#rm -f $SEQDIR/*frame
+conda deactivate
 
 while read -r line #replacing wild genes with mutated in receptors_contracted file
 do
@@ -64,10 +51,6 @@ do
     cp $SEQDIR/${wild}_mutated.fasta $SEQDIR/${wild}-${cell_line}.fasta
     sed -i "s/$wild/$mutated/" $WORKDIR/receptors_contracted
 done < $WORKDIR/combo
-
-#dos2unix $vini_dir/genes/cosmic_ids.csv
-
-
 
 while read -r line
 do
@@ -82,7 +65,7 @@ do
         echo ">sp|${line}|mutated gene ${gene} OS=Homo sapiens OX=9606 GN=${gene} PE=1 SV=4" > $WORKDIR/tmp
         grep - $vini_dir/genes/sequences/${line}.fasta > hyphen
         if  [ -s hyphen ]    #remove hiphen if exists in fasta sequence
-        then 
+        then
             cat $vini_dir/genes/sequences/${line}.fasta | tr -d - >> $WORKDIR/tmp
             rm hyphen
         else
@@ -91,12 +74,10 @@ do
         mv $WORKDIR/tmp $vini_dir/genes/sequences/${line}.fasta
         sed -i -e "s/\r//g"  $vini_dir/genes/sequences/${line}.fasta #remove ^M from fasta sequence
         fasta_file=$vini_dir/genes/sequences/${line}.fasta
-
         if  [ -e $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb ]
-        then 
+        then
             cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/mutations/${line}.pdb $vini_dir/database/genes/pdb_files
         else
-
             if  [ ${prediction_model} == A ]
             then
                 echo "Predicting mutated $line structure with AlphaFold."
@@ -113,7 +94,7 @@ done < $WORKDIR/mutated
 if  [[ ${prediction_model} == A ]] && [[ -e $WORKDIR/mutated ]]
 then
     sh $vini_dir/wait_until_jobs_finish #wait and then copy gene structures if predicted with AlphaFold
-    while read -r line    
+    while read -r line
     do
         if  [ ! -e $vini_dir/database/genes/pdb_files/${line}.pdb ]
         then
@@ -122,5 +103,3 @@ then
     done < $WORKDIR/mutated
     rm $WORKDIR/mutated
 fi
-
-conda deactivate
