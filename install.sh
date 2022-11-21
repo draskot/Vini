@@ -363,4 +363,64 @@ else
 fi
 rm -f rosetta tmp
 
+echo -n "Checking if NAMD is installed..."
+grep NAMD $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "#*****NAMD section******" >> $vini_dir/sourceme
+    echo "no." ; echo -n "Checking if NAMD module(s) exists..."
+    module spider NAMD 2> tmp
+    grep -w error tmp > NAMD
+    if [ ! -s NAMD ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" NAMD
+        echo "module load" $NAMD >> $vini_dir/sourceme
+    else
+        echo "No NAMD module found. You will need to install NAMD locally."
+        read -p "Download NAMD 2.14 Linux-x86_64-multicore from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to the $INSTALL directory. Then press enter to continue." enter
+        if  [ -e $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz ]
+        then
+            tar –xvzf $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz
+            echo "#*****NAMD section******" >> $vini_dir/sourceme
+        else
+            echo "NAMD binary archive not found! You may repeat the installation later. Exiting." 
+        fi
+else
+    echo "yes."
+fi
+rm -f NAMD tmp
+
+echo -n "Checking if VMD is installed..."
+grep VMD $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "#*****VMD section******" >> $vini_dir/sourceme
+    echo "no." ; echo -n "Checking if VMD module(s) exists..."
+    module spider VMD 2> tmp
+    grep -w error tmp > VMD
+    if [ ! -s VMD ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" VMD
+        echo "module load" $VMD >> $vini_dir/sourceme
+    else
+        echo "No VMD module found. You will need to install VMD locally."
+        read -p "Download VMD 1.9.3 vmd-1.9.3.bin.LINUXAMD64.text.tar.gz from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to the $INSTALL directory and then press enter to continue." enter
+        read -p " $INSTALL directory, then press <enter> to continue." enter
+        if  [ -e $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz ]
+        then
+            tar –xvzf $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz
+            echo "#*****VMD section******" >> $vini_dir/sourceme
+        else
+            echo "VMD binary archive not found! You may repeat the installation later. Exiting."
+        fi
+else
+    echo "yes."
+fi
+rm -f NAMD tmp
+
+
+
+
 echo "The downloaded source packages are in" $vini_dir/software
