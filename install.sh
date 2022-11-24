@@ -363,4 +363,46 @@ else
 fi
 rm -f rosetta tmp
 
+echo -n "Checking if NAMD is installed..."
+grep NAMD $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "#*****NAMD section******" >> $vini_dir/sourceme
+    echo "no." ; echo -n "Checking if NAMD module(s) exists..."
+    module spider NAMD 2> tmp
+    grep -w error tmp > NAMD
+    if [ ! -s NAMD ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" NAMD
+        echo "module load" $NAMD >> $vini_dir/sourceme
+    else
+        "Install NAMD manually."
+    fi
+else
+    echo "yes."
+fi
+rm -f NAMD tmp
+
+echo -n "Checking if VMD is installed..."
+grep VMD $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "#*****VMD section******" >> $vini_dir/sourceme
+    echo "no." ; echo -n "Checking if VMD module(s) exists..."
+    module spider VMD 2> tmp
+    grep -w error tmp > VMD
+    if [ ! -s VMD ]
+    then
+        echo "module(s) found" ; cat tmp
+        read -p "Select module:" VMD
+        echo "module load" $VMD >> $vini_dir/sourceme
+    else
+        "Install VMD manually."
+    fi
+else
+    echo "yes."
+fi
+rm -f VMD tmp
+
 echo "The downloaded source packages are in" $vini_dir/software
