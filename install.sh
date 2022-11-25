@@ -3,15 +3,7 @@ NULL=0
 module purge
 rm -f tmp
 
-read -p "First time installation of Vini on this system (y/n)? Note that the first time installation will remove previously installed 3rd party Vini's software:" yesno
-if [ $yesno == y ]
-then
-    rm -f sourceme
-else
-    grep General sourceme > tmp
-fi
-
-if  [ ! -s tmp ]
+if  [ ! -e sourceme ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
@@ -363,6 +355,33 @@ else
 fi
 rm -f rosetta tmp
 
+#echo -n "Checking if OpenBLAS is installed..."
+#grep OpenBLAS $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    echo "#*****OpenBLAS section******" >> $vini_dir/sourceme
+#    echo "no." ; echo -n "Checking if OpenBLAS module(s) exists..."
+#    module spider OpenBLAS 2> tmp
+#    grep -w error tmp > OpenBLAS
+#    if [ ! -s OpenBLAS ]
+#    then
+#        echo "module(s) found" ; cat tmp
+#        read -p "Do you want to use an existing OpenBLAS module [use] or install your own copy [install]?" use
+#        if  [ $use == use ]
+#        then
+#            read -p "Select the module(s) from the list above:" OpenBLAS
+#            echo "module load" $OpenBLAS >> $vini_dir/sourceme
+#        else
+#            echo "Download and install OpenBLAS."
+#            read -p "Press enter when the installation is complete:" enter
+#        fi
+#    else
+#        echo "No OpenBLAS module(s) found. Download and install your own OpenBLAS copy."
+#        read -p "Press enter when the installation is complete:" enter
+#    fi
+#fi
+
+
 echo -n "Checking if NAMD is installed..."
 grep NAMD $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -374,10 +393,22 @@ then
     if [ ! -s NAMD ]
     then
         echo "module(s) found" ; cat tmp
-        read -p "Select module:" NAMD
-        echo "module load" $NAMD >> $vini_dir/sourceme
+        read -p "Do you want to use an existing NAMD module [use] or install your own copy [install]?" use
+        if  [ $use == use ]
+        then
+            read -p "Select the module from the list above:" NAMD
+            echo "module load" $NAMD >> $vini_dir/sourceme
+        else
+            echo "Download NAMD 2.14 (2020-08-05) Linux-x86_64-multicore from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory."
+            read -p "Press enter when the file is in place:" enter
+            tar -xvf $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz -C $INSTALL
+            rm $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz
+        fi
     else
-        "Install NAMD manually."
+            echo "Download NAMD 2.14 (2020-08-05) Linux-x86_64-multicore from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory."
+            read -p "Press enter when the file is in place:" enter
+            tar -xvf $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz -C $INSTALL
+            rm $INSTALL/NAMD_2.14_Linux-x86_64-multicore.tar.gz
     fi
 else
     echo "yes."
@@ -395,14 +426,27 @@ then
     if [ ! -s VMD ]
     then
         echo "module(s) found" ; cat tmp
-        read -p "Select module:" VMD
-        echo "module load" $VMD >> $vini_dir/sourceme
+        read -p "Do you want to use one of the existing VMD modules [use] or install your own copy [install]?" use
+        if  [ $use == use ]
+        then
+            read -p "Select the module from the list above:" VMD
+            echo "module load" $VMD >> $vini_dir/sourceme
+        else
+            echo "Download VMD Version 1.9.3 (2016-11-30) LINUX_64 Text-mode from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
+            read -p "Press enter when the file is in place:" enter
+            tar -xvf $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz -C $INSTALL
+            rm $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz
+        fi
     else
-        "Install VMD manually."
+        echo "Download VMD Version 1.9.3 (2016-11-30) LINUX_64 Text-mode from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
+        read -p "Press enter when the file is in place:" enter
+        tar -xvf $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz -C $INSTALL
+        rm $INSTALL/vmd-1.9.3.bin.LINUXAMD64.text.tar.gz
     fi
 else
     echo "yes."
 fi
 rm -f VMD tmp
 
-echo "The downloaded source packages are in" $vini_dir/software
+echo "You may find installed packages in $INSTALL directory."
+echo " Exit and log in again for the changes to make effect."
