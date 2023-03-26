@@ -1,18 +1,7 @@
-receptor=$1
-ligand=$2
-target_dir=$3
-comp_index=$4
-
-grep "interaction energy"  docking.out > tmp
-if [ -s tmp ]
-then                                #no errors, create complex and store interaction energy
-    line=`head -2 tmp | tail -1`
-    FBE=`echo $line | tr -d ':' | awk '{print $4}'`
-    echo "ligand: $ligand     receptor: $receptor     interaction_energy: $FBE" >> $WORKDIR/free_binding_energy_data
-    cp receptor_relaxed_0002_0001.pdb COMPLEX.pdb
-else                                                
-    FBE=-7.0
-    echo "ligand: $ligand     receptor: $receptor     interaction_energy: Not_computed!" >> $WORKDIR/free_binding_energy_data
-fi
-
-echo $FBE > ${target_dir}/log_${comp_index}.txt
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --mem=2gb
+#SBATCH --job-name=logging
+#SBATCH --output=logging.out
+#SBATCH --error=logging.err

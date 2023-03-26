@@ -23,11 +23,24 @@ fi
 echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
-    echo "installed."
+    echo "The following software is installed:" 
+    cat sourceme | grep section | sed 's/section//' | sed 's/General//'
+    programs=`grep section sourceme | wc -l`
+    no=14
+    if  [ $programs -lt $no ]
+    then
+        echo "Some 3rd party programs are missing. Trying to install them."
+        sh install.sh
+        echo "Done, performing logout. Log in and start Vini again."
+        pkill -u $USER
+    else
+        echo "All 3rd party programs are in place, continuing."
+    fi
 else
+    > $WORKDIR/programs
     sh install.sh
-    echo "Installation done. Execute <source $vini_dir/sourceme> to changes make effect and start Vini again."
-    exit
+    echo "Installation done, performing logout. Log in and start Vini again."
+    pkill -u $USER
 fi
 
 sh $vini_dir/clean
@@ -50,6 +63,7 @@ mkdir -p $vini_dir/genes/pdb_files
 mkdir -p $vini_dir/genes/expressions 
 mkdir -p $vini_dir/genes/mutations
 mkdir -p $vini_dir/genes/sequences
+
 
 echo -n "Determining workload manager..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
@@ -102,6 +116,7 @@ ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSETTA` ; ROSETTA=`dirname $ROSE
 echo $rosetta_version > $WORKDIR/rosetta_version
 echo $ROSETTA > $WORKDIR/ROSETTA
 
+
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
 job_cancel=`cat $WORKDIR/job_cancel`
@@ -129,83 +144,24 @@ cd $vini_dir
 
 cat COPYRIGHT
 
-walltime=360  #seconds
-
-partition=`cat $WORKDIR/cpu_partition`
-cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-test_status=`cat $WORKDIR/test_status`
-if  [ ${test_status} != passed ]
+if [ -e $WORKDIR/gather_hardware_info ]
 then
-    echo "$partition nodes test not completed" #putting first unavailable node on the list
-    partition=`cat $WORKDIR/cpu_partition`
-    CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
-    node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
-    echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_${partition}_nodes
-    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
-else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
+    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
+    echo "Hardware information gathering has already been done on $birth.  If there have been any changes in the meantime, the procedure should be repeated."
+    read -p "Do you want to repeat the procedure (may take about 10 minutes to finish)? (y/n)" yesno
+    if [ $yesno == y ]
     then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
-    else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
+        sh $vini_dir/gather_hardware_info
+        > $WORKDIR/gather_hardware_info
     fi
-fi
-rm -f $WORKDIR/*out $WORKDIR/*err
-
-partition=`cat $WORKDIR/gpu_partition`  
-gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} != passed ]
-then
-    echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
-    GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-    node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-    echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
 else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
-    then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
-        #sh $vini_dir/get_number_gpu_cards_per_node ${partition} ${walltime}
-    else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
-    fi
+    sh $vini_dir/gather_hardware_info
+    > $WORKDIR/gather_hardware_info
 fi
-rm -f $WORKDIR/*out $WORKDIR/*err
 
-partition=`cat $WORKDIR/largemem_partition`
-smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} != passed ]
-then
-    echo "large memory node test not completed"    #putting first unavailable large memory node on the list
-    SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-    node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-    echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
-else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
-    then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
-    else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
-    fi
-fi
-rm -f $WORKDIR/*out $WORKDIR/*err
 
 sh $vini_dir/prepare_SLURM_scripts
+
 
 read -e -p "Enter walltime for short SLURM jobs. Press enter to accept default: " -i "00:60:00" walltime
 echo $walltime > $WORKDIR/walltime
@@ -246,16 +202,22 @@ sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugba
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
 echo "Selecting the prediction tool."
+
+echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp #selecting tool for protein structure prediction
 if  [ -s tmp ]                          #checking if AlphaFold is installed
 then
+    echo "yes."
     echo "full_dbs" > $WORKDIR/AlphaFold_base #selecting full AlphaFold base
     partition=`cat $WORKDIR/cpu_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+    echo "$partition partition will be used, available memory per node is $memsize"
     if  [[ -s $WORKDIR/available_${partition}_nodes ]] && [[ $memsize -ge ${min_memory} ]]
     then
-        echo A > $WORKDIR/prediction_model ; echo RA > $WORKDIR/biotech_drugs_prediction_mo        del
+        echo "Alphafold will be used for protein structure prediction."
+        echo "Rosetta Antibody will be used for predicting biotech drug structures."
+        echo A > $WORKDIR/prediction_model ; echo RA > $WORKDIR/biotech_drugs_prediction_model
         cat $WORKDIR/cpu_partition          > $WORKDIR/AlphaFold_partition
-        cat $WORKDIR/"$partition"           > $WORKDIR/AlphaFold_cpus
+        cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
         cat $WORKDIR/${partition}_memsize   > $WORKDIR/AlphaFold_mem
         echo "AlphaFold on ${partition} nodes will be used."
     else
