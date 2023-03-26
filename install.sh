@@ -25,6 +25,7 @@ fi
 
 
 
+
 echo -n "Checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
 if  [ ! -s tmp ]
