@@ -1,0 +1,10 @@
+#!/bin/bash
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=128
+#SBATCH --mem=225gb
+#SBATCH --partition=cpu
+#SBATCH --job-name=docking
+#SBATCH --output=docking.out
+#SBATCH --error=docking.err
+/ceph/hpc/data/d2203-0100-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin/docking_protocol.static.linuxgccrelease -ensemble1 pdblist1 -ensemble2 pdblist2 -spin -randomize1 -randomize2 -ignore_unrecognized_res -ex1 -ex2aro -out:overwrite -out:pdb -multithreading:total_threads ${SLURM_CPUS_ON_NODE}
