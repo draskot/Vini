@@ -53,6 +53,7 @@ else
     do
         echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
         echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --mem=1gb"                             >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --partition="$partition                >> $WORKDIR/${partition}_nodetest

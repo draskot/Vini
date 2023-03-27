@@ -44,15 +44,18 @@ echo "#SBATCH --mem="${mem}                  >> rosetta
 echo "#SBATCH --partition="$partition        >> rosetta
 
 echo "#SBATCH --job-name=relax"              >> rosetta_relax
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_relax
 echo "#SBATCH --output=relax.out"            >> rosetta_relax
 echo "#SBATCH --error=relax.err"             >> rosetta_relax
 echo "protein=\$1"                           >> rosetta_relax
 
 echo "#SBATCH --job-name=prepack"            >> rosetta_docking_prepack
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_docking_prepack
 echo "#SBATCH --output=prepack.out"          >> rosetta_docking_prepack
 echo "#SBATCH --error=prepack.err"           >> rosetta_docking_prepack
 
 echo "#SBATCH --job-name=docking"            >> rosetta_docking
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_docking
 echo "#SBATCH --output=docking.out"          >> rosetta_docking
 echo "#SBATCH --error=docking.err"           >> rosetta_docking
 
@@ -61,6 +64,7 @@ echo "#SBATCH --nodes=1"                     >> rosetta_logging
 echo "#SBATCH --ntasks=1"                    >> rosetta_logging
 echo "#SBATCH --mem=2gb"                     >> rosetta_logging
 echo "#SBATCH --job-name=logging"            >> rosetta_logging
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_logging
 echo "#SBATCH --output=logging.out"          >> rosetta_logging
 echo "#SBATCH --error=logging.err"           >> rosetta_logging
 cat $vini_dir/rosetta_logging                >> rosetta_logging
@@ -105,6 +109,3 @@ jobID4=$(${job_submit} --parsable --dependency=afterany:${jobID3} rosetta_dockin
 
 sh nodes_control_script ${MAX_NODES}                                                                 #log
 ${job_submit} --dependency=afterany:${jobID4} rosetta_logging ${receptor} ${ligand} ${target_dir} ${comp_index}
-
-
-

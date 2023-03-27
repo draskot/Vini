@@ -32,9 +32,10 @@ do
     echo "#SBATCH --cpus-per-task=1"                                             >> prepare_receptor
     echo "#SBATCH --mem=2gb"                                                     >> prepare_receptor
     echo "#SBATCH --job-name=create_pdbqt"                                       >> prepare_receptor
+    echo "#SBATCH --account=$SLURMACCT"                                          >> prepare_receptor
     echo "#SBATCH --output=$dir/prepare_receptor.out"                            >> prepare_receptor
     echo "#SBATCH --error=$dir/prepare_receptor.err"                             >> prepare_receptor
-    echo "#SBATCH --exclude=${excluded_nodes}"                                     >> prepare_receptor
+    echo "#SBATCH --exclude=${excluded_nodes}"                                   >> prepare_receptor
     echo "prepare_receptor -r $dir/$b.pdb -o $dir/$b.pdbqt "                     >> prepare_receptor
     #echo "prepare_receptor -U nphs_lps_waters -r $dir/$b.pdb -o $dir/$b.pdbqt " >> prepare_receptor
     chmod +x prepare_receptor

@@ -8,6 +8,7 @@ if  [ ! -e sourceme ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
+    read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
     read -p "Please enter path for your scratch data on high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
     read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
@@ -17,14 +18,12 @@ then
     echo "#************General section**********" >> $vini_dir/sourceme
     let programs++
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
+    echo "export SLURMACCT=$SLURMACCT" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
     echo "export SHARED=$SHARED" >> $vini_dir/sourceme
     echo "export INSTALL=$INSTALL" >> $vini_dir/sourceme
     source $vini_dir/sourceme
 fi
-
-
-
 
 echo -n "Checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  

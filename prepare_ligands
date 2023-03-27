@@ -26,6 +26,7 @@ do
         echo "#!/bin/bash"                               > preplig
         echo "#SBATCH --time=$walltime"                 >> preplig
         echo "#SBATCH --job-name=$drugname"             >> preplig
+        echo "#SBATCH --account=$SLURMACCT"             >> preplig
         echo "#SBATCH --cpus-per-task=2"                >> preplig
         echo "#SBATCH --mem=4gb"                        >> preplig
         echo "#SBATCH --partition=cpu"                  >> preplig

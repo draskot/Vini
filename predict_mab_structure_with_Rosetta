@@ -37,12 +37,14 @@ echo "#SBATCH --partition="$partition        >> rosetta
 
 cat rosetta                                  >> rosetta_grafting
 echo "#SBATCH --job-name=grafting"           >> rosetta_grafting
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_grafting
 echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting
 echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting
 echo "antibody=\$1"                          >> rosetta_grafting
 
 cat rosetta                                   > rosetta_antibody
 echo "#SBATCH --job-name=antibody"           >> rosetta_antibody
+echo "#SBATCH --account=$SLURMACCT"          >> rosetta_antibody
 echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody
 echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody
 

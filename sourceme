@@ -3,6 +3,7 @@ export vini_dir=/ceph/hpc/home/eudraskot/Vini
 export WORKDIR=/exa5/scratch/user/eudraskot
 export SHARED=/ceph/hpc/data/d2203-0100-users
 export INSTALL=/ceph/hpc/data/d2203-0100-users/eudraskot
+#export SLURMACCT=r2022r03-224-users
 #************miniconda2 section**********
 #***miniconda3 section***
 #***meeko section***
@@ -31,3 +32,5 @@ export PATH=/ceph/hpc/data/d2203-0100-users/eudraskot/rosetta_bin_linux_2021.16.
 export PATH=/ceph/hpc/data/d2203-0100-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main/database:$PATH
 #*****VMD section******
 module load VMD/1.9.4a57-foss2020b
+
+export SLURMACCT=r2022r03-224-users

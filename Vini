@@ -20,6 +20,7 @@ else
     echo passed.
 fi
 
+
 echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
@@ -34,7 +35,7 @@ then
         echo "Done, performing logout. Log in and start Vini again."
         pkill -u $USER
     else
-        echo "All 3rd party programs are in place, continuing."
+        echo "3rd party programs are in place, continuing."
     fi
 else
     > $WORKDIR/programs
@@ -57,6 +58,7 @@ fi
 mkdir -p $vini_dir/ligands/pdb_files #preparing directories
 mkdir -p $vini_dir/ligands/sdf_files
 mkdir -p $vini_dir/ligands/pdbqt_files
+mkdir -p $vini_dir/ligands/fasta_files
 
 mkdir -p $vini_dir/genes
 mkdir -p $vini_dir/genes/pdb_files
@@ -148,7 +150,7 @@ if [ -e $WORKDIR/gather_hardware_info ]
 then
     birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
     echo "Hardware information gathering has already been done on $birth.  If there have been any changes in the meantime, the procedure should be repeated."
-    read -p "Do you want to repeat the procedure (may take about 10 minutes to finish)? (y/n)" yesno
+    read -e -p "Do you want to repeat the procedure (may take about 10 minutes to finish)? (y/n). Press enter to accept default: " -i "n" yesno
     if [ $yesno == y ]
     then
         sh $vini_dir/gather_hardware_info
@@ -194,9 +196,14 @@ else
 fi
 
 sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
+
 sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
+
 sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
+
 sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
+
+echo "brakepoint!" ; sleep 1000
 
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}

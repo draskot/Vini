@@ -19,6 +19,7 @@ do
         cp $vini_dir/ligands/sdf_files/${drugname}.sdf $WORKDIR #create pdbqt file
         echo "#! /bin/bash"                                                > meeko.$i
         echo "#SBATCH --job-name=meeko"                                   >> meeko.$i
+        echo "#SBATCH --account=$SLURMACCT"                               >> meeko.$i
         echo "#SBATCH --time=00:60:00"                                    >> meeko.$i
         echo "#SBATCH --output=/exa5/scratch/user/eudraskot/meeko.$i.out" >> meeko.$i
         echo "#SBATCH --error=/exa5/scratch/user/eudraskot/meeko.$i.err"  >> meeko.$i

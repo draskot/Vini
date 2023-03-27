@@ -101,6 +101,7 @@ do
                              sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                    
                              echo "#!/bin/bash"                                        > Vina
                              echo "#SBATCH --time="$walltime                          >> Vina
+                             echo "#SBATCH --account=$SLURMACCT"                      >> Vina
                              echo "#SBATCH --cpus-per-task=4"                         >> Vina
                              echo "#SBATCH --mem=8gb"                                 >> Vina
                              echo "#SBATCH --partition="$partition                    >> Vina
@@ -161,6 +162,7 @@ do
                  echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --partition="$partition                      >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --job-name=vec_${lig_index}"                 >> ${target_dir}/vec_${lig_index}
+                 echo "#SBATCH --account=$SLURMACCT"                        >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out" >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err" >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/vec_${lig_index} 
@@ -180,6 +182,7 @@ do
                  echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --partition="$partition                      >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --job-name=mat_${lig_index}"                 >> ${target_dir}/mat_${lig_index}
+                 echo "#SBATCH --account=$SLURMACCT"                        >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/mat_${lig_index} 
@@ -199,8 +202,8 @@ do
                  echo "#SBATCH --cpus-per-task=1"                             >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --mem=4gb"                                     >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --partition="$partition                        >> ${target_dir}/eigen_${lig_index}
-                 echo "#SBATCH --job-name=mat_${lig_index}"                   >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --job-name=eigen_${lig_index}"                 >> ${target_dir}/eigen_${lig_index}
+                 echo "#SBATCH --account=$SLURMACCT"                          >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --output=${target_dir}/eigen_${lig_index}.out" >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                   >> ${target_dir}/eigen_${lig_index} 
@@ -220,6 +223,7 @@ do
                  echo "#SBATCH --mem=4gb"                                    >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --job-name=SLEM_${lig_index}"                 >> ${target_dir}/select_${lig_index}
+                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err"  >> ${target_dir}/select_${lig_index}
                  echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/select_${lig_index} 
@@ -252,6 +256,7 @@ echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
 echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
 echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
 echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
+echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
 echo "#SBATCH --output=$WORKDIR/postproc1.out"       >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc1.err"        >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
@@ -268,6 +273,7 @@ echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
 echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
 echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
 echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
+echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
 echo "#SBATCH --output=$WORKDIR/postproc2.out"       >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc2.err"        >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc 
@@ -285,6 +291,7 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
    echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
    echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
+   echo "#SBATCH --account=$SLURMACCT"               >> $WORKDIR/postproc
    echo "#SBATCH --output=$WORKDIR/postproc3.out"    >> $WORKDIR/postproc
    echo "#SBATCH --error=$WORKDIR/postproc3.err"     >> $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_list              >> $WORKDIR/postproc
@@ -301,6 +308,7 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
    echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
    echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
+   echo "#SBATCH --account=$SLURMACCT"               >> $WORKDIR/postproc
    echo "#SBATCH --output=$WORKDIR/postproc4.out"    >> $WORKDIR/postproc
    echo "#SBATCH --error=$WORKDIR/postproc4.err"     >> $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_named_list        >> $WORKDIR/postproc

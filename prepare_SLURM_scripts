@@ -5,6 +5,7 @@ cd $WORKDIR
 
 echo "#! /bin/bash"                           > Vina  #prepare header file for Autodock Vina related jobs
 echo "#SBATCH --time=08:00:00"               >> Vina
+echo "#SBATCH --account=$SLURMACCT"          >> Vina
 echo "#SBATCH --cpus-per-task=8"             >> Vina
 echo "#SBATCH --mem=4gb"                     >> Vina
 echo "#SBATCH --partition="$partition        >> Vina
@@ -13,6 +14,7 @@ chmod u+x                                       Vina
 echo "#! /bin/bash"                         > meeko  #prepare SLURM script for Meeko
 echo "#SBATCH --job-name=meeko"            >> meeko
 echo "#SBATCH --time=01:00:00"             >> meeko
+echo "#SBATCH --account=$SLURMACCT"        >> meeko
 echo "#SBATCH --output=$WORKDIR/meeko.out" >> meeko
 echo "#SBATCH --error=$WORKDIR/meeko.err"  >> meeko
 echo "#SBATCH --cpus-per-task=4"           >> meeko
@@ -22,6 +24,7 @@ chmod u+x                                     meeko
 
 #echo "#!/bin/bash"                            > rosetta_relax.mpi #prepare relax MPI script
 #echo "#SBATCH --job-name=relax"              >> rosetta_relax.mpi
+#echo "#SBATCH --account=$SLURMACCT"          >> rosetta_relax.mpi
 #echo "#SBATCH --nodes=1"                     >> rosetta_relax.mpi
 #echo "#SBATCH --ntasks=12"                   >> rosetta_relax.mpi
 #echo "#SBATCH --ntasks-per-core=1"           >> rosetta_relax.mpi
@@ -35,6 +38,7 @@ chmod u+x                                     meeko
 
 #echo "#!/bin/bash"                            > rosetta_docking.mpi #prepare docking MPI script
 #echo "#SBATCH --job-name=docking"            >> rosetta_docking.mpi
+#echo "#SBATCH --account=$SLURMACCT"          >> rosetta_docking.mpi
 #echo "#SBATCH --nodes=1"                     >> rosetta_docking.mpi
 #echo "#SBATCH --ntasks=12"                   >> rosetta_docking.mpi
 #echo "#SBATCH --ntasks-per-core=1"           >> rosetta_docking.mpi
@@ -48,6 +52,7 @@ chmod u+x                                     meeko
 
 echo "#! /bin/bash"                           > genex
 echo "#SBATCH --job-name=genex"              >> genex
+echo "#SBATCH --account=$SLURMACCT"          >> genex
 echo "#SBATCH --nodes=1"                     >> genex
 echo "#SBATCH --ntasks-per-node="$cores      >> genex
 echo "#SBATCH --cpus-per-task=1"             >> genex
@@ -60,6 +65,7 @@ chmod u+x                                       genex
 
 #echo "#! /bin/bash"                           > sander
 #echo "#SBATCH --job-name=sander"             >> sander
+#echo "#SBATCH --account=$SLURMACCT"          >> sander
 #echo "#SBATCH --output=sander.out"           >> sander
 #echo "#SBATCH --time=96:00:00"               >> sander
 #echo "#SBATCH --exclusive"                   >> sander
@@ -73,6 +79,7 @@ chmod u+x                                       genex
 
 echo "#! /bin/bash"                           > MD_prep  #prepare Gromacs scripts
 echo "#SBATCH --job-name=MD_prep"            >> MD_prep
+echo "#SBATCH --account=$SLURMACCT"          >> MD_prep
 echo "#SBATCH --output=MD_prep.out"          >> MD_prep
 echo "#SBATCH --time=48:00:00"               >> MD_prep
 echo "#SBATCH --cpus-per-task=1"             >> MD_prep
@@ -83,6 +90,7 @@ chmod u+x                                       MD_prep
 
 echo "#! /bin/bash"                           > MD_run
 echo "#SBATCH --job-name=MD_run"             >> MD_run
+echo "#SBATCH --account=$SLURMACCT"          >> MD_run
 echo "#SBATCH --output=MD_run.out"           >> MD_run
 echo "#SBATCH --time=48:00:00"               >> MD_run
 echo "#SBATCH --exclusive"                   >> MD_run
@@ -96,6 +104,7 @@ chmod u+x                                       MD_run
 
 echo "#! /bin/bash"                           > ndx
 echo "#SBATCH --job-name=ndx"                >> ndx
+echo "#SBATCH --account=$SLURMACCT"          >> ndx
 echo "#SBATCH --output=ndx.out"              >> ndx
 echo "#SBATCH --time=48:00:00"               >> ndx
 echo "#SBATCH --ntasks-per-node=1"           >> ndx
@@ -107,6 +116,7 @@ chmod u+x                                       ndx
 
 echo "#! /bin/bash"                            > polar
 echo "#SBATCH --job-name=polar"               >> polar
+echo "#SBATCH --account=$SLURMACCT"           >> polar
 echo "#SBATCH --output=polar.out"             >> polar
 echo "#SBATCH --time=48:00:00"                >> polar
 echo "#SBATCH --ntasks-per-node=1"            >> polar
@@ -119,6 +129,7 @@ chmod u+x polar
 
 echo "#! /bin/bash"                            > apolar
 echo "#SBATCH --job-name=apolar"              >> apolar
+echo "#SBATCH --account=$SLURMACCT"           >> apolar
 echo "#SBATCH --output=apolar.out"            >> apolar
 echo "#SBATCH --time=48:00:00"                >> apolar
 echo "#SBATCH --ntasks-per-node=1"            >> apolar
@@ -131,6 +142,7 @@ chmod u+x                                        apolar
 
 echo "#! /bin/bash"                            > potential
 echo "#SBATCH --job-name=potent"              >> potential
+echo "#SBATCH --account=$SLURMACCT"           >> potential
 echo "#SBATCH --output=potent.out"            >> potential
 echo "#SBATCH --time=48:00:00"                >> potential
 echo "#SBATCH --ntasks-per-node=1"            >> potential
@@ -144,6 +156,7 @@ chmod u+x                                        potential
 
 echo "#! /bin/bash"                            > FBE
 echo "#SBATCH --job-name=FBE"                 >> FBE
+echo "#SBATCH --account=$SLURMACCT"           >> FBE
 echo "#SBATCH --output=FBE.out"               >> FBE
 echo "#SBATCH --time=48:00:00"                >> FBE
 echo "#SBATCH --ntasks-per-node=1"            >> FBE
