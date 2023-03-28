@@ -1,55 +1,33 @@
 NULL=0
-type3D="?type=3d"
-job_submit=`cat $WORKDIR/job_submit` #at the begin of download_Drugbank_sdf_structures script
-job_status=`cat $WORKDIR/job_status`
-max_jobs=`cat $WORKDIR/max_jobs`
+ONES=1
 
 echo -n "checking if sdf files are in place, please wait..."
-
 lineno=1
 while read -r line
 do
-dtype=`echo $line | awk -F',' '{print $2}'`
-if [ $dtype == S ]
-then
-    drugname=`echo $line | awk -F','   '{print $1}'`
-    echo $drugname > priv ; words=`wc -w < priv` ; rm priv  #put a question mark if 2 words
-    if  [ $words -eq 2 ] #then put ? in between
+    type=`echo $line | awk -F','   '{print $2}'`
+    if [ $type == S ]
     then
-        addline=`echo $line | tr ',' ' '`
-        word1=`echo $addline | awk '{print $1}'` ;  word2=`echo $addline | awk '{print $2}'` 
-        drug=`echo $word1"?"$word2`
-    else
-        drug=$drugname
-    fi
-    if  [ ! -e $vini_dir/ligands/sdf_files/${drug}.sdf ] #check if drug is in repo
-    then
-        echo "grep -w" "\"$drug\"" "drug?links.csv" > search
-        sh search > tmp
-        inlines=`wc -l < $vini_dir/tmp`   #there may be several lines with a same drug name
-        if  [ $inlines -gt $NULL ]
-        then   
-            inline=`head -1 $vini_dir/tmp`
-            DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-            dtype=`echo $line | awk -F',' '{print $2}'`
-                wget -O $vini_dir/ligands/sdf_files/${drug}.sdf -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
-                if  [ -e $vini_dir/ligands/sdf_files/${drug}.sdf ] #check if download was ok
-                then
-                    echo " ${drug}.sdf downloaded from Drugbank!"
-                else
-                    echo "3D sdf structure for" ${drug} "not found. Entry will be commented." ; echo
-                    awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
-                    mv tmp $vini_dir/ligands/ligands_list
-                fi
-        else
-            echo "drug" ${drug} "not found and will not be analysed." 
-            awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
-            mv tmp $vini_dir/ligands/ligands_list
+        drug=`echo $line | awk -F',' '{print $1}'`
+        if  [ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]
+        then
+            grep "$drug" drug?links.csv > $WORKDIR/tmp
+            inlines=`wc -l < $WORKDIR/tmp`  #there may be several lines with a same drug name
+            if  [ $inlines -gt $NULL ]
+            then   
+                inline=`head -1 $WORKDIR/tmp`
+                DBID=`echo $inline | tr "," " " | awk '{print $1}'`
+                echo -n "Downloading" $drug "sdf file from Drugbank..."
+                wget -O $vini_dir/ligands/sdf_files/"${drug}".sdf -q https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf${type3D}
+                echo "done."
+            else
+                echo "drug" $drug "not found in Drugbank and will not be analysed." 
+                awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
+                mv tmp $vini_dir/ligands/ligands_list
+            fi
         fi
+        let "lineno++"
     fi
-    let "lineno++"
-fi
 done < $vini_dir/ligands/ligands_list
-sh $vini_dir/wait_until_jobs_finish
 echo "done."
 rm -f tmp.csv tmp search

@@ -203,7 +203,6 @@ sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
 
 sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
 
-echo "brakepoint!" ; sleep 1000
 
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
@@ -265,6 +264,7 @@ then
 else
     echo S > $WORKDIR/prediction_model ; echo S > $WORKDIR/biotech_drugs_prediction_model
 fi
+
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
 

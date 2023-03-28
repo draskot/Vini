@@ -1,39 +1,27 @@
 NULL=0
 ONES=1
 
-echo -n "checking if fasta files for mAb drugs are in place, please wait..."
+echo -n "checking if fasta files are in place, please wait..."
 lineno=1
 while read -r line
 do
     type=`echo $line | awk -F','   '{print $2}'`
-    if [ $type == P ]    
+    if [ $type == P ]
     then
-        drugname=`echo $line | awk -F','   '{print $1}'`
-        echo $drugname > priv ; words=`wc -w < priv` ; rm priv #put a question mark if 2 words
-        if  [ $words -eq 2 ] #then put ? in between
+        drug=`echo $line | awk -F','   '{print $1}'`
+        if  [ ! -e $vini_dir/ligands/fasta_files/"${drug}".fasta ] 
         then
-            addline=`echo $line | tr ',' ' '`
-            word1=`echo $addline | awk '{print $1}'` ; word2=`echo $addline | awk '{print $2}'` 
-            drug=`echo $word1"?"$word2`
-        else
-            drug=$drugname
-        fi
-        if  [ -e $vini_dir/ligands/fasta_files/${drug}.fasta ] #check if drug is in repo
-        then
-            echo "fasta sequence for $drug found in repo."
-        else
-            echo -n "searching for" $drug "in Drugbank..."
-            echo "grep -w" "\"$drug\"" "drug?links.csv" > search
-            sh search > tmp
-            nolines=`wc -l < $vini_dir/tmp` #there may be several lines with a same drug name
-            if  [ $nolines -gt $NULL ]
+            grep "$drug" drug?links.csv > $WORKDIR/tmp
+            inlines=`wc -l < $WORKDIR/tmp`  #there may be several lines with a same drug name
+            if  [ $inlines -gt $NULL ]
             then   
-                echo "drug found." 
-                DBID=`head -1 $vini_dir/tmp`
-                DBID=`echo $DBID | tr "," " " | awk '{print $1}'`
-                wget -O $vini_dir/ligands/fasta_files/${drug}.fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
+                inline=`head -1 $WORKDIR/tmp`
+                DBID=`echo $inline | tr "," " " | awk '{print $1}'`
+                echo -n "Downloading" $drug "fasta file from Drugbank..."
+                wget -O $vini_dir/ligands/fasta_files/"${drug}".fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
+                echo "done."
             else
-                echo -n $drugname "not found in Drugbank. Entry will be commented." 
+                echo "drug" $drug "not found in Drugbank and will not be analysed." 
                 awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
                 mv tmp $vini_dir/ligands/ligands_list
             fi
