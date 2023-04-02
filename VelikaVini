@@ -42,6 +42,8 @@ rm -f $WORKDIR/END
 
 sh $vini_dir/predict_biotech_drug_structures
 
+echo "brakepoint!" ; sleep 10000000
+
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
 sh $vini_dir/create_receptor_structures
 echo "Waiting for prediction jobs to finish. This may take a while."

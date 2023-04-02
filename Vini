@@ -82,7 +82,7 @@ else
     echo scancel > $WORKDIR/job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh determine_SLURM_environment
-    read -e -p "Enter the name of partition Vini will use (press enter to accept default):" -i "cpu" active_partition
+    read -e -p "Enter the name of partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
     echo $active_partition > $WORKDIR/active_partition
     echo $JSS > $WORKDIR/JSS
 fi
@@ -120,7 +120,7 @@ if [ -e $WORKDIR/gather_hardware_info ]
 then
     birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
     echo "Hardware information gathering has already been done on $birth.  If there have been any changes in the meantime, the procedure should be repeated."
-    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept default: " -i "n" yesno
+    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
         sh $vini_dir/gather_hardware_info
@@ -133,17 +133,17 @@ fi
 
 sh $vini_dir/prepare_SLURM_scripts
 
-read -e -p "Enter the walltime (in minutes) for short SLURM jobs. Press enter to accept default: " -i "60" walltime
+read -e -p "Enter the walltime (in minutes) for short SLURM jobs. Press enter to accept the default: " -i "60" walltime
 echo $walltime > $WORKDIR/walltime
 echo "rosetta" > $WORKDIR/docking
-read -e -p "Enter the maximum number of the concurrent Vina jobs (each job using 4 CPUss). Press enter to accept default: " -i "100" jobs
+read -e -p "Enter the maximum number of the concurrent Vina jobs (each job using 4 CPUss). Press enter to accept the default: " -i "100" jobs
 echo $jobs > $WORKDIR/max_jobs
 partition=`cat $WORKDIR/cpu_partition` ; cores=`cat $WORKDIR/${partition}_cores`
-read -e -p "Enter the maximum number of concurrent Alphafold jobs (each job is using $cores CPUs )? Press enter to accept default: " -i "100" nodes
+read -e -p "Enter the maximum number of concurrent Alphafold jobs (each job is using $cores CPUs )? Press enter to accept the default: " -i "100" nodes
 echo $nodes > $WORKDIR/nodes
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
-read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
 if  [ $yesno == "n" ]
 then
     read -p "Enter email:" email
@@ -181,73 +181,33 @@ echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp #selecting tool for protein structure prediction
 if  [ -s tmp ]                          #checking if AlphaFold is installed
 then
-    echo "yes."
-    echo "full_dbs" > $WORKDIR/AlphaFold_base #selecting full AlphaFold base
-    partition=`cat $WORKDIR/cpu_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
-    echo "$partition partition will be used, available memory per node is $memsize"
-    if  [[ -s $WORKDIR/available_${partition}_nodes ]] && [[ $memsize -ge ${min_memory} ]]
-    then
-        echo "Alphafold will be used for protein structure predictions."
-        #echo "Rosetta Antibody will be used for predicting biotech drug structures."
-        echo A > $WORKDIR/prediction_model ; echo A > $WORKDIR/biotech_drugs_prediction_model
-        cat $WORKDIR/cpu_partition          > $WORKDIR/AlphaFold_partition
-        cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
-        cat $WORKDIR/${partition}_memsize   > $WORKDIR/AlphaFold_mem
-        echo "AlphaFold on ${partition} nodes will be used."
-    else
-        partition=`cat $WORKDIR/gpu_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
-        if  [ -s $WORKDIR/available_${partition}_nodes ] && [ $memsize -ge ${min_memory} ]
-        then
-            echo A > $WORKDIR/protein_structure_prediction
-            echo A > $WORKDIR/biotech_drug_structure_prediction
-            echo monomer > $WORKDIR/AlphaFold_protein_model
-            echo multimer > $WORKDIR/AlphaFold_biotech_model
-            cat $WORKDIR/gpu_partition        > $WORKDIR/AlphaFold_partition
-            cat $WORKDIR/${partition}_cores   > $WORKDIR/AlphaFold_gpus
-            cat $WORKDIR/${partition}_memsize > $WORKDIR/AlphaFold_mem
-            echo "AlphaFold on ${partition} nodes will be used."
-        else
-            partition=`cat $WORKDIR/largemem_partition` ; memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
-            if  [ -s $WORKDIR/available_${partition}_nodes ] && [ $memsize -ge ${min_memory} ]
-            then
-                echo A > $WORKDIR/protein_structure_prediction
-                echo A > $WORKDIR/biotech_drug_structure_prediction
-                echo monomer > $WORKDIR/AlphaFold_protein_model
-                echo multimer > $WORKDIR/AlphaFold_biotech_model
-                cat $WORKDIR/largemem_partition > $WORKDIR/AlphaFold_partition
-                cat $WORKDIR/$partition_cores   > $WORKDIR/AlphaFold_gpus
-                cat $WORKDIR/$partition_memsize > $WORKDIR/AlphaFold_mem
-                echo "AlphaFold on ${partition} nodes will be used."
-            else
-                echo "SWISS-MODEL will be used."
-                echo S > $WORKDIR/protein_structure_prediction
-                echo S > $WORKDIR/biotech_drug_structure_prediction
-                echo ; echo "If you have never registered with SWISS-MODEL before, stop now. Go to https://swissmodel.expasy.org/  and register."
-                echo "Upon receiving approval, enter your registration data here."
-                read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
-                if  [ $yesno == "n" ]
-                then
-                    read -p "Go to https://swissmodel.expasy.org/  and register. Then press enter to cont." enter
-                    read -p "Enter your registration email:" email ; echo $email > $WORKDIR/SWISS-MODEL_email
-                    read -p "Enter password:" password ; echo $password > $WORKDIR/SWISS-MODEL_password
-                    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-                    sh download_SWISS_MODEL_metadata
-                fi
-            fi
-        fi
-    fi
+    echo "yes. Will be used for the structure prediction."
+    partition=`cat $WORKDIR/active_partition`
+    memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+    echo A                                    > $WORKDIR/prediction_model
+    echo A                                    > $WORKDIR/protein_structure_prediction
+    echo A                                    > $WORKDIR/biotech_drug_structure_prediction
+    echo $partition                           > $WORKDIR/AlphaFold_partition
+    cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
+    cat $WORKDIR/${partition}_memsize         > $WORKDIR/AlphaFold_mem
+    echo "full_dbs"                           > $WORKDIR/AlphaFold_base 
+    echo monomer                              > $WORKDIR/AlphaFold_protein_prediction_model
+    echo multimer                             > $WORKDIR/AlphaFold_biotech_prediction_model
 else
-    echo S > $WORKDIR/prediction_model ; echo S > $WORKDIR/biotech_drugs_prediction_model
+    echo "no. SWISS-MODEL structure prediction tool will be used."
+    echo S > $WORKDIR/protein_structure_prediction
+    echo S > $WORKDIR/biotech_drug_structure_prediction
+    sh $vini_dir/SWISS_MODEL_registration
 fi
 
 
-read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept default: " -i "y" cosmic
+read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic
 
 if  [ $cosmic == "y" ]
 then
     echo ; echo "If you have never registered for COSMIC before, stop here.. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving approval, enter your registration email and password here."
     
-    read -e -p "Already registered (y/n)? Press enter to accept default: " -i "y" yesno
+    read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
     if  [ $yesno == "n" ]
     then
         read -p "Enter email:" email
@@ -287,7 +247,7 @@ echo $exp > $WORKDIR/exp
 
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds
 
-read -e -p "Delete all the data previously created by Vini (y/n)? Press enter to accept default: " -i "y" erase
+read -e -p "Delete all the data previously created by Vini (y/n)? Press enter to accept the default: " -i "y" erase
 if  [[ $erase == "y" ]]
 then
     rm -rf $WORKDIR/*_data
@@ -305,7 +265,7 @@ echo ""
 echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/organisms | less
 echo "" ; rm tmp tmp2
-read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept default: " -i "hsa" ORGANISM
+read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept the default: " -i "hsa" ORGANISM
 
 echo $ORGANISM > $WORKDIR/ORGANISM
 
@@ -321,16 +281,16 @@ echo "tip: For cancer type not in the list, choose 05200 (general cancer pathway
 echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/pathways | less
 echo ""
-read -e -p "Please enter the pathway number (enter to accept 05215):" -i "05215" cancer_type
+read -e -p "Write in the KEGG pathway number or press enter to accept the default:" -i "05215" cancer_type
 echo $cancer_type > $WORKDIR/cancer_type
 data="_data"
 
-read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept default: " -i "y" yesno
+read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept the default: " -i "y" yesno
 if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     #DU145, PC3, and LNCaP cells - prostate cell lines
-    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept default: " -i "PC-3" cell_line
+    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "PC-3" cell_line
     if  [ $cosmic == "y" ]
     then
         if  [ ! -e $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv ]
@@ -370,7 +330,7 @@ then
 
 
 
-    read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept default: " -i "ligands_list" file
+    read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept the default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
         mv $WORKDIR/NCI-60_ligands_list $vini_dir/ligands/ligands_list
@@ -413,7 +373,7 @@ mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 cp $vini_dir/prep_prot_lig.py $WORKDIR
 num_modes=9
 echo $num_modes > $WORKDIR/num_modes
-#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept default : " -i "8" exhaustiveness
+#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "8" exhaustiveness
 exhaustiveness=8
 echo $exhaustiveness > $WORKDIR/exhaustiveness
 box_size=40
@@ -422,7 +382,7 @@ affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
 
 
-read -e -p "Run Vini in debug mode (output will be redirected to screen) (y/n)?. Press enter to accept default (debug): " -i "y" mode
+read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
 if  [ $mode == n ]
 then
     nohup ./VelikaVini &

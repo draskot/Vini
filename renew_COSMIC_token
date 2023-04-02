@@ -25,6 +25,7 @@ then
     else
         token=`cat $WORKDIR/COSMIC_token`
     fi
+    echo -n "Wait until COSMIC token is renewed..."
 else
     echo WARNING:"COSMIC token not found. In order to continue, you must obtain this token."
     echo "Instructions on how to obtain this token can be found at " $link  
@@ -46,4 +47,5 @@ do
     replacement=`printf "%s%s%s%s%s%s%s\n" "TOKEN_NUMBER" " " "=" " " "\"" "$token" "\""` #create replacement
     sed -i "${lineno}s/.*/$replacement/" "$filename"                                      #replace
 done < tmp
+echo "done."
 rm tmp
