@@ -1,83 +1,97 @@
-echo "Gathering info about hardware. Please wait, this may take a while."
 
-walltime=360  #seconds
+maxtime=360  #imax time in seconds after nodetest script is interrupted
+read -e -p "Enter the walltime in minutes for cluster HW testing (enter to accept default):" -i "6" walltime
+echo "Gathering info about hardware. Please wait, this may take up to $walltime seconds."
 
-partition=`cat $WORKDIR/cpu_partition`
+#partition=`cat $WORKDIR/active_partition`
 job_status=`cat $WORKDIR/job_status`
 job_submit=`cat $WORKDIR/job_submit`
 job_cancel=`cat $WORKDIR/job_cancel`
 test_status=`cat $WORKDIR/test_status`
-cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+active_partition=`cat $WORKDIR/active_partition`  
 
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-if  [ ${test_status} != passed ]
+partition=`cat $WORKDIR/cpu_partition`  
+if  [ $active_partition == $partition ]
 then
-    echo "$partition nodes test not completed" #putting first unavailable node on the list
-    partition=`cat $WORKDIR/cpu_partition`
-    CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
-    node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
-    echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_${partition}_nodes
-    $job_cancel -u $USER
-    sh $vini_dir/wait_until_jobs_finish
-else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
+    cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+    SECONDS=0
+    timeout ${maxtime}s $vini_dir/nodetest ${partition} ${walltime}
+    elapsed_time=$SECONDS
+    if [ $elapsed_time -ge $maxtime ] 
     then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+        echo "$partition nodes test not completed" #putting first unavailable node on the list
+        partition=`cat $WORKDIR/cpu_partition`
+        CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}') 
+        node=`echo ${CPU_EXCLUDED} | awk '{print $1}'`
+        echo ${cpu_node_suffix}${node} > $WORKDIR/excluded_${partition}_nodes
+        $job_cancel -u $USER
+        sh $vini_dir/wait_until_jobs_finish
     else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
+        echo "$partition nodes test completed"
+        if  [ -s $WORKDIR/available_${partition}_nodes ]
+        then
+            sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+            sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+        else
+            echo $NULL > $WORKDIR/${partition}_cores
+            echo $NULL > $WORKDIR/${partition}_memsize
+        fi
     fi
+    rm -f $WORKDIR/*out $WORKDIR/*err
 fi
-rm -f $WORKDIR/*out $WORKDIR/*err
 
 partition=`cat $WORKDIR/gpu_partition`  
-gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} != passed ]
+if [ $active_partition == $partition ]
 then
-    echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
-    GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-    node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-    echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-    ${job_cancel} -u $USER ; sh $vini_dir/wait_until_jobs_finish
-else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
+    gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+    SECONDS=0
+    timeout ${maxtime}s $vini_dir/nodetest ${partition} ${walltime}
+    elapsed_time=$SECONDS
+    if [ $elapsed_time -ge $maxtime ] 
     then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
-        #sh $vini_dir/get_number_gpu_cards_per_node ${partition} ${walltime}
+        echo "$partition nodes test not completed"    #putting first unavailable gpu node on the list
+        GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+        node=`echo $GPU_EXCLUDED | awk '{print $1}'`
+        echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+        ${job_cancel} -u $USER ; sh $vini_dir/wait_until_jobs_finish
     else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
+        if [ -s $WORKDIR/available_${partition}_nodes ]
+        then
+            sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+            sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+            #sh $vini_dir/get_number_gpu_cards_per_node ${partition} ${walltime}
+        else
+            echo $NULL > $WORKDIR/${partition}_cores
+            echo $NULL > $WORKDIR/${partition}_memsize
+        fi
     fi
+    rm -f $WORKDIR/*out $WORKDIR/*err
 fi
-rm -f $WORKDIR/*out $WORKDIR/*err
 
 partition=`cat $WORKDIR/largemem_partition`
-smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-timeout ${walltime}s $vini_dir/nodetest ${partition}
-
-test_status=`cat $WORKDIR/test_status`
-if [ ${test_status} != passed ]
+if  [ $active_partition == $partition ]
 then
-    echo "large memory node test not completed"    #putting first unavailable large memory node on the list
-    SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-    node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-    echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
-    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
-else
-    if [ -s $WORKDIR/available_${partition}_nodes ]
+    smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
+    SECONDS=0
+    timeout ${maxtime}s $vini_dir/nodetest ${partition} ${walltime}
+    elapsed_time=$SECONDS
+    if [ $elapsed_time -ge $maxtime ] 
     then
-        sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
-        sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+        echo "large memory node test not completed"    #putting first unavailable large memory node on the list
+        SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
+        node=`echo $SMP_EXCLUDED | awk '{print $1}'`
+        echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+    $job_cancel -u $USER ; sh $vini_dir/wait_until_jobs_finish
     else
-        echo $NULL > $WORKDIR/${partition}_cores
-        echo $NULL > $WORKDIR/${partition}_memsize
+        if [ -s $WORKDIR/available_${partition}_nodes ]
+        then
+            sh $vini_dir/get_number_cores_per_node ${partition} ${walltime}
+            sh $vini_dir/get_node_memory_size ${partition} ${walltime}
+        else
+            echo $NULL > $WORKDIR/${partition}_cores
+            echo $NULL > $WORKDIR/${partition}_memsize
+        fi
     fi
+    rm -f $WORKDIR/*out $WORKDIR/*err
 fi
-rm -f $WORKDIR/*out $WORKDIR/*err
 

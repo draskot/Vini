@@ -4,7 +4,7 @@ if [ -e $WORKDIR/Vini_queue ]
 then
     Vini_queue=`cat $WORKDIR/Vini_queue` 
     Vini_pe=`cat $WORKDIR/Vini_pe`
-    echo "Vini will use" $Vini_queue "queue on" $cluster "for its jobs."
+    echo "available partitions found" on $cluster:"
 else
     echo "no mapping of Vini jobs on" $cluster "You will need to set it up now."  
     echo "" ; echo "Available queues on" $cluster "are:"

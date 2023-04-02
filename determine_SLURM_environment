@@ -3,15 +3,15 @@
 if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]  && [[ -e $WORKDIR/largemem_partition ]]
 then
     cpu_partition_name=`cat $WORKDIR/cpu_partition`
-    echo "Vini will use ${cpu_partition_name} partition for CPU jobs."
+    echo "${cpu_partition_name} partition for CPU jobs found."
     
     gpu_partition_name=`cat $WORKDIR/gpu_partition`
-    echo "Vini will use ${gpu_partition_name} partition for GPU jobs."
+    echo "${gpu_partition_name} partition for GPU jobs found."
 
     largemem_partition_name=`cat $WORKDIR/largemem_partition`
-    echo "Vini will use ${largemem_partition_name} partition for large memory (>512GB) jobs."
+    echo "${largemem_partition_name} partition for large memory (>512GB) jobs found."
 
-    read -p "accept this partition setup (y/n)?" accept
+    read -e -p "Do you accept this partition setup (y/n):" -i "y" accept
     if  [ $accept != y ]
     then
         echo "You will need to setup partitions now."

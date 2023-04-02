@@ -47,25 +47,28 @@ echo $cell_line > $WORKDIR/NCI60_cell_line
 #download GI50.zip from https://wiki.nci.nih.gov/display/NCIDTPdata/NCI-60+Growth+Inhibition+Data to $vini_dir/database
 #AgentInfo.txt is downloaded from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent
 
-
-echo -n "checking for AgentInfo file..."
-if  [ ! -e $vini_dir/database/AgentInfo ] 
+if [ ! -e AgentInfo ]
 then
-    echo "not found."
-    echo "Download AgentInfo from https://ctep.cancer.gov/protocoldevelopment/codes_values.htm#agent and save as" $vini_dir/database/AgentInfo.txt
-    read -p "Press enter when ready to continue." cont
-    dos2unix -n $vini_dir/database/AgentInfo.txt $vini_dir/database/AgentInfo
-    rm $vini_dir/database/AgentInfo.txt
+    echo -n "Downloading AgentInfo file..."
+    curl -o tmp -Ls https://ctepcore.nci.nih.gov/webobjs/CTEPWebsite/AgentInfo.html 
+    python $HOME/.local/bin/html2text tmp > AgentInfo
+    rm AgentInfo.htlm
     echo "done."
-else
-    echo "passed."
 fi
 
+if [ ! -e GI50.csv ]
+then
+    echo -n "Downloading GI50.zip, please wait."
+    wget -O GI50.zip https://wiki.nci.nih.gov/download/attachments/147193864/GI50.zip?version=5
+    unzip GI50.zip
+fi
+
+echo -n "Creating NSC_numbers file..."
 > tmp
-while read -r line                                        #create NSC_numbers file
+while read -r line                                           
 do
     drugname=`echo $line | awk -F',' '{print $1}'`                   
-    grep $drugname $vini_dir/database/AgentInfo > lines
+    grep -w "$drugname" AgentInfo > lines
     nolines=`wc -l < lines`
     if  [ $nolines -eq $NULL ]
     then 
@@ -85,7 +88,8 @@ do
         printf "%s%s%s%s\n" "$drugname" "," " " "$NSC_NUMBER" >> tmp
     fi
 done <  $vini_dir/ligands/ligands_list 
-sed -e "s/\r//g" tmp > $vini_dir/database/NSC_numbers               #remove ^M from file
+sed -e "s/\r//g" tmp > NSC_numbers               #remove ^M from file
+
 
 grep $cell_line $vini_dir/database/GI50.csv > tmp    #extract cell line entries from GI50.csv file
 sed -e "s/\r//g" tmp > $vini_dir/database/${cell_line}_GI50        #remove ^M

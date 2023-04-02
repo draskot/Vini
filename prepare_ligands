@@ -7,7 +7,8 @@ partition=`cat $WORKDIR/cpu_partition`
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 walltime=`cat $WORKDIR/walltime`
 
-echo "Preparing ligand pdbqt files, please wait..."
+#echo "Preparing ligand pdbqt files, please wait..."
+echo "Preparing ligand pdb files from fasta sequences with AlphaFold. May take a while, please wait."
 
 cd $WORKDIR
 i=1
@@ -18,7 +19,7 @@ do
     drugname=`echo $line | awk -F',' '{print $1}'`
     flag=`echo $line | awk -F',' '{print $2}'`
 
-    if  [ -e $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt ]
+    if  [ !-e $vini_dir/ligands/pdb_files/${drugname}.pdb ]
     then
         cp $vini_dir/ligands/pdbqt_files/${drugname}.pdbqt $WORKDIR/ligand_${lig_index}.pdbqt #pdbqt is in repo
     else                                                                  #create pdbqt file

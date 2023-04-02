@@ -1,4 +1,5 @@
 partition=$1
+walltime=$2
 eval excluded_nodes=excluded_"$partition"_nodes
 eval available_nodes=available_"$partition"_nodes
 
@@ -52,7 +53,7 @@ else
     for node in $(<$WORKDIR/tmp)
     do
         echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
-        echo "#SBATCH --time=00:00:60"                       >> $WORKDIR/${partition}_nodetest
+        echo "#SBATCH --time=00:$walltime:00"                >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --mem=1gb"                             >> $WORKDIR/${partition}_nodetest
@@ -69,8 +70,8 @@ else
         sbatch -Q $WORKDIR/${partition}_nodetest
         echo -n "."
     done
-
-    echo ; sh $vini_dir/wait_until_jobs_finish
+    echo
+    sh $vini_dir/wait_until_jobs_finish
 
     for node in $(<$WORKDIR/tmp)
     do
@@ -94,4 +95,3 @@ else
         cat $WORKDIR/excluded_${partition}_nodes
     fi
 fi
-echo "passed" > $WORKDIR/test_status

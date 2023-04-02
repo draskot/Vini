@@ -1,5 +1,8 @@
 
-prediction_model=`cat $WORKDIR/prediction_model`
+prediction_model=`cat $WORKDIR/biotech_drugs_prediction_model`
+
+echo "brakepoint! prediction model: $prediction_model" ; sleep 1000
+
 if [ $prediction_model == A ]
 then
     partition=`cat  $WORKDIR/AlphaFold_partition`      #Define AlphaFold parameters
@@ -11,7 +14,8 @@ then
     fi
     mem=`cat $WORKDIR/AlphaFold_mem`
     base=`cat $WORKDIR/AlphaFold_base`
-    model=monomer
+    model=`cat $WORKDIR/AlphaFold_biotech_model`
+    #model=monomer
 fi
 
 NULL=0   
@@ -23,11 +27,11 @@ do
     type=`echo $line | awk -F','  '{print $2}'`
     if  [ $type == P ]
     then
-        if  [ ! -e $vini_dir/database/ligands/pdb_files/${drug}.pdb ]
+        if  [ ! -e $vini_dir/ligands/pdb_files/${drug}.pdb ]
         then
-            if  [ ! -e ${vini_dir}/database/ligands/fasta_files/${drug}.fasta ]
+            if  [ ! -e ${vini_dir}/ligands/fasta_files/${drug}.fasta ]
             then
-                echo ${drug}.fasta "not found in" $vini_dir/database/ligands/fasta_files "folder."
+                echo ${drug}.fasta "not found in" $vini_dir/ligands/fasta_files "folder."
                 echo "Please provide ${drug} fasta sequence or remove it from the list. Then start Vini again."
                 echo "Press Ctrl-C to exit."
             else
@@ -37,7 +41,7 @@ do
                     sh $vini_dir/predict_mab_structures_with_SWISS-MODEL
                 else
                     sh $vini_dir/nodes_control_script ${MAX_NODES}
-                    fasta_file=${vini_dir}/database/ligands/fasta_files/${drug}.fasta
+                    fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta
                     lines=`echo "$drug" | grep -oP 'mab.*?\b' | wc -l`
                     if [ $lines -eq $NULL ]
                     then                        #drug is  not mAb
@@ -50,7 +54,7 @@ do
                 fi
             fi
         else
-            echo "  ${drug}.pdb found in the database, continuing."
+            echo "  ${drug}.pdb found, continuing."
         fi
     fi
 done < $vini_dir/ligands/ligands_list
