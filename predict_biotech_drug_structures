@@ -43,6 +43,7 @@ do
                     #if [ $lines -eq $NULL ]
                     #then                        #drug is  not mAb
                         echo "Predicting ${drug} structure with AlphaFold."
+
                         sh $vini_dir/predict_with_AlphaFold ${cpus} ${mem} ${partition} ${base} ${model} ${fasta_file}
                     #else
                     #    echo "Predicting ${drug} structure with Rosetta."

@@ -220,7 +220,6 @@ echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
-    echo "#*****AlphaFold section******" >> $vini_dir/sourceme
     let programs++
     echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
     module spider Alphafold 2> tmp
@@ -228,28 +227,22 @@ then
     if [ ! -s alphafold ]
     then
         echo "module(s) found" ; cat tmp
-        read -p "Do you want to use module [m] or your local [l] Alphafold installation? (m/c)" ml
+        read -p "Do you want to use module [m] or your local [l] Alphafold installation? (m/l)" ml
         if  [ $ml == m ]
         then
             read -p "Select module:" alphafold
             echo "module load" $alphafold >> $vini_dir/sourceme
             source $vini_dir/sourceme
         else
-            read -p "no. Enter path where AlphaFold is installed:" AlphaFold
+            echo "#*****AlphaFold section******" >> $vini_dir/sourceme
+            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/d2203-0100-users):" AlphaFold
 	    echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	    echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
 	    echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
             echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
 	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
+	    #echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
         fi
-    else
-        read -p "no. Enter path where AlphaFold is installed:" AlphaFold
-	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-        echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	#echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
