@@ -1,5 +1,8 @@
 partition=$1
 walltime=$2
+
+
+
 eval excluded_nodes=excluded_"$partition"_nodes
 eval available_nodes=available_"$partition"_nodes
 
@@ -15,6 +18,8 @@ echo ${available_nodes} > $WORKDIR/available_${partition}_nodes
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 > $WORKDIR/tmp
+WORDS=`wc -w < $WORKDIR/excluded_${partition}_nodes`
+echo "number of excluded compute nodes: $WORDS"
 read -a WORDS -d "" < $WORKDIR/excluded_${partition}_nodes
 for word in "${WORDS[@]}"
 do
@@ -22,8 +27,12 @@ do
         echo -n $node >> $WORKDIR/tmp
 done
 cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/excluded_${partition}_nodes
+echo "excluded compute nodes:"
+cat $WORKDIR/excluded_${partition}_nodes
 
 > $WORKDIR/tmp
+WORDS=`wc -w < $WORKDIR/available_${partition}_nodes`
+echo "number of available compute nodes: $WORDS"
 read -a WORDS -d "" < $WORKDIR/available_${partition}_nodes
 for word in "${WORDS[@]}"
 do
@@ -31,11 +40,16 @@ do
         echo -n $node >> $WORKDIR/tmp
 done
 cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/available_${partition}_nodes
+echo "available compute nodes:"
+cat $WORKDIR/available_${partition}_nodes
+
 
 groups=`groups`
 groups_login_node=`echo "$groups" | wc -w`
 
 echo "interrupted" > $WORKDIR/test_status
+
+
 
 if [ ! -s $WORKDIR/available_${partition}_nodes ]
 then
@@ -46,6 +60,8 @@ else
         count=${line//[^,]}
         count=`echo "${#count}"`
     done < $WORKDIR/available_${partition}_nodes
+    let count++
+    
 
     echo -e "\nTesting $partition nodes. Do not interrupt."
     sed 's/,/ /g' $WORKDIR/available_${partition}_nodes > $WORKDIR/tmp
@@ -88,6 +104,7 @@ else
             echo -n "$node not ok. "
         fi
     done
+
 
     if  [ -s $WORKDIR/excluded_${partition}_nodes ]
     then

@@ -11,7 +11,8 @@ then
     read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
     read -p "Please enter path for your scratch data on high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
+    #read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
+    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/r2022r03-224-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL

@@ -87,7 +87,6 @@ else
     echo $JSS > $WORKDIR/JSS
 fi
 
-sh $vini_dir/determine_Rosetta_environment
 
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 job_status=`cat $WORKDIR/job_status`
@@ -116,6 +115,25 @@ cd $vini_dir
 
 cat COPYRIGHT
 
+if [ -e $WORKDIR/test_compute_nodes ]
+then
+    birth=`stat $WORKDIR/test_compute_nodes | grep Birth`
+    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated."
+
+
+
+    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
+    if [ $yesno == y ]
+    then
+        sh $vini_dir/test_compute_nodes
+    fi
+else
+    echo "A cluster health check will now be performed."
+    sh $vini_dir/test_compute_nodes
+fi
+
+echo "brakepoint" ; sleep 1000
+
 if [ -e $WORKDIR/gather_hardware_info ]
 then
     birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
@@ -124,11 +142,9 @@ then
     if [ $yesno == y ]
     then
         sh $vini_dir/gather_hardware_info
-        #> $WORKDIR/gather_hardware_info
     fi
 else
     sh $vini_dir/gather_hardware_info
-    #> $WORKDIR/gather_hardware_info
 fi
 
 sh $vini_dir/prepare_SLURM_scripts
@@ -190,7 +206,8 @@ then
     echo $partition                           > $WORKDIR/AlphaFold_partition
     cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
     cat $WORKDIR/${partition}_memsize         > $WORKDIR/AlphaFold_mem
-    echo "full_dbs"                           > $WORKDIR/AlphaFold_base 
+    #echo "full_dbs"                           > $WORKDIR/AlphaFold_base 
+    echo "reduced_dbs"                        > $WORKDIR/AlphaFold_base 
     echo monomer                              > $WORKDIR/AlphaFold_protein_prediction_model
     echo multimer                             > $WORKDIR/AlphaFold_biotech_prediction_model
 else
@@ -242,6 +259,8 @@ fi
 echo $kit > $WORKDIR/kit
 echo $cosmic > $WORKDIR/cosmic
 echo $exp > $WORKDIR/exp
+
+sh $vini_dir/determine_Rosetta_environment
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
