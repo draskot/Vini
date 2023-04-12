@@ -17,27 +17,24 @@ then
     if [ $elapsed_time -ge $maxtime ] 
     then
         echo "unable to get hardware info on compute nodes"
-        CPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-        cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-        node=`echo $CPU_EXCLUDED | awk '{print $1}'`
-        echo ${cpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+        rm -f $WORKDIR/gather_hardware_info
+    else
+        > $WORKDIR/gather_hardware_info
     fi
 fi
 
 partition=`cat $WORKDIR/gpu_partition`  
 if [ $active_partition == $partition ]
 then
-    echo "unable to get hardware info on gpu nodes"    #putting first unavailable large memory node on the list
     SECONDS=0
     timeout ${maxtime}s $vini_dir/get_node_info ${partition} ${walltime}
     elapsed_time=$SECONDS
     if [ $elapsed_time -ge $maxtime ] 
     then
         echo "unable to get hardware info on compute nodes"
-        GPU_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-        gpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-        node=`echo $GPU_EXCLUDED | awk '{print $1}'`
-        echo ${gpu_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+        rm -f $WORKDIR/gather_hardware_info
+    else
+        > $WORKDIR/gather_hardware_info
     fi
 fi
 
@@ -50,10 +47,9 @@ then
     if [ $elapsed_time -ge $maxtime ] 
     then
         echo "unable to get hardware info on large memory nodes"    #putting first unavailable large memory node on the list
-        SMP_EXCLUDED=$(sinfo -dN -p ${partition} | awk '(NR>1){gsub(/[a-z]/, "", $1);print $1}')
-        smp_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
-        node=`echo $SMP_EXCLUDED | awk '{print $1}'`
-        echo ${smp_node_suffix}$node > $WORKDIR/excluded_${partition}_nodes
+        rm -f $WORKDIR/gather_hardware_info
+    else
+        > $WORKDIR/gather_hardware_info
     fi
 fi
 

@@ -1,10 +1,12 @@
 #https://www.rosettacommons.org/docs/latest/application_documentation/antibody/antibody-protocol
 
 antibody=$1
+partition=$2
+fasta_file=$3
 
-partition=`cat $WORKDIR/cpu_partition`
-cpus=`cat $WORKDIR/$partition_cores`
-mem=`cat $WORKDIR/$partition_memsize`
+
+cpus=`cat $WORKDIR/${partition}_cores`
+mem=`cat $WORKDIR/${partition}_memsize`
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat $WORKDIR/job_submit`
 rosetta_version=`cat $WORKDIR/rosetta_version`
@@ -18,11 +20,12 @@ rm -rf *
 mkdir -p H3_modeling
 cp $vini_dir/nodes_control_script $ROSETTA/tools/antibody/abH3.flags ./
 
-NODES=`cat $WORKDIR/R_nodes`
+NODES=4    #MPI Rosetta does not scale over 4 nodes
 NTASKS=`echo ${NODES} $cpus | awk '{print $1 * $2}'`
 
+
 echo "#!/bin/bash"                            > rosetta
-echo "#SBATCH --nodes=1"                     >> rosetta
+echo "#SBATCH --exclusive"                   >> rosetta
 if  [ $rosetta_version == mpi ]
 then
     echo "#SBATCH --nodes="$NODES            >> rosetta
@@ -35,12 +38,14 @@ fi
 echo "#SBATCH --mem="$mem                    >> rosetta
 echo "#SBATCH --partition="$partition        >> rosetta
 
+
 cat rosetta                                  >> rosetta_grafting
 echo "#SBATCH --job-name=grafting"           >> rosetta_grafting
 echo "#SBATCH --account=$SLURMACCT"          >> rosetta_grafting
 echo "#SBATCH --output=rosetta_grafting.out" >> rosetta_grafting
 echo "#SBATCH --error=rosetta_grafting.err"  >> rosetta_grafting
-echo "antibody=\$1"                          >> rosetta_grafting
+echo "antibody=$antibody"                    >> rosetta_grafting
+
 
 cat rosetta                                   > rosetta_antibody
 echo "#SBATCH --job-name=antibody"           >> rosetta_antibody
@@ -48,23 +53,28 @@ echo "#SBATCH --account=$SLURMACCT"          >> rosetta_antibody
 echo "#SBATCH --output=rosetta_antibody.out" >> rosetta_antibody
 echo "#SBATCH --error=rosetta_antibody.err"  >> rosetta_antibody
 
+
 if  [ $rosetta_version == mpi ]
 then
-    echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/antibody_graft.mpi.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
+    echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/antibody_graft.mpi.linuxgccrelease --fasta ${fasta_file} | tee grafting.log" >> rosetta_grafting
 
     echo "mpirun -np \${SLURM_NTASKS} ${ROSETTA_BIN}/antibody_H3.mpi.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc  -out:path:pdb H3_modeling" >> rosetta_antibody
 else
     if [ $rosetta_version == multithreaded ]
     then
-        echo "${ROSETTA_BIN}/antibody_graft.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
+        echo "${ROSETTA_BIN}/antibody_graft.linuxgccrelease --fasta ${fasta_file} | tee grafting.log" >> rosetta_grafting
         echo "${ROSETTA_BIN}/antibody_H3.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
     else
-        echo "${ROSETTA_BIN}/antibody_graft.static.linuxgccrelease --fasta $vini_dir/database/ligands/fasta_files/${antibody}.fasta | tee grafting.log" >> rosetta_grafting
+        echo "${ROSETTA_BIN}/antibody_graft.static.linuxgccrelease --fasta ${fasta_file} | tee grafting.log" >> rosetta_grafting
         echo "${ROSETTA_BIN}/antibody_H3.static.linuxgccrelease -s grafting/model-0.relaxed.pdb -nstruct 1000 -ex1 -ex2 -extrachi_cutoff 0 -out:file:scorefile H3_modeling_scores.fasc -out:path:pdb H3_modeling -multithreading:total_threads \${SLURM_CPUS_ON_NODE}" >> rosetta_antibody
     fi
 fi
 chmod u+x rosetta_grafting rosetta_antibody
     
+echo "rosetta_grafting"
+cat rosetta_grafting
+echo "rosetta_antibody"
+cat rosetta_antibody
 sh nodes_control_script ${MAX_NODES} ; jobID=$(${job_submit} --parsable rosetta_grafting ${antibody})
 echo "Grafting started on ${antibody}"
 

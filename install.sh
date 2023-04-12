@@ -2,7 +2,6 @@
 NULL=0
 module purge
 rm -f tmp
-programs=`cat $WORKDIR/programs`
 
 if  [ ! -e sourceme ]
 then
@@ -17,7 +16,6 @@ then
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
     echo "#************General section**********" >> $vini_dir/sourceme
-    let programs++
     echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
     echo "export SLURMACCT=$SLURMACCT" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
@@ -30,8 +28,8 @@ echo -n "Checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
 if  [ ! -s tmp ]
 then
-    echo "no. Performing cleanup, please wait..."
-    rm -rvf  $INSTALL/miniconda2
+    echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
+    rm -rf  $INSTALL/miniconda2
     echo "Please wait while downloading and installing miniconda2..."
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
@@ -39,7 +37,6 @@ then
     conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
     rm $INSTALL/Miniconda2-latest-Linux-x86_64.sh
     echo "#************miniconda2 section**********" >> $vini_dir/sourceme
-    let programs++
 else
     echo "yes."
 fi
@@ -48,9 +45,8 @@ echo -n "Checking if miniconda3 is installed..."
 grep miniconda3 $vini_dir/sourceme > tmp 
 if  [ ! -s tmp ]
 then
-    echo "no."
-    echo -n "Performing cleanup. Please be patient, this may take a while...."
-    rm -rvf $INSTALL/miniconda3
+    echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
+    rm -rf $INSTALL/miniconda3
     echo "done."
     echo "Please wait while downloading and installing miniconda3..."
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -61,7 +57,6 @@ then
     conda install -c conda-forge rdkit
     conda deactivate
     echo "#***miniconda3 section***" >> $vini_dir/sourceme
-    let programs++
     rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
 else
     echo "yes."
@@ -76,7 +71,6 @@ then
     pip install meeko
     conda deactivate
     echo "#***meeko section***" >> $vini_dir/sourceme
-    let programs++
 else  
     echo "yes."
 fi
@@ -90,11 +84,9 @@ then
     conda install -c conda-forge rdkit
     conda deactivate
     echo "#***rdkit section***" >> $vini_dir/sourceme
-    let programs++
 else
     echo "yes."
 fi
-
 
 echo -n "Checking if coreapi-cli is installed..."
 grep coreapi $vini_dir/sourceme > tmp #install coreapi
@@ -106,7 +98,6 @@ then
     conda install -c conda-forge coreapi-cli
     conda deactivate
     echo "#***coreapi***" >> $vini_dir/sourceme
-    let programs++
 else
     echo "yes."
 fi
@@ -131,7 +122,6 @@ then
     rm chimera-1.16-linux_x86_64.bin
     cd $vini_dir
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    let programs++
     echo "export PATH=$INSTALL/chimera-1.16-linux_x86_64/bin:\$PATH" >> $vini_dir/sourceme
     #source $vini_dir/sourceme
 else
@@ -150,7 +140,6 @@ then
     cd $INSTALL/mgltools_x86_64Linux2_1.5.7
     sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
     echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
-    let programs++
     echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
     echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
     echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
@@ -171,7 +160,6 @@ then
     wget -O $INSTALL/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
-    let programs++
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
 else
     echo "yes."
@@ -189,7 +177,6 @@ then
     cd $INSTALL/ADFRsuite_x86_64Linux_1.0
     sh install.sh
     echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
-    let programs++
     echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
     rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
 else
@@ -209,7 +196,6 @@ then
     tar -xvf database.tar.bz2
     echo "done."
     echo "#***database section***" >> $vini_dir/sourceme
-    let programs++
     rm database.tar.bz2
 else
     echo "yes."
@@ -221,7 +207,6 @@ echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
-    let programs++
     echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
     module spider Alphafold 2> tmp
     grep -w error tmp > alphafold
@@ -236,7 +221,7 @@ then
             source $vini_dir/sourceme
         else
             echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/d2203-0100-users):" AlphaFold
+            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
 	    echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
 	    echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
 	    echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
@@ -262,7 +247,6 @@ then
         echo "yes"
         cat tmp
         echo "#******* Blast *******" >> $vini_dir/sourceme
-        let programs++
         read -p "Select the Blast module:" blast
         echo "module load" $blast >> $vini_dir/sourceme
         source $vini_dir/sourceme
@@ -277,7 +261,6 @@ then
         cd ReleaseMT/build
         make all_r
         echo "#***Blast***" >> $vini_dir/sourceme
-        let programs++
         echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
         source $vini_dir/sourceme
         rm $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
@@ -298,7 +281,6 @@ then
 	echo "yes"
 	cat tmp
         echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-        let programs++
         read -p "Select the Rosetta module:" rosetta
         echo "module load" $rosetta >> $vini_dir/sourceme
         source $vini_dir/sourceme
@@ -368,7 +350,6 @@ then
        echo "done."
 
        echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-       let programs++
        ROSETTA_BIN=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin
        ROSETTA_DB=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/database
        echo "export PATH=${ROSETTA_BIN}:\$PATH" >> $vini_dir/sourceme
@@ -395,7 +376,6 @@ then
         then
             read -p "Select the module from the list above:" NAMD
             echo "#*****NAMD section******" >> $vini_dir/sourceme
-            let programs++
             echo "module load" $NAMD >> $vini_dir/sourceme
         else
             read -p "Enter path where your NAMD distribution is located (e.g. /ceph/hpc/data/d2203-0100-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)" NAMD_PATH
@@ -403,7 +383,7 @@ then
             echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
         fi
     else
-         echo "Download NAMD binary from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory. (e.g. /ceph/hpc/data/d2203-0100-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)"
+         echo "Download NAMD binary from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory. (e.g. /ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)"
          read -p "Enter path where your NAMD distribution is located:" enter
          echo "#*****NAMD section******" >> $vini_dir/sourceme
          echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
@@ -428,7 +408,6 @@ then
         then
             read -p "Select the module from the list above:" VMD
             echo "#*****VMD section******" >> $vini_dir/sourceme
-            let programs++
             echo "module load" $VMD >> $vini_dir/sourceme
         else
             if  [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
@@ -439,7 +418,6 @@ then
             rm -rf $INSTALL/vmd-1.9.4
             tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
             echo "#*****VMD section******" >> $vini_dir/sourceme
-            let programs++
             echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
         fi
     else
@@ -459,4 +437,3 @@ fi
 rm -f VMD tmp
 
 echo "New packages are installed in $INSTALL directory."
-echo $programs $WORKDIR/programs

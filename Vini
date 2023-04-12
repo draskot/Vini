@@ -5,6 +5,7 @@ echo ; sleep 1
 
 NULL=0
 ONES=1
+TWO=2
 THREE=3
 HSA=hsa
 TRUE=1
@@ -38,7 +39,6 @@ then
         echo "3rd party programs are in place, continuing."
     fi
 else
-    > $WORKDIR/programs
     sh install.sh
     echo "Installation done, performing logout. Log in and start Vini again."
     pkill -u $USER
@@ -120,8 +120,6 @@ then
     birth=`stat $WORKDIR/test_compute_nodes | grep Birth`
     echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated."
 
-
-
     read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
@@ -132,7 +130,6 @@ else
     sh $vini_dir/test_compute_nodes
 fi
 
-echo "brakepoint" ; sleep 1000
 
 if [ -e $WORKDIR/gather_hardware_info ]
 then
@@ -147,16 +144,29 @@ else
     sh $vini_dir/gather_hardware_info
 fi
 
+
 sh $vini_dir/prepare_SLURM_scripts
 
 read -e -p "Enter the walltime (in minutes) for short SLURM jobs. Press enter to accept the default: " -i "60" walltime
 echo $walltime > $WORKDIR/walltime
 echo "rosetta" > $WORKDIR/docking
-read -e -p "Enter the maximum number of the concurrent Vina jobs (each job using 4 CPUss). Press enter to accept the default: " -i "100" jobs
-echo $jobs > $WORKDIR/max_jobs
-partition=`cat $WORKDIR/cpu_partition` ; cores=`cat $WORKDIR/${partition}_cores`
-read -e -p "Enter the maximum number of concurrent Alphafold jobs (each job is using $cores CPUs )? Press enter to accept the default: " -i "100" nodes
+
+partition=`cat $WORKDIR/cpu_partition`
+cores=`cat $WORKDIR/${partition}_cores`
+Vinathreads=4
+
+read -e -p "Enter the maximum number of CPU cores Vini can use at the same time (each job using 4 CPUss). Press enter to accept the default: " -i "8000" maxcores
+maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
+
+Vinajobs=`echo $maxcores $Vinathreads | awk '{print $1 / $2}'`
+Vinajobs=${Vinajobs%.*}
+echo $Vinajobs > $WORKDIR/max_jobs  #this defines max number of the Autodock Vina jobs
+
+nodes=`echo $maxcores $cores | awk '{print $1 / $2}'`
+nodes=${nodes%.*}
 echo $nodes > $WORKDIR/nodes
+echo "Number of concurrent Vinajobs (each job using $Vinathreads CPU cores) will be limited to $Vinajobs"
+echo "Number of concurrent  AlphaFold jobs (each job using $cores CPU cores) will be limited to $nodes"
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
@@ -191,18 +201,18 @@ sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugba
 #structure_type=model #get pdb structures from RCSB
 #sh $vini_dir/get_ligand_structures ${structure_type}
 
-echo "Selecting the prediction tool."
+
+echo "Selecting the protein structure prediction tool."
 
 echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp #selecting tool for protein structure prediction
 if  [ -s tmp ]                          #checking if AlphaFold is installed
 then
-    echo "yes. Will be used for the structure prediction."
+    echo "yes. Will be used for the protein structure prediction."
     partition=`cat $WORKDIR/active_partition`
     memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
     echo A                                    > $WORKDIR/prediction_model
     echo A                                    > $WORKDIR/protein_structure_prediction
-    echo A                                    > $WORKDIR/biotech_drug_structure_prediction
     echo $partition                           > $WORKDIR/AlphaFold_partition
     cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
     cat $WORKDIR/${partition}_memsize         > $WORKDIR/AlphaFold_mem
@@ -213,8 +223,21 @@ then
 else
     echo "no. SWISS-MODEL structure prediction tool will be used."
     echo S > $WORKDIR/protein_structure_prediction
-    echo S > $WORKDIR/biotech_drug_structure_prediction
     sh $vini_dir/SWISS_MODEL_registration
+fi
+
+echo "Which tool do you want to use for mab drugs structure prediction (AlphaFold, Rosetta, or SWISS-MODEL)?"
+read -e -p "Press enter to accept the default: " -i "AlphaFold" tool
+if  [ $tool == AlphaFold ]
+then
+    echo AlphaFold   > $WORKDIR/biotech_drug_structure_prediction
+else
+    if  [ $tool == Rosetta ]
+    then
+        echo Rosetta     > $WORKDIR/biotech_drug_structure_prediction
+    else
+        echo SWISS_MODEL > $WORKDIR/biotech_drug_structure_prediction
+    fi
 fi
 
 
@@ -261,6 +284,16 @@ echo $cosmic > $WORKDIR/cosmic
 echo $exp > $WORKDIR/exp
 
 sh $vini_dir/determine_Rosetta_environment
+
+#read -e -p "Use Rosetta Antibody [R] or AlphaFold [A] for the mAb drugs' structure predictions? Enter to accept the default: " -i "R" mab 
+#if [ $mab == R ]
+#then
+#    echo "Rosetta Antibody will be used for the mAb drugs' structure predictions."
+#    echo Rosetta                                        > $WORKDIR/biotech_drug_structure_prediction
+#else
+#    echo "AlphaFold will be used for the mAb drugs' structure predictions."
+#    echo AlphaFold                                      > $WORKDIR/biotech_drug_structure_prediction
+#fi
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
