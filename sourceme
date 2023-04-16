@@ -22,12 +22,6 @@ export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot:$PATH
 #***ADFRsuite 1.0 section***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ADFRsuite_x86_64Linux_1.0/bin:$PATH
 #***database section***
-#*****AlphaFold section******
-module load Python/3.9.6-GCCcore-11.2.0
-export PATH=/ceph/hpc/data/r2022r03-224-users:$PATH
-export AlphaFoldBASE=/ceph/hpc/data/r2022r03-224-users/alphafold-data
-export AlphaFoldIMAGE=/ceph/hpc/data/r2022r03-224-users/alphafold2.sif
-export AlphaFoldSTART=/ceph/hpc/data/r2022r03-224-users/run_singularity_all.py
 #***Blast***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:$PATH
 #******* Rosetta section *******
@@ -37,3 +31,4 @@ export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_bin_linux_2021.1
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs:$PATH
 #*****VMD section******
 module load VMD/1.9.4a57-foss2020b
+module load AlphaFold/2.1.2-foss-2021a

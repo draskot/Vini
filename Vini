@@ -34,7 +34,7 @@ then
         echo "Some 3rd party programs are missing. Trying to install them."
         sh install.sh
         echo "Done, performing logout. Log in and start Vini again."
-        pkill -u $USER
+        #pkill -u $USER
     else
         echo "3rd party programs are in place, continuing."
     fi
@@ -189,6 +189,27 @@ else
     fi
 fi
 
+echo ; echo "If you never registered to SWISS-MODEL before, stop here. Go to https://swissmodel.expasy.org/login_page and create account. Then enter your registration email and password here."
+read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
+if  [ $yesno == "n" ]
+then
+    read -p "Enter email:" email
+    echo -n "Enter password:"; read -s password ; echo ""
+    echo $email > $WORKDIR/SWISS-MODEL_email
+    echo $password > $WORKDIR/SWISS-MODEL_password
+    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
+else
+    if [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ]
+    then
+       echo "no data found. You will need to enter data for the first time. "
+       read -p "Enter email:" email
+       echo -n "Enter password:"; read -s password ; echo ""
+       echo $email > $WORKDIR/SWISS-MODEL__email
+       echo $password > $WORKDIR/SWISS-MODEL_password
+       chmod g-r,o-r $WORKDIR/SWISS-MODEL__password
+    fi
+fi
+
 sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
 
 sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
@@ -226,19 +247,9 @@ else
     sh $vini_dir/SWISS_MODEL_registration
 fi
 
-echo "Which tool do you want to use for mab drugs structure prediction (AlphaFold, Rosetta, or SWISS-MODEL)?"
-read -e -p "Press enter to accept the default: " -i "AlphaFold" tool
-if  [ $tool == AlphaFold ]
-then
-    echo AlphaFold   > $WORKDIR/biotech_drug_structure_prediction
-else
-    if  [ $tool == Rosetta ]
-    then
-        echo Rosetta     > $WORKDIR/biotech_drug_structure_prediction
-    else
-        echo SWISS_MODEL > $WORKDIR/biotech_drug_structure_prediction
-    fi
-fi
+echo "Which tool to use for mab drugs structure prediction (AlphaFold, Rosetta, or SWISS-MODEL)?"
+read -e -p "Press enter to accept the default: " -i "SWISS-MODEL" tool
+echo $tool > $WORKDIR/mab_drug_structure_prediction
 
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic

@@ -122,7 +122,8 @@ do
                             grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
                         else
                             echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
+                            echo $fasta_file > fasta_file ; echo $outdir > outdir
+                            sh $vini_dir/predict_protein_structure_with_swiss_model
                             echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                             echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "P" >> $WORKDIR/receptors_contracted
                         fi
@@ -169,7 +170,8 @@ do
                                     grep "^ATOM" ${uniprot_id}.pdb > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
                                 else
                                     echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                                    sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
+                                    echo $fasta_file > fasta_file ; echo $outdir > outdir
+                                    sh $vini_dir/predict_protein_structure_with_swiss_model
                                     echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                                     echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
                                 fi
@@ -189,7 +191,9 @@ do
                             echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
                         else
                             echo "Predicting" $uniprot_id "structure with SWISS-MODEL, please wait..."
-                            sh $vini_dir/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
+                            echo $fasta_file > fasta_file ; echo $outdir > outdir
+                            sh $vini_dir/predict_protein_structure_with_swiss_model
+
                             echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with P flag."
                             echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
                         fi

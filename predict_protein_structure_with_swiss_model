@@ -1,31 +1,24 @@
 #https://swissmodel.expasy.org/coreapi/
 #input params: fasta_file, output folder where predicted pdb file is placed 
-#output: $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+#output: $vini_dir/genes/pdb_files/${uniprot_id}.pdb
 
-six=6
-fasta_file=$1
-outdir=$2
-
-uniprot_id=`basename ${fasta_file} .fasta`
-
-size=${#uniprot_id}
-if  [ $size -eq $six ]
-then
-    sed '1d' ${fasta_file} > ${uniprot_id}.fasta
-    tr -d '\n' < ${uniprot_id}.fasta > tmp
-    cat tmp | awk '{ gsub(/ /,""); print }' > ${uniprot_id}.fasta
-    fasta_sequence=`cat ${uniprot_id}.fasta`
-else
-    fasta_sequence=`cat ${fasta_file}`
-fi
-
-project_id=${uniprot_id}
+echo "Activating conda, please wait."
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
 
 uname=`cat $WORKDIR/SWISS-MODEL_email`
 pwd=`cat $WORKDIR/SWISS-MODEL_password`
+fasta_file=`cat fasta_file`
 
-source $INSTALL/miniconda3/bin/activate
-conda activate env310
+uniprot_id=`basename ${fasta_file} .fasta`
+project_id=${uniprot_id}
+outdir=`cat outdir`
+
+sed '1d' ${fasta_file} > ${uniprot_id}.fasta
+tr -d '\n' < ${uniprot_id}.fasta > tmp
+cat tmp | awk '{ gsub(/ /,""); print }' > ${uniprot_id}.fasta
+fasta_sequence=`cat ${uniprot_id}.fasta`
 
 coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
 coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
@@ -53,13 +46,17 @@ do
     fi
     sleep 4
 done
+rm tmp2
 
 grep model_id tmp > tmp2
 model_id=`head -1 tmp2 | awk '{print $2}'`
 echo $model_id | sed 's/.$//' > tmp
 model_id=`cat tmp | sed 's/^.//;s/.$//'`
 
-echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tom
-sh tom > ${outdir}/${uniprot_id}.pdb
-rm -f tmp tmp2 tom project_id ${uniprot_id}.fasta
+echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tmp
+
+sh tmp > ${outdir}/${uniprot_id}.pdb
+
+rm tmp tom project_id ${uniprot_id}.fasta
+
 conda deactivate

@@ -40,7 +40,7 @@ rm -f $WORKDIR/END
 #sh $vini_dir/prepare_ligands
 #sh $vini_dir/prepare_ligands_with_meeko
 
-sh $vini_dir/predict_biotech_drug_structures
+sh $vini_dir/predict_mab_drug_structures
 if  [ -e error ]
 then
     exit

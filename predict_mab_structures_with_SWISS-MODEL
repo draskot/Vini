@@ -1,7 +1,13 @@
 echo -n "Predicting mAb structures with SWISS-MODEL, please wait..."
-outdir=$vini_dir/database/ligands/pdb_files
+fasta_file=$vini_dir/ligands/fasta_files/Atezolizumab.fasta
+outdir=$vini_dir/ligands/pdb_files
 FALSE=0
 TRUE=1
+
+echo "Activating conda, please wait.!"
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
 
 echo $NULL > $WORKDIR/error
 while read -r line
@@ -10,17 +16,59 @@ do
     if [ $type == P ]
     then
         antibody=`echo $line | awk -F','  '{print $1}'`
-        if [ ! -e $vini_dir/database/ligands/pdb_files/${antibody}.pdb ]
+        if [ ! -e $vini_dir/ligands/pdb_files/${antibody}.pdb ]
         then
-            if [ ! -e $vini_dir/database/ligands/fasta_files/${antibody}.fasta ]
+            if [ ! -e $vini_dir/ligands/fasta_files/${antibody}.fasta ]
             then
-                echo ${antibody}.fasta "not found in" $vini_dir/database/ligands/fasta_files folder 
+                echo ${antibody}.fasta "not found in" $vini_dir/ligands/fasta_files folder 
                 echo $TRUE > $WORKDIR/error
                 break
             else
-                fasta_file=$vini_dir/database/ligands/fasta_files/${antibody}.fasta
-                sh $vini_dir/test/predict_protein_structure_with_swiss_model ${fasta_file} ${outdir}
+                fasta_sequence=`cat ${fasta_file}`
+                project_id=`basename ${fasta_file} .fasta`
+
+                uname=`cat $WORKDIR/SWISS-MODEL_email`
+                pwd=`cat $WORKDIR/SWISS-MODEL_password`
+                coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
+                coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
+                token=`grep token tmp | awk '{print $2}'`
+                echo $token | sed 's/^.//'  > tmp
+                token=`cat tmp`
+                echo "coreapi credentials add swissmodel.expasy.org  \"Token" $token > tom
+                sh tom
+                echo "project_id: $project_id"
+                echo "coreapi action automodel create -p target_sequences="$fasta_sequence "-p project_title="${project_id} > tom
+                sh tom > tmp
+
+                echo "brakepoint! " ; sleep 10000000
+
+                project_id=`grep project_id tmp | awk '{print $2}'`
+                echo $project_id | sed 's/.$//' > project_id
+                project_id=`cat project_id | sed 's/^.//;s/.$//'`
+
+                while true
+                do
+                    echo "coreapi action project models summary read -p project_id"=${project_id} > tom
+                    sh tom > tmp
+                    grep COMPLETED tmp > tmp2
+                    if  [ -s tmp2 ]
+                    then
+                        break
+                    fi
+                   sleep 4
+                done
+
+                grep model_id tmp > tmp2
+                model_id=`head -1 tmp2 | awk '{print $2}'`
+                echo $model_id | sed 's/.$//' > tmp
+                model_id=`cat tmp | sed 's/^.//;s/.$//'`
+                
+                echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tom
+                sh tom > ${outdir}/${project_id}.pdb
+
             fi
         fi
     fi
 done < $vini_dir/ligands/ligands_list
+
+conda deactivate
