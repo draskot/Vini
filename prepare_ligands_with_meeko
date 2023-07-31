@@ -1,7 +1,7 @@
 TRUE=1
 FALSE=0
-job_status=`cat $WORKDIR/job_status`
-job_submit=`cat $WORKDIR/job_submit`
+job_status=`cat job_status`
+job_submit=`cat job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
 partition=`cat $WORKDIR/cpu_partition`
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes
@@ -30,6 +30,7 @@ do
         echo "WORKDIR=$WORKDIR"                                           >> meeko.$i
         echo "source $INSTALL/miniconda3/bin/activate"                    >> meeko.$i
         echo "conda activate env310"                                      >> meeko.$i
+        echo "module purge"                                               >> meeko.$i
         echo "mk_prepare_ligand.py -i $vini_dir/ligands/sdf_files/${drugname}.sdf -o $WORKDIR/ligand_${lig_index}.pdbqt"                                                     >> meeko.$i
         echo "conda deactivate"                                           >> meeko.$i
         chmod u+x                                                            meeko.$i

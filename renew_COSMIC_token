@@ -13,8 +13,9 @@ then
     then 
         echo WARNING:"COSMIC token is more than 24 hours old. In order to continue, you must renew this token:"
         echo 
-        echo "Go to https://cancer.sanger.ac.uk/cosmic/download and login."
-        echo "Press <Download Filtered File> (e.g. from <COSMIC Mutation Data>)"
+        #echo "Go to https://cancer.sanger.ac.uk/cosmic/download and login."
+        echo "Go to https://cancer.sanger.ac.uk/cosmic/login and login."
+        echo "Press <Data> -> <Archive Download> -> <<Download Filtered File> - > (e.g. from <COSMIC Mutation Data>)"
         echo "Write the name of ANY gene (e.g. BRAF), press <Download> button, then choose Save File."
         echo "Find URL for downloaded file (Firefox - open Downloads bar, right click on file -> Copy Download Link)"
         echo "Copy only TOKEN_NUMBER from link. For example in link https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_38_MUTANT&genename=BRAF&token=634109850096966056949636398980720933"

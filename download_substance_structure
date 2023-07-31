@@ -13,4 +13,4 @@ suffix="/record/SDF/?deposited=t&version=12&response_type=save&response_basename
 wget -O ${pubchem_id} $prefix${pubchem_id}$suffix${pubchem_id}
 
 obabel -isdf ${pubchem_id} -opdb -O $WORKDIR/tmp -h --gen3d best                          #convert to pdb with openbabel
-cat $WORKDIR/tmp | grep -v XX > $vini_dir/database/genes/pdb_files/pubchem:${pubchem_id}.pdb
+cat $WORKDIR/tmp | grep -v XX > $vini_dir/genes/pdb_files/pubchem:${pubchem_id}.pdb

@@ -5,8 +5,9 @@ import requests
 import time
 import csv
 from time import sleep
+import random
 
-TOKEN_NUMBER = "318644820498337343288038733210723867"
+TOKEN_NUMBER = "8849526509893207405878246744950305"
 WORKING_DIR = os.path.join(os.path.realpath('.'), 'genes')
 
 def mapUniprotIDToCosmicID_fromList(UNIPROT_LIST):
@@ -37,11 +38,13 @@ def mapUniprotIDToCosmicID_fromList(UNIPROT_LIST):
             uniport_id_list.append(i)
     
     id_size = len(uniport_id_list)
+    #random.shuffle(uniport_id_list)
             
     request = requests.post(f"https://rest.uniprot.org/idmapping/run", data={"from": "UniProtKB_AC-ID", "to": "Gene_Name", "ids": ",".join(uniport_id_list)})
     
-    job_id = request.json()["jobId"]
-    
+    job_id = request.json()["jobId"] 
+
+    sleep(10)
     results = requests.get(f"https://rest.uniprot.org/idmapping/results/{job_id}?size={id_size}")
     
     results_json = results.json()["results"]

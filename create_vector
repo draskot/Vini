@@ -7,7 +7,7 @@ target_dir=$1
 WORKDIR=$2
 
 random_affinity=`cat $WORKDIR/random_affinity`
-complexes=`cat $WORKDIR/complexes`
+complexes=`wc -l < $WORKDIR/receptors_contracted`
 ONES=1
 
 > $target_dir/vec

@@ -2,7 +2,7 @@
 #Input parameter: MAX_NODES
 
 MAX_NODES=$1
-job_status=`cat $WORKDIR/job_status`
+job_status=`cat job_status`
 NULL=0
 
 while true

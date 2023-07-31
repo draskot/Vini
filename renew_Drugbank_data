@@ -1,29 +1,11 @@
 email=`cat $WORKDIR/Drugbank_email`
 password=`cat $WORKDIR/Drugbank_password`
 
-if [ ! -e drug?links.csv ]
+
+if  [ ! -e drug?links.csv ]
 then
-    echo -n "drug?links.csv file missing, trying to download it from Drugbank, please wait... "
-    wget -O filename.zip --user $email --password $password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links 
-    if [ -e filename.zip ]
-    then
-        echo success ; unzip -qn filename.zip ; rm filename.zip
-    else
-        echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit 
-    fi
-else
-    filename=drug?links.csv     #update drug?links.csv file if older than 7 days.
-    hundred_days_ago=$(date -d 'now - 7 days' +%s) #https://www.thegeekstuff.com/2012/11/linux-touch-command/
-    file_time=$(date -r $filename +%s)
-    if (( file_time <= hundred_days_ago ))
-    then
-      echo -n "drug?links.csv file is more than 7 days old, updating..."
-      wget -O filename.zip --user $email --password $password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
-      if  [ -e filename.zip ]
-      then
-          echo success ; rm drug?links.csv ; unzip -qn filename.zip ; rm filename.zip ; touch drug?links.csv
-      else
-          echo "failed! Check the connectivity link to Drugbank and run vini_init again!" ; exit
-      fi
-    fi
+    echo -n "Downloading the data from DrugBank, please wait..."
+    wget -O drug?links.csv.zip --user $email --password $password https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+    unzip -qn drug?links.csv.zip
+    echo done.
 fi

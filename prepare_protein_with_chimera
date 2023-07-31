@@ -5,9 +5,8 @@
 
 uniprot_id=$1
 
-prediction_model=`cat $WORKDIR/prediction_model`
 MAX_NODES=`cat $WORKDIR/nodes`                     #maximum number of compute nodes Vini can use concurrently
-job_submit=`cat $WORKDIR/job_submit`
+job_submit=`cat job_submit`
 
 NULL=0
 ONES=1
@@ -41,7 +40,8 @@ do
     if  [ $noligands -eq $NULL ]
     then     
         echo -n ${accession_code} "has no ligands. Moving" ${accession_code}.pdb "to repo." 
-        reduce -BUILD ${accession_code}.pdb  > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb #add H
+        #reduce -BUILD ${accession_code}.pdb  > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb #add H
+        obabel  ${accession_code}.pdb -O ${vini_dir}/genes/pdb_files/${uniprot_id}.pdb -h #add hydrogens and move to repo
         echo "done."
         break
     else
@@ -53,7 +53,7 @@ do
         chars=`wc -c < stats`
         if  [ $chars -eq $NULL ]
         then
-            reduce -BUILD protein_clean.pdb  > $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb #add H
+            obabel  protein_clean.pdb -O ${vini_dir}/genes/pdb_files/${uniprot_id}.pdb -h
             break
         else
             chim_status=$NULL ; echo $chim_status > $WORKDIR/chim_status  #Chimera failed to clean any structure

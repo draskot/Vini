@@ -3,14 +3,22 @@ echo "If using this program in your academic research , please cite:"           
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
 
-NULL=0
-ONES=1
 TWO=2
-THREE=3
 HSA=hsa
 TRUE=1
 FALSE=0
-min_memory=128 #for AlphaFold
+ONES=1
+
+
+if  [[ -e Vini_crash.log ]] &&  [[ ! -s Vini_crash.log ]] 
+then 
+    echo "Vini is continuing processing after the system failure in the background. Check nohup.out for more information."
+    nohup ./$vini_dir/malavini &         #start again from the restart point
+    exit
+else
+    > Vini.crashlog
+    > restartfile
+fi
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -28,19 +36,19 @@ then
     echo "The following software is installed:" 
     cat sourceme | grep section | sed 's/section//' | sed 's/General//'
     programs=`grep section sourceme | wc -l`
-    no=14
-    if  [ $programs -lt $no ]
+    NOPROGS=14   #the number of 3rd programs Vini is using
+    if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
         sh install.sh
-        echo "Done, performing logout. Log in and start Vini again."
-        #pkill -u $USER
+        echo "Installation is finished. Log in and start Vini again."
+        exit
     else
-        echo "3rd party programs are in place, continuing."
+        echo "All required programs are in place, continuing."
     fi
 else
     sh install.sh
-    echo "Installation done, performing logout. Log in and start Vini again."
+    echo "Installation is finished. Re-login and start Vini again."
     pkill -u $USER
 fi
 
@@ -49,7 +57,6 @@ sh $vini_dir/clean
 echo -n "Checking for the ligands_list file..."
 if [ -e $vini_dir/ligands/ligands_list ]
 then
-    cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.sav #saving the original list of drugs
     echo passed.
 else
     echo "you must provide ligand list. Exiting." ; exit
@@ -59,6 +66,8 @@ mkdir -p $vini_dir/ligands/pdb_files #preparing directories
 mkdir -p $vini_dir/ligands/sdf_files
 mkdir -p $vini_dir/ligands/pdbqt_files
 mkdir -p $vini_dir/ligands/fasta_files
+mkdir -p $vini_dir/ligands/sme_files
+mkdir -p $WORKDIR/ligands   #stagging area
 
 mkdir -p $vini_dir/genes
 mkdir -p $vini_dir/genes/pdb_files
@@ -77,34 +86,34 @@ then
 else
     echo "found."
     JSS=1
-    echo squeue > $WORKDIR/job_status
-    echo sbatch > $WORKDIR/job_submit
-    echo scancel > $WORKDIR/job_cancel
+    echo squeue > job_status
+    echo sbatch > job_submit
+    echo scancel > job_cancel
     echo "SLURM" > $WORKDIR/scheduler
-    sh determine_SLURM_environment
+    sh $vini_dir/set_partitions
     read -e -p "Enter the name of partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
     echo $active_partition > $WORKDIR/active_partition
     echo $JSS > $WORKDIR/JSS
 fi
 
-
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
-job_status=`cat $WORKDIR/job_status`
-job_cancel=`cat $WORKDIR/job_cancel`
-user=`echo ${USER:0:8}` #for long partition names last characters may be lost
-$job_status | grep $user > jobs
-if [ -s jobs ]
+job_status=`cat job_status`
+job_cancel=`cat job_cancel`
+
+$job_status -u $USER > jobs
+nolines=`wc -l < jobs`
+if [ $nolines -eq $ONES ]
 then
-    echo -n "Trying to cancel all $USER SLURM jobs..."
-    while read -r line
+    echo "no jobs to cancel."
+else
+    let nolines++
+    for (( i=2; i<(nolines+1); i++ ))
     do
+        line=`head -$i jobs | tail -1`
         job=`echo $line | awk '{print $1}'`
         $job_cancel $job
-    done < jobs
+    done
     sh $vini_dir/wait_until_jobs_finish
-    echo "done."
-else
-    echo "no remaining jobs."
 fi
 rm -f jobs
 
@@ -114,6 +123,9 @@ rm -f *err *out
 cd $vini_dir
 
 cat COPYRIGHT
+
+read -e -p "Enter your SLURM account provided by admin. Press enter to accept " -i "r2022r03-224-users" slurm_account
+echo $slurm_account > $WORKDIR/slurm_account
 
 if [ -e $WORKDIR/test_compute_nodes ]
 then
@@ -134,7 +146,7 @@ fi
 if [ -e $WORKDIR/gather_hardware_info ]
 then
     birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
-    echo "Hardware information gathering has already been done on $birth.  If there have been any changes in the meantime, the procedure should be repeated."
+    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
     read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
@@ -147,15 +159,15 @@ fi
 
 sh $vini_dir/prepare_SLURM_scripts
 
-read -e -p "Enter the walltime (in minutes) for short SLURM jobs. Press enter to accept the default: " -i "60" walltime
-echo $walltime > $WORKDIR/walltime
+#read -e -p "Enter the maximum time (in hours) for SLURM jobs. Press enter to accept the default: " -i "48" walltime
+#echo $walltime > $WORKDIR/walltime
 echo "rosetta" > $WORKDIR/docking
 
 partition=`cat $WORKDIR/cpu_partition`
 cores=`cat $WORKDIR/${partition}_cores`
 Vinathreads=4
 
-read -e -p "Enter the maximum number of CPU cores Vini can use at the same time (each job using 4 CPUss). Press enter to accept the default: " -i "8000" maxcores
+read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "8000" maxcores
 maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
 
 Vinajobs=`echo $maxcores $Vinathreads | awk '{print $1 / $2}'`
@@ -180,83 +192,37 @@ then
 else
     if [ ! -e $WORKDIR/Drugbank_email ] || [ ! -e $WORKDIR/Drugbank_password ]
     then
-       echo "no data found. You will need to enter data for the first time. "
-       read -p "Enter email:" email
-       echo -n "Enter password:"; read -s password ; echo ""
+       echo "No registration data found! Please enter your email and DrugBank password. "
+       read -p "Enter your email:" email
+       echo -n "Enter DrugBank password:"; read -s password ; echo ""
        echo $email > $WORKDIR/Drugbank_email
        echo $password > $WORKDIR/Drugbank_password
        chmod g-r,o-r $WORKDIR/Drugbank_password
     fi
 fi
 
-echo ; echo "If you never registered to SWISS-MODEL before, stop here. Go to https://swissmodel.expasy.org/login_page and create account. Then enter your registration email and password here."
-read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
-if  [ $yesno == "n" ]
-then
-    read -p "Enter email:" email
-    echo -n "Enter password:"; read -s password ; echo ""
-    echo $email > $WORKDIR/SWISS-MODEL_email
-    echo $password > $WORKDIR/SWISS-MODEL_password
-    chmod g-r,o-r $WORKDIR/SWISS-MODEL_password
-else
-    if [ ! -e $WORKDIR/SWISS-MODEL_email ] || [ ! -e $WORKDIR/SWISS-MODEL_password ]
-    then
-       echo "no data found. You will need to enter data for the first time. "
-       read -p "Enter email:" email
-       echo -n "Enter password:"; read -s password ; echo ""
-       echo $email > $WORKDIR/SWISS-MODEL__email
-       echo $password > $WORKDIR/SWISS-MODEL_password
-       chmod g-r,o-r $WORKDIR/SWISS-MODEL__password
-    fi
-fi
+sh $vini_dir/renew_Drugbank_data  #update drug?links.csv file if more than 7 days old
 
-sh $vini_dir/renew_Drugbank_data  #try to update drug?links.csv file if more than 7 days old
+cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.orig #saving the original list of drugs
 
-sh $vini_dir/download_Drugbank_fasta_structures #download fasta files from Drugbank
+sh $vini_dir/prepare_ligands_list
+sh $vini_dir/prepare_small_drug_structures                 #prepare pdb files for Rosetta docking
+sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
 
-sh $vini_dir/download_Drugbank_pdb_structures #download pdb files from Drugbank
+sh $vini_dir/prepare_ligand_pdbqt_files                    #create pdbqt files for Vina docking
 
-sh $vini_dir/download_Drugbank_sdf_structures #download 3D-SDF files from Drugbank
-
-
-#structure_type=model #get pdb structures from RCSB
-#sh $vini_dir/get_ligand_structures ${structure_type}
-
-
-echo "Selecting the protein structure prediction tool."
-
-echo -n "Checking if Alphafold is installed..."
-grep AlphaFold $vini_dir/sourceme > tmp #selecting tool for protein structure prediction
-if  [ -s tmp ]                          #checking if AlphaFold is installed
-then
-    echo "yes. Will be used for the protein structure prediction."
-    partition=`cat $WORKDIR/active_partition`
-    memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
-    echo A                                    > $WORKDIR/prediction_model
-    echo A                                    > $WORKDIR/protein_structure_prediction
-    echo $partition                           > $WORKDIR/AlphaFold_partition
-    cat $WORKDIR/${partition}_cores           > $WORKDIR/AlphaFold_cpus
-    cat $WORKDIR/${partition}_memsize         > $WORKDIR/AlphaFold_mem
-    #echo "full_dbs"                           > $WORKDIR/AlphaFold_base 
-    echo "reduced_dbs"                        > $WORKDIR/AlphaFold_base 
-    echo monomer                              > $WORKDIR/AlphaFold_protein_prediction_model
-    echo multimer                             > $WORKDIR/AlphaFold_biotech_prediction_model
-else
-    echo "no. SWISS-MODEL structure prediction tool will be used."
-    echo S > $WORKDIR/protein_structure_prediction
-    sh $vini_dir/SWISS_MODEL_registration
-fi
-
-echo "Which tool to use for mab drugs structure prediction (AlphaFold, Rosetta, or SWISS-MODEL)?"
-read -e -p "Press enter to accept the default: " -i "SWISS-MODEL" tool
-echo $tool > $WORKDIR/mab_drug_structure_prediction
-
+echo "AlphaFold will be used for protein structures prediction."
+partition=`cat $WORKDIR/active_partition`
+memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
+echo "full_dbs" > $WORKDIR/AlphaFold_base                  #Vini is using full AlphaFold base
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic
 
 if  [ $cosmic == "y" ]
 then
     echo ; echo "If you have never registered for COSMIC before, stop here.. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving approval, enter your registration email and password here."
+
+    # https://cancer.sanger.ac.uk/cell_lines  cell lines mutations and expressions
     
     read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
     if  [ $yesno == "n" ]
@@ -276,7 +242,7 @@ then
             chmod g-r,o-r $WORKDIR/COSMIC_password
         fi
     fi
-    sh $vini_dir/change_COSMIC_token_file #reset time creation to 01-01-2000
+    touch -a -m -t 200001010101 $WORKDIR/COSMIC_token #reset time creation to 01-01-2000
     sh $vini_dir/renew_COSMIC_token #update COSMIC token if older than 24 hours
     exp=exp
     kit="n"
@@ -293,18 +259,6 @@ fi
 echo $kit > $WORKDIR/kit
 echo $cosmic > $WORKDIR/cosmic
 echo $exp > $WORKDIR/exp
-
-sh $vini_dir/determine_Rosetta_environment
-
-#read -e -p "Use Rosetta Antibody [R] or AlphaFold [A] for the mAb drugs' structure predictions? Enter to accept the default: " -i "R" mab 
-#if [ $mab == R ]
-#then
-#    echo "Rosetta Antibody will be used for the mAb drugs' structure predictions."
-#    echo Rosetta                                        > $WORKDIR/biotech_drug_structure_prediction
-#else
-#    echo "AlphaFold will be used for the mAb drugs' structure predictions."
-#    echo AlphaFold                                      > $WORKDIR/biotech_drug_structure_prediction
-#fi
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -391,8 +345,6 @@ then
         fi
     done < $vini_dir/database/NSC_numbers
 
-
-
     read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept the default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
@@ -407,7 +359,6 @@ else
     cell_line=PUBLIC
     echo $cell_line > $WORKDIR/cell_line
 fi
-
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
 
@@ -429,7 +380,6 @@ fi
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo ${therapy_level} > $WORKDIR/max_therapy_level
 
-
 rm -rf $WORKDIR/$cancer_type$data
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
@@ -444,11 +394,14 @@ echo ${box_size} > $WORKDIR/box_size
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
 
+#read -e -p "Write restart frequency (for restarting a simulation in case of a system crash). Press enter to accept the default : " -i "4800" restartfreq
+#echo $restartfreq > $WORKDIR/restartfreq
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
 if  [ $mode == n ]
 then
-    nohup ./VelikaVini &
+    nohup ./VelikaVini & 
+    masterpid=$! ; echo $masterpid > masterpid
     echo "Vini will now continue to work in the background."
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
 else

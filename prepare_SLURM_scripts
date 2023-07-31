@@ -77,94 +77,94 @@ chmod u+x                                       genex
 #cat $vini_dir/sander_script                  >> sander
 #chmod u+x                                       sander
 
-echo "#! /bin/bash"                           > MD_prep  #prepare Gromacs scripts
-echo "#SBATCH --job-name=MD_prep"            >> MD_prep
-echo "#SBATCH --account=$SLURMACCT"          >> MD_prep
-echo "#SBATCH --output=MD_prep.out"          >> MD_prep
-echo "#SBATCH --time=48:00:00"               >> MD_prep
-echo "#SBATCH --cpus-per-task=1"             >> MD_prep
-echo "#SBATCH --mem=2gb"                     >> MD_prep
-echo "#SBATCH --partition="$partition        >> MD_prep
-cat $vini_dir/MD_prep                        >> MD_prep
-chmod u+x                                       MD_prep
+#echo "#! /bin/bash"                           > MD_prep  #prepare Gromacs scripts
+#echo "#SBATCH --job-name=MD_prep"            >> MD_prep
+#echo "#SBATCH --account=$SLURMACCT"          >> MD_prep
+#echo "#SBATCH --output=MD_prep.out"          >> MD_prep
+#echo "#SBATCH --time=48:00:00"               >> MD_prep
+#echo "#SBATCH --cpus-per-task=1"             >> MD_prep
+#echo "#SBATCH --mem=2gb"                     >> MD_prep
+#echo "#SBATCH --partition="$partition        >> MD_prep
+#cat $vini_dir/MD_prep                        >> MD_prep
+#chmod u+x                                       MD_prep
 
-echo "#! /bin/bash"                           > MD_run
-echo "#SBATCH --job-name=MD_run"             >> MD_run
-echo "#SBATCH --account=$SLURMACCT"          >> MD_run
-echo "#SBATCH --output=MD_run.out"           >> MD_run
-echo "#SBATCH --time=48:00:00"               >> MD_run
-echo "#SBATCH --exclusive"                   >> MD_run
-echo "#SBATCH --nodes=1"                     >> MD_run
-echo "#SBATCH --cpus-per-task=24"            >> MD_run
-echo "#SBATCH --mem=48gb"                    >> MD_run
-echo "#SBATCH --partition="$partition        >> MD_run
-echo "export GMX_MAXCONSTRWARN=-1"           >> MD_run
-cat $vini_dir/MD_run                         >> MD_run
-chmod u+x                                       MD_run
+#echo "#! /bin/bash"                           > MD_run
+#echo "#SBATCH --job-name=MD_run"             >> MD_run
+#echo "#SBATCH --account=$SLURMACCT"          >> MD_run
+#echo "#SBATCH --output=MD_run.out"           >> MD_run
+#echo "#SBATCH --time=48:00:00"               >> MD_run
+#echo "#SBATCH --exclusive"                   >> MD_run
+#echo "#SBATCH --nodes=1"                     >> MD_run
+#echo "#SBATCH --cpus-per-task=24"            >> MD_run
+#echo "#SBATCH --mem=48gb"                    >> MD_run
+#echo "#SBATCH --partition="$partition        >> MD_run
+#echo "export GMX_MAXCONSTRWARN=-1"           >> MD_run
+#cat $vini_dir/MD_run                         >> MD_run
+#chmod u+x                                       MD_run
 
-echo "#! /bin/bash"                           > ndx
-echo "#SBATCH --job-name=ndx"                >> ndx
-echo "#SBATCH --account=$SLURMACCT"          >> ndx
-echo "#SBATCH --output=ndx.out"              >> ndx
-echo "#SBATCH --time=48:00:00"               >> ndx
-echo "#SBATCH --ntasks-per-node=1"           >> ndx
-echo "#SBATCH --cpus-per-task=1"             >> ndx
-echo "#SBATCH --mem=2gb"                     >> ndx
-echo "#SBATCH --partition="$partition        >> ndx
-cat $vini_dir/ndx                            >> ndx
-chmod u+x                                       ndx
+#echo "#! /bin/bash"                           > ndx
+#echo "#SBATCH --job-name=ndx"                >> ndx
+#echo "#SBATCH --account=$SLURMACCT"          >> ndx
+#echo "#SBATCH --output=ndx.out"              >> ndx
+#echo "#SBATCH --time=48:00:00"               >> ndx
+#echo "#SBATCH --ntasks-per-node=1"           >> ndx
+#echo "#SBATCH --cpus-per-task=1"             >> ndx
+#echo "#SBATCH --mem=2gb"                     >> ndx
+#echo "#SBATCH --partition="$partition        >> ndx
+#cat $vini_dir/ndx                            >> ndx
+#chmod u+x                                       ndx
 
-echo "#! /bin/bash"                            > polar
-echo "#SBATCH --job-name=polar"               >> polar
-echo "#SBATCH --account=$SLURMACCT"           >> polar
-echo "#SBATCH --output=polar.out"             >> polar
-echo "#SBATCH --time=48:00:00"                >> polar
-echo "#SBATCH --ntasks-per-node=1"            >> polar
-echo "#SBATCH --cpus-per-task=16"             >> polar
-echo "#SBATCH --mem=32gb"                     >> polar
-echo "#SBATCH --partition="$partition         >> polar
-echo "export OMP_NUM_THREADS=16"              >> polar
-cat $vini_dir/polar                           >> polar
-chmod u+x polar
+#echo "#! /bin/bash"                            > polar
+#echo "#SBATCH --job-name=polar"               >> polar
+#echo "#SBATCH --account=$SLURMACCT"           >> polar
+#echo "#SBATCH --output=polar.out"             >> polar
+#echo "#SBATCH --time=48:00:00"                >> polar
+#echo "#SBATCH --ntasks-per-node=1"            >> polar
+#echo "#SBATCH --cpus-per-task=16"             >> polar
+#echo "#SBATCH --mem=32gb"                     >> polar
+#echo "#SBATCH --partition="$partition         >> polar
+#echo "export OMP_NUM_THREADS=16"              >> polar
+#cat $vini_dir/polar                           >> polar
+#chmod u+x polar
 
-echo "#! /bin/bash"                            > apolar
-echo "#SBATCH --job-name=apolar"              >> apolar
-echo "#SBATCH --account=$SLURMACCT"           >> apolar
-echo "#SBATCH --output=apolar.out"            >> apolar
-echo "#SBATCH --time=48:00:00"                >> apolar
-echo "#SBATCH --ntasks-per-node=1"            >> apolar
-echo "#SBATCH --cpus-per-task=8"              >> apolar
-echo "#SBATCH --mem=16gb"                     >> apolar
-echo "#SBATCH --partition="$partition         >> apolar
-echo "export OMP_NUM_THREADS=8"               >> apolar
-cat $vini_dir/apolar                          >> apolar
-chmod u+x                                        apolar
+#echo "#! /bin/bash"                            > apolar
+#echo "#SBATCH --job-name=apolar"              >> apolar
+#echo "#SBATCH --account=$SLURMACCT"           >> apolar
+#echo "#SBATCH --output=apolar.out"            >> apolar
+#echo "#SBATCH --time=48:00:00"                >> apolar
+#echo "#SBATCH --ntasks-per-node=1"            >> apolar
+#echo "#SBATCH --cpus-per-task=8"              >> apolar
+#echo "#SBATCH --mem=16gb"                     >> apolar
+#echo "#SBATCH --partition="$partition         >> apolar
+#echo "export OMP_NUM_THREADS=8"               >> apolar
+#cat $vini_dir/apolar                          >> apolar
+#chmod u+x                                        apolar
 
-echo "#! /bin/bash"                            > potential
-echo "#SBATCH --job-name=potent"              >> potential
-echo "#SBATCH --account=$SLURMACCT"           >> potential
-echo "#SBATCH --output=potent.out"            >> potential
-echo "#SBATCH --time=48:00:00"                >> potential
-echo "#SBATCH --ntasks-per-node=1"            >> potential
-echo "#SBATCH --cpus-per-task=8"              >> potential
-echo "#SBATCH --mem=16gb"                     >> potential
-echo "#SBATCH --partition="$partition         >> potential
-echo "export OMP_NUM_THREADS=8"               >> potential
-cat $vini_dir/potent                          >> potential
-chmod u+x                                        potential
+#echo "#! /bin/bash"                            > potential
+#echo "#SBATCH --job-name=potent"              >> potential
+#echo "#SBATCH --account=$SLURMACCT"           >> potential
+#echo "#SBATCH --output=potent.out"            >> potential
+#echo "#SBATCH --time=48:00:00"                >> potential
+#echo "#SBATCH --ntasks-per-node=1"            >> potential
+#echo "#SBATCH --cpus-per-task=8"              >> potential
+#echo "#SBATCH --mem=16gb"                     >> potential
+#echo "#SBATCH --partition="$partition         >> potential
+#echo "export OMP_NUM_THREADS=8"               >> potential
+#cat $vini_dir/potent                          >> potential
+#chmod u+x                                        potential
 
 
-echo "#! /bin/bash"                            > FBE
-echo "#SBATCH --job-name=FBE"                 >> FBE
-echo "#SBATCH --account=$SLURMACCT"           >> FBE
-echo "#SBATCH --output=FBE.out"               >> FBE
-echo "#SBATCH --time=48:00:00"                >> FBE
-echo "#SBATCH --ntasks-per-node=1"            >> FBE
-echo "#SBATCH --cpus-per-task=1"              >> FBE
-echo "#SBATCH --mem=2gb"                      >> FBE
-echo "#SBATCH --partition="$partition         >> FBE
-echo "source $INSTALL/miniconda2/bin/activate" >> FBE
-cat $vini_dir/FBE                             >> FBE
-chmod u+x                                        FBE
+#echo "#! /bin/bash"                            > FBE
+#echo "#SBATCH --job-name=FBE"                 >> FBE
+#echo "#SBATCH --account=$SLURMACCT"           >> FBE
+#echo "#SBATCH --output=FBE.out"               >> FBE
+#echo "#SBATCH --time=48:00:00"                >> FBE
+#echo "#SBATCH --ntasks-per-node=1"            >> FBE
+#echo "#SBATCH --cpus-per-task=1"              >> FBE
+#echo "#SBATCH --mem=2gb"                      >> FBE
+#echo "#SBATCH --partition="$partition         >> FBE
+#echo "source $INSTALL/miniconda2/bin/activate" >> FBE
+#cat $vini_dir/FBE                             >> FBE
+#chmod u+x                                        FBE
 
 cd $vini_dir

@@ -1,28 +1,39 @@
 
 NULL=0
 module purge
-rm -f tmp
 
 if  [ ! -e sourceme ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
     read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
-    read -p "Please enter path for your scratch data on high performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
+    read -p "Please enter path for your scratch data on the high-performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    #read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
-    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/r2022r03-224-users/$USER):" INSTALL
+    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
     echo "#************General section**********" >> $vini_dir/sourceme
-    echo "export vini_dir=$vini_dir" >> $vini_dir/sourceme
+    echo "export vini_dir=$vini_dir"   >> $vini_dir/sourceme
     echo "export SLURMACCT=$SLURMACCT" >> $vini_dir/sourceme
-    echo "export WORKDIR=$WORKDIR" >> $vini_dir/sourceme
-    echo "export SHARED=$SHARED" >> $vini_dir/sourceme
-    echo "export INSTALL=$INSTALL" >> $vini_dir/sourceme
-    source $vini_dir/sourceme
+    echo "export WORKDIR=$WORKDIR"     >> $vini_dir/sourceme
+    echo "export SHARED=$SHARED"       >> $vini_dir/sourceme
+    echo "export INSTALL=$INSTALL"     >> $vini_dir/sourceme
+else
+    read -e -p "Do you want to modify the location of the high-performance storage (scratch)? (y/n). Press enter to accept the default: " -i "n" yesno
+    if [ $yesno == y ]
+    then
+        read -p "Enter the path to your new scratch (e.g. /exa5/scratch/user/$USER):" WORKDIR
+        echo "High Performance Storage (scratch) will be on $WORKDIR" ; echo
+        lineno=`grep -n WORKDIR sourceme | cut -d: -f1`    #Get number of line to be replaced
+        newline=`echo "export WORKDIR=$WORKDIR"`
+        sed -i "$lineno i ${newline}" sourceme
+        let lineno++
+        sed -i "$lineno d" sourceme
+    fi
 fi
+
+source $vini_dir/sourceme
 
 echo -n "Checking if miniconda2 is installed..."
 grep miniconda2 $vini_dir/sourceme > tmp  
@@ -30,6 +41,7 @@ if  [ ! -s tmp ]
 then
     echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
     rm -rf  $INSTALL/miniconda2
+    unset PYTHONPATH
     echo "Please wait while downloading and installing miniconda2..."
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
@@ -47,14 +59,15 @@ if  [ ! -s tmp ]
 then
     echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
     rm -rf $INSTALL/miniconda3
+    unset PYTHONPATH
     echo "done."
     echo "Please wait while downloading and installing miniconda3..."
     wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n env310 --yes numpy scipy pandas requests mpi4py pyqt
+    conda create -n env310 --yes numpy scipy pandas requests mpi4py pyqt python=3.9
     conda activate env310
-    conda install -c conda-forge rdkit
+    #conda install -c conda-forge rdkit
     conda deactivate
     echo "#***miniconda3 section***" >> $vini_dir/sourceme
     rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
@@ -62,45 +75,45 @@ else
     echo "yes."
 fi
 
-echo -n "Checking if meeko is installed..."
-grep meeko $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    pip install meeko
-    conda deactivate
-    echo "#***meeko section***" >> $vini_dir/sourceme
-else  
-    echo "yes."
-fi
+#echo -n "Checking if meeko is installed..."
+#grep meeko $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    source $INSTALL/miniconda3/bin/activate
+#    conda activate env310
+#    pip install meeko
+#    conda deactivate
+#    echo "#***meeko section***" >> $vini_dir/sourceme
+#else  
+#    echo "yes."
+#fi
 
-echo -n "Checking if rdkit is installed..."
-grep rdkit $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    conda install -c conda-forge rdkit
-    conda deactivate
-    echo "#***rdkit section***" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#echo -n "Checking if rdkit is installed..."
+#grep rdkit $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    source $INSTALL/miniconda3/bin/activate
+#    conda activate env310
+#    conda install -c conda-forge rdkit
+#    conda deactivate
+#    echo "#***rdkit section***" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
-echo -n "Checking if coreapi-cli is installed..."
-grep coreapi $vini_dir/sourceme > tmp #install coreapi
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while coreapi-cli is installed..."
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    conda install -c conda-forge coreapi-cli
-    conda deactivate
-    echo "#***coreapi***" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#echo -n "Checking if coreapi-cli is installed..."
+#grep coreapi $vini_dir/sourceme > tmp #install coreapi
+#if  [ ! -s tmp ]
+#then
+#    echo -n "no. Please wait while coreapi-cli is installed..."
+#    source $INSTALL/miniconda3/bin/activate
+#    conda activate env310
+#    conda install -c conda-forge coreapi-cli
+#    conda deactivate
+#    echo "#***coreapi section***" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
 echo -n "checking if UCSF Chimera is installed..."
 grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
@@ -157,7 +170,7 @@ if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
     rm -f $INSTALL/vina
-    wget -O $INSTALL/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.3/vina_1.2.3_linux_x86_64
+    wget -O $INSTALL/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
@@ -213,20 +226,23 @@ then
     if [ ! -s alphafold ]
     then
         echo "module(s) found" ; cat tmp
+        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
         read -p "Do you want to use module [m] or your local [l] Alphafold installation? (m/l)" ml
         if  [ $ml == m ]
         then
             read -p "Select module:" alphafold
-            echo "module load" $alphafold >> $vini_dir/sourceme
-            source $vini_dir/sourceme
+            echo "module --ignore-cache load" $alphafold >> $vini_dir/sourceme
+            echo "ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR" >> $vini_dir/sourceme
+            #export ALPHAFOLD_DATA_DIR
+            #source $vini_dir/sourceme
         else
-            echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
-	    echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	    echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	    echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-            echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
+            sleep 1
+            #read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
+	    #echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
+	    #echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
+	    #echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
+            #echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+	    #echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
 	    #echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
         fi
     fi
@@ -260,7 +276,7 @@ then
         ./configure
         cd ReleaseMT/build
         make all_r
-        echo "#***Blast***" >> $vini_dir/sourceme
+        echo "#***Blast section***" >> $vini_dir/sourceme
         echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
         source $vini_dir/sourceme
         rm $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
@@ -339,21 +355,27 @@ then
        if  [ ! -e $INSTALL/rosetta_bin_linux_3.13_bundle.tgz ]
        then
            echo -n "Downloading Rosetta binaries, may take a while..." 
-           wget -O $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/3.13/rosetta_bin_linux_3.13_bundle.tgz
+           wget -O $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/2023/wk6/rosetta.source.release-340.tar.bz2
            echo "done."
        fi
-       echo "Unpacking Rosetta binaries. May take several minutes to finish, do not interrupt."
-       tar -xf $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --checkpoint=.4000 -C $INSTALL
+       echo "Unpacking Rosetta source. May take several minutes to finish, do not interrupt."
+       tar -xf $INSTALL/https://www.rosettacommons.org/downloads/academic/2023/wk6/rosetta.source.release-340.tar.bz2 --checkpoint=.4000 -C $INSTALL
        echo "Done"
        echo -n " Cleaning up installation files..."
-       rm $INSTALL/rosetta_bin_linux_3.13_bundle.tgz
+       rm $INSTALL/rosetta.source.release-340.tar.bz2
        echo "done."
+       . $HOME/spack/share/spack/setup-env.sh
+       spack load scons
+       cd $INSTALL/rosetta.source.release-340/main/source
+       scons -j 20 mode=release bin extras=cxx11thread
 
        echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-       ROSETTA_BIN=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin
-       ROSETTA_DB=$INSTALL/rosetta_bin_linux_2021.16.61629_bundle/main/database
+       ROSETTA_BIN=$INSTALL/rosetta.source.release-340/main/source/bin
        echo "export PATH=${ROSETTA_BIN}:\$PATH" >> $vini_dir/sourceme
+       ROSETTA_DB=$INSTALL/rosetta.source.release-340/main/database
        echo "export PATH=${ROSETTA_DB}:\$PATH" >> $vini_dir/sourceme
+       echo "export ROSETTA_TOOLS=$INSTALL/rosetta.source.release-340/main/tools/protein_tools/scripts"  >> $vini_dir/sourceme
+       echo "export ROSETTA_PUB=$INSTALL/rosetta.source.release-340/main/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme
     fi
     echo "nompi" > $WORKDIR/rosetta_version #tell Rosetta not to use MPI
 else
@@ -436,4 +458,40 @@ else
 fi
 rm -f VMD tmp
 
-echo "New packages are installed in $INSTALL directory."
+grep OpenBabel $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    module spider Openbabel 2> tmp
+    grep -w error tmp > openbabel
+    if [ ! -s openbabel ]
+    then
+        echo "Found the following openbabel module(s):" ; cat tmp
+        read -p "Please select one of Openbabel modules found:" openbabel
+        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+        echo "module load" $openbabel >> $vini_dir/sourceme
+    else
+        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
+        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
+        
+        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
+        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
+        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
+        cd $INSTALL/openbabel-openbabel-3-1-1/build
+        rm -rf $INSTALL/openbabel-3.1.1
+        module purge
+        module load CMake/3.20.1-GCCcore-10.3.0
+        module load Boost/1.76.0-GCC-10.3.0
+        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+        make -j 12
+        make -j 12 install
+        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
+        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
+        cd $vini_dir
+        echo -n "done."
+    fi
+fi
+rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
+
+
+echo "You have to re-login in order to changes make effect!"

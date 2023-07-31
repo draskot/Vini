@@ -1,22 +1,52 @@
 cpus=$1
-mem=$2
-partition=$3
-base=$4
-model=$5
-fasta_file=$6
+partition=$2
+base=$3
+fasta_file=$4
+outdir=$5
 
+ONES=1
+maxlines1=23
+maxlines2=40
+
+model=`grep -c ">" ${fasta_file}`
+if  [ $model -eq $ONES ]
+then
+    model=monomer
+else
+    model=multimer
+fi
+
+walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are trying to run AF on cpu nodes
 antibody=`basename ${fasta_file} .fasta`
 
-job_submit=`cat $WORKDIR/job_submit`
+nolines=`wc -l < ${fasta_file}`                     #Checking resources for large sequences
+if  [[ $nolines -gt $maxlines1 ]] && [[ $nolines -le $maxlines2 ]]
+then
+    partition=`cat $WORKDIR/longcpu_partition`
+    walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
+else
+    if  [ $nolines -gt $maxlines2 ]
+    then
+        echo "Error while trying to predict $antibody structure with AlphaFold."                        Vini.crashlog
+        echo "Running AlphaFold prediction on $partition node will exceed walltime limit of $walltime." Vini.crashlog
+        echo "Consider to run AlphaFold prediction on GPU nodes."                                       Vini.crashlog
+        echo ""                                                                                         Vini.crashlog
+        scancel -u $USER
+        masterpid=`cat $WORKDIR/masterpid`
+        kill -P $masterpid
+        kill -9 $masterpid
+    fi
+fi
+
+job_submit=`cat job_submit`
 gpus=1                                                   #AlphaFold working with only 1 gpu
-kb=1024
 
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 
 rm -rf $WORKDIR/${antibody} #cleanup
 
 echo "#!/bin/bash"                                                   > $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --time=48:00:00"                                      >> $WORKDIR/AlphaFold_${antibody}
+echo "#SBATCH --time=$walltime"                                     >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --job-name=$antibody"                                 >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --account=$SLURMACCT"                                 >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --exclusive"                                          >> $WORKDIR/AlphaFold_${antibody}
@@ -25,30 +55,31 @@ echo "#SBATCH --error=$WORKDIR/$antibody.err"                       >> $WORKDIR/
 echo "#SBATCH --nodes=1"                                            >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --ntasks-per-node=1"                                  >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --cpus-per-task="$cpus                                >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --mem="$mem                                           >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --partition="$partition                               >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --exclude=${excluded_nodes}"                          >> $WORKDIR/AlphaFold_${antibody}
 
 echo "WORKDIR=${WORKDIR}"                                           >> $WORKDIR/AlphaFold_${antibody}
+
 
 if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
 then
     echo "#SBATCH --gres=gpu:1"                                     >> $WORKDIR/AlphaFold_${antibody}
 fi
 
-echo "memable=`grep MemAvailable /proc/meminfo | awk '{print $2}'`" >> $WORKDIR/AlphaFold_${antibody} 
+echo "source $INSTALL/miniconda3/bin/activate" >> $WORKDIR/AlphaFold_${antibody}
+echo "conda activate env310"  >> $WORKDIR/AlphaFold_${antibody}
 
-memory=`echo $mem | sed 's/[^0-9]*//g'`
-memory=`echo $memory $kb $kb | awk '{print $1 * $2 *$3}'`
-echo "memory=$memory"                                               >> $WORKDIR/AlphaFold_${antibody}
+echo "alphafold --data_dir=${ALPHAFOLD_DATA_DIR} --fasta_paths=${fasta_file} --output_dir=${WORKDIR} --model_preset=${model} --db_preset=${base} --use_gpu_relax=False --num_multimer_predictions_per_model=1  --max_template_date=2020-06-05"                  >> $WORKDIR/AlphaFold_${antibody}
 
-echo "if  [  \${memable} -gt \${memory} ]"                          >> $WORKDIR/AlphaFold_${antibody}
-echo "then"                                                         >> $WORKDIR/AlphaFold_${antibody}
-echo "python3 $AlphaFoldSTART --data-dir=$AlphaFoldBASE --fasta-paths=${fasta_file} --cpus=${cpus} --db-preset=${base} --model-preset=${model} --output-dir=$WORKDIR"                                  >> $WORKDIR/AlphaFold_${antibody}
-echo "else"                                                         >> $WORKDIR/AlphaFold_${antibody}
-echo "echo Not enough memory to run AlphaFold"                      >> $WORKDIR/AlphaFold_${antibody}
-echo "fi"                                                           >> $WORKDIR/AlphaFold_${antibody}
+echo "conda deactivate"  >> $WORKDIR/AlphaFold_${antibody}
 
-chmod u+x                                                             $WORKDIR/AlphaFold_${antibody}
+echo "if [ -e $WORKDIR/${antibody}/ranked_0.pdb ]"         >> $WORKDIR/AlphaFold_${antibody}
+echo "then"                                                >> $WORKDIR/AlphaFold_${antibody}
+echo "cp $WORKDIR/${antibody}/ranked_0.pdb $outdir/${antibody}.pdb" >> $WORKDIR/AlphaFold_${antibody}
+echo "else"                                                >> $WORKDIR/AlphaFold_${antibody}
+echo "echo ${antibody} > $WORKDIR/failed_predictions"      >> $WORKDIR/AlphaFold_${antibody}
+echo "fi"                                                  >> $WORKDIR/AlphaFold_${antibody}
+
+chmod u+x                                                  $WORKDIR/AlphaFold_${antibody}
 
 ${job_submit} $WORKDIR/AlphaFold_${antibody}

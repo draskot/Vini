@@ -2,9 +2,8 @@ partition=$1
 walltime=$2
 
 scheduler=`cat $WORKDIR/scheduler`
-version=`cat $WORKDIR/version`
-job_submit=`cat $WORKDIR/job_submit`
-job_cancel=`cat $WORKDIR/job_cancel`
+job_submit=`cat job_submit`
+job_cancel=`cat job_cancel`
 
 rm -f $WORKDIR/cores.out
 

@@ -7,25 +7,11 @@ do
     if  [ $type == P ]
     then
         drug=`echo $line | awk -F',' '{print $1}'`
-        subtype=`echo "$drug" | grep -oP 'mab.*?\b' | wc -l`
-        if [ $subtype == 1 ] 
-        then                                                               #drug is mAb and Rosetta Antibody was used
-            if [ -e $WORKDIR/${drug}/H3_modeling_scores.fasc ] #check if prediction succeeded
-            then                                     
-                sort -k3 -n -r $WORKDIR/${drug}/H3_modeling_scores.fasc > tmp #select model with the lowest score
-                line=`head -3 tmp | tail -1`
-                model=`echo $line | awk  'NF>1{print $NF}'`
-                cp $WORKDIR/${drug}/./H3_modeling/${model}.pdb $vini_dir/database/ligands/pdb_files/${antibody}.pdb
-            else
+        if  [ -e $WORKDIR/${drug}/ranked_0.pdb ]                      #check if prediction succeeded
+        then                                                      
+            cp $WORKDIR/${drug}/ranked_0.pdb ${vini_dir}/database/ligands/pdb_files/${protein}.pdb
+        else                                                      #prediction failed
                 echo ${drug} >> $WORKDIR/failed_drug_predicted_structures
-            fi
-        else                                                              #Alphafold was used
-            if  [ -e $WORKDIR/${drug}/ranked_0.pdb ]                      #check if prediction succeeded
-            then                                                      
-                cp $WORKDIR/${drug}/ranked_0.pdb ${vini_dir}/database/ligands/pdb_files/${protein}.pdb
-            else                                                      #prediction failed
-                echo ${drug} >> $WORKDIR/failed_drug_predicted_structures
-            fi
         fi
     fi
 done < $vini_dir/ligands/ligands_list
@@ -44,7 +30,7 @@ do
         if  [ -e $WORKDIR/${uniprot_id}/ranked_0.pdb ]
         then                                                     #prediction succeeded
             stat=P
-            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
         else                                                     #prediction failed
             stat=F
             echo $uniprot_id >> $WORKDIR/failed_gene_predicted_structures

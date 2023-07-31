@@ -1,30 +1,52 @@
 
-job_status=`cat $WORKDIR/job_status`
+job_status=`cat job_status`
+job_cancel=`cat job_cancel`
 NULL=0
-user=`echo ${USER:0:8}` #for long partition names last characters may be lost
-cd $WORKDIR
 
-> $WORKDIR/all_user_jobs
-#echo -n $user "jobs remaining: "
+> all_user_jobs
 echo -n $USER "jobs remaining: "
 while true
 do
      sleep 1
-     $job_status | grep $user > $WORKDIR/all_user_jobs
-     lines=`wc -l < $WORKDIR/all_user_jobs` #break loop if there are no more Vini jobs
-     echo -n $lines ; echo -n " "
+     $job_status -u $USER > all_user_jobs
+     lineno=`wc -l < all_user_jobs` #break loop if there are no more Vini jobs
+     let lineno--
+     echo -n $lineno
      
-     if  [ $lines -eq $NULL ]
+     if  [ $lineno -eq $NULL ]            #Checking for any remaining jons
      then
 	 break
      fi 
 
-     grep "launch failed requeued held" $WORKDIR/all_user_jobs > requeued
+     echo -n " "
+
+     grep "launch failed requeued held" all_user_jobs > requeued #Checking if SLURM is working properly
      if [ -s requeued ]
      then
-         break
+         echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
+         echo ""                                                                          >> Vini.crashlog
+         $job_cancel -u $USER
+         masterpid=`cat masterpid`
+         kill -P $masterpid
+         kill -9 $masterpid
      fi
 
+     timeout 1s touch $WORKDIR/test                                 #Checking if Lustre is working properly
+     timeout 1s ls $file > tmp 2> /dev/null
+     if [ ! -s tmp ]
+     then
+         echo "Error while accessing Lustre filesystem. Exiting."     >> Vini.crashlog
+         echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> Vini.crashlog
+         echo "You will need to re-login and then start Vini again."
+         echo ""                                                      >> Vini.crashlog
+         $job_cancel -u $USER
+         old="\/exa5\/scratch\/user\/eudraskot"
+         new="\/ceph\/hpc\/data\/r2022r03-224-users\/eudraskot\/WORKDIR"
+         sed -i -e "s/$old/$new/" $vini_dir/sourceme 
+         masterpid=`cat masterpid`
+         kill -P $masterpid
+         kill -9 $masterpid
+     fi
 done
 
 echo "Done."

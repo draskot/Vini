@@ -1,33 +1,41 @@
-NULL=0
 ONES=1
+> $vini_dir/ligands/ligands_list.tmp
 
 echo -n "checking if fasta files are in place, please wait..."
-lineno=1
-while read -r line
+
+N=`wc -l < $vini_dir/ligands/ligands_list`
+for (( lineno=1; lineno<$((N+1)); lineno++ ))
 do
+    line=`head -$lineno $vini_dir/ligands/ligands_list | tail -1`
+    drug=`echo $line | awk -F','   '{print $1}'`
     type=`echo $line | awk -F','   '{print $2}'`
-    if [ $type == P ]
+    if  [ $type == P ] && [ ! -e $vini_dir/ligands/fasta_files/${drug}.fasta ]
     then
-        drug=`echo $line | awk -F','   '{print $1}'`
-        if  [ ! -e $vini_dir/ligands/fasta_files/"${drug}".fasta ] 
+        echo -n "."
+        grep "$drug" drugbank?vocabulary.csv > tmp
+        if  [  -s tmp ]
         then
-            grep "$drug" drug?links.csv > $WORKDIR/tmp
-            inlines=`wc -l < $WORKDIR/tmp`  #there may be several lines with a same drug name
-            if  [ $inlines -gt $NULL ]
-            then   
-                inline=`head -1 $WORKDIR/tmp`
-                DBID=`echo $inline | tr "," " " | awk '{print $1}'`
-                echo -n "Downloading" $drug "fasta file from Drugbank..."
-                wget -O $vini_dir/ligands/fasta_files/"${drug}".fasta -q https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
-                echo "done."
+            inline=`head -1 tmp | awk -F','   '{print $1}'`
+            DBID=$(echo $inline | cut -d':' -f 2)
+            wget -q -O $vini_dir/ligands/fasta_files/"${drug}".fasta https://go.drugbank.com/drugs/${DBID}/polypeptide_sequences.fasta
+            echo $line >> $vini_dir/ligands/ligands_list.tmp
+        else
+            echo "$drug not found in DrugBank database, therefore fasta sequence will be not downloaded."
+            read -p "Do you want to download $drug fasta sequence manually? (y/n)" yesno 
+            if  [ $yesno == y ]
+            then
+                touch $vini_dir/ligands/fasta_files/${drug}.fasta
+                read -p "Copy fasta sequence into $vini_dir/ligands/fasta_files/${drug}.fasta. Then press return to cont." cont
+                echo $line >> $vini_dir/ligands/ligands_list.tmp
             else
-                echo "drug" $drug "not found in Drugbank and will not be analysed." 
-                awk -v "lineno=$lineno"  'NR==lineno { $0 = "#" $0 }; 1' $vini_dir/ligands/ligands_list > tmp
-                mv tmp $vini_dir/ligands/ligands_list
+                echo "$drug will be not analysed."
             fi
         fi
-        let "lineno++"
+    else
+        echo $line >> $vini_dir/ligands/ligands_list.tmp
     fi
-done < $vini_dir/ligands/ligands_list
+done
+
+mv $vini_dir/ligands/ligands_list.tmp $vini_dir/ligands/ligands_list
 echo "done."
-rm -f tmp.csv tmp search
+rm -f tmp

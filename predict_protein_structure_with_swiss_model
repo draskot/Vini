@@ -2,7 +2,7 @@
 #input params: fasta_file, output folder where predicted pdb file is placed 
 #output: $vini_dir/genes/pdb_files/${uniprot_id}.pdb
 
-echo "Activating conda, please wait."
+echo -n "Activating conda, please wait..."
 source $INSTALL/miniconda3/bin/activate
 conda activate env310
 echo "done."
@@ -10,31 +10,95 @@ echo "done."
 uname=`cat $WORKDIR/SWISS-MODEL_email`
 pwd=`cat $WORKDIR/SWISS-MODEL_password`
 fasta_file=`cat fasta_file`
-
-uniprot_id=`basename ${fasta_file} .fasta`
-project_id=${uniprot_id}
 outdir=`cat outdir`
 
-sed '1d' ${fasta_file} > ${uniprot_id}.fasta
-tr -d '\n' < ${uniprot_id}.fasta > tmp
-cat tmp | awk '{ gsub(/ /,""); print }' > ${uniprot_id}.fasta
-fasta_sequence=`cat ${uniprot_id}.fasta`
+uniprot_id=`basename ${fasta_file} .fasta`
 
-coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
+coreapi get https://swissmodel.expasy.org/coreapi/ > tmp                         #authorize
 coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
- 
 token=`grep token tmp | awk '{print $2}'`
 echo $token | sed 's/^.//'  > tmp
 token=`cat tmp`
-echo "coreapi credentials add swissmodel.expasy.org  \"Token" $token > tom
-sh tom
+echo "coreapi credentials add swissmodel.expasy.org  \"Token" $token > tmp
+sh tmp
 
-echo "coreapi action automodel create -p target_sequences="$fasta_sequence "-p project_title="${project_id} > tom
-sh tom > tmp
+>tmp
+grep heavy ${fasta_file} > tmp
+grep Heavy ${fasta_file} >> tmp
+grep "variable fragment" ${fasta_file} >> tmp
 
-project_id=`grep project_id tmp | awk '{print $2}'`
+if [ -s tmp ] ; then                                                       #select mAb drug or KEGG protein
+    type=mAb
+else
+    type=protein 
+fi
+
+
+if [ $type == protein ]
+then                                                                       #delete 1st line
+    sed '1d' ${fasta_file} > ${uniprot_id}.fasta                            
+    tr -d '\n' < ${uniprot_id}.fasta > tmp
+    cat tmp | awk '{ gsub(/ /,""); print }' > ${uniprot_id}.fasta
+    fasta_sequence=`cat ${uniprot_id}.fasta`
+else
+    >tmp                                                                   #select lines with fasta sequences
+    while read -r line
+    do  
+        if [[ "$line" == *[[:lower:]]* ]]
+        then
+            echo  >> tmp && echo >> tmp 
+        else
+            echo -n $line >> tmp
+        fi
+    done < ${fasta_file}
+
+    >tmp2                                                                  #format sequences
+    nolines=`wc -l < tmp` && let nolines++
+    for (( I=1; I<$((nolines+1)); I++ ))
+    do
+        line=`head -"$I" tmp | tail -1`
+        if  [ ! -z "$line" ]
+        then
+            #echo "\"$line\"," >> tmp2
+            echo "$line " >> tmp2
+        fi
+    done
+
+    a=''                                                                  #concate sequences
+    nolines=`wc -l < tmp2` && let nolines++
+    for (( I=1; I<$((nolines+1)); I++ ))
+    do
+        line=`head -"$I" tmp2 | tail -1`
+        a="$a""$line"
+    done
+
+    echo $a > tmp                                                         #delete first and two last characters
+    tail -c +2 tmp > tmp2 && sed -i '$ s/.$//' tmp2 && sed -i '$ s/.$//' tmp2 
+    fasta_sequence=`cat tmp2`
+fi
+
+
+#project_title=Bevacizumab
+#fasta_sequence=(
+#"DIQMTQSPSSLSASVGDRVTITCSASQDISNYLNWYQQKPGKAPKVLIYFTSSLHSGVPSRFSGSGSGTDFTLTISSLQPEDFATYYCQQYSTVPWTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVCLLNNFYPREAKVQWKVDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYACEVTHQGLSSPVTKSFNRGEC"
+#"."
+#"EVQLVESGGGLVQPGGSLRLSCAASGYTFTNYGMNWVRQAPGKGLEWVGWINTYTGEPTYAADFKRRFTFSLDTSKSTAYLQMNSLRAEDTAVYYCAKYPHYYGSSHWYFDVWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKVEPKSCDKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK"
+#)
+
+#echo $fasta_sequence
+
+project_title=${uniprot_id}
+fasta_sequence=`echo ${fasta_sequence[@]} | tr -d ' '`
+echo "coreapi action automodel create -p target_sequences="${fasta_sequence} "-p project_title="${project_title} > automodel #create model
+
+
+sh automodel > tmp
+
+
+project_id=`grep project_id tmp | awk '{print $2}'`                              #get project ID
 echo $project_id | sed 's/.$//' > project_id
 project_id=`cat project_id | sed 's/^.//;s/.$//'`
+
 
 while true
 do
@@ -48,6 +112,7 @@ do
 done
 rm tmp2
 
+
 grep model_id tmp > tmp2
 model_id=`head -1 tmp2 | awk '{print $2}'`
 echo $model_id | sed 's/.$//' > tmp
@@ -56,6 +121,7 @@ model_id=`cat tmp | sed 's/^.//;s/.$//'`
 echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tmp
 
 sh tmp > ${outdir}/${uniprot_id}.pdb
+cat ${outdir}/${uniprot_id}.pdb
 
 rm tmp tom project_id ${uniprot_id}.fasta
 

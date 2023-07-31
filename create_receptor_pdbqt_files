@@ -1,7 +1,7 @@
 
 cancer_type=`cat $WORKDIR/cancer_type`
-job_status=`cat $WORKDIR/job_status`
-job_submit=`cat $WORKDIR/job_submit`
+job_status=`cat job_status`
+job_submit=`cat job_submit`
 max_jobs=`cat $WORKDIR/max_jobs`
 partition=`cat $WORKDIR/cpu_partition`
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`

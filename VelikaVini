@@ -2,10 +2,9 @@ HSA=hsa
 ORGANISM=`cat $WORKDIR/ORGANISM`
 partition=`cat $WORKDIR/cpu_partition`
 cores=`cat $WORKDIR/${partition}_cores`
-job_submit=`cat $WORKDIR/job_submit`
+job_submit=`cat job_submit`
 cosmic=`cat $WORKDIR/cosmic`
 kit=`cat $WORKDIR/kit`
-prediction_model=`cat $WORKDIR/prediction_model`
 max_therapy_level=`cat $WORKDIR/max_therapy_level`
 compute_cell_line=`cat $WORKDIR/compute_cell_line`
 NCI60=`cat $WORKDIR/validate_NCI-60_data`
@@ -15,6 +14,9 @@ FALSE=0
 ONES=1
 
 > $WORKDIR/missing_genes
+> $WORKDIR/failed_predictions
+
+rm -f $vini_dir/genes/cosmic_ids.csv
 
 if  [ $compute_cell_line -eq $TRUE ]
 then
@@ -25,11 +27,14 @@ data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
 
 cancer_type=`cat $WORKDIR/cancer_type`          #getting cancer type from the preproc script
+mkdir -p $WORKDIR/${cancer_type}_data           #folder with an intermediate data
 grep $cancer_type $vini_dir/database/cross_references > tmp
 line=`cat tmp`
 tissue=`echo $line | awk '{print $2}'`
 CANCER_PATHWAY=$ORGANISM$cancer_type
 mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
+
+
 sh download_KEGG_pathway
 
 echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
@@ -37,28 +42,8 @@ start_date=`date`
 echo "Analysis started at ${start_date} "
 rm -f $WORKDIR/END
 
-#sh $vini_dir/prepare_ligands
-#sh $vini_dir/prepare_ligands_with_meeko
-
-sh $vini_dir/predict_mab_drug_structures
-if  [ -e error ]
-then
-    exit
-fi
-
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
 sh $vini_dir/create_receptor_structures
-echo "Waiting for prediction jobs to finish. This may take a while."
-sh $vini_dir/wait_until_jobs_finish
-sh $vini_dir/check_predicted_structures
-if  [[ -s $WORKDIR/failed_drug_predicted_structures ]] || [[ -s $WORKDIR/failed_gene_predicted_structures ]]
-then
-    echo "Following structure(s) were not predicted:"
-    cat $WORKDIR/failed_drug_predicted_structures
-    cat $WORKDIR/failed_gene_predicted_structures
-    echo "You may try to use Swiss-Model instead."
-    echo "Exiting." ; exit
-fi
 
 if  [ -s $WORKDIR/missing_genes ]
 then
@@ -72,18 +57,19 @@ if  [ -s $WORKDIR/failed_pubchem_structures ]
 then
     echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
     cat $WORKDIR/failed_pubchem_structures              
-    echo "You may try convert them with Cactus server: https://cactus.nci.nih.gov/translate/"
+    echo "You may try to convert them with Cactus server: https://cactus.nci.nih.gov/translate/"
     echo "Then upload these strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
     echo "Exiting." ; exit
 fi
 
-if  [[ -s $WORKDIR/missing_genes ]] || [[ -s $WORKDIR/failed_pubchem_structures ]] 
-then
-    echo " Exiting." ; exit
-fi
-      
 rm -f $vini_dir/genes/cosmic_ids.csv
 rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* 
+
+echo "Waiting for AlphaFold jobs to finish. This may take a while."
+sh $vini_dir/predict_protein_drug_structures
+sh $vini_dir/wait_until_jobs_finish
+ 
+
 
 if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
 then
@@ -116,39 +102,46 @@ then
     sh add_expressions_to_relations
 else
     echo "cell line is ${cell_line} "
-    cp $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
+
+    cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
     echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
     rm -f $vini_dir/genes/cosmic_ids.csv
     echo -n "Activating miniconda3 environment..."
     source $INSTALL/miniconda3/bin/activate
     conda activate env310
+    
+    rm -f $vini_dir/genes/cosmic_ids.csv    
+
+    echo -n "Calculating gene expressions, please wait..."
+    python calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
     echo "done."
-    python3 calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
-    echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic. Please wait."
-    rm -f $vini_dir/genes/cosmic_ids.csv
-    python3 get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c $cell_line
+
+    cp $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/cosmic_ids.csv.orig
+
+
+    echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
+    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c ${cell_line}
     
     if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
     then
-        echo "failed to download mutations from Cosmic! Vini will stop now." exit
-    else
-        echo "success."
-    fi
+        echo "Failed to get mutations for ${cell_line} cell line! Exiting" ; exit
+    fi    
 
-    echo -n "Generating  mutated fasta sequences for ${cell_line} cell line. Please wait."
-
-    python3 generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+    echo -n "Generating  mutated fasta sequences for ${cell_line} cell line, please wait..."
+    python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
     conda deactivate
-        
+    echo "done."
+
     ls $vini_dir/genes/sequences > tmp
     if  [ ! -s tmp ]
     then
         echo "failed to get any sequence." ; exit
     fi
 
+    rm -f $WORKDIR/*err $WORKDIR/*out    
     if  [ $cosmic == y ]
     then
-        sh predict_mutated_proteins
+        sh $vini_dir/predict_mutated_genes
     fi
 
 
@@ -177,15 +170,58 @@ then
     done < $vini_dir/database/genes/custom_genes
 fi
 
-sh copy_genes_to_stage              #Copy pdb receptor files to the stage
-drugtype=`cat $WORKDIR/drugtype`
-if [ $drugtype == small ] ; then #create receptor pdbqt files
-   echo "Preparing pdbqt files for Vina docking. Please wait, may take a while."
-   sh $vini_dir/create_receptor_pdbqt_files
-fi
+echo -n "Performing cleanup..."
+while read -r line
+do
+    drug=`echo $line | awk -F',' '{print $1}'`
+    type=`echo $line | awk -F',' '{print $2}'`
+    if  [ $type == P ]
+    then
+        echo -n "."
+        rm -f $WORKDIR/AlphaFold_${drug}
+        rm -f $WORKDIR/${drug}.err $WORKDIR/${drug}.out
+        rm -rf $WORKDIR/${drug}
+    fi
+done < $vini_dir/ligands/ligands_list
 
-complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
-echo $complexes > $WORKDIR/complexes
+while read -r line
+do
+    receptor=`echo $line | awk '{print $3}'`
+    state=`echo $line | awk '{print $5}'`
+    if  [ $state == W ]
+    then
+        echo -n "."
+        rm -f $WORKDIR/AlphaFold_${receptor}
+        rm -f $WORKDIR/${receptor}.err $WORKDIR/${receptor}.out
+        rm -rf $WORKDIR/${receptor}
+    fi
+done < $WORKDIR/receptors_contracted ; echo "done."
+
+j=1
+while  read -r line                                #Copy pdb receptor files to the stage
+do
+       printf -v i "%03d" $j
+       gene=`echo $line | awk '{print $3}'` #get entry name
+       cp $vini_dir/genes/pdb_files/${gene}.pdb $WORKDIR/${cancer_type}_data/complex_${i}.pdb
+       let j++
+done < $WORKDIR/receptors_contracted
+
+i=1
+while  read -r line                                               #Copy ligand files to the stage
+do
+    drug=`echo $line | awk -F',' '{print $1}'`
+    type=`echo $line | awk -F',' '{print $2}'`
+    printf -v lig_index "%03d" $i
+    echo "copying "${drug}" structure to the stagging area."
+    cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+    if  [ $type == S ]
+    then
+        obabel $vini_dir/ligands/pdb_files/"${drug}".pdb -opdbqt -O $WORKDIR/ligands/ligand_${lig_index}.pdbqt -p 7.4 -xr --partialcharge gasteiger
+    fi
+
+    let i++
+done < $vini_dir/ligands/ligands_list
+
 
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
@@ -202,7 +238,7 @@ then
     fi
 fi
 
-cp $vini_dir/ligands/ligands_list.sav $vini_dir/ligands/ligands_list #returning the original list of drugs
+cp $vini_dir/ligands/ligands_list.orig $vini_dir/ligands/ligands_list #returning the original list of drugs
 
 end_date=`date`
 echo "Analysis completed at"  $end_date

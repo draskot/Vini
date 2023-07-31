@@ -1,14 +1,11 @@
+. $HOME/spack/share/spack/setup-env.sh
+spack load scons
 #************General section**********
 export vini_dir=/ceph/hpc/home/eudraskot/Vini
 export SLURMACCT=r2022r03-224-users
-export WORKDIR=/exa5/scratch/user/eudraskot
+export WORKDIR=/ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR
 export SHARED=/ceph/hpc/data/r2022r03-224-users
 export INSTALL=/ceph/hpc/data/r2022r03-224-users/eudraskot
-#************miniconda2 section**********
-#***miniconda3 section***
-#***meeko section***
-#***rdkit section***
-#***coreapi***
 #******UCSF Chimera section******
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/chimera-1.16-linux_x86_64/bin:$PATH
 #***mgltools_x86_64Linux2_1.5.7 section***
@@ -17,18 +14,26 @@ export MGLUTILS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux
 export MGLBIN=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin
 export MGL=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin:$PATH
-#***** Vina section******
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot:$PATH
 #***ADFRsuite 1.0 section***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ADFRsuite_x86_64Linux_1.0/bin:$PATH
 #***database section***
-#***Blast***
+#***Blast section***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:$PATH
 #******* Rosetta section *******
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main/source/bin:$PATH
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_bin_linux_2021.16.61629_bundle/main/database:$PATH
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-340/main/source/bin:$PATH
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-340/main/database:$PATH
+export ROSETTA_PUB=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-340/main/source/src/apps/public/relax_w_allatom_cst
+export ROSETTA_TOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-340/main/tools/protein_tools/scripts
 #*****NAMD section******
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs:$PATH
 #*****VMD section******
 module load VMD/1.9.4a57-foss2020b
-module load AlphaFold/2.1.2-foss-2021a
+#***** Vina section******
+#*****AlphaFold section******
+module --ignore-cache load AlphaFold/2.2.2-foss-2021a-CUDA-11.3.1
+ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR
+#*****OpenBabel section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/openbabel-3.1.1/bin:$PATH
+module load Boost/1.76.0-GCC-10.3.0
+#***miniconda3 section***
+#************miniconda2 section**********

@@ -40,8 +40,6 @@ do
                 echo "coreapi action automodel create -p target_sequences="$fasta_sequence "-p project_title="${project_id} > tom
                 sh tom > tmp
 
-                echo "brakepoint! " ; sleep 10000000
-
                 project_id=`grep project_id tmp | awk '{print $2}'`
                 echo $project_id | sed 's/.$//' > project_id
                 project_id=`cat project_id | sed 's/^.//;s/.$//'`
