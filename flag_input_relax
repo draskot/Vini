@@ -1,0 +1,18 @@
+-nstruct 2
+
+-relax:constrain_relax_to_start_coords
+-relax:ramp_constraints false
+
+-in:ignore_unrecognized_res
+-in:file:centroid
+-ex1
+-ex2
+
+-use_input_sc
+-flip_HNQ
+-no_optH false
+
+
+-out:path:pdb
+-out:path:score
+-out:overwrite

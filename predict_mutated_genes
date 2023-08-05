@@ -1,0 +1,65 @@
+#Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
+
+partition=`cat  $WORKDIR/active_partition`      #Define AlphaFold parameters
+cpus=`cat $WORKDIR/${partition}_cores`
+mem=`cat $WORKDIR/${partition}_memsize`
+base=`cat $WORKDIR/AlphaFold_base`
+outdir=$vini_dir/genes/pdb_files
+
+cell_line=`cat $WORKDIR/cell_line`
+SEQDIR=$vini_dir/genes/sequences/
+
+rm -f $vini_dir/genes/sequences/*csv                               #DNA --> protein sequence translation
+echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..."
+> $WORKDIR/mutated #create file with mutated gene names
+> $WORKDIR/wild    
+ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
+while read -r line              #DNA --> protein sequence translation
+do
+    uniprot_id=`basename ${line} .fasta`
+    echo ${uniprot_id} >> $WORKDIR/wild
+    uniprot_id=${uniprot_id//_mutated/}
+    mutated_gene_name=${uniprot_id}-${cell_line}
+    echo ${mutated_gene_name} >> $WORKDIR/mutated
+    dnaseq=`cat $line`
+    wget -O $SEQDIR${uniprot_id}_mutated.frame --post-data="dna_sequence=${dnaseq}&output_format=fasta" -q  https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
+    echo -n "."
+done < $WORKDIR/tmp
+echo "done."
+
+rm -f ./genes/sequences/*fasta
+
+
+echo -n "Activating miniconda3 environment..."   #Finding longest ORFs (Open Reading Frames)
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
+python find_longest_frame.py --input-dir $SEQDIR 
+conda deactivate
+rm -f ./genes/sequences/*frame
+
+
+while read -r line               #truncate sequences to 80 chars per line / add header
+do
+    filename=`echo ${line}.fasta`
+    uniprot_id=`echo $line | sed 's/_mutated//'`
+    genename=`grep ${uniprot_id} ${vini_dir}/genes/cosmic_ids.csv.orig | awk -F','  '{print $2}'`   #prepare header
+    echo $genename > $WORKDIR/genename  #remove ^M
+    sed -i -e "s/\r//g" $WORKDIR/genename
+    genename=`cat $WORKDIR/genename`
+    echo ">sp|${uniprot_id}|mutated gene ${genename} OS=Homo sapiens OX=9606 GN=${genename} PE=1 SV=4" > $WORKDIR/tmp
+    fold -s -w 80 $vini_dir/genes/sequences/$filename >> $WORKDIR/tmp
+    sed -i -e "s/-//g" $WORKDIR/tmp          #remove hyphen if exists
+    mv $WORKDIR/tmp $vini_dir/genes/fasta_files/${uniprot_id}.fasta
+    if  [ ! -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]
+    then
+        echo "Predicting the structure of mutated ${uniprot_id} with AlphaFold."
+        fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
+        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+    fi
+done < $WORKDIR/wild
+
+sh $vini_dir/wait_until_jobs_finish #wait and then copy gene structures if predicted with AlphaFold
+
+rm -f $WORKDIR/mutated $WORKDIR/tmp    #cleanup
+

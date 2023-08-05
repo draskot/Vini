@@ -1,0 +1,99 @@
+partition=$1
+walltime=$2
+
+scheduler=`cat $WORKDIR/scheduler`
+job_submit=`cat job_submit`
+job_cancel=`cat job_cancel`
+percentage=90
+NULL=0
+partition=`cat $WORKDIR/${partition}_partition`
+excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+rm -f $WORKDIR/cores.out
+rm -f $WORKDIR/memory.out tmp2
+
+echo "Trying to determine the number of CPU cores and memory size per ${partition} node. May last up to $walltime seconds, wait."
+echo "#! /bin/bash"                           > $WORKDIR/get_number_cores
+echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_cores
+echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_number_cores
+echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_cores
+echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_cores
+echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_number_cores
+echo "#SBATCH --exclude=$excluded_nodes"     >> $WORKDIR/get_number_cores
+if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+then
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_number_cores
+fi
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_cores
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_cores
+echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_cores
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_cores
+echo "lscpu"                                 >> $WORKDIR/get_number_cores
+chmod u+x                                       $WORKDIR/get_number_cores
+
+echo "#! /bin/bash"                           > $WORKDIR/get_memsize
+echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_memsize
+echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_memsize
+echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_memsize
+echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_memsize
+echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_memsize
+echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_memsize
+if  [ ${partition} == gpu ] ; then
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
+fi
+if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+then
+    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
+fi
+echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_memsize
+echo "#SBATCH --partition="$partition        >> $WORKDIR/get_memsize
+echo "#SBATCH --exclude=${excluded_nodes}"   >> $WORKDIR/get_memsize
+echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_memsize
+echo "free -h"                               >> $WORKDIR/get_memsize
+chmod u+x                                       $WORKDIR/get_memsize
+
+$job_submit -Q $WORKDIR/get_number_cores
+$job_submit -Q $WORKDIR/get_memsize
+sh $vini_dir/wait_until_jobs_finish
+
+if [ -e $WORKDIR/cores.out ]
+then
+    grep "CPU(s)" $WORKDIR/cores.out > tmp ; CPUs=`head -1 tmp` ; CPUs=`echo $CPUs | awk '{print $2}'`
+    grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
+    cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
+    echo "Found $cores CPU cores per ${partition} node."
+    echo $cores > $WORKDIR/${partition}_cores
+else
+    ${job_cancel} -u $USER ; echo
+    echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
+    read -p "Write the number of CPU cores per ${partition} node here:" cores
+    echo $cores > $WORKDIR/${partition}_cores
+fi
+
+if [ -e $WORKDIR/memory.out ]
+then
+    line=`head -2  $WORKDIR/memory.out | tail -1`
+    memsize=`echo $line | awk '{print $2}'`
+    suffix=gb
+    factor=1024
+    echo $memsize > tmp
+    memsize=$(tr -dc '0-9' <<< $memsize) #deleting non-numeric chars
+    grep G tmp > tmp2                    #now check what we have (GB or TB)
+    nochars=`wc -l < tmp2`
+    if [ $nochars -ne $NULL ]
+    then                                 #we have Gigabytes
+        memsize=$(( memsize*${percentage}/100 ))
+        memsize=${memsize}${suffix}
+    else                                 #we have Terabytes. Multiply with 1024
+        memsize=`echo ${memsize} $factor | awk '{print $1 * $2}'`
+        memsize=$(( memsize*${percentage}/100 ))
+        memsize=${memsize}${suffix}
+    fi
+    echo "Found $memsize available memory per ${partition} node."
+    echo $memsize > $WORKDIR/${partition}_memsize
+else
+    ${job_cancel} -u $USER ; echo
+    echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
+    echo "You may consider at least 90% of the total installed memory as available."
+    read -p "Write the available memory size (in GB) per ${partition} node here:" memsize
+    echo $memsize > $WORKDIR/${partition}_memsize
+fi

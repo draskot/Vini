@@ -1,0 +1,50 @@
+module purge
+
+cell_line=`cat $WORKDIR/cell_line`
+echo -n "Activating miniconda3 environment..."
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+
+#getting cell line expression file from COSMIC via API does not work, we are downloading it manually
+cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions
+
+echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs & calculating their average Z-score expressions..."
+rm -f $vini_dir/genes/cosmic_ids.csv
+
+echo -n "Calculating gene expressions..."
+python calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
+echo "done."
+
+cp $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/cosmic_ids.csv.orig
+
+
+echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
+python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c ${cell_line}
+if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
+then
+    echo "Error while getting mutations for the ${cell_line}. Exiting." >> Vini.crashlog
+    echo ""                                                             >> Vini.crashlog
+    $job_cancel -u $USER
+    masterpid=`cat masterpid`
+    kill -P $masterpid
+    kill -9 $masterpid
+else
+    echo "done."
+fi
+
+echo -n "Generating  mutated fasta sequences for ${cell_line} cell line, please wait..."
+python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
+ls $vini_dir/genes/sequences > tmp
+if  [ ! -s tmp ]
+then
+    echo "Error while getting sequences for the ${cell_line}. Exiting." >> Vini.crashlog
+    echo ""                                                             >> Vini.crashlog
+    $job_cancel -u $USER
+    masterpid=`cat masterpid`
+    kill -P $masterpid
+    kill -9 $masterpid
+else
+    echo "done."
+fi
+
+conda deactivate

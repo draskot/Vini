@@ -101,42 +101,11 @@ then
     sh add_expressions_to_receptors
     sh add_expressions_to_relations
 else
-    echo "cell line is ${cell_line} "
+    #cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
+    #echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs & calculating their average Z-score expressions..."
+    #rm -f $vini_dir/genes/cosmic_ids.csv
 
-    cp $vini_dir/database/NCI-60_cell_lines/${cell_line}/expressions/${cell_line}.csv $vini_dir/genes/expressions #getting cell line expression file from COSMIC via API does not work, we are downloading it manually
-    echo "Converting Uniprot IDs for ${cell_line} cell line to Cosmic gene IDs and calculating their average Z-score expressions..."
-    rm -f $vini_dir/genes/cosmic_ids.csv
-    echo -n "Activating miniconda3 environment..."
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    
-    rm -f $vini_dir/genes/cosmic_ids.csv    
-
-    echo -n "Calculating gene expressions, please wait..."
-    python calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${cell_line}
-    echo "done."
-
-    cp $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/cosmic_ids.csv.orig
-
-
-    echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
-    python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c ${cell_line}
-    
-    if  [ ! -e $vini_dir/genes/mutations/${cell_line}_mutations.csv ]
-    then
-        echo "Failed to get mutations for ${cell_line} cell line! Exiting" ; exit
-    fi    
-
-    echo -n "Generating  mutated fasta sequences for ${cell_line} cell line, please wait..."
-    python generateMutatedFASTAseqCellLine.py -g ./genes/Uniprot_ID_list
-    conda deactivate
-    echo "done."
-
-    ls $vini_dir/genes/sequences > tmp
-    if  [ ! -s tmp ]
-    then
-        echo "failed to get any sequence." ; exit
-    fi
+    sh $vini_dir/download_Cosmic_data
 
     rm -f $WORKDIR/*err $WORKDIR/*out    
     if  [ $cosmic == y ]
@@ -144,6 +113,7 @@ else
         sh $vini_dir/predict_mutated_genes
     fi
 
+    echo "brakepoint!" ; sleep 1000
 
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors

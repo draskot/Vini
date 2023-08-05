@@ -1,0 +1,68 @@
+NULL=0
+
+nolines=`wc -l < $vini_dir/ligands/ligands_list`
+
+> $vini_dir/ligands/ligands_list.tmp
+N=`wc -l < $vini_dir/ligands/ligands_list`
+for (( i=1; i<(N+1); i++ ))
+do
+    line=`head -$i $vini_dir/ligands/ligands_list | tail -1`
+    type=`echo $line | awk -F','  '{print $2}'`
+    if  [ $type == S ]
+    then
+        drug=`echo $line | awk -F','  '{print $1}'`
+        if [ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]
+        then
+            code=`echo $line | awk -F','  '{print $3}'`
+            if [ $code != NA ]
+            then
+                echo https://files.rcsb.org/ligands/view/${code}_ideal.sdf | tr -d '[:blank:]' > tmp ; link=`cat tmp`
+                wget -q -O $vini_dir/ligands/sdf_files/${drug}.sdf $link
+                echo "Converting ${drug}.sdf to ${drug}.pdb and adding hydrogens..."
+                obabel -isdf $vini_dir/ligands/sdf_files/"${drug}".sdf -opdb -O $vini_dir/ligands/pdb_files/"${drug}".pdb -h
+            else
+                echo "GREP \""$drug"\" $vini_dir/drug?links.csv" > search
+                sed -i -e "s/GREP/grep/g" search
+                chmod u+x search
+                ./search > tmp
+                nolines=`wc -l < tmp`
+                if  [ $nolines -gt $NULL ]
+                then
+                    line=`head -1 tmp`
+                    DBID=`echo $line | awk -F',' '{print $1}'`
+                    wget  -q -O $vini_dir/ligands/sdf_files/"${drug}".sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
+
+                    if  [ -s $vini_dir/ligands/sdf_files/"${drug}".sdf ]
+                    then
+                        echo "Converting ${drug}.sdf to ${drug}.pdb and adding hydrogens..."
+                        obabel -isdf $vini_dir/ligands/sdf_files/"${drug}".sdf -opdb -O $vini_dir/ligands/pdb_files/"${drug}".pdb -h
+                    else
+                        echo "No $drug 3D structure found! You have to create it manually."
+                        rm -f $vini_dir/ligands/sdf_files/"${drug}".sdf                                   #no 3D structure found
+                        wget -q -O $vini_dir/ligands/sme_files/${drug}.smiles https://go.drugbank.com/structures/small_molecule_drugs/${DBID}.smiles #download smiles
+                        echo "$drug smiles downloaded and are in $vini_dir/ligands/sme_files/$drug.smiles file."
+                        echo "Use one of the online smiles translators (e.g https://cactus.nci.nih.gov/translate/ or https://novoprolabs.com/tools/smiles2pdb to generate 3D ${drug}.pdb file."
+                        read -p "Put this file in $vini_dir/ligands/pdb_files/folder and press any key to cont." anykey
+                        
+                        obabel -ipdb $vini_dir/ligands/pdb_files/${drug}.pdb -osdf -O $vini_dir/ligands/sdf_files/${drug}.sdf -h
+                    fi
+                else
+                        echo "No $drug 3D structure found!"
+                        echo "Step 1: Copy smiles from $vini_dir/ligands/sme_files/$drug.smiles file to https://cactus.nci.nih.gov/translate/ (Input Format)"
+                        echo "Step 2: Select <PDB> and <3D> (Output Format)."
+                        echo "Step 3: Press <Translate>. This will generate 3D pdb file."
+                        echo "Step 4: Copy it to $vini_dir/ligands/pdb_files/$drug.pdb."
+                        wget -q -P $vini_dir/ligands/sme_files https://go.drugbank.com/structures/small_molecule_drugs/${DBID}.smiles #download smiles
+                        mv $vini_dir/ligands/sme_files/${DBID}.smiles $vini_dir/ligands/sme_files/${drug}.smiles
+                        read -p "Step 5: Press anykey to continue." any
+                        obabel -ipdb $vini_dir/ligands/pdb_files/"${drug}".pdb -osdf -O $vini_dir/ligands/sdf_files/"${drug}".sdf -h  #generate sdf file for meeko
+                fi
+            fi
+        else
+            echo "${drug} 3D structure found in repo, continuing..."
+        fi
+    else
+        echo "$drug is not a small molecule, continuing."
+    fi
+done
+rm -f *smiles*
