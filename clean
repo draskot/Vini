@@ -2,14 +2,14 @@
 rm -f temp_buf max_jobs job_submit job_status Vina sum SLEM_values GI50_avg
 
 cd $WORKDIR
-rm -f ligand* complexes ligands max_jobs recepto* workload* job_submit job_status relations computed*
+#rm -f ligand* complexes ligands max_jobs recepto* workload* job_submit job_status relations computed*
 rm -f therapy_level cancer_type complex_* cores nodes cell_line NCI-60_GI50_values
 rm -f amber FBE.log NCI60_cell_line ORGANISM therapy_level *pdb *pdbqt validate_NCI-60_data
 rm -f mutated
 rm -f *out *err
 rm -f postproc  ligand_???.pdbqt complex_???.jo*
 rm -f ligands_list word temp_buf AD4_parameters.dat END receptors receptors_expanded
-rm -f ligands target_dir stats prediction_list max_jobs
+#rm -f ligands target_dir stats prediction_list max_jobs
 rm -f swiss_repo_entry *.pdb
 rm -f  nodes tmp success Vina_run
 rm -f Vina.out stop accession_codes amber Chimera_failed_list clean_structures completeness_list

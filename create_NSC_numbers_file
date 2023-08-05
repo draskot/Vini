@@ -60,7 +60,8 @@ if [ ! -e GI50.csv ]
 then
     echo -n "Downloading GI50.zip, please wait."
     wget -O GI50.zip https://wiki.nci.nih.gov/download/attachments/147193864/GI50.zip?version=5
-    unzip GI50.zip
+    unzip -o GI50.zip
+    rm GI50.zip
 fi
 
 echo -n "Creating NSC_numbers file..."

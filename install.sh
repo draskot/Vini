@@ -9,7 +9,7 @@ then
     read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
     read -p "Please enter path for your scratch data on the high-performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/d2203-0100-users/$USER):" INSTALL
+    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/r2022r03-224-users/$USER):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
@@ -169,11 +169,11 @@ nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
-    rm -f $INSTALL/vina
-    wget -O $INSTALL/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-    chmod u+x $INSTALL/vina
+    mkdir -p $INSTALL/Vina
+    wget -P $INSTALL/Vina/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
+    chmod u+x $INSTALL/Vina/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/Vina:\$PATH" >> $vini_dir/sourceme
 else
     echo "yes."
 fi
@@ -268,18 +268,22 @@ then
         source $vini_dir/sourceme
     else
         echo "no. Installing local Blast, please wait."
-        rm -f $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
-        rm -rf $INSTALL/ncbi-blast-2.13.0+-src
-        wget -P $INSTALL https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.13.0+-src.tar.gz
-        tar -xzf $INSTALL/ncbi-blast-2.13.0+-src.tar.gz -C $INSTALL
-        cd $INSTALL/ncbi-blast-2.13.0+-src/c++
+        module purge
+        wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/   #get the latest blast+ version
+        blast=`sed -e 's/<[^>]*>//g' index.html | grep src.tar.gz | grep -v md5 | awk '{print $1}' | rev | cut -c8- | rev`
+        rm -f $INSTALL/${blast}.tar.gz
+        rm -rf $INSTALL/${blast}
+        link=https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/${blast}.tar.gz
+        wget -P $INSTALL $link
+        tar -xzf $INSTALL/${blast}.tar.gz -C $INSTALL
+        cd $INSTALL/${blast}/c++
         ./configure
         cd ReleaseMT/build
-        make all_r
+        make -j 24 all_r
         echo "#***Blast section***" >> $vini_dir/sourceme
-        echo "export PATH=$INSTALL/ncbi-blast-2.13.0+-src/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
+        echo "export PATH=$INSTALL/${blast}/c++/ReleaseMT/bin:\$PATH" >> $vini_dir/sourceme
         source $vini_dir/sourceme
-        rm $INSTALL/ncbi-blast-2.13.0+-src.tar.gz
+        rm $INSTALL/${blast}.tar.gz index.html
     fi
 else
     echo "yes."
@@ -300,40 +304,6 @@ then
         read -p "Select the Rosetta module:" rosetta
         echo "module load" $rosetta >> $vini_dir/sourceme
         source $vini_dir/sourceme
-        which docking_protocol.static.linuxgccrelease &> tmp #search for Rosetta docking commands and Rosetta bin directory
-        grep "no docking_protocol" tmp > tmp2
-        if  [ -s tmp2 ]
-        then
-            which docking_protocol.default.linuxgccrelease &> tmp
-            grep "no docking_protocol" tmp > tmp2
-            if  [ -s tmp2 ]
-            then
-                which  docking_protocol.mpi.linuxgccrelease 2> tmp
-                grep "no docking_protocol" tmp > tmp2
-                if  [ -s tmp2 ]
-                then
-                    echo "no Rosetta docking protocol found. Check Rosetta module for errors. Exiting."
-                    file=$vini_dir/sourceme
-                    tail -n 1 "$file" | wc -c | xargs -I {} truncate "$file" -s -{}
-                    exit
-                else
-                    echo docking_protocol.mpi.linuxgccrelease > $WORKDIR/rosetta_docking_command
-                    echo relax.mpi.linuxgccrelease > $WORKDIR/rosetta_relax_command
-                fi
-            else
-                echo docking_protocol.default.linuxgccrelease > $WORKDIR/rosetta_docking_command
-                echo relax.default.linuxgccrelease > $WORKDIR/rosetta_relax_command
-            fi
-        else
-            echo "docking_protocol.static.linuxgccrelease" > $WORKDIR/rosetta_docking_command
-            echo "" $WORKDIR/rosetta_relax_command
-        fi
-
-        which `cat $WORKDIR/rosetta_docking_command` > tmp
-        dirname `cat tmp` > $WORKDIR/rosetta_bin_directory
-        rosetta_bin=`cat $WORKDIR/rosetta_bin_directory`
-        echo "export PATH=${rosetta_bin}:\$PATH" >> $vini_dir/sourceme
-        rm tmp*
     else
 	echo "no."
         if  [ -e $WORKDIR/Rosetta_username ] && [ -e $WORKDIR/Rosetta_password ]
@@ -351,33 +321,43 @@ then
             echo $Rosetta_password > $WORKDIR/Rosetta_password
             chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
-       fi        
-       if  [ ! -e $INSTALL/rosetta_bin_linux_3.13_bundle.tgz ]
-       then
-           echo -n "Downloading Rosetta binaries, may take a while..." 
-           wget -O $INSTALL/rosetta_bin_linux_3.13_bundle.tgz --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/2023/wk6/rosetta.source.release-340.tar.bz2
-           echo "done."
-       fi
-       echo "Unpacking Rosetta source. May take several minutes to finish, do not interrupt."
-       tar -xf $INSTALL/https://www.rosettacommons.org/downloads/academic/2023/wk6/rosetta.source.release-340.tar.bz2 --checkpoint=.4000 -C $INSTALL
-       echo "Done"
-       echo -n " Cleaning up installation files..."
-       rm $INSTALL/rosetta.source.release-340.tar.bz2
-       echo "done."
-       . $HOME/spack/share/spack/setup-env.sh
-       spack load scons
-       cd $INSTALL/rosetta.source.release-340/main/source
-       scons -j 20 mode=release bin extras=cxx11thread
+        fi        
+        
+        module purge
 
-       echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-       ROSETTA_BIN=$INSTALL/rosetta.source.release-340/main/source/bin
-       echo "export PATH=${ROSETTA_BIN}:\$PATH" >> $vini_dir/sourceme
-       ROSETTA_DB=$INSTALL/rosetta.source.release-340/main/database
-       echo "export PATH=${ROSETTA_DB}:\$PATH" >> $vini_dir/sourceme
-       echo "export ROSETTA_TOOLS=$INSTALL/rosetta.source.release-340/main/tools/protein_tools/scripts"  >> $vini_dir/sourceme
-       echo "export ROSETTA_PUB=$INSTALL/rosetta.source.release-340/main/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme
+        rosetta_src=`ls $INSTALL | grep rosetta`
+        echo $rosetta_src
+        if  [ ! -z ${rosetta_src+x} ]
+        then
+            echo -n "Performing cleanup. This will take a while, do not interrupt."
+            rm -rf $INSTALL/${rosetta_src}
+        fi
+        read -p "Enter Rosetta version you want to download (e.g. 3.13)" rosetta_version
+        rosetta_bundle=rosetta_src_linux_${rosetta_version}_bundle.tgz
+        read -p "Enter Rosetta download link:" link
+        echo -n "Downloading Rosetta ${rosetta_version} source, do not interrupt." 
+        wget -O $INSTALL/${rosetta_bundle} --user=${Rosetta_username} --password=${Rosetta_password} $link
+        echo "Unpacking Rosetta source. May take several minutes to finish, do not interrupt."
+        tar -xf $INSTALL/${rosetta_bundle} --checkpoint=.4000 -C $INSTALL
+        rm -f $INSTALL/${rosetta_bundle}
+
+  
+        echo "Compiling Rosetta source, may take a while..."
+        . $HOME/spack/share/spack/setup-env.sh
+        spack load scons
+        cd $INSTALL/${rosetta_src}/main/source
+
+        scons -j 24 mode=release bin extras=cxx11thread
+        echo "#******* Rosetta section *******" >> $vini_dir/sourceme
+        ROSETTA_BIN=$INSTALL/${rosetta_src}/main/source/bin
+        ROSETTA_DB=$INSTALL/${rosetta_src}/main/database
+        ROSETTA_TOOLS=$INSTALL/${rosetta_src}/tools/protein_tools/scripts
+        ROSETTA_PUB=$INSTALL/${rosetta_src}/main/source/src/apps/public/relax_w_allatom_cst
+        echo "export PATH=${ROSETTA_BIN}:\$PATH"    >> $vini_dir/sourceme
+        echo "export PATH=${ROSETTA_DB}:\$PATH"     >> $vini_dir/sourceme
+        echo "export PATH=${ROSETTA_TOOLS}:\$PATH"  >> $vini_dir/sourceme
+        echo "export PATH=${ROSETTA_PUB}:\$PATH"    >> $vini_dir/sourceme
     fi
-    echo "nompi" > $WORKDIR/rosetta_version #tell Rosetta not to use MPI
 else
     echo "yes."
 fi

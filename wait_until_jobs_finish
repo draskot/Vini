@@ -1,6 +1,6 @@
 
-job_status=`cat job_status`
-job_cancel=`cat job_cancel`
+job_status=`cat $vini_dir/job_status`
+job_cancel=`cat $vini_dir/job_cancel`
 NULL=0
 
 > all_user_jobs

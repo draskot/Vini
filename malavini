@@ -19,15 +19,13 @@ walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we a
 excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
 complexes=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
-
-
 lig_source=$WORKDIR/ligands
-
 
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
 cd $WORKDIR
 
-case $therapy_level in                  #Initializing main loops
+L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
+case $therapy_level in                  
      1) L4=$ligands ;;
      2) L3=$ligands; L4=$ligands ;;
      3) L2=$ligands; L3=$ligands; L4=$ligands ;;
@@ -39,40 +37,38 @@ dir=$WORKDIR/${cancer_type}_data
 if  [ $state == crash ]
 then
     ligand_number=`grep ligand_number $WORKDIR/restartfile | awk '{print $2}'`
-    I=`grep         I         $WORKDIR/restartfile | awk '{print $2}'`
-    J=`grep         J         $WORKDIR/restartfile | awk '{print $2}'`
-    L=`grep         L         $WORKDIR/restartfile | awk '{print $2}'`
-    M=`grep         M         $WORKDIR/restartfile | awk '{print $2}'`
-    N=$ONES
+    Kappa=`grep          I         $WORKDIR/restartfile | awk '{print $2}'`
+    Lambda=`grep         J         $WORKDIR/restartfile | awk '{print $2}'`
+    Mu=`grep             L         $WORKDIR/restartfile | awk '{print $2}'`
+    Nu=`grep             M         $WORKDIR/restartfile | awk '{print $2}'`
+    Xi=$ONES
     echo "deleting SLEM values after the last checkpoint"
-    MaxSLEMvalues=`echo ${I} ${J} ${L} ${M} ${N} ${ligands} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
-    NoSLEMvalues=`echo ${I} ${J} ${L} ${M} ${N} ${ligand_number} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
+    MaxSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligands} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
+    NoSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligand_number} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
     Delete=`echo $MaxSLEMvalues $NoSLEMvalues $ONES | awk '{print $1 - $2 - $3}'`
     head -$Delete $vini_dir/ligands/ligands_list > $WORKDIR/tmp
     mv $WORKDIR/tmp $WORKDIR/SLEM_values
 else
     ligand_number=1                #initializing ligand index
-    I=$ONES
-    J=$ONES
-    L=$ONES
-    M=$ONES
-    N=$ONES
+    Kappa=$ONES
+    Lambda=$ONES
+    Mu=$ONES
+    Nu=$ONES
+    Xi=$ONES
     > $WORKDIR/SLEM_values    #delete SLEM values from the previous run
 fi
  
 SECONDS=$NULL
 
-echo "brakepoint!" state: $state ; sleep 1000
-
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
-for (( I=$((I)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
+for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
-    for (( J=$((J)); J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
+    for (( J=$((Lambda)); J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
     do
-         for (( L=$((L)); L<$((L3+1)); L++ )) #3rd loop -2nd thl
+         for (( L=$((Mu)); L<$((L3+1)); L++ )) #3rd loop -2nd thl
          do
-             for (( M=$((M)); M<$((L4+1)); M++ )) #4th loop - 1st thl
+             for (( M=$((Nu)); M<$((L4+1)); M++ )) #4th loop - 1st thl
              do
                  printf -v lig_index "%03d" $M  
                  case $therapy_level in
@@ -82,71 +78,99 @@ do
                      4) comp_source=$dir/$M/$L/$J; target_dir=$dir/$M/$L/$J/$I ;;
                  esac
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
-                 for (( N=$((N)); N<$((complexes+1)); N++ )) #5th loop
+                 for (( N=$((Xi)); N<$((complexes+1)); N++ )) #5th loop
        	         do
                      printf -v n "%03d" $N
                      comp_index=$n
                      conf_index=$comp_index
                      log_index=$comp_index
-                     echo "target_dir: $target_dir comp_source: $comp_source comp_index: $comp_index lig_index: $lig_index conf_index: $conf_index log_index $log_index brakepoint!" ; sleep 1000
-                     moltype=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
-                     moltype=`echo $moltype | awk -F','  '{print $2}'`
+                     line=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
+                     drug=`echo $line | awk -F',' '{print $1}'`
+                     moltype=`echo $line | awk -F','  '{print $2}'`
                      mkdir -p $WORKDIR/$comp_index
-                     cd $WORKDIR/$comp_index
+                     cd $WORKDIR/$comp_index   #move to the working area
                      rm -rf *
                      if [ $moltype == S ] #if a small molecule, we are running Vina, else Rosetta docking
                      then
-                         line=`head -$N $WORKDIR/receptors_contracted | tail -1` #do not compute FBE if receptor is with F flag or pdbqt file was not created
-                         flag1=`echo $line | awk '{print $4}'`
-                         flag2=`echo $line | awk '{print $7}'`
-                         if  [[ $flag1 == F ]] || [[ $flag2 == nopdbqt ]]
+                         cp $MGLTOOLS/AD4_parameters.dat ./                     
+                         if  [ ! -e ${comp_source}/complex_${comp_index}.pdbqt ] #get receptor pdbqt file
                          then
-                             affinity=`cat $WORKDIR/random_affinity`
-                             printf "%.2f\n" $affinity > $target_dir/log_$comp_index.txt
+                             $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r $comp_source/complex_$comp_index.pdb -o $comp_source/complex_${comp_index}.pdbqt
                          else
-                             cp $MGLTOOLS/AD4_parameters.dat ./   #Vina section                   
-                             sh $vini_dir/prepare_Vina_complex ${therapy_level} ${comp_source} ${comp_index}
-                             prepare_receptor -r $comp_source/complex_${comp_index}.pdb -o $comp_source/complex_${comp_index}.pdbqt #prepare receptor pdbqt file
-                             cp $WORKDIR/ligand_${lig_index}.pdbqt ./ #get ligand pdbqt file
-                             cp $comp_source/complex_${comp_index}.pdbqt ./ #get receptor pdbqt file
-                             $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt #prepare gpf file for autogrid4
+                             cp ${comp_source}/complex_${comp_index}.pdbqt ./
+                         fi
 
-                             sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source} #create Vina config file                                                    
-                             echo "#!/bin/bash"                                        > Vina
-                             echo "#SBATCH --time="$walltime                          >> Vina
-                             echo "#SBATCH --account=$SLURMACCT"                      >> Vina
-                             echo "#SBATCH --cpus-per-task=4"                         >> Vina
-                             echo "#SBATCH --mem=8gb"                                 >> Vina
-                             echo "#SBATCH --partition="$partition                    >> Vina
-                             echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> Vina
-                             echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> Vina
-                             echo "#SBATCH --exclude=${excluded_nodes}"               >> Vina 
-                             echo "vina --cpu 4 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt" >> Vina
-                             cat $vini_dir/log_Vina_IC_value                          >> Vina
-                             chmod u+x Vina
-                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                             ${job_submit} Vina
-                         fi
-                         cd $WORKDIR
-                     else                                                                         #Rosetta docking
-                         if [ -e $comp_source/complex_${comp_index}.pdbqt ]                       #convert pdbqt to pdb
+                         if [ -e $WORKDIR/ligands/ligand_${lig_index}.pdbqt ]    #get ligand pdbqt file
                          then
-                             obabel $comp_source/complex_${comp_index}.pdbqt -O $comp_source/complex_${comp_index}.pdb
+                             cp $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
+                         else
+                             cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./
+                             ls "${drug}".pdb > tmp
+                             nowords=`wc -w < tmp`
+                             if [ $nowords -eq $ONES ]
+                             then
+                                 $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l "${drug}".pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt
+                                 #cp $drug.pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
+                             else
+                                 mv "${drug}".pdb tmp.pdb        #python does not work with 2-name drug
+                                 $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
+                                 mv tmp.pdbqt  $WORKDIR/ligands/ligand_${lig_index}.pdbqt
+                             fi
                          fi
-                         complex=$comp_source/complex_${comp_index}
-                         cp ${complex}.pdb ./                                                     #get complex
-                         drug=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`   #get drug
-                         drug=`echo $drug | awk -F',' '{print $1}'`
-                         cp $vini_dir/ligands/pdb_files/${drug}.pdb ./
+                         $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt
+                         sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}
+                             echo "#!/bin/bash"                                        > dock
+                             echo "#SBATCH --time="$walltime                          >> dock
+                             echo "#SBATCH --account=$SLURMACCT"                      >> dock
+                             echo "#SBATCH --partition="$partition                    >> dock
+                             echo "#SBATCH --nodes=1"                                 >> dock
+                             echo "#SBATCH --ntasks=1"                                >> dock
+                             echo "#SBATCH --cpus-per-task=48"                        >> dock
+                             echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> dock
+                             echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> dock
+                             echo "#SBATCH --exclude=${excluded_nodes}"               >> dock 
+                             echo "vina --cpu 48 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt"                   >> dock
+                             #cat $vini_dir/log_Vina_IC_value                         >> dock
+                             chmod u+x dock
+                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                             ${job_submit} dock
+                     else                                                                     
+                         if [ ! -e $comp_source/complex_${comp_index}.pdb ]    #Rosetta docking
+                         then
+                             obabel $comp_source/complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb
+                         else
+                             cp $comp_source/complex_${comp_index}.pdb ./
+                         fi
+                         cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./
+
                          sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                          cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
-                         sh $vini_dir/rosetta_protein_docking ${complex} ${drug} ${target_dir} ${comp_index} ${lig_index}
-                     fi
 
-                     #sh $vini_dir/write_checkpoint ${frequency} ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
+                         echo "#!/bin/bash"                                        > dock
+                         echo "#SBATCH --time=$walltime"                          >> dock
+                         echo "#SBATCH --account=$SLURMACCT"                      >> dock
+                         echo "#SBATCH --partition=$partition"                    >> dock
+                         echo "#SBATCH --nodes=1"                                 >> dock
+                         echo "#SBATCH --ntasks=1"                                >> dock
+                         echo "#SBATCH --cpus-per-task=48"                        >> dock
+                         echo "#SBATCH --job-name=Rozy_${M}_${N}"                 >> dock
+                         echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out" >> dock
+                         echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"  >> dock
+
+                         echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                    >> dock
+
+                         echo "relax.cxx11thread.linuxgccrelease -in:file:s ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                    >> dock
+
+                         echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_001_0002.pdb -in:file:s ligand_001_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                               >> dock
+                         chmod u+x dock                                                 
+                         ${job_submit} dock
+
+                         echo "brakepoint!" ; sleep 10000
+                     fi
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
-                     #let frequency++                         
     	         done # end of 5th loop
+                 
+                 cd $WORKDIR
 
                  sh $vini_dir/wait_until_jobs_finish
 

@@ -209,7 +209,7 @@ sh $vini_dir/prepare_ligands_list
 sh $vini_dir/prepare_small_drug_structures                 #prepare pdb files for Rosetta docking
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
 
-sh $vini_dir/prepare_ligand_pdbqt_files                    #create pdbqt files for Vina docking
+#sh $vini_dir/prepare_ligand_pdbqt_files                    #create pdbqt files for Vina docking
 
 echo "AlphaFold will be used for protein structures prediction."
 partition=`cat $WORKDIR/active_partition`
@@ -386,8 +386,8 @@ mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 cp $vini_dir/prep_prot_lig.py $WORKDIR
 num_modes=9
 echo $num_modes > $WORKDIR/num_modes
-#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "8" exhaustiveness
-exhaustiveness=8
+#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
+#exhaustiveness=8
 echo $exhaustiveness > $WORKDIR/exhaustiveness
 box_size=40
 echo ${box_size} > $WORKDIR/box_size

@@ -2,12 +2,17 @@
 # Input parameters: ligand index, complex index, config file dir, complex dir
 # Output parameter: Vina config file
 
-lig_index=$1 ; comp_index=$2 ; conf_index=$3 ; comp_source=$4
-
+lig_index=$1
+comp_index=$2
+conf_index=$3
+comp_source=$4
 
 NULL=0
 
-$MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l $WORKDIR/ligand_${lig_index}.pdbqt -r ${comp_source}/complex_${comp_index}.pdbqt -o $WORKDIR/${comp_index}/complex_${comp_index}.gpf
+
+
+$MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l $WORKDIR/ligands/ligand_${lig_index}.pdbqt -r ${comp_source}/complex_${comp_index}.pdbqt -o $WORKDIR/${comp_index}/complex_${comp_index}.gpf
+
 
 sed -i '1s/^/parameter_file AD4_parameters.dat\n/' complex_${comp_index}.gpf #Add <parameter_file AD4_parameters.dat> as the 1st line in *.gpf
 
