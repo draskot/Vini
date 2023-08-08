@@ -110,7 +110,6 @@ do
                              if [ $nowords -eq $ONES ]
                              then
                                  $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l "${drug}".pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt
-                                 #cp $drug.pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
                              else
                                  mv "${drug}".pdb tmp.pdb        #python does not work with 2-name drug
                                  $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
@@ -139,14 +138,37 @@ do
                          then
                              obabel $comp_source/complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb
                          else
-                             cp $comp_source/complex_${comp_index}.pdb ./
+                             #cp $comp_source/complex_${comp_index}.pdb ./      #debug only!!!!!!!!!
+                             cp $vini_dir/1AKI.pdb ./complex_${comp_index}.pdb 
                          fi
-                         cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./
+                         #cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./        #debug only !!!!!!!!!
+                         cp $vini_dir/ligands/pdb_files/Bevacizumab.pdb ./ligand_${lig_index}.pdb
 
                          sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                         cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
+                         cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
+                         
+                         cp complex_${comp_index}.pdb receptor.pdb     #generate complex with Hex
+                         cp ligand_${lig_index}.pdb ligand.pdb
+                         hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log 
+                         cp complex.pdb complex_${comp_index}.pdb
+                         rm receptor.pdb ligand.pdb docking.log docking.mac ligand_${lig_index}.pdb
 
-                         echo "#!/bin/bash"                                        > dock
+                         python ${ROSETTA_TOOLS}/clean_pdb.py complex_${comp_index}.pdb AB   #clean complex
+                         mv complex_${comp_index}_AB.pdb complex_${comp_index}.pdb
+                         rm *fasta complex.pdb 
+
+                         #fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #clean ligand
+                         #chains=`grep -c ">" ${fasta_file}`     
+                         #if  [ $chains -eq $ONES ]
+                         #then
+                         #    chains=A
+                         #else
+                         #    chains=AB
+                         #fi
+                         #python ${ROSETTA_TOOLS}/clean_pdb.py ligand_${lig_index}.pdb ${chains} 
+                         #mv ligand_${lig_index}_${chains}.pdb ligand_${lig_index}.pdb
+
+                         echo "#!/bin/bash"                                        > dock #relax receptor and ligand
                          echo "#SBATCH --time=$walltime"                          >> dock
                          echo "#SBATCH --account=$SLURMACCT"                      >> dock
                          echo "#SBATCH --partition=$partition"                    >> dock
@@ -156,15 +178,13 @@ do
                          echo "#SBATCH --job-name=Rozy_${M}_${N}"                 >> dock
                          echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out" >> dock
                          echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"  >> dock
-
-                         echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                    >> dock
-
-                         echo "relax.cxx11thread.linuxgccrelease -in:file:s ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                    >> dock
-
-                         echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_001_0002.pdb -in:file:s ligand_001_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                               >> dock
-                         chmod u+x dock                                                 
-                         ${job_submit} dock
-
+                         echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                            >> dock
+                         echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                         >> dock
+                         echo "cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
+                         #echo "cp score.sc  $target_dir/score.sc_${log_index}"   >> dock 
+                         echo "grep complex_${comp_index}_0002_0001 score.sc | awk '{print $2}' > $target_dir/log_${log_index}" >> dock
+                         chmod u+x                                                   dock                                         
+                         ${job_submit}                                               dock
                          echo "brakepoint!" ; sleep 1000
                      fi
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point

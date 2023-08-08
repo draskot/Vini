@@ -120,23 +120,25 @@ grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
 then
     echo "no."
+    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i"chimera-1.17.3-linux_x86_64" chimera 
+    chimera=chimera-1.17.3-linux_x86_64
     echo -n "Chimera installation directory must be empty. Performing cleanup..."
-    rm -rf $INSTALL/chimera-1.16-linux_x86_64
+    rm -rf $INSTALL/${chimera}
     echo "done."
-    echo "Download UCSF Chimera chimera-1.16-linux_x86_64.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
-    read -p "Press enter when chimera-1.16-linux_x86_64.bin is placed in $INSTALL directory." enter
-    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/chimera-1.16-linux_x86_64
+    echo "Download Chimera ${chimera}.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
+    read -p "Put ${chimera}.bin into $INSTALL directory and press enter." enter
+    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/${chimera}
     echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
     echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
     read -p "press enter to continue." enter
-    chmod u+x $INSTALL/chimera-1.16-linux_x86_64.bin
+    chmod u+x $INSTALL/${chimera}.bin
     cd $INSTALL
-    ./chimera-1.16-linux_x86_64.bin
-    rm chimera-1.16-linux_x86_64.bin
+    ./${chimera}.bin
+    rm ${chimera}.bin
     cd $vini_dir
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/chimera-1.16-linux_x86_64/bin:\$PATH" >> $vini_dir/sourceme
-    #source $vini_dir/sourceme
+    echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> $vini_dir/sourceme
+    echo "Installation done. Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py , otherwise it will not work as expected!" 
 else
     echo "yes."
 fi
@@ -169,11 +171,11 @@ nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
-    mkdir -p $INSTALL/Vina
-    wget -P $INSTALL/Vina/vina https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-    chmod u+x $INSTALL/Vina/vina
+    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
+    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
+    chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/Vina:\$PATH" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
 else
     echo "yes."
 fi
@@ -326,8 +328,7 @@ then
         module purge
 
         rosetta_src=`ls $INSTALL | grep rosetta`
-        echo $rosetta_src
-        if  [ ! -z ${rosetta_src+x} ]
+        if  [ -z ${rosetta_src+x} ]
         then
             echo -n "Performing cleanup. This will take a while, do not interrupt."
             rm -rf $INSTALL/${rosetta_src}
@@ -341,22 +342,21 @@ then
         tar -xf $INSTALL/${rosetta_bundle} --checkpoint=.4000 -C $INSTALL
         rm -f $INSTALL/${rosetta_bundle}
 
-  
         echo "Compiling Rosetta source, may take a while..."
         . $HOME/spack/share/spack/setup-env.sh
         spack load scons
+        rosetta_src=`ls $INSTALL | grep rosetta`
         cd $INSTALL/${rosetta_src}/main/source
-
         scons -j 24 mode=release bin extras=cxx11thread
         echo "#******* Rosetta section *******" >> $vini_dir/sourceme
         ROSETTA_BIN=$INSTALL/${rosetta_src}/main/source/bin
         ROSETTA_DB=$INSTALL/${rosetta_src}/main/database
-        ROSETTA_TOOLS=$INSTALL/${rosetta_src}/tools/protein_tools/scripts
+        ROSETTA_TOOLS=$INSTALL/${rosetta_src}/main/tools/protein_tools/scripts
+        echo "export ROSETTA_TOOLS=$INSTALL/${rosetta_src}/tools/protein_tools/scripts" >> $vini_dir/sourceme 
         ROSETTA_PUB=$INSTALL/${rosetta_src}/main/source/src/apps/public/relax_w_allatom_cst
+        echo "export ROSETTA_PUB=$INSTALL/${rosetta_src}//main/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
         echo "export PATH=${ROSETTA_BIN}:\$PATH"    >> $vini_dir/sourceme
         echo "export PATH=${ROSETTA_DB}:\$PATH"     >> $vini_dir/sourceme
-        echo "export PATH=${ROSETTA_TOOLS}:\$PATH"  >> $vini_dir/sourceme
-        echo "export PATH=${ROSETTA_PUB}:\$PATH"    >> $vini_dir/sourceme
     fi
 else
     echo "yes."

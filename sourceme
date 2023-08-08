@@ -6,29 +6,11 @@ export SHARED=/ceph/hpc/data/r2022r03-224-users
 export INSTALL=/ceph/hpc/data/r2022r03-224-users/eudraskot
 #************miniconda2 section**********
 #***miniconda3 section***
-#******UCSF Chimera section******
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/chimera-1.16-linux_x86_64/bin:$PATH
-#***mgltools_x86_64Linux2_1.5.7 section***
-export MGLTOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools
-export MGLUTILS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24
-export MGLBIN=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin
-export MGL=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin:$PATH
 #***ADFRsuite 1.0 section***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ADFRsuite_x86_64Linux_1.0/bin:$PATH
 #***database section***
-#*****AlphaFold section******
-module --ignore-cache load AlphaFold/2.2.2-foss-2021a-CUDA-11.3.1
-ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR
 #***Blast section***
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ncbi-blast-2.14.0+-src/c++/ReleaseMT/bin:$PATH
-#***** Vina section******
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/Vina:$PATH
-#******* Rosetta section *******
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_src_2020.08.61146_bundle/main/source/bin:$PATH
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_src_2020.08.61146_bundle/main/database:$PATH
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_src_2020.08.61146_bundle/tools/protein_tools/scripts:$PATH
-export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta_src_2020.08.61146_bundle/main/source/src/apps/public/relax_w_allatom_cst:$PATH
 #*****NAMD section******
 module load NAMD/2.14-foss-2022a-mpi
 #*****VMD section******
@@ -36,3 +18,21 @@ module load VMD/1.9.4a57-foss2020b
 #*****OpenBabel section******
 export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/openbabel-3.1.1/bin:$PATH
 module load Boost/1.76.0-GCC-10.3.0
+#******UCSF Chimera section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/chimera-1.17.3-linux_x86_64/bin:$PATH
+#******* Rosetta section *******
+export ROSETTA_TOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-351/main/tools/protein_tools/scripts
+export ROSETTA_PUB=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-351//main/source/src/apps/public/relax_w_allatom_cst
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-351/main/source/bin:$PATH
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-351/main/database:$PATH
+#***** Vina section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot:$PATH
+#***mgltools_x86_64Linux2_1.5.7 section***
+export MGLTOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools
+export MGLUTILS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24
+export MGLBIN=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin
+export MGL=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin:$PATH
+#*****AlphaFold section******
+module --ignore-cache load AlphaFold/2.2.2-foss-2021a-CUDA-11.3.1
+ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR
