@@ -12,11 +12,7 @@
 
 
 
-rm -f GI50.zip GI50.csv
 
 
-
-
-
-tar --exclude=database --exclude=software --exclude=test --exclude=sourceme --exclude=make_vini_tar --exclude='./distros' --exclude='./draskot' --exclude-vcs  -cvjf $HOME/Vini_5_0.tar.bz2 *
+tar --exclude=database --exclude=software --exclude=test --exclude=GI50.csv--exclude=sourceme --exclude=make_vini_tar --exclude=components.cif --exclude='./distros' --exclude='./draskot' --exclude-vcs  -cvjf $HOME/Vini_5_0.tar.bz2 *
 

@@ -348,15 +348,17 @@ then
         rosetta_src=`ls $INSTALL | grep rosetta`
         cd $INSTALL/${rosetta_src}/main/source
         scons -j 24 mode=release bin extras=cxx11thread
-        echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-        ROSETTA_BIN=$INSTALL/${rosetta_src}/main/source/bin
-        ROSETTA_DB=$INSTALL/${rosetta_src}/main/database
-        ROSETTA_TOOLS=$INSTALL/${rosetta_src}/main/tools/protein_tools/scripts
-        echo "export ROSETTA_TOOLS=$INSTALL/${rosetta_src}/tools/protein_tools/scripts" >> $vini_dir/sourceme 
-        ROSETTA_PUB=$INSTALL/${rosetta_src}/main/source/src/apps/public/relax_w_allatom_cst
-        echo "export ROSETTA_PUB=$INSTALL/${rosetta_src}//main/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
-        echo "export PATH=${ROSETTA_BIN}:\$PATH"    >> $vini_dir/sourceme
-        echo "export PATH=${ROSETTA_DB}:\$PATH"     >> $vini_dir/sourceme
+        ROSETTA=$INSTALL/${rosetta_src}/main
+        ROSETTA_BIN=$ROSETTA//source/bin
+        ROSETTA_DB=$ROSETTA/database
+        ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
+        ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
+        echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
+        echo "export ROSETTA=$INSTALL/${rosetta_src}/main"                            >> $vini_dir/sourceme
+        echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme 
+        echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
+        echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
+        echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
     fi
 else
     echo "yes."
@@ -462,8 +464,9 @@ then
         module load CMake/3.20.1-GCCcore-10.3.0
         module load Boost/1.76.0-GCC-10.3.0
         cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-        make -j 12
-        make -j 12 install
+        make -j 4
+        make install
+        cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
         echo "#*****OpenBabel section******" >> $vini_dir/sourceme
         echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
         echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
@@ -472,6 +475,65 @@ then
     fi
 fi
 rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
+
+echo -n "Checking if Java is installed..."
+grep Java $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no." ; echo -n "Checking if Java module(s) exist..."
+    module spider Java &> tmp
+    grep -w error tmp > Java
+    if   [ ! -s Java ] #no error means module found
+    then
+        echo "yes"
+        cat tmp
+        echo "#******* Java section *******" >> $vini_dir/sourceme
+        read -p "Select the Java module:" Java
+        echo "module load $Java ">> $vini_dir/sourceme
+        source $vini_dir/sourceme
+    else
+        echo "no."
+        rm -f $INSTALL/openjdk-11.0.2_linux-x64_bin.tar.gz
+        wget -P $INSTALL https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+        gzip -df $INSTALL/openjdk-11.0.2_linux-x64_bin.tar.gz
+        tar -xf $INSTALL/openjdk-11.0.2_linux-x64_bin.tar -C $INSTALL
+        rm $INSTALL/openjdk-11.0.2_linux-x64_bin.tar
+        echo "#******* Java section *******" >> $vini_dir/sourceme
+        echo "export PATH=$INSTALL/jdk-11.0.2/bin:\$PATH" >> $vini_dir/sourceme
+    fi
+fi
+
+echo -n "Checking if Hex docking software is installed..."
+grep Hex $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no. Hex will be installed." 
+    cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
+    exec $INSTALL/hex-8.1.1-x64-centos7.run
+    echo "#******* Hex section *******" >> $vini_dir/sourceme
+    rm $INSTALL/hex-8.1.1-x64-centos7.run
+fi
+
+echo -n "Checking if BCL software is installed..."
+grep BCL $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    module purge
+    module load Python/2.7.18-GCCcore-10.2.0
+    module load CMake/3.18.4-GCCcore-10.2.0
+    module load libGLU/9.0.1-GCCcore-10.2.0
+    echo "no. BCL will be installed." 
+    wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
+    unzip -o $INSTALL/bcl.zip -d $INSTALL
+    cd $INSTALL/bcl-master
+    #echo "brakepoint!" ; pwd ; sleep 1000
+    ./scripts/build/build_cmdline.linux.sh
+    echo "#******* BCL section *******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
 
 
 echo "You have to re-login in order to changes make effect!"

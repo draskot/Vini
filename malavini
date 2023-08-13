@@ -1,5 +1,6 @@
 NULL=0
 ONES=1
+TWO=2
 ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
 cancer_type=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
 CANCER_PATHWAY=$ORGANISM$cancer_type                #setting the cancer pathway
@@ -133,59 +134,69 @@ do
                              chmod u+x dock
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} dock
-                     else                                                                     
-                         if [ ! -e $comp_source/complex_${comp_index}.pdb ]    #Rosetta docking
+                     else                                   #Rosetta docking begin                                  
+                         if [[ ! -e $comp_source/complex_${comp_index}.pdb ]] && [[ ! -e $comp_source/complex_${comp_index}.pdbqt ]]    
                          then
-                             obabel $comp_source/complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb
+                             echo "error" > $target_dir/log_${log_index}
                          else
-                             #cp $comp_source/complex_${comp_index}.pdb ./      #debug only!!!!!!!!!
-                             cp $vini_dir/1AKI.pdb ./complex_${comp_index}.pdb 
+                             if [ -e $comp_source/complex_${comp_index}.pdb ]
+                             then
+                                 cp $comp_source/complex_${comp_index}.pdb ./     #clean receptor
+                                 sed -i '$ d' complex_${comp_index}.pdb           
+                                 echo "END                                                                           " >> complex_${comp_index}.pdb
+                                 source $INSTALL/miniconda2/bin/activate
+                                 cp $ROSETTA_TOOLS/amino_acids.py ./
+                                 cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
+                                 python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
+                                 mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
+                                 conda deactivate
+                                 #cp $vini_dir/1AKI.pdb ./complex_${comp_index}.pdb #next 4L for debug
+                                 #python ${ROSETTA_TOOLS}/clean_pdb.py complex_${comp_index}.pdb A   #clean receptor
+                                 #mv complex_${comp_index}_A.pdb complex_${comp_index}.pdb
+                                 #rm *fasta
+                             else
+                                 obabel $comp_source/complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb
+                             fi
+                             cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./
+                             fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
+                             chains=`grep -c ">" ${fasta_file}`     
+                             if  [ $chains -eq $ONES ]
+                             then
+                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
+                                 mv ligand_${lig_index}.pdb_A_to_B.pdb ligand_${lig_index}.pdb
+                             else
+                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B C
+                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_C.pdb A B
+                                 mv ligand_${lig_index}.pdb_B_to_C.pdb_A_to_B.pdb ligand_${lig_index}.pdb
+                             fi
+                             sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                             cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
+                             cp complex_${comp_index}.pdb receptor.pdb   #generate complex with Hex
+                             cp ligand_${lig_index}.pdb ligand.pdb
+                             hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log 
+                             cp complex.pdb complex_${comp_index}.pdb
+                             echo "#!/bin/bash"                                        > dock 
+                             echo "#SBATCH --time=$walltime"                          >> dock
+                             echo "#SBATCH --account=$SLURMACCT"                      >> dock
+                             echo "#SBATCH --partition=$partition"                    >> dock
+                             echo "#SBATCH --nodes=1"                                 >> dock
+                             echo "#SBATCH --ntasks=1"                                >> dock
+                             echo "#SBATCH --cpus-per-task=48"                        >> dock
+                             echo "#SBATCH --job-name=Rozy_${M}_${N}"                 >> dock
+                             echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out" >> dock
+                             echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"  >> dock
+                             echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                            >> dock
+                             echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                         >> dock
+                             echo "if [ -e ROSETTA_CRASH.log ] ; then"                >> dock
+                             echo "echo "error" > $target_dir/log_${log_index}"       >> dock
+                             echo "else"                                              >> dock
+                             echo "cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
+                             echo "grep complex_${comp_index}_0002_0001 score.sc | awk '{print  \$2}' > $target_dir/log_${log_index}" >> dock
+                             echo "fi"                                                >> dock
+                             chmod u+x                                                   dock         
+                             ${job_submit}                                               dock
+                             echo "brakepoint!" ; sleep 1000
                          fi
-                         #cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./        #debug only !!!!!!!!!
-                         cp $vini_dir/ligands/pdb_files/Bevacizumab.pdb ./ligand_${lig_index}.pdb
-
-                         sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                         cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
-                         
-                         cp complex_${comp_index}.pdb receptor.pdb     #generate complex with Hex
-                         cp ligand_${lig_index}.pdb ligand.pdb
-                         hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log 
-                         cp complex.pdb complex_${comp_index}.pdb
-                         rm receptor.pdb ligand.pdb docking.log docking.mac ligand_${lig_index}.pdb
-
-                         python ${ROSETTA_TOOLS}/clean_pdb.py complex_${comp_index}.pdb AB   #clean complex
-                         mv complex_${comp_index}_AB.pdb complex_${comp_index}.pdb
-                         rm *fasta complex.pdb 
-
-                         #fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #clean ligand
-                         #chains=`grep -c ">" ${fasta_file}`     
-                         #if  [ $chains -eq $ONES ]
-                         #then
-                         #    chains=A
-                         #else
-                         #    chains=AB
-                         #fi
-                         #python ${ROSETTA_TOOLS}/clean_pdb.py ligand_${lig_index}.pdb ${chains} 
-                         #mv ligand_${lig_index}_${chains}.pdb ligand_${lig_index}.pdb
-
-                         echo "#!/bin/bash"                                        > dock #relax receptor and ligand
-                         echo "#SBATCH --time=$walltime"                          >> dock
-                         echo "#SBATCH --account=$SLURMACCT"                      >> dock
-                         echo "#SBATCH --partition=$partition"                    >> dock
-                         echo "#SBATCH --nodes=1"                                 >> dock
-                         echo "#SBATCH --ntasks=1"                                >> dock
-                         echo "#SBATCH --cpus-per-task=48"                        >> dock
-                         echo "#SBATCH --job-name=Rozy_${M}_${N}"                 >> dock
-                         echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out" >> dock
-                         echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"  >> dock
-                         echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                            >> dock
-                         echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                         >> dock
-                         echo "cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
-                         #echo "cp score.sc  $target_dir/score.sc_${log_index}"   >> dock 
-                         echo "grep complex_${comp_index}_0002_0001 score.sc | awk '{print $2}' > $target_dir/log_${log_index}" >> dock
-                         chmod u+x                                                   dock                                         
-                         ${job_submit}                                               dock
-                         echo "brakepoint!" ; sleep 1000
                      fi
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
