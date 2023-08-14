@@ -150,10 +150,6 @@ do
                                  python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
                                  mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
                                  conda deactivate
-                                 #cp $vini_dir/1AKI.pdb ./complex_${comp_index}.pdb #next 4L for debug
-                                 #python ${ROSETTA_TOOLS}/clean_pdb.py complex_${comp_index}.pdb A   #clean receptor
-                                 #mv complex_${comp_index}_A.pdb complex_${comp_index}.pdb
-                                 #rm *fasta
                              else
                                  obabel $comp_source/complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb
                              fi

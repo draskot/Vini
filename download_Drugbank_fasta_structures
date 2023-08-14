@@ -12,7 +12,8 @@ do
     if  [ $type == P ] && [ ! -e $vini_dir/ligands/fasta_files/${drug}.fasta ]
     then
         echo -n "."
-        grep "$drug" drugbank?vocabulary.csv > tmp
+        #grep "$drug" drugbank?vocabulary.csv > tmp
+        grep "$drug" drugbank_vocabulary.csv > tmp
         if  [  -s tmp ]
         then
             inline=`head -1 tmp | awk -F','   '{print $1}'`
