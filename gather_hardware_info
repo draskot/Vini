@@ -7,7 +7,7 @@ job_submit=`cat job_submit`
 job_cancel=`cat job_cancel`
 active_partition=`cat $WORKDIR/active_partition`  
 
-partition=`cat $WORKDIR/cpu_partition`  
+partition=`cat cpu_partition`  
 if  [ $active_partition == $partition ]
 then
     SECONDS=0
@@ -22,7 +22,7 @@ then
     fi
 fi
 
-partition=`cat $WORKDIR/gpu_partition`  
+partition=`cat gpu_partition`  
 if [ $active_partition == $partition ]
 then
     SECONDS=0
@@ -37,7 +37,7 @@ then
     fi
 fi
 
-partition=`cat $WORKDIR/longcpu_partition`
+partition=`cat longcpu_partition`
 if  [ $active_partition == $partition ]
 then
     SECONDS=0

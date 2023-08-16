@@ -1,14 +1,14 @@
 
 
-if [[ -e $WORKDIR/cpu_partition ]] && [[ -e $WORKDIR/gpu_partition ]]  && [[ -e $WORKDIR/longcpu_partition ]]
+if [[ -e cpu_partition ]] && [[ -e gpu_partition ]]  && [[ -e longcpu_partition ]]
 then
-    cpu_partition_name=`cat $WORKDIR/cpu_partition`
+    cpu_partition_name=`cat cpu_partition`
     echo "${cpu_partition_name} partition for CPU jobs found."
     
-    gpu_partition_name=`cat $WORKDIR/gpu_partition`
+    gpu_partition_name=`cat gpu_partition`
     echo "${gpu_partition_name} partition for GPU jobs found."
 
-    longcpu_partition_name=`cat $WORKDIR/longcpu_partition`
+    longcpu_partition_name=`cat longcpu_partition`
     echo "${longcpu_partition_name} partition for long running jobs (> 4days) jobs found."
 
     read -e -p "Do you accept this partition setup (y/n):" -i "y" accept
@@ -20,21 +20,21 @@ then
         read -p "Enter the name of partition with CPU nodes:" cpu_partition_name
         read -p "Enter the name of partition with GPU nodes:" gpu_partition_name
         read -p "Enter the name of partition for long running jobs (press return if it doesn't exists):" longcpu_partition_name
-        echo ${cpu_partition_name} > $WORKDIR/cpu_partition
-        echo ${gpu_partition_name} > $WORKDIR/gpu_partition
-        echo ${longcpu_partition_name} > $WORKDIR/longcpu_partition
+        echo ${cpu_partition_name} > cpu_partition
+        echo ${gpu_partition_name} > gpu_partition
+        echo ${longcpu_partition_name} > longcpu_partition
     fi
 else
     echo "You will need to setup partitions now."
     echo "Available queues are:" 
     sinfo -s
     read -p "Enter the name of partition with CPU nodes:" cpu_partition_name
-    echo ${cpu_partition_name} > $WORKDIR/cpu_partition
+    echo ${cpu_partition_name} > cpu_partition
     read -p "Enter the name of partition with GPU nodes:" gpu_partition_name
-    echo ${gpu_partition_name} > $WORKDIR/gpu_partition    
+    echo ${gpu_partition_name} > gpu_partition    
     read -p "Enter the name of partition for long running jobs (press return if it doesn't exists):" longcpu_partition_name
     if  [ ! -z $longcpu_partition_name ]
     then
-        echo ${longcpu_partition_name} > $WORKDIR/longcpu_partition
+        echo ${longcpu_partition_name} > longcpu_partition
     fi
 fi

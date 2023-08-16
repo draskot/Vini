@@ -22,7 +22,7 @@ antibody=`basename ${fasta_file} .fasta`
 nolines=`wc -l < ${fasta_file}`                     #Checking resources for large sequences
 if  [[ $nolines -gt $maxlines1 ]] && [[ $nolines -le $maxlines2 ]]
 then
-    partition=`cat $WORKDIR/longcpu_partition`
+    partition=`cat longcpu_partition`
     walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
 else
     if  [ $nolines -gt $maxlines2 ]

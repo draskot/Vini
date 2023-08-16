@@ -163,7 +163,7 @@ sh $vini_dir/prepare_SLURM_scripts
 #echo $walltime > $WORKDIR/walltime
 echo "rosetta" > $WORKDIR/docking
 
-partition=`cat $WORKDIR/cpu_partition`
+partition=`cat cpu_partition`
 cores=`cat $WORKDIR/${partition}_cores`
 Vinathreads=4
 

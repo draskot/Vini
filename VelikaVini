@@ -1,6 +1,6 @@
 HSA=hsa
 ORGANISM=`cat $WORKDIR/ORGANISM`
-partition=`cat $WORKDIR/cpu_partition`
+partition=`cat cpu_partition`
 cores=`cat $WORKDIR/${partition}_cores`
 job_submit=`cat job_submit`
 cosmic=`cat $WORKDIR/cosmic`
