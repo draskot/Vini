@@ -1,0 +1,18 @@
+partition=`cat  $WORKDIR/cpu_partition`
+cpus=`cat $WORKDIR/${partition}_cores`
+mem=`cat $WORKDIR/${partition}_memsize`
+base=`cat $WORKDIR/AlphaFold_base`
+outdir=$vini_dir/ligands/pdb_files
+
+MAX_NODES=`cat $WORKDIR/nodes`
+while read -r line
+do
+    drug=`echo $line | awk -F','  '{print $1}'`
+    type=`echo $line | awk -F','  '{print $2}'`
+    if  [ $type == P ] && [ ! -e ${outdir}/${drug}.pdb ]
+    then
+        sh $vini_dir/nodes_control_script ${MAX_NODES}
+        fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta
+        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+    fi
+done < $vini_dir/ligands/ligands_list

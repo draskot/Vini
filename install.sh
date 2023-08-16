@@ -25,7 +25,7 @@ else
     then
         read -p "Enter the path to your new scratch (e.g. /exa5/scratch/user/$USER):" WORKDIR
         echo "High Performance Storage (scratch) will be on $WORKDIR" ; echo
-        lineno=`grep -n WORKDIR sourceme | cut -d: -f1`    #Get number of line to be replaced
+        lineno=`grep -n WORKDIR sourceme | head -1 | cut -d: -f1` #Get number of line to be replaced
         newline=`echo "export WORKDIR=$WORKDIR"`
         sed -i "$lineno i ${newline}" sourceme
         let lineno++

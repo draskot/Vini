@@ -209,7 +209,6 @@ sh $vini_dir/prepare_ligands_list
 sh $vini_dir/prepare_small_drug_structures                 #prepare pdb files for Rosetta docking
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
 
-#sh $vini_dir/prepare_ligand_pdbqt_files                    #create pdbqt files for Vina docking
 
 echo "AlphaFold will be used for protein structures prediction."
 partition=`cat $WORKDIR/active_partition`

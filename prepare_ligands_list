@@ -1,0 +1,57 @@
+#http://www.wwpdb.org/data/ccd   Chemical code dictionaires
+
+NULL=0
+ONES=1
+comma=","
+space=" "
+seq="noseq"
+
+echo -n "Please wait while the list of drugs is being prepared..."
+
+if [ ! -e components.cif ]
+then
+    wget -q https://files.wwpdb.org/pub/pdb/data/monomers/components.cif.gz
+    gzip -d components.cif.gz
+fi
+
+echo "code=\`awk -v RS='' '/DRUG/' components.cif | grep -w _chem_comp.id | head -1\`" > $WORKDIR/tmpl
+echo "code=\`echo \$code | awk '{print \$2}'\`" >> $WORKDIR/tmpl
+echo "echo \$code" >> $WORKDIR/tmpl
+chmod u+x $WORKDIR/tmpl
+
+nolines=`wc -l < $vini_dir/ligands/ligands_list`
+> $vini_dir/ligands/ligands_list.tmp
+for (( lineno=1; lineno<$((nolines+1)); lineno++ ))
+do
+    echo -n "."
+    line=`head -$lineno $vini_dir/ligands/ligands_list | tail -1`
+    drug=`echo $line | awk -F',' '{print $1}'`
+    type=`echo $line | awk -F',' '{print $2}'`
+    if  [ $type == S ]
+    then
+        cp $WORKDIR/tmpl $WORKDIR/script
+        sed -i -e "s/DRUG/$drug/g" $WORKDIR/script
+        sh $WORKDIR/script > $WORKDIR/tmp
+        nochars=`wc -c < $WORKDIR/tmp`
+        if [ $nochars -eq $ONES ] ;then
+            code=NA
+        else
+            code=`cat $WORKDIR/tmp`
+        fi
+        line=$drug$comma$space$type$comma$space$code
+    else
+        code=NA
+        grep "$drug" drug?links.csv > $WORKDIR/tmp   #check if fasta sequence exists
+        inlines=`wc -l < $WORKDIR/tmp`
+        if  [ $inlines -gt $NULL ]
+        then
+            seq=seq
+        else
+            seq=noseq
+        fi
+        line=$drug$comma$space$type$comma$space$code$comma$space$seq
+    fi
+    echo $line >> $vini_dir/ligands/ligands_list.tmp
+done
+mv $vini_dir/ligands/ligands_list.tmp $vini_dir/ligands/ligands_list
+echo "done."
