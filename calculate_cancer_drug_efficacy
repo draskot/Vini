@@ -12,7 +12,7 @@ if [ $compute_cell_line -eq $TRUE ]
 then
     cell_line=`cat $WORKDIR/NCI60_cell_line`
 else
-    cell_line=`cat $WORKDIR/cell_line`
+    cell_line=`cat cell_line`
 fi
 
 

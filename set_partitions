@@ -9,7 +9,7 @@ then
     echo "${gpu_partition_name} partition for GPU jobs found."
 
     longcpu_partition_name=`cat longcpu_partition`
-    echo "${longcpu_partition_name} partition for long running jobs (> 4days) jobs found."
+    echo "${longcpu_partition_name} partition for long running jobs (> 4days) found."
 
     read -e -p "Do you accept this partition setup (y/n):" -i "y" accept
     if  [ $accept != y ]

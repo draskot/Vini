@@ -7,8 +7,8 @@ job_cancel=`cat job_cancel`
 
 rm -f $WORKDIR/cores.out
 
-partition=`cat $WORKDIR/${partition}_partition`
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+partition=`cat ${partition}_partition`
+excluded_nodes=`cat excluded_${partition}_nodes`
 
 echo "#! /bin/bash"                           > $WORKDIR/get_number_of_cores
 echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_of_cores
@@ -42,10 +42,10 @@ then
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
     echo "Found $cores CPU cores per ${partition} node."
-    echo $cores > $WORKDIR/${partition}_cores
+    echo $cores > ${partition}_cores
 else
     ${job_cancel} -u $USER ; echo
     echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
     read -p "Write the number of CPU cores per ${partition} node here:" cores
-    echo $cores > $WORKDIR/${partition}_cores
+    echo $cores > ${partition}_cores
 fi

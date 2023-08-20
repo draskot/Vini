@@ -1,11 +1,11 @@
 maxtime=360  #max time in seconds after nodetest script is interrupted
 read -e -p "Enter the walltime in minutes for getting info about compute nodes HW (enter to accept default):" -i "6" walltime
-echo "Gathering info about hardware. Please wait, this may take up to $walltime seconds."
+echo "Gathering info about hardware. Please wait, this may take up to $walltime minutes."
 
 job_status=`cat job_status`
 job_submit=`cat job_submit`
 job_cancel=`cat job_cancel`
-active_partition=`cat $WORKDIR/active_partition`  
+active_partition=`cat active_partition`  
 
 partition=`cat cpu_partition`  
 if  [ $active_partition == $partition ]
@@ -52,4 +52,4 @@ then
     fi
 fi
 
-rm -f $WORKDIR/${partition}_cores $WORKDIR/${partition}_memsize
+rm -f ${partition}_cores ${partition}_memsize

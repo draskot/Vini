@@ -20,7 +20,8 @@ then
     echo "export SHARED=$SHARED"       >> $vini_dir/sourceme
     echo "export INSTALL=$INSTALL"     >> $vini_dir/sourceme
 else
-    read -e -p "Do you want to modify the location of the high-performance storage (scratch)? (y/n). Press enter to accept the default: " -i "n" yesno
+    echo "High-performace storage (scratch) is set to $WORKDIR"
+    read -e -p "Do you want to modify it's location (y/n)?. Enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
         read -p "Enter the path to your new scratch (e.g. /exa5/scratch/user/$USER):" WORKDIR
@@ -143,60 +144,60 @@ else
     echo "yes."
 fi
 
-echo -n "checking if MGLTools are installed..."
-grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
-if  [ ! -s tmp ]
-then
-    echo "no."
-    rm -rf $INSTALL/index*
-    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
-    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
-    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
-    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
-    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
-    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
-    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
-    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
-    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
-    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
-    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-else
-    echo "yes."
-fi
+#echo -n "checking if MGLTools are installed..."
+#grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
+#if  [ ! -s tmp ]
+#then
+#    echo "no."
+#    rm -rf $INSTALL/index*
+#    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
+#    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+#    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
+#    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
+#    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
+#    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
+#    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
+#    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
+#    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
+#    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
+#    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
+#    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+#else
+#    echo "yes."
+#fi
 
-echo -n "checking if Vina is installed..."
-grep Vina $vini_dir/sourceme > tmp
+#echo -n "checking if Vina is installed..."
+#grep Vina $vini_dir/sourceme > tmp
 nolines=`wc -l < tmp`
-if [ $nolines -eq $NULL ]
-then
-    echo "no. Installing Vina..."
-    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
-    chmod u+x $INSTALL/vina
-    echo "#***** Vina section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#if [ $nolines -eq $NULL ]
+#then
+#    echo "no. Installing Vina..."
+#    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
+#    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
+#    chmod u+x $INSTALL/vina
+#    echo "#***** Vina section******" >> $vini_dir/sourceme
+#    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
-echo -n "Checking if ADFR suite is installed..."
-grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
-    rm -f $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
-    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-    wget -O $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
-    tar -xzf $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
-    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
-    sh install.sh
-    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
-    rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
-else
-    echo "yes."
-fi
+#echo -n "Checking if ADFR suite is installed..."
+#grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
+#if  [ ! -s tmp ]
+#then
+#    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
+#    rm -f $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
+#    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
+#    wget -O $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+#    tar -xzf $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
+#    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
+#    sh install.sh
+#    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
+#    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
+#    rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
+#else
+#    echo "yes."
+#fi
 
 echo -n "Checking if database is in place..."
 grep database $vini_dir/sourceme > tmp
@@ -235,17 +236,15 @@ then
             read -p "Select module:" alphafold
             echo "module --ignore-cache load" $alphafold >> $vini_dir/sourceme
             echo "ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR" >> $vini_dir/sourceme
-            #export ALPHAFOLD_DATA_DIR
-            #source $vini_dir/sourceme
         else
             sleep 1
-            #read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
-	    #echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	    #echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	    #echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-            #echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	    #echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
-	    #echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
+            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
+	    echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
+	    echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
+	    echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
+            echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
+	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
         fi
     fi
 else
@@ -501,32 +500,25 @@ then
         echo "#******* Java section *******" >> $vini_dir/sourceme
         echo "export PATH=$INSTALL/jdk-11.0.2/bin:\$PATH" >> $vini_dir/sourceme
     fi
+else
+    echo "yes."
 fi
 
-echo -n "Checking if Hex docking software is installed..."
-grep Hex $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no. Hex will be installed." 
-    cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
-    exec $INSTALL/hex-8.1.1-x64-centos7.run
-    echo "#******* Hex section *******" >> $vini_dir/sourceme
-    rm $INSTALL/hex-8.1.1-x64-centos7.run
-fi
 
-echo -n "Checking if BCL software is installed..."
+echo -n "Checking if BCL is installed..."
 grep BCL $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
     module purge
     module load Python/2.7.18-GCCcore-10.2.0
-    module load CMake/3.18.4-GCCcore-10.2.0
-    module load libGLU/9.0.1-GCCcore-10.2.0
-    echo "no. BCL will be installed." 
+    module load CMake/3.23.1-GCCcore-11.3.0
+    module load libGLU/9.0.2-GCCcore-11.3.0
+    echo "no. BCL will be installed. Performing the cleanup, please wait." 
+    rm -rf $INSTALL/bcl-master
     wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
     unzip -o $INSTALL/bcl.zip -d $INSTALL
+    rm $INSTALL/bcl.zip
     cd $INSTALL/bcl-master
-    #echo "brakepoint!" ; pwd ; sleep 1000
     ./scripts/build/build_cmdline.linux.sh
     echo "#******* BCL section *******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
@@ -535,5 +527,18 @@ else
 fi
 
 
+echo -n "Checking if Hex docking software is installed..."
+grep Hex $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no. Hex will be installed." 
+    echo "#******* Hex section *******" >> $vini_dir/sourceme
+    echo "module load libGLU/9.0.2-GCCcore-11.3.0" >> $vini_dir/sourceme
+    rm $INSTALL/hex-8.1.1-x64-centos7.run
+    cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
+    exec $INSTALL/hex-8.1.1-x64-centos7.run
+else
+    echo "yes."
+fi
 
 echo "You have to re-login in order to changes make effect!"

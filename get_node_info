@@ -6,8 +6,8 @@ job_submit=`cat job_submit`
 job_cancel=`cat job_cancel`
 percentage=90
 NULL=0
-partition=`cat $WORKDIR/${partition}_partition`
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+partition=`cat ${partition}_partition`
+excluded_nodes=`cat excluded_${partition}_nodes`
 rm -f $WORKDIR/cores.out
 rm -f $WORKDIR/memory.out tmp2
 
@@ -61,12 +61,12 @@ then
     grep "Thread(s)" $WORKDIR/cores.out > tmp ; Threads=`head -1 tmp` ; Threads=`echo $Threads | awk '{print $4}'`
     cores=`echo $CPUs $Threads | awk '{print $1 / $2}'`
     echo "Found $cores CPU cores per ${partition} node."
-    echo $cores > $WORKDIR/${partition}_cores
+    echo $cores > ${partition}_cores
 else
     ${job_cancel} -u $USER ; echo
     echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
     read -p "Write the number of CPU cores per ${partition} node here:" cores
-    echo $cores > $WORKDIR/${partition}_cores
+    echo $cores > ${partition}_cores
 fi
 
 if [ -e $WORKDIR/memory.out ]
@@ -89,11 +89,11 @@ then
         memsize=${memsize}${suffix}
     fi
     echo "Found $memsize available memory per ${partition} node."
-    echo $memsize > $WORKDIR/${partition}_memsize
+    echo $memsize > ${partition}_memsize
 else
     ${job_cancel} -u $USER ; echo
     echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
     echo "You may consider at least 90% of the total installed memory as available."
     read -p "Write the available memory size (in GB) per ${partition} node here:" memsize
-    echo $memsize > $WORKDIR/${partition}_memsize
+    echo $memsize > ${partition}_memsize
 fi

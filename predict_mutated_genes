@@ -1,12 +1,12 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
-partition=`cat  $WORKDIR/active_partition`      #Define AlphaFold parameters
-cpus=`cat $WORKDIR/${partition}_cores`
-mem=`cat $WORKDIR/${partition}_memsize`
-base=`cat $WORKDIR/AlphaFold_base`
+partition=`cat  active_partition`      #Define AlphaFold parameters
+cpus=`cat ${partition}_cores`
+mem=`cat ${partition}_memsize`
+base=`cat AlphaFold_base`
 outdir=$vini_dir/genes/pdb_files
 
-cell_line=`cat $WORKDIR/cell_line`
+cell_line=`cat cell_line`
 SEQDIR=$vini_dir/genes/sequences/
 
 rm -f $vini_dir/genes/sequences/*csv                               #DNA --> protein sequence translation

@@ -12,46 +12,46 @@ available_nodes=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="m
                                             else
                                                 next}')
 
-echo ${excluded_nodes} > $WORKDIR/excluded_${partition}_nodes
-echo ${available_nodes} > $WORKDIR/available_${partition}_nodes
+echo ${excluded_nodes} > excluded_${partition}_nodes
+echo ${available_nodes} > available_${partition}_nodes
 
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
 > $WORKDIR/tmp
-WORDS=`wc -w < $WORKDIR/excluded_${partition}_nodes`
+WORDS=`wc -w < excluded_${partition}_nodes`
 echo "number of excluded compute nodes: $WORDS"
-read -a WORDS -d "" < $WORKDIR/excluded_${partition}_nodes
+read -a WORDS -d "" < excluded_${partition}_nodes
 for word in "${WORDS[@]}"
 do
         node=${cpu_node_suffix}${word},
         echo -n $node >> $WORKDIR/tmp
 done
-cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/excluded_${partition}_nodes
+cat $WORKDIR/tmp | rev | cut -c2- | rev > excluded_${partition}_nodes
 echo "excluded compute nodes:"
-cat $WORKDIR/excluded_${partition}_nodes
+cat excluded_${partition}_nodes
 
 > $WORKDIR/tmp
-WORDS=`wc -w < $WORKDIR/available_${partition}_nodes`
+WORDS=`wc -w < available_${partition}_nodes`
 echo "number of available compute nodes: $WORDS"
-read -a WORDS -d "" < $WORKDIR/available_${partition}_nodes
+read -a WORDS -d "" < available_${partition}_nodes
 for word in "${WORDS[@]}"
 do
         node=${cpu_node_suffix}${word},
         echo -n $node >> $WORKDIR/tmp
 done
-cat $WORKDIR/tmp | rev | cut -c2- | rev > $WORKDIR/available_${partition}_nodes
+cat $WORKDIR/tmp | rev | cut -c2- | rev > available_${partition}_nodes
 echo "available compute nodes:"
-cat $WORKDIR/available_${partition}_nodes
+cat available_${partition}_nodes
 
 
 groups=`groups`
 groups_login_node=`echo "$groups" | wc -w`
 
-echo "interrupted" > $WORKDIR/test_status
+echo "interrupted" > test_status
 
 
 
-if [ ! -s $WORKDIR/available_${partition}_nodes ]
+if [ ! -s available_${partition}_nodes ]
 then
     echo "There are no available nodes in ${partition} partition. Vini will not use them."
 else
@@ -59,12 +59,12 @@ else
     do
         count=${line//[^,]}
         count=`echo "${#count}"`
-    done < $WORKDIR/available_${partition}_nodes
+    done < available_${partition}_nodes
     let count++
     
 
     echo -e "\nTesting $partition nodes. Do not interrupt."
-    sed 's/,/ /g' $WORKDIR/available_${partition}_nodes > $WORKDIR/tmp
+    sed 's/,/ /g' available_${partition}_nodes > $WORKDIR/tmp
 
     for node in $(<$WORKDIR/tmp)
     do
@@ -97,18 +97,18 @@ else
         then
             echo -n "$node ok. " ; sleep 0.01
         else
-            echo -n ,${node} >> $WORKDIR/excluded_${partition}_nodes #excluding node
+            echo -n ,${node} >> excluded_${partition}_nodes #excluding node
             available=`cat available_${partition}_nodes`
             available=${available//${node},/}
-            echo $available > $WORKDIR/available_${partition}_nodes
+            echo $available > available_${partition}_nodes
             echo -n "$node not ok. "
         fi
     done
 
 
-    if  [ -s $WORKDIR/excluded_${partition}_nodes ]
+    if  [ -s excluded_${partition}_nodes ]
     then
         echo ; echo -e "\nThe following ${partition} nodes are either not available or experience some problems. Will be excluded:"
-        cat $WORKDIR/excluded_${partition}_nodes
+        cat excluded_${partition}_nodes
     fi
 fi

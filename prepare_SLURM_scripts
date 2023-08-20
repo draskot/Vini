@@ -1,5 +1,5 @@
-partition=`cat $WORKDIR/cpu_partition`
-cores=`cat $WORKDIR/${partition}_cores`
+partition=`cat cpu_partition`
+cores=`cat ${partition}_cores`
 
 cd $WORKDIR
 

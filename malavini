@@ -7,7 +7,7 @@ CANCER_PATHWAY=$ORGANISM$cancer_type                #setting the cancer pathway
 therapy_level=`cat $WORKDIR/therapy_level`         #therapy level
 compute_cell_line=`cat $WORKDIR/compute_cell_line`
 cosmic=`cat $WORKDIR/cosmic`
-cell_line=`cat $WORKDIR/cell_line`                  #getting the cell line name
+cell_line=`cat cell_line`                  #getting the cell line name
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
 exhaustiveness=`cat $WORKDIR/exhaustiveness`
@@ -17,7 +17,7 @@ max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 partition=`cat cpu_partition`
 walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+excluded_nodes=`cat excluded_${partition}_nodes`
 complexes=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 lig_source=$WORKDIR/ligands
@@ -33,7 +33,7 @@ case $therapy_level in
      4) L1=$ligands; L2=$ligands; L3=$ligands; L4=$ligands ;;
 esac
 
-state=`cat $WORKDIR/state`                 #setting loop control parameters
+state=`cat $vini_dir/state`                 #setting loop control parameters
 dir=$WORKDIR/${cancer_type}_data 
 if  [ $state == crash ]
 then
@@ -62,6 +62,7 @@ fi
 SECONDS=$NULL
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
+
 
 for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
@@ -116,7 +117,7 @@ do
                          echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
                          if  [ $moltype == S ]
                          then
-                             cp $vini_dir/ligands/sdf_files/${ligand}.sdf ./ligand_${lig_index}.sdf  #prepare ligand
+                             cp $vini_dir/ligands/sdf_files/${drug}.sdf ./ligand_${lig_index}.sdf  #prepare ligand
                              python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p LIG --clobber ligand_${lig_index}.sdf
                              mv LIG_0001.pdb ligand_${lig_index}.pdb
                              rm ligand_${lig_index}.sdf
@@ -169,13 +170,13 @@ do
                      chmod u+x                                                   dock         
                      sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                      ${job_submit}                                               dock
-                     echo "brakepoint!" ; sleep 1000
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
                  
                  cd $WORKDIR
 
                  sh $vini_dir/wait_until_jobs_finish
+
 
                  #echo "Creating binding energy vector, please wait."
                  #rm -f ${target_dir}/vec*

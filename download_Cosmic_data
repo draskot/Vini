@@ -1,6 +1,6 @@
 module purge
 
-cell_line=`cat $WORKDIR/cell_line`
+cell_line=`cat cell_line`
 echo -n "Activating miniconda3 environment..."
 source $INSTALL/miniconda3/bin/activate
 conda activate env310

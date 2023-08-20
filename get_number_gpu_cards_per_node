@@ -5,8 +5,8 @@ scheduler=`cat $WORKDIR/scheduler`
 job_submit=`cat job_submit`
 job_cancel=`cat job_cancel`
 
-partition=`cat $WORKDIR/${partition}_partition`
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+partition=`cat ${partition}_partition`
+excluded_nodes=`cat excluded_${partition}_nodes`
 
 rm -f $WORKDIR/gpus.*
 

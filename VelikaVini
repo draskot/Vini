@@ -1,7 +1,7 @@
 HSA=hsa
 ORGANISM=`cat $WORKDIR/ORGANISM`
 partition=`cat cpu_partition`
-cores=`cat $WORKDIR/${partition}_cores`
+cores=`cat ${partition}_cores`
 job_submit=`cat job_submit`
 cosmic=`cat $WORKDIR/cosmic`
 kit=`cat $WORKDIR/kit`
@@ -20,7 +20,7 @@ rm -f $vini_dir/genes/cosmic_ids.csv
 
 if  [ $compute_cell_line -eq $TRUE ]
 then
-    cell_line=`cat $WORKDIR/cell_line`
+    cell_line=`cat cell_line`
 fi
 
 data="_data"
@@ -161,7 +161,7 @@ do
 done < $WORKDIR/receptors_contracted ; echo "done."
 
 j=1
-while  read -r line                                #Copy pdb receptor files to the stage
+while  read -r line                                              #Copy pdb receptor files to the stage
 do
        printf -v i "%03d" $j
        gene=`echo $line | awk '{print $3}'` #get entry name
@@ -176,9 +176,17 @@ do
     type=`echo $line | awk -F',' '{print $2}'`
     printf -v lig_index "%03d" $i
     echo "copying "${drug}" structure to the stagging area."
-    cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+    if  [ $type == S ]
+    then
+        echo "drug: $drug type: $type "
+        cp $vini_dir/ligands/sdf_files/"${drug}".sdf $WORKDIR/ligands/ligand_${lig_index}.sdf
+        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+    else
+        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+    fi
     let i++
 done < $vini_dir/ligands/ligands_list
+
 
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do

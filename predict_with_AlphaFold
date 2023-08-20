@@ -41,7 +41,7 @@ fi
 job_submit=`cat job_submit`
 gpus=1                                                   #AlphaFold working with only 1 gpu
 
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+excluded_nodes=`cat excluded_${partition}_nodes`
 
 rm -rf $WORKDIR/${antibody} #cleanup
 

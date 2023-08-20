@@ -5,9 +5,8 @@ partition=$2
 fasta_file=$3
 
 
-
-cpus=`cat $WORKDIR/${partition}_cores`
-mem=`cat $WORKDIR/${partition}_memsize`
+cpus=`cat ${partition}_cores`
+mem=`cat ${partition}_memsize`
 MAX_NODES=`cat $WORKDIR/nodes`
 job_submit=`cat job_submit`
 rosetta_version=`cat $WORKDIR/rosetta_version`

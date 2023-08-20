@@ -8,7 +8,7 @@ job_cancel=`cat job_cancel`
 
 NULL=0
 
-excluded_nodes=`cat $WORKDIR/excluded_${partition}_nodes`
+excluded_nodes=`cat excluded_${partition}_nodes`
 
 echo "Trying to determine the available memory per ${partition} node. This may last up to ${walltime} seconds, do not interrupt."
 
@@ -62,12 +62,12 @@ then
         memsize=${memsize}${suffix}
     fi
     echo "Found $memsize available memory per ${partition} node."
-    echo $memsize > $WORKDIR/${partition}_memsize
+    echo $memsize > ${partition}_memsize
 else
     ${job_cancel} -u $USER ; echo
     echo "Failed to access any ${partition} node. A probable reason is that all nodes are either busy or down."
     echo "You may consider at least 90% of the total installed memory as available."
     read -p "Write the available memory size (in GB) per ${partition} node here:" memsize
-    echo $memsize > $WORKDIR/${partition}_memsize
+    echo $memsize > ${partition}_memsize
 fi
 

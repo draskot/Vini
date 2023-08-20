@@ -18,6 +18,7 @@ then
 else
     > Vini.crashlog
     > restartfile
+    echo init > state
 fi
 
 echo -n "Checking for user..." 
@@ -92,7 +93,7 @@ else
     echo "SLURM" > $WORKDIR/scheduler
     sh $vini_dir/set_partitions
     read -e -p "Enter the name of partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
-    echo $active_partition > $WORKDIR/active_partition
+    echo $active_partition > active_partition
     echo $JSS > $WORKDIR/JSS
 fi
 
@@ -164,7 +165,7 @@ sh $vini_dir/prepare_SLURM_scripts
 echo "rosetta" > $WORKDIR/docking
 
 partition=`cat cpu_partition`
-cores=`cat $WORKDIR/${partition}_cores`
+cores=`cat ${partition}_cores`
 Vinathreads=4
 
 read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "8000" maxcores
@@ -211,9 +212,9 @@ sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files
 
 
 echo "AlphaFold will be used for protein structures prediction."
-partition=`cat $WORKDIR/active_partition`
-memsize=`cat $WORKDIR/${partition}_memsize | tr -dc '0-9'`
-echo "full_dbs" > $WORKDIR/AlphaFold_base                  #Vini is using full AlphaFold base
+partition=`cat active_partition`
+memsize=`cat ${partition}_memsize | tr -dc '0-9'`
+echo "full_dbs" > AlphaFold_base                  #Vini is using full AlphaFold base
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic
 
@@ -315,7 +316,7 @@ then
             #echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=<cell name>&token=<token number"
             echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=PC3&token=690964090297947914600221106259589042"
             read -p "press enter when the upload is done." ready
-            echo $cell_line > $WORKDIR/cell_line
+            echo $cell_line > cell_line
             if [ ! -f $vini_dir/database/genes/expressions/${cell_line}.csv ]
             then
                 echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
@@ -329,7 +330,7 @@ then
             rm -rf $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
         fi
     fi
-    echo $cell_line > $WORKDIR/cell_line
+    echo $cell_line > cell_line
     echo "Creating ligands_list file with drugs in NCI-60 database."
     sh $vini_dir/create_NSC_numbers_file
     > $WORKDIR/NCI-60_ligands_list
@@ -356,7 +357,7 @@ else
     compute_cell_line=$FALSE
     echo $compute_cell_line > $WORKDIR/compute_cell_line
     cell_line=PUBLIC
-    echo $cell_line > $WORKDIR/cell_line
+    echo $cell_line > cell_line
 fi
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
@@ -366,15 +367,15 @@ ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/liga
 #AD4_parameters.dat is located in $MGLTOOLS directory
 #Copy it to the working directory : http://autodock.scripps.edu/faqs-help/faq/how-do-i-add-new-atom-types-to-autodock-4
 
-echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
-if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
-then
-    cp $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat.orig
-    grep atom_par $vini_dir/AD4_parameters_for_metal_ions >> $MGLTOOLS/AD4_parameters.dat
-    echo "parameters for metal ions added."
-else
-    echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
-fi
+#echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
+#if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
+#then
+#    cp $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat.orig
+#    grep atom_par $vini_dir/AD4_parameters_for_metal_ions >> $MGLTOOLS/AD4_parameters.dat
+#    echo "parameters for metal ions added."
+#else
+#    echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
+#fi
 
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo ${therapy_level} > $WORKDIR/max_therapy_level

@@ -1,7 +1,7 @@
 partition=`cat cpu_partition`
-cpus=`cat $WORKDIR/${partition}_cores`
-mem=`cat $WORKDIR/${partition}_memsize`
-base=`cat $WORKDIR/AlphaFold_base`
+cpus=`cat ${partition}_cores`
+mem=`cat ${partition}_memsize`
+base=`cat AlphaFold_base`
 outdir=$vini_dir/ligands/pdb_files
 
 MAX_NODES=`cat $WORKDIR/nodes`
