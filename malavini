@@ -97,16 +97,22 @@ do
                          echo "error" > $target_dir/log_${log_index}
                      else
                          cp $comp_source/complex_${comp_index}.pdb ./     #clean receptor
-                         echo "lig_index: $lig_index comp_index: $comp_index comp_source: $comp_source"
+                         echo "drug: $drug lig_index: $lig_index comp_index: $comp_index comp_source: $comp_source"
                          sed -i '$ d' complex_${comp_index}.pdb           
-                         grep -v MASTER complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
-                         echo "END                                                                           " >> complex_${comp_index}.pdb
-                         #source $INSTALL/miniconda2/bin/activate
-                         #cp $ROSETTA_TOOLS/amino_acids.py ./
-                         #cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
-                         #python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
-                         #mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
-                         #conda deactivate
+                         #grep -v MASTER complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
+                         #grep -v CONECT complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
+                         grep -v COMPND complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
+                         grep TER complex_${comp_index}.pdb > tmp
+                         if [ -s tmp ]
+                         then
+                             echo "TER                                                                            " >> complex_${comp_index}.pdb
+                         fi
+                         source $INSTALL/miniconda2/bin/activate
+                         cp $ROSETTA_TOOLS/amino_acids.py ./
+                         cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
+                         python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
+                         mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
+                         conda deactivate
                          echo "#!/bin/bash"                                                                    > dock
                          echo "#SBATCH --time=$walltime"                                                      >> dock
                          echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
@@ -188,7 +194,6 @@ do
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --mem=4gb"                                    >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --job-name=vec_${lig_index}"                  >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out"  >> ${target_dir}/vec_${lig_index}
                  echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err"  >> ${target_dir}/vec_${lig_index}
