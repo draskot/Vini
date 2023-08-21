@@ -173,6 +173,8 @@ do
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
                  
+                 echo "brakepoint!" ; sleep 1000
+                 
                  cd $WORKDIR
 
                  sh $vini_dir/wait_until_jobs_finish
