@@ -27,12 +27,11 @@ public class PDBChainNameSupstitutor {
 
         originalChainName = args[1];
         newChainName = args[2];
+
         newFileName =  fileName+"_"+originalChainName + "_to_" + newChainName + ".pdb";
-        if (args[3].isEmpty()){
-            isAtom=true;
-        }else{
+        isAtom=true;
+        if (args.length == 4)
             isAtom=(args[3].equalsIgnoreCase("-a"))?true:false;
-        }
 
         LoadFile(fileName);
         substituteChains();
@@ -59,6 +58,8 @@ public class PDBChainNameSupstitutor {
                 if (chainName.equals(originalChainName)) {
                     line = line.substring(0, 21) + newChainName + line.substring(22);
                 }
+            } else if (line.startsWith("TER")) {
+                line = line.substring(0, 21) + newChainName + line.substring(22);
             }
             newLines.add(line);
         }
