@@ -99,8 +99,6 @@ do
                          cp $comp_source/complex_${comp_index}.pdb ./     #clean receptor
                          echo "drug: $drug lig_index: $lig_index comp_index: $comp_index comp_source: $comp_source"
                          sed -i '$ d' complex_${comp_index}.pdb           
-                         #grep -v MASTER complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
-                         #grep -v CONECT complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
                          grep -v COMPND complex_${comp_index}.pdb > tmp ; mv tmp complex_${comp_index}.pdb
                          grep TER complex_${comp_index}.pdb > tmp
                          if [ -s tmp ]
@@ -148,7 +146,7 @@ do
                              echo "grep -m 1 -w pose silent.out | awk '{print  \$2}' > $target_dir/log_${comp_index}" >> dock
                              echo "fi"                                                                                >> dock
                          else              
-                             cp $WORKDIR/ligands/ligand_${lig_index}.pdb ./
+                             cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                              fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
                              chains=`grep -c ">" ${fasta_file}`     
                              if  [ $chains -eq $ONES ]
@@ -181,6 +179,7 @@ do
                      ${job_submit}                                               dock
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
+                 echo "brakepoint!" ; sleep 1000
                  
                  cd $WORKDIR
                  sh $vini_dir/wait_until_jobs_finish
@@ -204,7 +203,6 @@ do
 
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 echo "brakepoint!" ; sleep 1000
 
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir

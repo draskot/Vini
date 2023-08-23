@@ -68,7 +68,7 @@ mkdir -p $vini_dir/ligands/sdf_files
 mkdir -p $vini_dir/ligands/pdbqt_files
 mkdir -p $vini_dir/ligands/fasta_files
 mkdir -p $vini_dir/ligands/sme_files
-mkdir -p $WORKDIR/ligands   #stagging area
+mkdir -p $WORKDIR/ligands_stage   #stagging area
 
 mkdir -p $vini_dir/genes
 mkdir -p $vini_dir/genes/pdb_files
@@ -92,7 +92,7 @@ else
     echo scancel > job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh $vini_dir/set_partitions
-    read -e -p "Enter the name of partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
+    read -e -p "Enter name of the default partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
     echo $active_partition > active_partition
     echo $JSS > $WORKDIR/JSS
 fi
@@ -168,7 +168,7 @@ partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 Vinathreads=4
 
-read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "8000" maxcores
+read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
 maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
 
 Vinajobs=`echo $maxcores $Vinathreads | awk '{print $1 / $2}'`
@@ -307,7 +307,7 @@ if [ $yesno == y ]
 then
     compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
     #DU145, PC3, and LNCaP cells - prostate cell lines
-    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "PC-3" cell_line
+    read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "DU-145" cell_line
     if  [ $cosmic == "y" ]
     then
         if  [ ! -e $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv ]
@@ -401,9 +401,10 @@ read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/
 if  [ $mode == n ]
 then
     nohup ./VelikaVini & 
-    masterpid=$! ; echo $masterpid > masterpid
+    echo $! > masterpid
     echo "Vini will now continue to work in the background."
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
 else
     ./VelikaVini
+    echo $! > masterpid
 fi
