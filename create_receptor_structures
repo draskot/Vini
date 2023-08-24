@@ -123,8 +123,13 @@ do
                             echo "Downloading ${accession_code} structure from RCSB and cleaning it from water and ligands..."
                             wget -q -O ${uniprot_id}.pdb.gz  http://www.rcsb.org/pdb/files/${accession_code}.pdb.gz
                             gzip -df ${uniprot_id}.pdb.gz
-                            grep COMPND ${uniprot_id}.pdb | grep CHAIN > tmp
+
+
+                            grep COMPND ${uniprot_id}.pdb | grep CHAIN | grep -v MOLECULE > tmp
                             line=`head -1 tmp `
+
+                            #chain=`echo $line | awk -F'CHAIN ' '{split($2, chainArr, ";"); print chainArr[1]}'`
+
                             chain=`echo $line | awk '{print $4}' `
                             nowords=`echo $line | wc -w`
                             four=4
@@ -134,13 +139,14 @@ do
                             else
                                 chain=`echo $chain | tr -d ","`
                             fi
-                            echo "uniprot_id: $uniprot_id chain: $chain" ; echo 
+
+                            echo "Cleaning $uniprot_id chain $chain" ; echo 
                             python clean_pdb.py ${uniprot_id}.pdb ${chain}
                             if  [ -e ${uniprot_id}_${chain}.pdb ]
                             then
-                                echo "chain ID: $chain" ; sleep 1
+                                echo "chain ID: $chain"
                                 mv ${uniprot_id}_${chain}.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
-                                rm ${uniprot_id}_${chain}.fasta
+                                rm ${uniprot_id}_${chain}.fasta ${uniprot_id}.pdb
                                 echo "success. Adding ${uniprot_id} to $WORKDIR/receptors_contracted list with E flag."
                                 echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
                                 break

@@ -116,33 +116,33 @@ fi
 #    echo "yes."
 #fi
 
-echo -n "checking if UCSF Chimera is installed..."
-grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
-if  [ ! -s tmp ]
-then
-    echo "no."
-    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i"chimera-1.17.3-linux_x86_64" chimera 
-    chimera=chimera-1.17.3-linux_x86_64
-    echo -n "Chimera installation directory must be empty. Performing cleanup..."
-    rm -rf $INSTALL/${chimera}
-    echo "done."
-    echo "Download Chimera ${chimera}.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
-    read -p "Put ${chimera}.bin into $INSTALL directory and press enter." enter
-    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/${chimera}
-    echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
-    echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
-    read -p "press enter to continue." enter
-    chmod u+x $INSTALL/${chimera}.bin
-    cd $INSTALL
-    ./${chimera}.bin
-    rm ${chimera}.bin
-    cd $vini_dir
-    echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> $vini_dir/sourceme
-    echo "Installation done. Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py , otherwise it will not work as expected!" 
-else
-    echo "yes."
-fi
+#echo -n "checking if UCSF Chimera is installed..."
+#grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
+#if  [ ! -s tmp ]
+#then
+#    echo "no."
+#    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i"chimera-1.17.3-linux_x86_64" chimera 
+#    chimera=chimera-1.17.3-linux_x86_64
+#    echo -n "Chimera installation directory must be empty. Performing cleanup..."
+#    rm -rf $INSTALL/${chimera}
+#    echo "done."
+#    echo "Download Chimera ${chimera}.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
+#    read -p "Put ${chimera}.bin into $INSTALL directory and press enter." enter
+#    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/${chimera}
+#    echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
+#    echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
+#    read -p "press enter to continue." enter
+#    chmod u+x $INSTALL/${chimera}.bin
+#    cd $INSTALL
+#    ./${chimera}.bin
+#    rm ${chimera}.bin
+#    cd $vini_dir
+#    echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
+#    echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> $vini_dir/sourceme
+#    echo "Installation done. Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py , otherwise it will not work as expected!" 
+#else
+#    echo "yes."
+#fi
 
 #echo -n "checking if MGLTools are installed..."
 #grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7

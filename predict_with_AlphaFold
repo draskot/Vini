@@ -56,6 +56,8 @@ else
         #echo "#SBATCH --exclude=${excluded_nodes}"                         >> $WORKDIR/AlphaFold_${antibody}
         echo "WORKDIR=${WORKDIR}"                                           >> $WORKDIR/AlphaFold_${antibody}
     else
+        partition=`cat longcpu_partition`
+        walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
         echo "Error while trying to predict $antibody structure with AlphaFold."                        >> Vini.crashlog
         echo "Running AlphaFold prediction on $partition node will exceed walltime limit of $walltime." >> Vini.crashlog
         echo "Use SWISS-MODEL to predict $vini_dir/genes/fasta_files/${antibody}.fasta structure"       >> Vini.crashlog
@@ -66,7 +68,11 @@ else
             masterpid=`cat masterpid`
             kill -9 $masterpid
         else
-            echo "Exit and use SWISS-MODEL to predict the $antibody structure." ; sleep 1000
+            echo "Error while trying to predict $antibody structure with AlphaFold."  
+            echo "Running AlphaFold prediction on $partition node will exceed walltime limit of $walltime." 
+            echo "Use SWISS-MODEL to predict $vini_dir/genes/fasta_files/${antibody}.fasta structure"       
+            echo "Then put ${antibody}.pdb in $vini_dir/genes/pdb_files folder and start Vini again."       
+            echo "exit now with Ctrl-C." ; sleep 1000
         fi
     fi
 fi

@@ -37,7 +37,7 @@ then
     echo "The following software is installed:" 
     cat sourceme | grep section | sed 's/section//' | sed 's/General//'
     programs=`grep section sourceme | wc -l`
-    NOPROGS=14   #the number of 3rd programs Vini is using
+    NOPROGS=11   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
@@ -383,7 +383,7 @@ echo ${therapy_level} > $WORKDIR/max_therapy_level
 rm -rf $WORKDIR/$cancer_type$data
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
-cp $vini_dir/prep_prot_lig.py $WORKDIR
+#cp $vini_dir/prep_prot_lig.py $WORKDIR
 num_modes=9
 echo $num_modes > $WORKDIR/num_modes
 #read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
