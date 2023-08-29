@@ -109,6 +109,8 @@ else
         sh $vini_dir/predict_mutated_genes
     fi
 
+echo "brakepoint!" ; sleep 1000
+
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors
     sh add_expressions_to_relations

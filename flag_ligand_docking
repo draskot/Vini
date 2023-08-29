@@ -6,6 +6,8 @@
 -flip_HNQ true
 
 -ignore_ligand_chi true
+-detect_disulf false
+-ignore_unrecognized_res
 
 -parser:protocol dock.xml
 
@@ -13,8 +15,6 @@
 
 -extra_res_fa LIG.params
 
--ignore_unrecognized_res
+-nstruct 1
 
 -overwrite
-
--nstruct 1

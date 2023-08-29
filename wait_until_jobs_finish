@@ -27,7 +27,6 @@ do
          echo ""                                                                          >> Vini.crashlog
          $job_cancel -u $USER
          masterpid=`cat masterpid`
-         kill -P $masterpid
          kill -9 $masterpid
      fi
 
@@ -44,7 +43,6 @@ do
          new="\/ceph\/hpc\/data\/r2022r03-224-users\/eudraskot\/WORKDIR"
          sed -i -e "s/$old/$new/" $vini_dir/sourceme 
          masterpid=`cat masterpid`
-         kill -P $masterpid
          kill -9 $masterpid
      fi
 done
