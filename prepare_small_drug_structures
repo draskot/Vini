@@ -11,7 +11,7 @@ do
     if  [ $type == S ]
     then
         drug=`echo $line | awk -F','  '{print $1}'`
-        if [ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]
+        if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] || [[ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]]
         then
             code=`echo $line | awk -F','  '{print $3}'`
             if [ $code != NA ]
@@ -38,13 +38,11 @@ do
                         obabel -isdf $vini_dir/ligands/sdf_files/"${drug}".sdf -opdb -O $vini_dir/ligands/pdb_files/"${drug}".pdb -h
                     else
                         echo "No $drug 3D structure found! You have to create it manually."
-                        rm -f $vini_dir/ligands/sdf_files/"${drug}".sdf                                   #no 3D structure found
                         wget -q -O $vini_dir/ligands/sme_files/${drug}.smiles https://go.drugbank.com/structures/small_molecule_drugs/${DBID}.smiles #download smiles
                         echo "$drug smiles downloaded and are in $vini_dir/ligands/sme_files/$drug.smiles file."
-                        echo "Use one of the online smiles translators (e.g https://cactus.nci.nih.gov/translate/ or https://novoprolabs.com/tools/smiles2pdb to generate 3D ${drug}.pdb file."
-                        read -p "Put this file in $vini_dir/ligands/pdb_files/folder and press any key to cont." anykey
-                        
-                        obabel -ipdb $vini_dir/ligands/pdb_files/${drug}.pdb -osdf -O $vini_dir/ligands/sdf_files/${drug}.sdf -h
+                        echo "Use one of the online smiles translators (e.g https://cactus.nci.nih.gov/translate/ or https://novoprolabs.com/tools/smiles2pdb to generate 3D ${drug}.sdf file."
+                        read -p "Put this file in $vini_dir/ligands/sdf_files/"${drug}".sdf and press any key to cont." anykey
+                        obabel -isdf $vini_dir/ligands/sdf_files/${drug}.sdf -opdb -O $vini_dir/ligands/pdb_files/${drug}.pdb -h
                     fi
                 else
                         echo "No $drug 3D structure found!"
