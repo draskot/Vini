@@ -4,6 +4,8 @@ base=$3
 fasta_file=$4
 outdir=$5
 
+excluded_nodes=`cat excluded_${partition}_nodes`
+
 ONES=1
 maxlines1=23
 maxlines2=40
@@ -53,7 +55,7 @@ else
         echo "#SBATCH --ntasks-per-node=1"                                  >> $WORKDIR/AlphaFold_${antibody}
         echo "#SBATCH --cpus-per-task="$cpus                                >> $WORKDIR/AlphaFold_${antibody}
         echo "#SBATCH --partition="$partition                               >> $WORKDIR/AlphaFold_${antibody}
-        #echo "#SBATCH --exclude=${excluded_nodes}"                         >> $WORKDIR/AlphaFold_${antibody}
+        echo "#SBATCH --exclude=${excluded_nodes}"                         >> $WORKDIR/AlphaFold_${antibody}
         echo "WORKDIR=${WORKDIR}"                                           >> $WORKDIR/AlphaFold_${antibody}
     else
         partition=`cat longcpu_partition`
@@ -99,4 +101,6 @@ chmod u+x                                                  $WORKDIR/AlphaFold_${
 rm -rf $WORKDIR/${antibody} #cleanup
 job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
+job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
+squeue -u | grep ${job_id} | grep  launch failed
 

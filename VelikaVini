@@ -109,7 +109,6 @@ else
         sh $vini_dir/predict_mutated_genes
     fi
 
-echo "brakepoint!" ; sleep 1000
 
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors
@@ -167,6 +166,7 @@ while  read -r line                                              #Copy pdb recep
 do
        printf -v i "%03d" $j
        gene=`echo $line | awk '{print $3}'` #get entry name
+       echo "Copying ${gene} structure to $WORKDIR/${cancer_type}_data area."
        cp $vini_dir/genes/pdb_files/${gene}.pdb $WORKDIR/${cancer_type}_data/complex_${i}.pdb
        let j++
 done < $WORKDIR/receptors_contracted
@@ -177,14 +177,14 @@ do
     drug=`echo $line | awk -F',' '{print $1}'`
     type=`echo $line | awk -F',' '{print $2}'`
     printf -v lig_index "%03d" $i
-    echo "copying "${drug}" structure to the stagging area."
+    echo "Copying "${drug}" structure to the stagging area."
     if  [ $type == S ]
     then
         echo "drug: $drug type: $type "
-        cp $vini_dir/ligands/sdf_files/"${drug}".sdf $WORKDIR/ligands/ligand_${lig_index}.sdf
-        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+        cp $vini_dir/ligands/sdf_files/"${drug}".sdf $WORKDIR/ligands_stage/ligand_${lig_index}.sdf
+        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands_stage/ligand_${lig_index}.pdb
     else
-        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands/ligand_${lig_index}.pdb
+        cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands_stage/ligand_${lig_index}.pdb
     fi
     let i++
 done < $vini_dir/ligands/ligands_list
@@ -193,6 +193,7 @@ done < $vini_dir/ligands/ligands_list
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
     echo $therapy_level > $WORKDIR/therapy_level
+    echo "brakepoint!" ; sleep 1000
     sh $vini_dir/malavini
 done
 

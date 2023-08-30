@@ -34,7 +34,7 @@ chmod u+x                                                    $WORKDIR/get_number
 
 rm -f $WORKDIR/gpus.*
 
-sbatch $WORKDIR/get_number_gpus_per_node
+$job_submit $WORKDIR/get_number_gpus_per_node
 
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 

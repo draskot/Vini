@@ -202,7 +202,7 @@ else
     fi
 fi
 
-sh $vini_dir/renew_Drugbank_data  #update drug?links.csv file if more than 7 days old
+sh $vini_dir/renew_Drugbank_data  #update drug?links.csv file
 
 cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.orig #saving the original list of drugs
 

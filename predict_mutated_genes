@@ -50,6 +50,8 @@ do
         echo "Predicting the structure of mutated ${uniprot_id} with AlphaFold."
         fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
         sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+    else
+        echo "${uniprot_id} structure found in repository."
     fi
 done < $WORKDIR/wild
 

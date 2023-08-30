@@ -1,7 +1,7 @@
 partition=$1
 walltime=$2
 
-
+job_submit=`cat job_submit`
 
 eval excluded_nodes=excluded_"$partition"_nodes
 eval available_nodes=available_"$partition"_nodes
@@ -83,7 +83,7 @@ else
         echo "groups"                                        >> $WORKDIR/${partition}_nodetest
         echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/${partition}_nodetest
         chmod u+x $WORKDIR/${partition}_nodetest
-        sbatch -Q $WORKDIR/${partition}_nodetest
+        $job_submit -Q $WORKDIR/${partition}_nodetest
         echo -n "."
     done
     echo

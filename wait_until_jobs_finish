@@ -25,6 +25,9 @@ do
      then
          echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
          echo ""                                                                          >> Vini.crashlog
+         requeued_job=`squeue -u eudraskot | grep Q07889 | awk '{print $1}'`
+         requeued_node=`squeue -u eudraskot | grep Q07889 | awk '{print $8}'`
+         ${job_cancel} ${requeued_job}
          $job_cancel -u $USER
          masterpid=`cat masterpid`
          kill -9 $masterpid
