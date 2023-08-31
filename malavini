@@ -63,7 +63,6 @@ SECONDS=$NULL
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
-
 for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
     for (( J=$((Lambda)); J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
@@ -105,51 +104,60 @@ do
                          then
                              echo "TER                                                                            " >> complex_${comp_index}.pdb
                          fi
-                         source $INSTALL/miniconda2/bin/activate"
+                         source $INSTALL/miniconda2/bin/activate
                          cp $ROSETTA_TOOLS/amino_acids.py ./
                          cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
                          python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
                          mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
                          conda deactivate
-
-                         echo "#!/bin/bash"                                                                    > dock
-                         echo "#SBATCH --time=$walltime"                                                      >> dock
-                         echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
-                         echo "#SBATCH --partition=$partition"                                                >> dock
-                         echo "#SBATCH --nodes=1"                                                             >> dock
-                         echo "#SBATCH --ntasks=1"                                                            >> dock
-                         echo "#SBATCH --cpus-per-task=48"                                                    >> dock
-                         echo "#SBATCH --job-name=Rozy_${M}_${N}"                                             >> dock
-                         echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out"                             >> dock
-                         echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
-                         echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
+                         #echo "#!/bin/bash"                                                                    > dock
+                         #echo "#SBATCH --time=$walltime"                                                      >> dock
+                         #echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
+                         #echo "#SBATCH --partition=$partition"                                                >> dock
+                         #echo "#SBATCH --nodes=1"                                                             >> dock
+                         #echo "#SBATCH --ntasks=1"                                                            >> dock
+                         #echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                         #echo "#SBATCH --job-name=Rozy_${M}_${N}"                                             >> dock
+                         #echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out"                             >> dock
+                         #echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
+                         #echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
                          if  [ $moltype == S ]
                          then
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
-                             
-                             $INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50
-                             python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf
-
-                             cp $vini_dir/docking.mac ./ #generate crystal complex
-                             cp ligand_${lig_index}.pdb ligand.pdb
+                             cp $vini_dir/flag_ligand_docking $vini_dir/dock.xml ./
+                             cp $vini_dir/docking.mac ./ 
                              cp complex_${comp_index}.pdb receptor.pdb
-                             hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log
-                             grep -v REMARK complex.pdb > tmp
-                             sed -i '$ d' tmp
-                             echo "TER                                                                            " >> tmp
-                             mv tmp crystal_complex.pdb
 
-                             cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb
-
-                             echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                                                 >> dock
-                             echo "if [ -e ROSETTA_CRASH.log ] ; then"                                                      >> dock
-                             echo "echo "error" > $target_dir/log_${comp_index}"                                            >> dock
-                             echo "else"                                                                                    >> dock
-                             echo "fi"                                                                                      >> dock
-                             echo "score=`grep SCORE score.sc | awk '{print $2}' | sort -n | head -1`"                      >> dock
-                             echo "echo $score > $target_dir/log_${comp_index}"                                             >> dock
-                             echo "cp complex_001_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"       >> dock
-
+                             echo "#!/bin/bash"                                                                    > dock
+                             echo "#SBATCH --time=$walltime"                                                      >> dock
+                             echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
+                             echo "#SBATCH --partition=$partition"                                                >> dock
+                             echo "#SBATCH --nodes=1"                                                             >> dock
+                             echo "#SBATCH --ntasks=1"                                                            >> dock
+                             echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                             echo "#SBATCH --job-name=Rozy_${M}_${N}"                                             >> dock
+                             echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out"                             >> dock
+                             echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
+                             echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
+                             echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50"                                                                                             >> dock
+                             echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> dock
+                             echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> dock
+                             echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
+                             echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> dock
+                             echo "grep -v REMARK complex.pdb > tmp"                                              >> dock
+                             echo "sed -i '$ d' tmp"                                                              >> dock
+                             echo "echo  \"TER                                                                             \" >> tmp" >> dock
+                             echo "mv tmp crystal_complex.pdb"                                                    >> dock
+                             echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb" >> dock
+                             echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                       >> dock
+                             
+                             echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> dock
+                             echo "echo error > $target_dir/log_${comp_index}"                                    >> dock
+                             echo "else"                                                                          >> dock
+                             echo "score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$2}' | sort -n | head -1\`" >> dock
+                             echo "echo \${score} > $target_dir/log_${comp_index}"                                >> dock
+                             echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
+                             echo "fi"                                                                            >> dock
                          else              
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                              fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
@@ -169,6 +177,17 @@ do
                              cp ligand_${lig_index}.pdb ligand.pdb
                              hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log 
                              cp complex.pdb complex_${comp_index}.pdb
+                             echo "#!/bin/bash"                                                                    > dock
+                             echo "#SBATCH --time=$walltime"                                                      >> dock
+                             echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
+                             echo "#SBATCH --partition=$partition"                                                >> dock
+                             echo "#SBATCH --nodes=1"                                                             >> dock
+                             echo "#SBATCH --ntasks=1"                                                            >> dock
+                             echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                             echo "#SBATCH --job-name=Rozy_${M}_${N}"                                             >> dock
+                             echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out"                             >> dock
+                             echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
+                             echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
                              echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                            >> dock
                              echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                         >> dock
                              echo "if [ -e ROSETTA_CRASH.log ] ; then"                >> dock
@@ -184,11 +203,11 @@ do
                      ${job_submit}                                               dock
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
+
                  echo "brakepoint!" ; sleep 1000
                  
                  cd $WORKDIR
                  sh $vini_dir/wait_until_jobs_finish
-
 
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
@@ -208,7 +227,6 @@ do
 
                  sh $vini_dir/wait_until_jobs_finish
                  
-
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir
                  echo "#!/bin/bash"                                          > ${target_dir}/mat_${lig_index}
@@ -267,7 +285,6 @@ do
                  chmod u+x ${target_dir}/select_${lig_index}
                  ${job_submit} ${target_dir}/select_${lig_index} ${M} ${L} ${J} ${I} ${target_dir} 
                  sh $vini_dir/wait_until_jobs_finish
-
                  let ligand_number++
              done   #end of 4thloop
          done       #end of 3rd loop

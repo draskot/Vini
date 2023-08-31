@@ -193,7 +193,6 @@ done < $vini_dir/ligands/ligands_list
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
     echo $therapy_level > $WORKDIR/therapy_level
-    echo "brakepoint!" ; sleep 1000
     sh $vini_dir/malavini
 done
 
