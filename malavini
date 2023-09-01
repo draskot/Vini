@@ -110,23 +110,20 @@ do
                          python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
                          mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
                          conda deactivate
-                         #echo "#!/bin/bash"                                                                    > dock
-                         #echo "#SBATCH --time=$walltime"                                                      >> dock
-                         #echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
-                         #echo "#SBATCH --partition=$partition"                                                >> dock
-                         #echo "#SBATCH --nodes=1"                                                             >> dock
-                         #echo "#SBATCH --ntasks=1"                                                            >> dock
-                         #echo "#SBATCH --cpus-per-task=48"                                                    >> dock
-                         #echo "#SBATCH --job-name=Rozy_${M}_${N}"                                             >> dock
-                         #echo "#SBATCH --output=${target_dir}/Rozy_${M}_${N}.out"                             >> dock
-                         #echo "#SBATCH --error=${target_dir}/Rozy_${M}_${N}.err"                              >> dock
-                         #echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
                          if  [ $moltype == S ]
                          then
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                              cp $vini_dir/flag_ligand_docking $vini_dir/dock.xml ./
                              cp $vini_dir/docking.mac ./ 
                              cp complex_${comp_index}.pdb receptor.pdb
+
+                             genetype=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
+                             if [[ $genetype == C* ]]
+                             then
+                                 echo "proteinisite small compound"
+                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar complex_${comp_index}.pdb UNL A
+                                 sed -i -e 's/HETATM/ATOM/g' complex_${comp_index}.pdb
+                             fi
 
                              echo "#!/bin/bash"                                                                    > dock
                              echo "#SBATCH --time=$walltime"                                                      >> dock
@@ -152,7 +149,7 @@ do
                              echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                       >> dock
                              
                              echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> dock
-                             echo "echo error > $target_dir/log_${comp_index}"                                    >> dock
+                             echo "echo ERROR > $target_dir/log_${comp_index}"                                    >> dock
                              echo "else"                                                                          >> dock
                              echo "score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$2}' | sort -n | head -1\`" >> dock
                              echo "echo \${score} > $target_dir/log_${comp_index}"                                >> dock
@@ -191,7 +188,7 @@ do
                              echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                            >> dock
                              echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                         >> dock
                              echo "if [ -e ROSETTA_CRASH.log ] ; then"                >> dock
-                             echo "echo "error" > $target_dir/log_${comp_index}"      >> dock
+                             echo "echo "ERROR" > $target_dir/log_${comp_index}"      >> dock
                              echo "else"                                              >> dock
                              echo "cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                              echo "grep complex_${comp_index}_0002_0001 score.sc | awk '{print  \$2}' > $target_dir/log_${comp_index}" >> dock
@@ -204,10 +201,11 @@ do
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
 
-                 echo "brakepoint!" ; sleep 1000
                  
                  cd $WORKDIR
                  sh $vini_dir/wait_until_jobs_finish
+                 
+                 echo "brakepoint! lig_index: ${lig_index} target_dir: ${target_dir}" ; sleep 1000
 
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
