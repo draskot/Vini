@@ -99,7 +99,7 @@ do
                          sed -i '$ d' complex_${comp_index}.pdb
                          grep -v COMPND complex_${comp_index}.pdb > tmp
                          mv tmp complex_${comp_index}.pdb
-                         grep TER complex_${comp_index}.pdb > tmp
+                         grep -w TER complex_${comp_index}.pdb > tmp
                          if  [ -s tmp ]
                          then
                              echo "TER                                                                            " >> complex_${comp_index}.pdb
@@ -116,14 +116,6 @@ do
                              cp $vini_dir/flag_ligand_docking $vini_dir/dock.xml ./
                              cp $vini_dir/docking.mac ./ 
                              cp complex_${comp_index}.pdb receptor.pdb
-
-                             genetype=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
-                             if [[ $genetype == C* ]]
-                             then
-                                 echo "proteinisite small compound"
-                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar complex_${comp_index}.pdb UNL A
-                                 sed -i -e 's/HETATM/ATOM/g' complex_${comp_index}.pdb
-                             fi
 
                              echo "#!/bin/bash"                                                                    > dock
                              echo "#SBATCH --time=$walltime"                                                      >> dock
@@ -146,7 +138,7 @@ do
                              echo "echo  \"TER                                                                             \" >> tmp" >> dock
                              echo "mv tmp crystal_complex.pdb"                                                    >> dock
                              echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb" >> dock
-                             echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                       >> dock
+                             echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                                      >> dock
                              
                              echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> dock
                              echo "echo ERROR > $target_dir/log_${comp_index}"                                    >> dock
@@ -157,17 +149,28 @@ do
                              echo "fi"                                                                            >> dock
                          else              
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
-                             fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
-                             chains=`grep -c ">" ${fasta_file}`     
-                             if  [ $chains -eq $ONES ]
+
+                             genetype=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
+                             if [[ $genetype == C* ]]
                              then
-                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A Z
-                                 mv ligand_${lig_index}.pdb_A_to_Z.pdb ligand_${lig_index}.pdb
+                                 echo "swaping receptor and ligand"
+                                 cp complex_${comp_index}.pdb tmp
+                                 cp ligand_${lig_index}.pdb complex_${comp_index}.pdb
+                                 cp tmp ligand_${lig_index}.pdb
                              else
-                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
-                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
-                                 mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
+                                 fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
+                                 chains=`grep -c ">" ${fasta_file}`     
+                                 if  [ $chains -eq $ONES ]
+                                 then
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A Z
+                                     mv ligand_${lig_index}.pdb_A_to_Z.pdb ligand_${lig_index}.pdb
+                                 else
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
+                                     mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
+                                 fi
                              fi
+
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
                              cp complex_${comp_index}.pdb receptor.pdb   #generate complex with Hex

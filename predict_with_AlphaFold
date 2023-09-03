@@ -4,11 +4,11 @@ base=$3
 fasta_file=$4
 outdir=$5
 
-excluded_nodes=`cat excluded_${partition}_nodes`
 
 ONES=1
 maxlines1=23
-maxlines2=40
+#maxlines2=40
+maxlines2=42
 
 model=`grep -c ">" ${fasta_file}`
 if  [ $model -eq $ONES ]
@@ -26,6 +26,7 @@ if  [ $nolines -le $maxlines1 ]
 then
     partition=`cat cpu_partition`
     walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
+    excluded_nodes=`cat excluded_${partition}_nodes`
     echo "#!/bin/bash"                                                   > $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --time=$walltime"                                     >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --job-name=$antibody"                                 >> $WORKDIR/AlphaFold_${antibody}
@@ -44,6 +45,8 @@ else
     then
         partition=`cat longcpu_partition`
         walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
+        #excluded_nodes=`cat excluded_${partition}_nodes`
+        excluded_nodes=`cat excluded_cpu_nodes`
         echo "#!/bin/bash"                                                   > $WORKDIR/AlphaFold_${antibody}
         echo "#SBATCH --time=$walltime"                                     >> $WORKDIR/AlphaFold_${antibody}
         echo "#SBATCH --job-name=$antibody"                                 >> $WORKDIR/AlphaFold_${antibody}
@@ -101,6 +104,6 @@ chmod u+x                                                  $WORKDIR/AlphaFold_${
 rm -rf $WORKDIR/${antibody} #cleanup
 job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
-job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
-squeue -u | grep ${job_id} | grep  launch failed
+#job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
+#squeue -u | grep ${job_id} | grep  launch failed
 

@@ -144,42 +144,42 @@ fi
 #    echo "yes."
 #fi
 
-#echo -n "checking if MGLTools are installed..."
-#grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
-#if  [ ! -s tmp ]
-#then
-#    echo "no."
-#    rm -rf $INSTALL/index*
-#    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
-#    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-#    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
-#    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
-#    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
-#    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
-#    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
-#    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
-#    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
-#    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
-#    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
-#    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-#else
-#    echo "yes."
-#fi
+echo -n "checking if MGLTools are installed..."
+grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
+if  [ ! -s tmp ]
+then
+    echo "no."
+    rm -rf $INSTALL/index*
+    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
+    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
+    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
+    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
+    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
+    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
+    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
+    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
+    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
+    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
+    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+else
+    echo "yes."
+fi
 
-#echo -n "checking if Vina is installed..."
-#grep Vina $vini_dir/sourceme > tmp
+echo -n "checking if Vina is installed..."
+grep Vina $vini_dir/sourceme > tmp
 nolines=`wc -l < tmp`
-#if [ $nolines -eq $NULL ]
-#then
-#    echo "no. Installing Vina..."
-#    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-#    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
-#    chmod u+x $INSTALL/vina
-#    echo "#***** Vina section******" >> $vini_dir/sourceme
-#    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
-#else
-#    echo "yes."
-#fi
+if [ $nolines -eq $NULL ]
+then
+    echo "no. Installing Vina..."
+    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
+    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
+    chmod u+x $INSTALL/vina
+    echo "#***** Vina section******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
 
 #echo -n "Checking if ADFR suite is installed..."
 #grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
