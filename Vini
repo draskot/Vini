@@ -367,15 +367,15 @@ ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/liga
 #AD4_parameters.dat is located in $MGLTOOLS directory
 #Copy it to the working directory : http://autodock.scripps.edu/faqs-help/faq/how-do-i-add-new-atom-types-to-autodock-4
 
-#echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
-#if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
-#then
-#    cp $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat.orig
-#    grep atom_par $vini_dir/AD4_parameters_for_metal_ions >> $MGLTOOLS/AD4_parameters.dat
-#    echo "parameters for metal ions added."
-#else
-#    echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
-#fi
+echo -n "Checking if AD4_parameters.dat file in MGLTools needs modification..."
+if [ ! -e $MGLTOOLS/AD4_parameters.dat.orig ] #enable MGLTools to work with metal ions
+then
+    cp $MGLTOOLS/AD4_parameters.dat $MGLTOOLS/AD4_parameters.dat.orig
+    grep atom_par $vini_dir/AD4_parameters_for_metal_ions >> $MGLTOOLS/AD4_parameters.dat
+    echo "parameters for metal ions added."
+else
+    echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
+fi
 
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
 echo ${therapy_level} > $WORKDIR/max_therapy_level

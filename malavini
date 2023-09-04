@@ -119,38 +119,87 @@ do
                          cp $vini_dir/docking.mac ./      #prepare files for Hex
                          if  [ $drugtype == S ]
                          then
-                             cp $vini_dir/flag_ligand_docking #Performing protein-ligand docking
-                             cp complex_${comp_index}.pdb receptor.pdb
-                             cp ligand_${lig_index}.pdb ligand.pdb
-                             echo "#!/bin/bash"                                                                    > dock
-                             echo "#SBATCH --time=$walltime"                                                      >> dock
-                             echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
-                             echo "#SBATCH --partition=$partition"                                                >> dock
-                             echo "#SBATCH --nodes=1"                                                             >> dock
-                             echo "#SBATCH --ntasks=1"                                                            >> dock
-                             echo "#SBATCH --cpus-per-task=48"                                                    >> dock
-                             echo "#SBATCH --job-name=R${M}.${N}"                                                 >> dock
-                             echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                                >> dock
-                             echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
-                             echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
-                             echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
-                             echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> dock
-                             echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> dock
-                             echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
-                             echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> dock
-                             echo "grep -v REMARK complex.pdb > tmp"                                              >> dock
-                             echo "sed -i '$ d' tmp"                                                              >> dock
-                             echo "echo  \"TER                                                                             \" >> tmp" >> dock
-                             echo "mv tmp crystal_complex.pdb"                                                    >> dock
-                             echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb" >> dock
-                             echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                                      >> dock
-                             echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> dock
-                             echo "echo ERROR > $target_dir/log_${comp_index}"                                    >> dock
-                             echo "else"                                                                          >> dock
-                             echo "score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$2}' | sort -n | head -1\`" >> dock
-                             echo "echo \${score} > $target_dir/log_${comp_index}"                                >> dock
-                             echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
-                             echo "fi"                                                                            >> dock
+                             if [[ $genename == C* ]]
+                             then
+                                 cp $vini_dir/flag_ligand_docking #Performing protein-ligand docking
+                                 cp complex_${comp_index}.pdb receptor.pdb
+                                 cp ligand_${lig_index}.pdb ligand.pdb
+                                 echo "#!/bin/bash"                                                                    > dock
+                                 echo "#SBATCH --time=$walltime"                                                      >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
+                                 echo "#SBATCH --partition=$partition"                                                >> dock
+                                 echo "#SBATCH --nodes=1"                                                             >> dock
+                                 echo "#SBATCH --ntasks=1"                                                            >> dock
+                                 echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                                 >> dock
+                                 echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                                >> dock
+                                 echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
+                                 echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
+                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> dock
+                                 echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> dock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
+                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> dock
+                                 echo "grep -v REMARK complex.pdb > tmp"                                              >> dock
+                                 echo "sed -i '$ d' tmp"                                                              >> dock
+                                 echo "echo  \"TER                                                                             \" >> tmp" >> dock
+                                 echo "mv tmp crystal_complex.pdb"                                                    >> dock
+                                 echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb" >> dock
+                                 echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                                      >> dock
+                                 echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> dock
+                                 echo "echo ERROR > $target_dir/log_${comp_index}"                                    >> dock
+                                 echo "else"                                                                          >> dock
+                                 echo "score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$2}' | sort -n | head -1\`" >> dock
+                                 echo "echo \${score} > $target_dir/log_${comp_index}"                                >> dock
+                                 echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
+                                 echo "fi"                                                                            >> dock
+                             else
+                                 echo "Generating complex with AD Vina."
+                                 cp $MGLTOOLS/AD4_parameters.dat ./
+                                 if  [ ! -e ${comp_source}/complex_${comp_index}.pdbqt ] #get receptor pdbqt file
+                                 then
+                                     $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r $comp_source/complex_$comp_index.pdb -o $comp_source/complex_${comp_index}.pdbqt
+                                 else
+                                     cp ${comp_source}/complex_${comp_index}.pdbqt ./
+                                 fi
+
+                                 if  [ -e $WORKDIR/ligands/ligand_${lig_index}.pdbqt ]    #get ligand pdbqt file
+                                 then
+                                     cp $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
+                                 else
+                                     cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./
+                                     ls "${drug}".pdb > tmp
+                                     nowords=`wc -w < tmp`
+                                     if  [ $nowords -eq $ONES ]
+                                     then
+                                         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l "${drug}".pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt
+                                     else
+                                         mv "${drug}".pdb tmp.pdb        #python does not work with 2-name drug
+                                         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
+                                         mv tmp.pdbqt  $WORKDIR/ligands/ligand_${lig_index}.pdbqt
+                                     fi
+                                 fi
+
+                                 $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt
+                                 sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}
+                                 echo "#!/bin/bash"                                        > dock
+                                 echo "#SBATCH --time="$walltime                          >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                      >> dock
+                                 echo "#SBATCH --partition="$partition                    >> dock
+                                 echo "#SBATCH --nodes=1"                                 >> dock
+                                 echo "#SBATCH --ntasks=1"                                >> dock
+                                 echo "#SBATCH --cpus-per-task=48"                        >> dock
+                                 echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> dock
+                                 echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"               >> dock
+                                 echo "vina --cpu 48 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt"                   >> dock
+                                 #cat $vini_dir/log_Vina_IC_value                         >> dock
+                                 chmod u+x dock
+                                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                                 ${job_submit} dock
+
+
+                             fi
                          else              
                              genename=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
                              if [[ $genename == C* ]]
