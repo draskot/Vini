@@ -11,7 +11,6 @@ M=$5
 
 #if  [[ "$restart_point" =~ ^[0-9]+$ ]]
 #then
-    echo "writing restart point"
     #restart_point=`echo ${restart_point} ${restartfreq} | awk '{print $1 * $2}'`
     #echo "frequency:        ${frequency}"       >>    $WORKDIR/restartfile
     echo "ligand_number:    ${ligand_number}"   >>    $WORKDIR/restartfile

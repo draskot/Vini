@@ -37,7 +37,7 @@ then
     echo "The following software is installed:" 
     cat sourceme | grep section | sed 's/section//' | sed 's/General//'
     programs=`grep section sourceme | wc -l`
-    NOPROGS=11   #the number of 3rd programs Vini is using
+    NOPROGS=10   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."

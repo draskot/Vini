@@ -144,42 +144,42 @@ fi
 #    echo "yes."
 #fi
 
-echo -n "checking if MGLTools are installed..."
-grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
-if  [ ! -s tmp ]
-then
-    echo "no."
-    rm -rf $INSTALL/index*
-    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
-    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
-    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
-    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
-    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
-    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
-    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
-    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
-    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
-    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
-    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
-else
-    echo "yes."
-fi
+#echo -n "checking if MGLTools are installed..."
+#grep mgltools_x86_64Linux2_1.5.7 $vini_dir/sourceme > tmp #install mgltools 1.5.7
+#if  [ ! -s tmp ]
+#then
+#    echo "no."
+#    rm -rf $INSTALL/index*
+#    wget -P $INSTALL -q --no-check-certificate https://ccsb.scripps.edu/download/532/
+#    mv $INSTALL/index.html $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+#    tar -xvzf $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz -C $INSTALL
+#    cd $INSTALL/mgltools_x86_64Linux2_1.5.7
+#    sh $INSTALL/mgltools_x86_64Linux2_1.5.7/install.sh
+#    echo "#***mgltools_x86_64Linux2_1.5.7 section***" >> $vini_dir/sourceme
+#    echo "export MGLTOOLS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools" >> $vini_dir/sourceme
+#    echo "export MGLUTILS=$INSTALL/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24" >> $vini_dir/sourceme
+#    echo "export MGLBIN=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin" >> $vini_dir/sourceme
+#    echo "export MGL=$INSTALL/mgltools_x86_64Linux2_1.5.7" >> $vini_dir/sourceme #next entries for DeltaVina
+#    echo "export PATH=$INSTALL/mgltools_x86_64Linux2_1.5.7/bin:\$PATH" >> $vini_dir/sourceme
+#    rm $INSTALL/mgltools_x86_64Linux2_1.5.7.tar.gz
+#else
+#    echo "yes."
+#fi
 
-echo -n "checking if Vina is installed..."
-grep Vina $vini_dir/sourceme > tmp
-nolines=`wc -l < tmp`
-if [ $nolines -eq $NULL ]
-then
-    echo "no. Installing Vina..."
-    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
-    chmod u+x $INSTALL/vina
-    echo "#***** Vina section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#echo -n "checking if Vina is installed..."
+#grep Vina $vini_dir/sourceme > tmp
+#nolines=`wc -l < tmp`
+#if [ $nolines -eq $NULL ]
+#then
+#    echo "no. Installing Vina..."
+#    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
+#    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
+#    chmod u+x $INSTALL/vina
+#    echo "#***** Vina section******" >> $vini_dir/sourceme
+#    echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
 #echo -n "Checking if ADFR suite is installed..."
 #grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
@@ -364,80 +364,80 @@ else
 fi
 rm -f rosetta tmp
 
-echo -n "Checking if NAMD is installed..."
-grep NAMD $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no." ; echo -n "Checking if NAMD module(s) exists..."
-    module spider NAMD 2> tmp
-    grep -w error tmp > NAMD
-    if [ ! -s NAMD ]
-    then
-        echo "module(s) found" ; cat tmp
-        read -p "Do you want to use an existing NAMD module [m] or your local NAMD installation [l]?" use
-        if  [ $use == m ]
-        then
-            read -p "Select the module from the list above:" NAMD
-            echo "#*****NAMD section******" >> $vini_dir/sourceme
-            echo "module load" $NAMD >> $vini_dir/sourceme
-        else
-            read -p "Enter path where your NAMD distribution is located (e.g. /ceph/hpc/data/d2203-0100-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)" NAMD_PATH
-            echo "#*****NAMD section******" >> $vini_dir/sourceme
-            echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
-        fi
-    else
-         echo "Download NAMD binary from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory. (e.g. /ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)"
-         read -p "Enter path where your NAMD distribution is located:" enter
-         echo "#*****NAMD section******" >> $vini_dir/sourceme
-         echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
-    fi
-else
-    echo "yes."
-fi
-rm -f NAMD tmp
+#echo -n "Checking if NAMD is installed..."
+#grep NAMD $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    echo "no." ; echo -n "Checking if NAMD module(s) exists..."
+#    module spider NAMD 2> tmp
+#    grep -w error tmp > NAMD
+#    if [ ! -s NAMD ]
+#    then
+#        echo "module(s) found" ; cat tmp
+#        read -p "Do you want to use an existing NAMD module [m] or your local NAMD installation [l]?" use
+#        if  [ $use == m ]
+#        then
+#            read -p "Select the module from the list above:" NAMD
+#            echo "#*****NAMD section******" >> $vini_dir/sourceme
+#            echo "module load" $NAMD >> $vini_dir/sourceme
+#        else
+#            read -p "Enter path where your NAMD distribution is located (e.g. /ceph/hpc/data/d2203-0100-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)" NAMD_PATH
+#            echo "#*****NAMD section******" >> $vini_dir/sourceme
+#            echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
+#        fi
+#    else
+#         echo "Download NAMD binary from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory. (e.g. /ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)"
+#         read -p "Enter path where your NAMD distribution is located:" enter
+#         echo "#*****NAMD section******" >> $vini_dir/sourceme
+#         echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
+#    fi
+#else
+#    echo "yes."
+#fi
+#rm -f NAMD tmp
 
-echo -n "Checking if VMD is installed..."
-grep VMD $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no." ; echo -n "Checking if VMD module(s) exists..."
-    module spider VMD 2> tmp
-    grep -w error tmp > VMD
-    if [ ! -s VMD ]
-    then
-        echo "module(s) found" ; cat tmp
-        read -p "Do you want to use one of the existing VMD modules [m] or install your own copy [i]?" use
-        if  [ $use == m ]
-        then
-            read -p "Select the module from the list above:" VMD
-            echo "#*****VMD section******" >> $vini_dir/sourceme
-            echo "module load" $VMD >> $vini_dir/sourceme
-        else
-            if  [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
-            then
-                echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay> from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
-                read -p "Press enter when the file is in place:" enter
-            fi
-            rm -rf $INSTALL/vmd-1.9.4
-            tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
-            echo "#*****VMD section******" >> $vini_dir/sourceme
-            echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
-        fi
-    else
-        if [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
-        then
-            echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay > from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
-            read -p "Press enter when the file is in place:" enter
-        fi
-        rm -rf $INSTALL/vmd-1.9.4
-        tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
-        echo "#*****VMD section******" >> $vini_dir/sourceme
-        echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
-    fi
-else
-    echo "yes."
-fi
-rm -f VMD tmp
+#echo -n "Checking if VMD is installed..."
+#grep VMD $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    echo "no." ; echo -n "Checking if VMD module(s) exists..."
+#    module spider VMD 2> tmp
+#    grep -w error tmp > VMD
+#    if [ ! -s VMD ]
+#    then
+#        echo "module(s) found" ; cat tmp
+#        read -p "Do you want to use one of the existing VMD modules [m] or install your own copy [i]?" use
+#        if  [ $use == m ]
+#        then
+#            read -p "Select the module from the list above:" VMD
+#            echo "#*****VMD section******" >> $vini_dir/sourceme
+#            echo "module load" $VMD >> $vini_dir/sourceme
+#        else
+#            if  [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
+#            then
+#                echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay> from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
+#                read -p "Press enter when the file is in place:" enter
+#            fi
+#            rm -rf $INSTALL/vmd-1.9.4
+#            tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
+#            echo "#*****VMD section******" >> $vini_dir/sourceme
+#            echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
+#        fi
+#    else
+#        if [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
+#        then
+#            echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay > from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
+#            read -p "Press enter when the file is in place:" enter
+#        fi
+#        rm -rf $INSTALL/vmd-1.9.4
+#        tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
+#        echo "#*****VMD section******" >> $vini_dir/sourceme
+#        echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
+#    fi
+#else
+#    echo "yes."
+#fi
+#rm -f VMD tmp
 
 grep OpenBabel $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
