@@ -162,11 +162,11 @@ do
                                  chains=`grep -c ">" ${fasta_file}`     
                                  if  [ $chains -eq $ONES ]
                                  then
-                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A Z
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded-orig.jar ligand_${lig_index}.pdb A Z
                                      mv ligand_${lig_index}.pdb_A_to_Z.pdb ligand_${lig_index}.pdb
                                  else
-                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
-                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded-orig.jar ligand_${lig_index}.pdb B Z
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded-orig.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
                                      mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
                                  fi
                              fi
@@ -204,11 +204,11 @@ do
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
 
+                 echo "brakepoint! lig_index: ${lig_index} target_dir: ${target_dir}" ; sleep 1000
                  
                  cd $WORKDIR
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 echo "brakepoint! lig_index: ${lig_index} target_dir: ${target_dir}" ; sleep 1000
 
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
