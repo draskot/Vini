@@ -115,13 +115,15 @@ do
                              conda deactivate
                          fi
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
-                         cp $vini_dir/dock.xml ./
-                         cp $vini_dir/docking.mac ./      #prepare files for Hex
+                         genename=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
+                         echo "genename: $genename"
                          if  [ $drugtype == S ]
                          then
-                             if [[ $genename == C* ]]
+                             if [[ $genename != C* ]]
                              then
-                                 cp $vini_dir/flag_ligand_docking #Performing protein-ligand docking
+                                 cp $vini_dir/dock.xml ./
+                                 cp $vini_dir/docking.mac ./
+                                 cp $vini_dir/flag_ligand_docking ./ #Performing protein-ligand docking
                                  cp complex_${comp_index}.pdb receptor.pdb
                                  cp ligand_${lig_index}.pdb ligand.pdb
                                  echo "#!/bin/bash"                                                                    > dock
@@ -136,7 +138,9 @@ do
                                  echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
                                  echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
-                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> dock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
+                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                                           >> dock
+                                 echo "conda deactivate"                                                              >> dock
                                  echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> dock
                                  echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> dock
@@ -162,7 +166,6 @@ do
                                  else
                                      cp ${comp_source}/complex_${comp_index}.pdbqt ./
                                  fi
-
                                  if  [ -e $WORKDIR/ligands/ligand_${lig_index}.pdbqt ]    #get ligand pdbqt file
                                  then
                                      cp $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
@@ -179,7 +182,6 @@ do
                                          mv tmp.pdbqt  $WORKDIR/ligands/ligand_${lig_index}.pdbqt
                                      fi
                                  fi
-
                                  $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt
                                  sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}
                                  echo "#!/bin/bash"                                        > dock
@@ -192,16 +194,14 @@ do
                                  echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> dock
                                  echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"               >> dock
-                                 echo "vina --cpu 48 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_$log_index.txt"                   >> dock
-                                 #cat $vini_dir/log_Vina_IC_value                         >> dock
+                                 echo "vina --cpu 48 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_${comp_index}"                    >> dock
+                                 echo "echo ERROR > $target_dir/log_${comp_index}"        >> dock
+                                 echo "obabel -ipdbqt $target_dir/complex_${comp_index}.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> dock
                                  chmod u+x dock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} dock
-
-
                              fi
                          else              
-                             genename=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
                              if [[ $genename == C* ]]
                              then
                                  cp complex_${comp_index}.pdb tmp #Swapping protein-ligand and performing protein-ligand docking
@@ -217,12 +217,14 @@ do
                                  echo "#SBATCH --nodes=1"                                                             >> dock
                                  echo "#SBATCH --ntasks=1"                                                            >> dock
                                  echo "#SBATCH --cpus-per-task=48"                                                    >> dock
-                                 echo "#SBATCH --job-name=R${M}.${N}"                                                >> dock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                                 >> dock
                                  echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                                >> dock
                                  echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock
                                  echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
-                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> dock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
+                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                                           >> dock
+                                 echo "conda deactivate"                                                              >> dock
                                  echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> dock
                                  echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> dock
@@ -278,9 +280,9 @@ do
                              fi
                          fi
                      fi
-                     chmod u+x                                                                                        dock         
+                     chmod u+x                                                                                    dock         
                      sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                     ${job_submit}                                                                                    dock
+                     ${job_submit} -Q                                                                             dock
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
 

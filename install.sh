@@ -181,23 +181,23 @@ else
     echo "yes."
 fi
 
-#echo -n "Checking if ADFR suite is installed..."
-#grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
-#if  [ ! -s tmp ]
-#then
-#    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
-#    rm -f $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
-#    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
-#    wget -O $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
-#    tar -xzf $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
-#    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
-#    sh install.sh
-#    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
-#    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
-#    rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
-#else
-#    echo "yes."
-#fi
+echo -n "Checking if ADFR suite is installed..."
+grep ADFRsuite $vini_dir/sourceme > tmp    #install ADFRsuite1.0
+if  [ ! -s tmp ]
+then
+    echo -n "no. Please wait while ADFR suite 1.0 is installed..."
+    rm -f $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
+    rm -rf $INSTALL/ADFRsuite_x86_64Linux_1.0
+    wget -O $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz https://ccsb.scripps.edu/adfr/download/1038/
+    tar -xzf $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz -C $INSTALL
+    cd $INSTALL/ADFRsuite_x86_64Linux_1.0
+    sh install.sh
+    echo "#***ADFRsuite 1.0 section***" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/ADFRsuite_x86_64Linux_1.0/bin:\$PATH"  >> $vini_dir/sourceme
+    rm $INSTALL/ADFRsuite_x86_64Linux_1.0.tar.gz
+else
+    echo "yes."
+fi
 
 echo -n "Checking if database is in place..."
 grep database $vini_dir/sourceme > tmp
@@ -439,41 +439,43 @@ rm -f rosetta tmp
 #fi
 #rm -f VMD tmp
 
-grep OpenBabel $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    module spider Openbabel 2> tmp
-    grep -w error tmp > openbabel
-    if [ ! -s openbabel ]
-    then
-        echo "Found the following openbabel module(s):" ; cat tmp
-        read -p "Please select one of Openbabel modules found:" openbabel
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "module load" $openbabel >> $vini_dir/sourceme
-    else
-        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
-        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
-        
-        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
-        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
-        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
-        cd $INSTALL/openbabel-openbabel-3-1-1/build
-        rm -rf $INSTALL/openbabel-3.1.1
-        module purge
-        module load CMake/3.20.1-GCCcore-10.3.0
-        module load Boost/1.76.0-GCC-10.3.0
-        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-        make -j 4
-        make install
-        cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
-        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
-        cd $vini_dir
-        echo -n "done."
-    fi
-fi
-rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
+#grep OpenBabel $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    module spider Openbabel 2> tmp
+#    grep -w error tmp > openbabel
+#    if [ ! -s openbabel ]
+#    then
+#        echo "Found the following openbabel module(s):" ; cat tmp
+#        read -p "Please select one of Openbabel modules found:" openbabel
+#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        echo "module load" $openbabel >> $vini_dir/sourceme
+#    else
+#        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
+#        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
+#        
+#        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
+#        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
+#        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
+#        cd $INSTALL/openbabel-openbabel-3-1-1/build
+#        rm -rf $INSTALL/openbabel-3.1.1
+#        module purge
+#        #module load CMake/3.20.1-GCCcore-10.3.0
+#        module load CMake/3.23.1-GCCcore-11.3.0
+#        #module load Boost/1.76.0-GCC-10.3.0
+#        module load Boost/1.76.0-GCC-10.3.0
+#        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+#        make -j 4
+#        make install
+        #cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
+#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
+#        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
+#        cd $vini_dir
+#        echo -n "done."
+#    fi
+#fi
+#rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
 
 echo -n "Checking if Java is installed..."
 grep Java $vini_dir/sourceme > tmp
