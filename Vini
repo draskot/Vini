@@ -388,9 +388,9 @@ num_modes=9
 echo $num_modes > $WORKDIR/num_modes
 #read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
 #exhaustiveness=8
-echo $exhaustiveness > $WORKDIR/exhaustiveness
-box_size=40
-echo ${box_size} > $WORKDIR/box_size
+#echo $exhaustiveness > exhaustiveness
+#box_size=40
+#echo ${box_size} > $WORKDIR/box_size
 affinity=0.00 #In case of error we take zero binding energy
 echo $affinity > $WORKDIR/random_affinity
 

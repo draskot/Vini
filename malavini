@@ -10,8 +10,6 @@ cosmic=`cat $WORKDIR/cosmic`
 cell_line=`cat cell_line`                  #getting the cell line name
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
-exhaustiveness=`cat $WORKDIR/exhaustiveness`
-box_size=`cat $WORKDIR/box_size`
 random_affinity=`cat $WORKDIR/random_affinity`
 max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
 MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
@@ -98,45 +96,45 @@ do
                      else
                          cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
                          >tmp
-                         grep -v COMPND complex_${comp_index}.pdb > tmp
-                         if  [ ! -s tmp ]
-                         then
-                             sed -i '$ d' complex_${comp_index}.pdb
-                             grep -w TER complex_${comp_index}.pdb > tmp
-                             if  [ -s tmp ]
-                             then
-                                 echo "TER                                                                            " >> complex_${comp_index}.pdb
-                             fi
-                             source $INSTALL/miniconda2/bin/activate
-                             cp $ROSETTA_TOOLS/amino_acids.py ./
-                             cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
-                             python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
-                             mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
-                             conda deactivate
-                         fi
+                         grep COMPND complex_${comp_index}.pdb > tmp
+
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
-                         genename=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
-                         echo "genename: $genename"
+                         cp $ROSETTA_TOOLS/amino_acids.py ./
+                         cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
+                         genetype=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
+                         echo "genetype: $genetype"
                          if  [ $drugtype == S ]
                          then
-                             if [[ $genename != C* ]]
+                             if [[ $genetype != C* ]]
                              then
-                                 cp $vini_dir/dock.xml ./
-                                 cp $vini_dir/docking.mac ./
-                                 cp $vini_dir/flag_ligand_docking ./ #Performing protein-ligand docking
-                                 cp complex_${comp_index}.pdb receptor.pdb
-                                 cp ligand_${lig_index}.pdb ligand.pdb
                                  echo "#!/bin/bash"                                                                    > dock
                                  echo "#SBATCH --time=$walltime"                                                      >> dock
                                  echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
                                  echo "#SBATCH --partition=$partition"                                                >> dock
                                  echo "#SBATCH --nodes=1"                                                             >> dock
                                  echo "#SBATCH --ntasks=1"                                                            >> dock
-                                 echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                                 #echo "#SBATCH --cpus-per-task="$threads                                             >> dock
                                  echo "#SBATCH --job-name=R${M}.${N}"                                                 >> dock
-                                 echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                                >> dock
-                                 echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
+                                 echo "#SBATCH --output=R${M}.${N}.out"                                               >> dock
+                                 echo "#SBATCH --error=R${M}.${N}.err"                                                >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock 
+                                 echo "if  [ ! -s tmp ]"                                                              >> dock
+                                 echo "then"                                                                          >> dock
+                                 echo "sed -i '$ d' complex_${comp_index}.pdb"                                        >> dock
+                                 echo "grep -w TER complex_${comp_index}.pdb > tmp"                                   >> dock
+                                 echo "if  [ -s tmp ] ; then "                                                        >> dock
+                                 echo "echo \"TER                                                                            \" >> complex_${comp_index}.pdb" >> dock
+                                 echo "fi"                                                                            >> dock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
+                                 echo "python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain"        >> dock
+                                 echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"                 >> dock
+                                 echo "conda deactivate"                                                              >> dock
+                                 echo "fi"                                                                            >> dock
+                                 echo "cp $vini_dir/dock.xml ./"                                                      >> dock
+                                 echo "cp $vini_dir/docking.mac ./"                                                   >> dock
+                                 echo "cp $vini_dir/flag_ligand_docking ./"                                           >> dock
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                                     >> dock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
                                  echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
                                  echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
                                  echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                                           >> dock
@@ -158,69 +156,65 @@ do
                                  echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                                  echo "fi"                                                                            >> dock
                              else
-                                 echo "Generating complex with AD Vina."
                                  cp $MGLTOOLS/AD4_parameters.dat ./
-                                 if  [ ! -e ${comp_source}/complex_${comp_index}.pdbqt ] #get receptor pdbqt file
-                                 then
-                                     $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r $comp_source/complex_$comp_index.pdb -o $comp_source/complex_${comp_index}.pdbqt
-                                 else
-                                     cp ${comp_source}/complex_${comp_index}.pdbqt ./
-                                 fi
-                                 if  [ -e $WORKDIR/ligands/ligand_${lig_index}.pdbqt ]    #get ligand pdbqt file
-                                 then
-                                     cp $WORKDIR/ligands/ligand_${lig_index}.pdbqt ./
-                                 else
-                                     cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./
-                                     ls "${drug}".pdb > tmp
-                                     nowords=`wc -w < tmp`
-                                     if  [ $nowords -eq $ONES ]
-                                     then
-                                         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l "${drug}".pdb -o $WORKDIR/ligands/ligand_${lig_index}.pdbqt
-                                     else
-                                         mv "${drug}".pdb tmp.pdb        #python does not work with 2-name drug
-                                         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
-                                         mv tmp.pdbqt  $WORKDIR/ligands/ligand_${lig_index}.pdbqt
-                                     fi
-                                 fi
-                                 $MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt
-                                 sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index} ${comp_source}
-                                 echo "#!/bin/bash"                                        > dock
-                                 echo "#SBATCH --time="$walltime                          >> dock
-                                 echo "#SBATCH --account=$SLURMACCT"                      >> dock
-                                 echo "#SBATCH --partition="$partition                    >> dock
-                                 echo "#SBATCH --nodes=1"                                 >> dock
-                                 echo "#SBATCH --ntasks=1"                                >> dock
-                                 echo "#SBATCH --cpus-per-task=48"                        >> dock
-                                 echo "#SBATCH --job-name=Vina_${M}_${N}"                 >> dock
-                                 echo "#SBATCH --output=${target_dir}/Vina_${M}_${N}.out" >> dock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"               >> dock
-                                 echo "vina --cpu 48 --size_x 40 --size_y 40 --size_z 40 --config $comp_source/conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor $comp_source/complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out $target_dir/complex_${comp_index}.pdbqt > $target_dir/log_${comp_index}"                    >> dock
-                                 echo "echo ERROR > $target_dir/log_${comp_index}"        >> dock
-                                 echo "obabel -ipdbqt $target_dir/complex_${comp_index}.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> dock
+                                 #echo "generating complex ${comp_index}.${lig_index}"
+                                 cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./
+
+                                 echo "#!/bin/bash"                                                            > dock
+                                 echo "#SBATCH --time="$walltime                                              >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                 echo "#SBATCH --partition="$partition                                        >> dock
+                                 echo "#SBATCH --nodes=1"                                                     >> dock
+                                 echo "#SBATCH --ntasks=1"                                                    >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                 echo "#SBATCH --job-name=V${M}.${N}"                                         >> dock
+                                 echo "#SBATCH --output=V${M}.${N}.out"                                       >> dock
+                                 echo "#SBATCH --error=V${M}.${N}.err"                                        >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt"                                                                                                >> dock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt"                                                                                                    >> dock
+                                 echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
+                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out COMPLEX.pdbqt > log_${comp_index}"                                                                                                  >> dock
+                                 echo "if [ -e COMPLEX.pdbqt ] ; then"                                        >> dock
+                                 echo "obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> dock
+                                 echo "fi"                                                                    >> dock
+                                 echo "echo ERROR > $target_dir/log_${comp_index}"                            >> dock
                                  chmod u+x dock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} dock
                              fi
                          else              
-                             if [[ $genename == C* ]]
+                             if [[ $genetype == C* ]]
                              then
-                                 cp complex_${comp_index}.pdb tmp #Swapping protein-ligand and performing protein-ligand docking
-                                 cp ligand_${lig_index}.pdb complex_${comp_index}.pdb
-                                 cp tmp ligand_${lig_index}.pdb
-                                 cp complex_${comp_index}.pdb receptor.pdb
-                                 cp ligand_${lig_index}.pdb ligand.pdb
-                                 cp $vini_dir/flag_ligand_docking ./
                                  echo "#!/bin/bash"                                                                    > dock
                                  echo "#SBATCH --time=$walltime"                                                      >> dock
                                  echo "#SBATCH --account=$SLURMACCT"                                                  >> dock
                                  echo "#SBATCH --partition=$partition"                                                >> dock
                                  echo "#SBATCH --nodes=1"                                                             >> dock
                                  echo "#SBATCH --ntasks=1"                                                            >> dock
-                                 echo "#SBATCH --cpus-per-task=48"                                                    >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                              >> dock
                                  echo "#SBATCH --job-name=R${M}.${N}"                                                 >> dock
-                                 echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                                >> dock
-                                 echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                                 >> dock
+                                 echo "#SBATCH --output=R_${M}.${N}.out"                                              >> dock
+                                 echo "#SBATCH --error=R_${M}.${N}.err"                                               >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                           >> dock
+                                 echo "if  [ ! -s tmp ]"                                                              >> dock
+                                 echo "then"                                                                          >> dock
+                                 echo "sed -i '$ d' complex_${comp_index}.pdb"                                        >> dock
+                                 echo "grep -w TER complex_${comp_index}.pdb > tmp"                                   >> dock
+                                 echo "if  [ -s tmp ] ; then "                                                        >> dock
+                                 echo "echo \"TER                                                                            \" >> complex_${comp_index}.pdb" >> dock
+                                 echo "fi"                                                                            >> dock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
+                                 echo "python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain"        >> dock
+                                 echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"                 >> dock
+                                 echo "conda deactivate"                                                              >> dock
+                                 echo "fi"                                                                            >> dock
+                                 echo "cp complex_${comp_index}.pdb tmp"                                              >> dock #swap rec-lig
+                                 echo "cp ligand_${lig_index}.pdb complex_${comp_index}.pdb"                          >> dock
+                                 echo "cp tmp ligand_${lig_index}.pdb"                                                >> dock
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                                     >> dock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> dock
+                                 echo "cp $vini_dir/flag_ligand_docking ./"                                           >> dock
                                  echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> dock
                                  echo "source $INSTALL/miniconda2/bin/activate"                                       >> dock
                                  echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                                           >> dock
@@ -241,6 +235,19 @@ do
                                  echo "echo \${score} > $target_dir/log_${comp_index}"                                >> dock
                                  echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                              else
+                                 if  [ ! -s tmp ]
+                                 then
+                                     sed -i '$ d' complex_${comp_index}.pdb
+                                     grep -w TER complex_${comp_index}.pdb > tmp
+                                     if  [ -s tmp ]
+                                     then
+                                         echo "TER                                                                            " >> complex_${comp_index}.pdb
+                                     fi
+                                     source $INSTALL/miniconda2/bin/activate
+                                     python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
+                                     mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
+                                     conda deactivate
+                                 fi
                                  fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand #protein-protein docking
                                  chains=`grep -c ">" ${fasta_file}`     
                                  if  [ $chains -eq $ONES ]
@@ -260,10 +267,10 @@ do
                                  echo "#SBATCH --partition=$partition"                                         >> dock
                                  echo "#SBATCH --nodes=1"                                                      >> dock
                                  echo "#SBATCH --ntasks=1"                                                     >> dock
-                                 echo "#SBATCH --cpus-per-task=48"                                             >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                       >> dock
                                  echo "#SBATCH --job-name=R${M}.${N}"                                          >> dock
-                                 echo "#SBATCH --output=${target_dir}/R_${M}_${N}.out"                         >> dock
-                                 echo "#SBATCH --error=${target_dir}/R_${M}_${N}.err"                          >> dock
+                                 echo "#SBATCH --output=R${M}.${N}.out"                                        >> dock
+                                 echo "#SBATCH --error=R_${M}.${N}.err"                                        >> dock
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                    >> dock 
                                  echo "cp complex_${comp_index}.pdb receptor.pdb"                              >> dock
                                  echo "cp ligand_${lig_index}.pdb ligand.pdb"                                  >> dock
@@ -286,7 +293,7 @@ do
                      sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
     	         done # end of 5th loop
 
-                 echo "brakepoint! lig_index: ${lig_index} target_dir: ${target_dir}" ; sleep 1000
+                 echo "brakepoint!" ; sleep 1000
                  
                  cd $WORKDIR
                  sh $vini_dir/wait_until_jobs_finish

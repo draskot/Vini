@@ -1,4 +1,5 @@
 NULL=0
+ONES=1
 
 nolines=`wc -l < $vini_dir/ligands/ligands_list`
 
@@ -31,7 +32,6 @@ do
                     line=`head -1 tmp`
                     DBID=`echo $line | awk -F',' '{print $1}'`
                     wget  -q -O $vini_dir/ligands/sdf_files/"${drug}".sdf https://www.drugbank.ca/structures/small_molecule_drugs/${DBID}.sdf?type=3d
-
                     if  [ -s $vini_dir/ligands/sdf_files/"${drug}".sdf ]
                     then
                         echo "Converting ${drug}.sdf to ${drug}.pdb and adding hydrogens..."
@@ -59,6 +59,13 @@ do
         else
             echo "${drug} 3D structure found in repo, continuing..."
         fi
+        ls $vini_dir/ligands/pdb_files/"${drug}".pdb > tmp
+        cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./
+        echo "generating "${drug}".pdbqt file, may take a while."
+        mv "${drug}".pdb tmp
+        $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
+        mv tmp.pdbqt $vini_dir/ligands/pdbqt_files/"${drug}".pdbqt
+        
     else
         echo "$drug is not a small molecule, continuing."
     fi

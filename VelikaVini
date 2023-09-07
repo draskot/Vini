@@ -183,12 +183,12 @@ do
         echo "drug: $drug type: $type "
         cp $vini_dir/ligands/sdf_files/"${drug}".sdf $WORKDIR/ligands_stage/ligand_${lig_index}.sdf
         cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands_stage/ligand_${lig_index}.pdb
+        cp $vini_dir/ligands/pdbqt_files/"$drug".pdbqt $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt
     else
         cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands_stage/ligand_${lig_index}.pdb
     fi
     let i++
 done < $vini_dir/ligands/ligands_list
-
 
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
