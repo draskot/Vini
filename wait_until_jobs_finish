@@ -33,11 +33,11 @@ do
          kill -9 $masterpid
      fi
 
-     timeout 1s touch $WORKDIR/test                                 #Checking if Lustre is working properly
-     timeout 1s ls $file > tmp 2> /dev/null
-     if [ ! -s tmp ]
+     timeout 2s touch $WORKDIR/test                                 #Checking if Lustre is working properly
+     timeout 2s ls $WORKDIR/test > tmpfull 2> /dev/null
+     if [ ! -s tmpfull ]
      then
-         echo "Error while accessing Lustre filesystem. Exiting."     >> Vini.crashlog
+         echo "Error while accessing Lustre filesystem. Exiting."     >> $vini_dir/Vini.crashlog
          echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> Vini.crashlog
          echo "You will need to re-login and then start Vini again."
          echo ""                                                      >> Vini.crashlog

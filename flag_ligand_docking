@@ -1,19 +1,27 @@
 
--ex1
--ex2
+#-ex1
+#-ex2
+
 -no_optH false
 
 -flip_HNQ true
 
 -ignore_ligand_chi true
--detect_disulf false
--ignore_unrecognized_res
+
+#-detect_disulf false
+#-ignore_unrecognized_res
+
+-packing
 
 -parser:protocol dock.xml
 
 -run:preserve_header
 
 -extra_res_fa LIG.params
+
+-mistakes
+
+-restore_pre_talaris_2013_behavior true
 
 -nstruct 1
 
