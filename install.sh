@@ -172,8 +172,8 @@ nolines=`wc -l < tmp`
 if [ $nolines -eq $NULL ]
 then
     echo "no. Installing Vina..."
-    wget -O $INSTALL/vina_1.2.4_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.4/vina_1.2.4_linux_x86_64
-    mv $INSTALL/vina_1.2.4_linux_x86_64 $INSTALL/vina
+    wget -O $INSTALL/vina_1.2.5_linux_x86_64 https://github.com/ccsb-scripps/AutoDock-Vina/releases/download/v1.2.5/vina_1.2.5_linux_x86_64
+    mv $INSTALL/vina_1.2.5_linux_x86_64 $INSTALL/vina
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme

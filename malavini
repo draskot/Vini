@@ -208,7 +208,6 @@ do
                              echo "        echo ERROR > $target_dir/Vglog_${comp_index}"                  >> vdock
                              echo "    fi"                                                                >> vdock
                              echo "fi"                                                                    >> vdock
-
                              chmod u+x                                                                       vdock
 
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
@@ -330,9 +329,9 @@ do
                  
                  sh $vini_dir/wait_until_jobs_finish
 
+                 sh $vini_dir/map_Vina_to_Rosetta_values ${target_dir} ${drugtype}
+                 
                  echo "brakepoint!" ; sleep 1000
-
-                 #sh $vini_dir/map_Vina_to_Rosetta_values ${target_dir} ${drugtype}
                  
                  cd $WORKDIR
 
