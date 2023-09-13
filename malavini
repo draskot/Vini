@@ -53,7 +53,7 @@ else
     Mu=$ONES
     Nu=$ONES
     Xi=$ONES
-    > $WORKDIR/SLEM_values    #delete SLEM values from the previous run
+    #> $WORKDIR/SLEM_values    #delete SLEM values from the previous run
 fi
  
 SECONDS=$NULL
@@ -151,7 +151,6 @@ do
                              echo "    then"                                                                      >> rdock
                              echo "        echo ERROR > $target_dir/Rclog_${comp_index}"                          >> rdock
                              echo "    else"                                                                      >> rdock
-                             #echo "        score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$58}' | sort -n | head -1\`"                                                                                                             >> rdock
                              echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"             >> rdock
                              echo "        echo \${score} > $target_dir/Rclog_${comp_index}"                      >> rdock
                              echo "        cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                              >> rdock
@@ -161,13 +160,11 @@ do
                              echo "    then"                                                                      >> rdock
                              echo "        echo ERROR > $target_dir/Rglog_${comp_index}"                          >> rdock
                              echo "    else"                                                                      >> rdock
-                             #echo "        score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$58}' | sort -n | head -1\`"                                                                                                             >> rdock
                              echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"             >> rdock
                              echo "        echo \${score} > $target_dir/Rglog_${comp_index}"                      >> rdock
                              echo "        cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                              >> rdock
                              echo "    fi"                                                                        >> rdock
                              echo "fi"                                                                            >> rdock
-
                              chmod u+x                                                                               rdock
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} -Q                                                                        rdock
@@ -261,7 +258,6 @@ do
                                  echo "if [ -e ROSETTA_CRASH.log ] ; then"                                            >> rdock
                                  echo "echo ERROR > $target_dir/Rlog_${comp_index}"                                   >> rdock
                                  echo "else"                                                                          >> rdock
-                                 #echo "score=\`grep SCORE score.sc | grep -v total_score | awk '{print \$2}' | sort -n | head -1\`"                                                                                                                      >> rdock
                                  echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"             >> rdock
                                  echo "echo \${score} > $target_dir/log_${comp_index}"                                >> rdock
                                  echo "cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                                                     >> rdock
@@ -336,84 +332,82 @@ do
 
                  echo "Creating binding energy vector, please wait."
                  rm -f ${target_dir}/vec*
-                 echo "#!/bin/bash"                                           > ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --job-name=vec_${lig_index}"                  >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --output=${target_dir}/vec_${lig_index}.out"  >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --output=${target_dir}/vec_${lig_index}.err"  >> ${target_dir}/vec_${lig_index}
-                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/vec_${lig_index} 
-                 cat $vini_dir/create_vector                                 >> ${target_dir}/vec_${lig_index}
-                 chmod u+x ${target_dir}/vec_${lig_index}
+                 echo "#!/bin/bash"                                           > ${target_dir}/create_vector
+                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/create_vector
+                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/create_vector
+                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/create_vector
+                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/create_vector
+                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/create_vector
+                 echo "#SBATCH --job-name=vector"                            >> ${target_dir}/create_vector
+                 echo "#SBATCH --output=${target_dir}/create_vector.out"     >> ${target_dir}/create_vector
+                 echo "#SBATCH --output=${target_dir}/create_vector.err"     >> ${target_dir}/create_vector
+                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/create_vector 
+                 cat $vini_dir/create_vector                                 >> ${target_dir}/create_vector
+                 chmod u+x ${target_dir}/create_vector
 
-                 ${job_submit} -Q ${target_dir}/vec_${lig_index} ${target_dir} ${WORKDIR}
+                 ${job_submit} -Q ${target_dir}/create_vector ${target_dir} ${WORKDIR}
                  sh $vini_dir/wait_until_jobs_finish
                  
                  echo "Creating binding energy matrix, please wait."
                  echo ${target_dir} > target_dir
-                 echo "#!/bin/bash"                                          > ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --time="$walltime                            >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --mem=4gb"                                   >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --partition="$partition                      >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --job-name=mat_${lig_index}"                 >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --account=$SLURMACCT"                        >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --output=${target_dir}/mat_${lig_index}.out" >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --error=${target_dir}/mat_${lig_index}.err"  >> ${target_dir}/mat_${lig_index}
-                 echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/mat_${lig_index} 
-                 echo "WORKDIR=${WORKDIR}"                                  >> ${target_dir}/mat_${lig_index}
-                 echo "ls ${target_dir}/log* > tmp"                         >> ${target_dir}/mat_${lig_index}
-                 echo "complexes=\`wc -l < tmp\`"                           >> ${target_dir}/mat_${lig_index}
-                 echo "echo \$complexes > complexes"                        >> ${target_dir}/mat_${lig_index}
-                 echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/mat_${lig_index}
-                 echo "conda activate env310"                               >> ${target_dir}/mat_${lig_index}
-                 echo "python3 $vini_dir/create_energy_binding_matrix.py"   >> ${target_dir}/mat_${lig_index}
-                 echo "conda deactivate"                                    >> ${target_dir}/mat_${lig_index}
-                 chmod u+x ${target_dir}/mat_${lig_index}
-                 ${job_submit} -Q ${target_dir}/mat_${lig_index}
+                 echo "#!/bin/bash"                                          > ${target_dir}/create_matrix
+                 echo "#SBATCH --time="$walltime                            >> ${target_dir}/create_matrix
+                 echo "#SBATCH --account=$SLURMACCT"                        >> ${target_dir}/create_matrix
+                 echo "#SBATCH --partition="$partition                      >> ${target_dir}/create_matrix
+                 echo "#SBATCH --ntasks=1"                                  >> ${target_dir}/create_matrix
+                 echo "#SBATCH --cpus-per-task=1"                           >> ${target_dir}/create_matrix
+                 echo "#SBATCH --job-name=matrix"                           >> ${target_dir}/create_matrix
+                 echo "#SBATCH --output=${target_dir}/create_matrix.out"    >> ${target_dir}/create_matrix
+                 echo "#SBATCH --error=${target_dir}/create_matrix.err"     >> ${target_dir}/create_matrix
+                 echo "#SBATCH --exclude=${excluded_nodes}"                 >> ${target_dir}/create_matrix 
+                 echo "WORKDIR=${WORKDIR}"                                  >> ${target_dir}/create_matrix
+                 echo "ls ${target_dir}/log* > tmp"                         >> ${target_dir}/create_matrix
+                 echo "complexes=\`wc -l < tmp\`"                           >> ${target_dir}/create_matrix
+                 echo "echo \$complexes > complexes"                        >> ${target_dir}/create_matrix
+                 echo "source $INSTALL/miniconda3/bin/activate"             >> ${target_dir}/create_matrix
+                 echo "conda activate env310"                               >> ${target_dir}/create_matrix
+                 echo "python3 $vini_dir/create_energy_binding_matrix.py"   >> ${target_dir}/create_matrix
+                 echo "conda deactivate"                                    >> ${target_dir}/create_matrix
+                 chmod u+x ${target_dir}/create_matrix
+                 ${job_submit} -Q ${target_dir}/create_matrix
                  sh $vini_dir/wait_until_jobs_finish
 
                  echo "Calculating eigenvalues, please wait."
                  echo ${target_dir} > target_dir
-                 echo "#!/bin/bash"                                            > ${target_dir}/eigen
-                 echo "#SBATCH --time="$walltime                              >> ${target_dir}/eigen
-                 echo "#SBATCH --cpus-per-task=1"                             >> ${target_dir}/eigen
-                 echo "#SBATCH --mem=4gb"                                     >> ${target_dir}/eigen
-                 echo "#SBATCH --partition="$partition                        >> ${target_dir}/eigen
-                 echo "#SBATCH --job-name=eigen_${lig_index}"                 >> ${target_dir}/eigen
-                 echo "#SBATCH --account=$SLURMACCT"                          >> ${target_dir}/eigen
-                 echo "#SBATCH --output=${target_dir}/eigen_${lig_index}.out" >> ${target_dir}/eigen
-                 echo "#SBATCH --error=${target_dir}/eigen_${lig_index}.err"  >> ${target_dir}/eigen
-                 echo "#SBATCH --exclude=${excluded_nodes}"                   >> ${target_dir}/eigen 
-                 echo "WORKDIR=${WORKDIR}"                                    >> ${target_dir}/eigen
-                 echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/eigen
-                 echo "conda activate env310"                                 >> ${target_dir}/eigen
-                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/eigen
-                 echo "conda deactivate"                                      >> ${target_dir}/eigen
-                 chmod u+x ${target_dir}/eigen
-                 ${job_submit} -Q ${target_dir}/eigen
+                 echo "#!/bin/bash"                                            > ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --time="$walltime                              >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --account=$SLURMACCT"                          >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --partition="$partition                        >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --ntasks=1"                                    >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --cpus-per-task=1"                             >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --job-name=eigen"                              >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --output=${target_dir}/compute_eigenvalues.out" >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --error=${target_dir}/compute_eigenvalues.err"  >> ${target_dir}/compute_eigenvalues
+                 echo "#SBATCH --exclude=${excluded_nodes}"                   >> ${target_dir}/compute_eigenvalues
+                 echo "WORKDIR=${WORKDIR}"                                    >> ${target_dir}/compute_eigenvalues
+                 echo "source $INSTALL/miniconda3/bin/activate"               >> ${target_dir}/compute_eigenvalues
+                 echo "conda activate env310"                                 >> ${target_dir}/compute_eigenvalues
+                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/compute_eigenvalues
+                 echo "conda deactivate"                                      >> ${target_dir}/compute_eigenvalues
+                 chmod u+x                                                       ${target_dir}/compute_eigenvalues
+                 ${job_submit} -Q                                                ${target_dir}/compute_eigenvalues
                  sh $vini_dir/wait_until_jobs_finish
                  
-                 echo "brakepoint!" ; sleep 1000
-
                  echo "Calculating SLEM, please wait."
-                 echo "#!/bin/bash"                                           > ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --mem=4gb"                                    >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --job-name=SLEM_${lig_index}"                 >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err"  >> ${target_dir}/select_${lig_index}
-                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/select_${lig_index} 
-                 echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/select_${lig_index}
-                 cat $vini_dir/select_SLEM_value                             >> ${target_dir}/select_${lig_index}
-                 chmod u+x ${target_dir}/select_${lig_index}
-                 ${job_submit} -Q ${target_dir}/select_${lig_index} ${M} ${L} ${J} ${I} ${target_dir} 
+                 echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM
+                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --output=${target_dir}/SLEM_${lig_index}.out" >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --error=${target_dir}/SLEM_${lig_index}.err"  >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/compute_SLEM 
+                 echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/compute_SLEM
+                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
+                 chmod u+x                                                      ${target_dir}/compute_SLEM
+                 ${job_submit} -Q ${target_dir}/compute_SLEM ${M} ${L} ${J} ${I} ${target_dir} 
                  sh $vini_dir/wait_until_jobs_finish
                  let ligand_number++
              done   #end of 4thloop
@@ -422,6 +416,7 @@ do
 done                #end of 1st loop
 
 sh $vini_dir/wait_until_jobs_finish
+                 
 
 if  [ $cosmic == y ] ; then
     exp=exp
@@ -434,26 +429,29 @@ cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_li
 echo "Deleting equal SLEM entries with equal indices, please wait..."
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
-echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
-echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
-echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
-echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
 echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
+echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
+echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
+echo "#SBATCH --job-name=indices"                    >> $WORKDIR/postproc
 echo "#SBATCH --output=$WORKDIR/postproc1.out"       >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc1.err"        >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
-chmod u+x $WORKDIR/postproc
-$job_submit -Q $WORKDIR/postproc
+chmod u+x                                               $WORKDIR/postproc
+$job_submit -Q                                          $WORKDIR/postproc
 sh $vini_dir/wait_until_jobs_finish
+
+echo "M: $M    L: $L  J: $J  I: $I  ligand number ${ligand_number} brakepoint!" ; sleep 1000
 
 echo "Creating SLEM named lists, please wait."
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
-echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
-echo "#SBATCH --mem=4gb"                             >> $WORKDIR/postproc
+echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
 echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
+echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
 echo "#SBATCH --job-name=SLEM_${lig_index}"          >> $WORKDIR/postproc
 echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
 echo "#SBATCH --output=$WORKDIR/postproc2.out"       >> $WORKDIR/postproc
@@ -469,9 +467,10 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "Creating SLEM wings list, please wait."
    echo "#!/bin/bash"                                 > $WORKDIR/postproc
    echo "#SBATCH --time="$walltime                   >> $WORKDIR/postproc
-   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
-   echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
+   echo "#SBATCH --account=$SLURMACCT"               >> $WORKDIR/postproc
    echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
+   echo "#SBATCH --ntasks=1"                         >> $WORKDIR/postproc
+   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
    echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
    echo "#SBATCH --account=$SLURMACCT"               >> $WORKDIR/postproc
    echo "#SBATCH --output=$WORKDIR/postproc3.out"    >> $WORKDIR/postproc
@@ -486,11 +485,11 @@ if [ $therapy_level -ne $ONES ] ; then
    echo "Creating SLEM wings named list, please wait."
    echo "#!/bin/bash"                                 > $WORKDIR/postproc
    echo "#SBATCH --time="$walltime                   >> $WORKDIR/postproc
-   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
-   echo "#SBATCH --mem=4gb"                          >> $WORKDIR/postproc
-   echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
-   echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
    echo "#SBATCH --account=$SLURMACCT"               >> $WORKDIR/postproc
+   echo "#SBATCH --partition="$partition             >> $WORKDIR/postproc
+   echo "#SBATCH --ntasks=1"                         >> $WORKDIR/postproc
+   echo "#SBATCH --cpus-per-task=1"                  >> $WORKDIR/postproc
+   echo "#SBATCH --job-name=SLEM_${lig_index}"       >> $WORKDIR/postproc
    echo "#SBATCH --output=$WORKDIR/postproc4.out"    >> $WORKDIR/postproc
    echo "#SBATCH --error=$WORKDIR/postproc4.err"     >> $WORKDIR/postproc
    cat $vini_dir/create_SLEM_wings_named_list        >> $WORKDIR/postproc
