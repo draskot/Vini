@@ -8,7 +8,7 @@ user=`echo ${USER:0:8}` #for long partition names last characters may be lost
 $job_status | grep $user > $WORKDIR/temp_buf #control max number of concurrent jobs allowed
 JOBS=`wc -l $WORKDIR/temp_buf | awk '{print $1}'`
 
-echo "nr. jobs running:" $JOBS
+echo "jobs running:" $JOBS
 touch $WORKDIR/temp_buf
 while [ $JOBS -gt $max_jobs  ]
 do

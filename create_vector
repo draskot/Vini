@@ -1,20 +1,21 @@
 #  affinity vector is created and multiplied with gene expression values from receptors_contracted file
 #  input param: target_dir
 #  output: affinity vector in $target_dir
-#  modification date: 21/08/2023
 
 target_dir=$1
 WORKDIR=$2
 
-complexes=`wc -l < $WORKDIR/receptors_contracted`
+
+ls ${target_dir}/log* > tmp
+logs=`wc -l < tmp`
 
 > $target_dir/vec
 
-for (( N=1; N<$((complexes+1)); N++ ))                 #create Rosetta vector
+for (( N=1; N<$((logs+1)); N++ ))                     #create Rosetta vector
 do
     printf -v comp_index "%03d" $N
-    FBE=`cat ${target_dir}/log_${comp_index}.txt`
-    echo $FBE >> $target_dir/vec
+    REU=`cat ${target_dir}/log_${comp_index}`
+    echo $REU >> $target_dir/vec
 done
     
 index=1

@@ -62,7 +62,7 @@ do
         ls $vini_dir/ligands/pdb_files/"${drug}".pdb > tmp
         cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./
         echo "generating "${drug}".pdbqt file, may take a while."
-        mv "${drug}".pdb tmp
+        mv "${drug}".pdb tmp.pdb
         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
         mv tmp.pdbqt $vini_dir/ligands/pdbqt_files/"${drug}".pdbqt
         
