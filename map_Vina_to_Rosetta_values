@@ -5,9 +5,6 @@ NULL=0
 
 if  [ $drugtype == S ]
 then
-
-    echo -n "Normalizing binding energy values."
-
     Rg_sum=$NULL
     Vg_sum=$NULL
     Vc_sum=$NULL
@@ -68,4 +65,3 @@ then
         echo ${Rc_avg} > $target_dir/${Rc_log_name}
     done < $target_dir/Rc_list
 fi
-rm -f ${target_dir}/R* ${target_dir}/V*

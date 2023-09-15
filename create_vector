@@ -1,17 +1,20 @@
 #  affinity vector is created and multiplied with gene expression values from receptors_contracted file
-#  input param: target_dir
-#  output: affinity vector in $target_dir
+
+#input params: target_dir, M, L, J, I
+#output params: SLEM written in $WORKDIR/SLEM_values file
 
 target_dir=$1
-WORKDIR=$2
-
+M=$2
+L=$3
+J=$4
+I=$5
 
 ls ${target_dir}/log* > tmp
 logs=`wc -l < tmp`
 
 > $target_dir/vec
 
-for (( N=1; N<$((logs+1)); N++ ))                     #create Rosetta vector
+for (( N=1; N<$((logs+1)); N++ ))                     #create Rosetta energy vector
 do
     printf -v comp_index "%03d" $N
     REU=`cat ${target_dir}/log_${comp_index}`
@@ -31,6 +34,6 @@ do
     product=`echo $genex $affinity | awk '{print $1 * $2}'`
     echo $product >> ${target_dir}/vec.tmp
     let "index++"
-done < $WORKDIR/receptors_contracted
+done < receptors_contracted
 
 mv $target_dir/vec.tmp ${target_dir}/vec

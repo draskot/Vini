@@ -1,15 +1,3 @@
-ORGANISM=`cat $WORKDIR/ORGANISM`
-CANCER_TYPE=`cat $WORKDIR/cancer_type`
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
-therapy_level=`cat $WORKDIR/therapy_level`
-compute_cell_line=`cat $WORKDIR/compute_cell_line`
-cell_line=`cat cell_line`
-exp=`cat $WORKDIR/exp`
-
-SLEM_FILE=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
-
-> ${SLEM_FILE}_named                                        
-
 while read -r line
 do
     echo -n "."

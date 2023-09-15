@@ -7,7 +7,7 @@ cell_line=`cat $vini_dir/cell_line`
 exp=`cat $WORKDIR/exp`
 
 SLEM_FILE=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
-
+> ${SLEM_FILE}_named
 > ${SLEM_FILE}_reduced
 
 while read -r line
