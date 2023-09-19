@@ -33,11 +33,11 @@ do
          kill -9 $masterpid
      fi
 
-     timeout 2s touch $WORKDIR/test                                 #Checking if Lustre is working properly
-     timeout 2s ls $WORKDIR/test > tmpfull 2> /dev/null
+     timeout 10s touch $WORKDIR/test                                 #Checking if scratch file system is working
+     timeout 10s ls $WORKDIR/test > tmpfull 2> /dev/null
      if [ ! -s tmpfull ]
      then
-         echo "Error while accessing Lustre filesystem. Exiting."     >> $vini_dir/Vini.crashlog
+         echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
          echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> Vini.crashlog
          echo "You will need to re-login and then start Vini again."
          echo ""                                                      >> Vini.crashlog
@@ -45,7 +45,7 @@ do
          old="\/exa5\/scratch\/user\/eudraskot"
          new="\/ceph\/hpc\/data\/r2022r03-224-users\/eudraskot\/WORKDIR"
          sed -i -e "s/$old/$new/" $vini_dir/sourceme 
-         masterpid=`cat masterpid`
+         masterpid=`cat $vini_dir/masterpid`
          kill -9 $masterpid
      fi
 done
