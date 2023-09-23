@@ -88,7 +88,7 @@ do
                      mkdir -p $WORKDIR/$comp_index
                      cd $WORKDIR/$comp_index   #move to the working area
                      rm -rf *
-                     cp $comp_source/complex_${comp_index}.pdb ./
+                     
                      if  [ ! -e $comp_source/complex_${comp_index}.pdb ]
                      then
                          echo "ERROR" > $target_dir/log_${log_index}
@@ -101,6 +101,16 @@ do
                          cp $ROSETTA_TOOLS/amino_acids.py ./
                          cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
                          genetype=`head -1 complex_${comp_index}.pdb | awk '{print $1}'`
+                         if  [ $genetype != COMPND ]                                      #set chain ID to A
+                         then
+                             chain=`head -1 complex_${comp_index}.pdb | awk  '{print $5}'`
+                             if  [ $chain != A ]
+                             then
+                                 java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar complex_${comp_index}.pdb $chain A
+                                 mv complex_${comp_index}.pdb_${chain}_to_A.pdb complex_${comp_index}.pdb
+                             fi
+                         fi
+                         
                          if  [ $drugtype == S ]
                          then
                              echo "#!/bin/bash"                                                                    > rdock
@@ -149,7 +159,7 @@ do
                              echo "    then"                                                                      >> rdock
                              echo "        echo ERROR > $target_dir/Rclog_${comp_index}"                          >> rdock
                              echo "    else"                                                                      >> rdock
-                             echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"             >> rdock
+                             echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                        >> rdock
                              echo "        echo \${score} > $target_dir/Rclog_${comp_index}"                      >> rdock
                              echo "        cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                              >> rdock
                              echo "    fi"                                                                        >> rdock
@@ -158,7 +168,7 @@ do
                              echo "    then"                                                                      >> rdock
                              echo "        echo ERROR > $target_dir/Rglog_${comp_index}"                          >> rdock
                              echo "    else"                                                                      >> rdock
-                             echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"             >> rdock
+                             echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                        >> rdock
                              echo "        echo \${score} > $target_dir/Rglog_${comp_index}"                      >> rdock
                              echo "        cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                              >> rdock
                              echo "    fi"                                                                        >> rdock
@@ -249,15 +259,14 @@ do
                                  echo "then"                                                                   >> rdock
                                  echo "    if  [ -e score.sc ]"                                                >> rdock
                                  echo "    then"                                                               >> rdock
-                                 echo "        #cp complex_${comp_index}_0002.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
-                                 echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"      >> rdock
+                                 echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                 >> rdock
                                  echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
                                  echo "    else"                                                               >> rdock
                                  echo "        echo "ERROR" > $target_dir/log_${comp_index}"                   >> rdock
                                  echo "    fi"                                                                 >> rdock
                                  echo "else"                                                                   >> rdock
                                  echo "    cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
-                                 echo "    score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"          >> rdock
+                                 echo "    score=\`tail -1 score.sc | awk '{print \$2}'\`"                     >> rdock
                                  echo "    echo \${score} > $target_dir/log_${comp_index}"                     >> rdock
                                  echo "fi"                                                                     >> rdock
                                  chmod u+x                                                                               rdock     
@@ -283,8 +292,8 @@ do
                                  cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
                                  if  [ $chains -eq $ONES ]
                                  then
-                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A Z
-                                     mv ligand_${lig_index}.pdb_A_to_Z.pdb ligand_${lig_index}.pdb
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
+                                     mv ligand_${lig_index}.pdb_A_to_B.pdb ligand_${lig_index}.pdb
                                      sed -i -e "s/chains/B/" flag_global_docking
                                  else
                                      if  [ $chains -eq $TWO ]
@@ -314,20 +323,19 @@ do
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> rdock
                                  echo "cp complex.pdb complex_${comp_index}.pdb"                               >> rdock
                                  echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                                                                >> rdock
-                                 echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking_flex"                                                                             >> rdock
+                                 echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                                                             >> rdock
                                  echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
                                  echo "then"                                                                   >> rdock
                                  echo "    if  [ -e score.sc ]"                                                >> rdock
                                  echo "    then"                                                               >> rdock
-                                 echo "        cp complex_${comp_index}_0002.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
-                                 echo "        score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"      >> rdock
+                                 echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                 >> rdock
                                  echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
                                  echo "    else"                                                               >> rdock
                                  echo "        echo "ERROR" > $target_dir/log_${comp_index}"                   >> rdock
                                  echo "    fi"                                                                 >> rdock
                                  echo "else"                                                                   >> rdock
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
-                                 echo "    score=\`head -3 score.sc | tail -1 | awk '{print \$48}'\`"          >> rdock
+                                 echo "    score=\`tail -1 score.sc | awk '{print \$2}'\`"                     >> rdock
                                  echo "    echo \${score} > $target_dir/log_${comp_index}"                     >> rdock
                                  echo "fi"                                                                     >> rdock
                                  chmod u+x                                                                        rdock         
@@ -338,10 +346,10 @@ do
                          fi
                      fi
     	         done # end of 5th loop
-                 
+
                  sh $vini_dir/wait_until_jobs_finish
 
-echo "brakepoint!" ; sleep 1000
+                 echo "brakepoint!" ; sleep 1000
 
                  if  [ -e ${target_dir}/Vina ]
                  then
