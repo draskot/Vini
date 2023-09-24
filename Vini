@@ -19,6 +19,7 @@ else
     > Vini.crashlog
     > restartfile
     echo init > state
+    rm -rf $WORKDIR/*_data
 fi
 
 echo -n "Checking for user..." 
@@ -264,12 +265,6 @@ echo $exp > $WORKDIR/exp
 
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds
 
-read -e -p "Delete all the data previously created by Vini (y/n)? Press enter to accept the default: " -i "y" erase
-if  [[ $erase == "y" ]]
-then
-    rm -rf $WORKDIR/*_data
-    rm -f $WORKDIR/free_binding_energy_data  #file where computed FBE values will be stored
-fi
 
 echo -n "Trying to retrieve the list of available organisms from KEGG, please wait..."
 wget -O tmp --no-check-certificate -q http://rest.kegg.jp/list/organism
@@ -406,5 +401,4 @@ then
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
 else
     ./VelikaVini
-    echo $! > masterpid
 fi

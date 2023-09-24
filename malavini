@@ -94,8 +94,13 @@ do
                          echo "ERROR" > $target_dir/log_${log_index}
                      else
                          cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
-                         >tmp
-                         grep COMPND complex_${comp_index}.pdb > tmp
+                         #grep -v REMARK complex_${comp_index}.pdb > tmp
+                         #grep -v TITLE tmp >  complex_${comp_index}.pdb
+                         #grep -v AUTHOR complex_${comp_index}.pdb > tmp
+                         #grep -v JRNL tmp > complex_${comp_index}.pdb
+                         #grep -v EXPDTA complex_${comp_index}.pdb > tmp
+                         #grep -v REVDAT tmp > complex_${comp_index}.pdb
+                         #grep COMPND complex_${comp_index}.pdb > tmp
 
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                          cp $ROSETTA_TOOLS/amino_acids.py ./
@@ -104,6 +109,7 @@ do
                          if  [ $genetype != COMPND ]                                      #set chain ID to A
                          then
                              chain=`head -1 complex_${comp_index}.pdb | awk  '{print $5}'`
+                             #echo comp_index: $comp_index chain: $chain ; sleep 1
                              if  [ $chain != A ]
                              then
                                  java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar complex_${comp_index}.pdb $chain A
@@ -136,7 +142,7 @@ do
                              echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"                 >> rdock
                              echo "conda deactivate"                                                              >> rdock
                              echo "fi"                                                                            >> rdock
-                             echo "cp $vini_dir/dock.xml $vini_dir/docking.mac flag_ligand_docking ./"            >> rdock
+                             echo "cp $vini_dir/dock.xml $vini_dir/docking.mac $vini_dir/flag_ligand_docking ./"  >> rdock
                              echo "cp complex_${comp_index}.pdb receptor.pdb"                                     >> rdock
                              echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> rdock
                              echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> rdock
@@ -214,7 +220,6 @@ do
                              echo "    fi"                                                                >> vdock
                              echo "fi"                                                                    >> vdock
                              chmod u+x                                                                       vdock
-
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} -Q                                                                vdock
                              sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
@@ -348,8 +353,6 @@ do
     	         done # end of 5th loop
 
                  sh $vini_dir/wait_until_jobs_finish
-
-                 echo "brakepoint!" ; sleep 1000
 
                  if  [ -e ${target_dir}/Vina ]
                  then

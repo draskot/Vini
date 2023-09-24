@@ -67,112 +67,108 @@ do
     else  #KEGG entry is protein
         wget -O $WORKDIR/tmp -q  http://rest.kegg.jp/conv/uniprot/${KEGG_gene_name}
         uniprot_id=`head -1 $WORKDIR/tmp | awk '{print $2}'`
-        uniprot_id=`echo  $uniprot_id | sed 's/\://g'` ; uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
-
+        uniprot_id=`echo  $uniprot_id | sed 's/\://g'`
+        uniprot_id=`echo  $uniprot_id | sed 's/\up//g'`
         if  [ -z "$uniprot_id" ]
         then
-            echo "Uniprot ID for" $KEGG_gene_name "does not exists. Continuing to work with COSMIC gene name."
-            COSMIC_gene_name=`grep $KEGG_gene_name nouniprotid` #fetch the gene name from nouniprotid file
-            COSMIC_gene_name=`echo $COSMIC_gene_name | awk '{print $2}'`
-            if  [ ! -e $vini_dir/genes/pdb_files/${COSMIC_gene_name}.pdb ]
+            echo "Uniprot ID for $KEGG_gene_name not found via KEGG API."
+            echo "Converting KEGG ID $KEGG_gene_name to Uniprot ID via table."
+            uniprot_id=`grep "${KEGG_gene_name}" kegg2uniprot | awk '{print $2}'`
+            if  [ -z "$uniprot_id" ]
             then
-                echo "KEGG gene name:" $KEGG_gene_name  "COSMIC gene name:" $COSMIC_gene_name >> $WORKDIR/missing_genes
+                echo "cannot convert ${KEGG_gene_name} to Uniprot ID. Vini will stop now."
+                echo "convert ${KEGG_gene_name} to $uniprot_id and update kegg2uniprot table."
+                echo "Vini will stop now."
+                masterpid=`cat masterpid`
+                kill -9 $masterpid
+                echo "brakepoint!" ; sleep 1000
+            fi
+        fi
+        echo $uniprot_id >> $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${CANCER_PATHWAY}${UNIPROT_ID_LIST}
+        echo -n "KEGG entry" $entry "is a protein-encoding gene" $uniprot_id
+        uline=`grep $uniprot_id $vini_dir/database/uniprot_db` #Check if pdb structure is available
+        nowords=`echo $uline | wc -w`
+        if  [ $nowords -eq $two ]
+        then
+            echo -n " without structure. Checking if in repo..."
+            if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]   
+            then
+                echo "yes. Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "with P flag." 
+                echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
             else
-                echo $uniprot "structure found in repo, continuing."
+                echo "no."
+                if  [ ! -e $vini_dir/genes/fasta_files/${uniprot_id}.fasta ]
+                then
+                    wget -O $vini_dir/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get fasta sequence
+                fi
+                fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
+                sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+                echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
+                echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
             fi
         else
-            echo $uniprot_id >> $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${CANCER_PATHWAY}${UNIPROT_ID_LIST}
-            echo -n "KEGG entry" $entry "is a protein-encoding gene" $uniprot_id
-            uline=`grep $uniprot_id $vini_dir/database/uniprot_db` #Check if pdb structure is available
-            nowords=`echo $uline | wc -w`
-            if  [ $nowords -eq $two ]
-            then
-                echo -n " without structure. Checking if in repo..."
-                if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]   
+            echo -n " with structure. Checking if in repo..."
+            if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]
+            then 
+                echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
+                echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
+            else
+                echo "no. Analyzing available RCSB structures, may take a while... "  
+                rm -f $WORKDIR/completeness_list
+                sh create_completeness_list ${uniprot_id}
+                noentries=`wc -l < $WORKDIR/completeness_list`
+                if  [ $noentries -ne $NULL ]
                 then
-                    echo "yes. Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "with P flag." 
-                    echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
+                    for (( i=1; i<$((noentries+1)); i++ ))
+                    do
+                        accession_code=`head -$i $WORKDIR/completeness_list | tail -1    | awk '{print $1}'`
+                        echo "Downloading ${accession_code} structure from RCSB and cleaning it from water and ligands..."
+                        wget -q -O ${uniprot_id}.pdb.gz  http://www.rcsb.org/pdb/files/${accession_code}.pdb.gz
+                        gzip -df ${uniprot_id}.pdb.gz
+                        grep COMPND ${uniprot_id}.pdb | grep CHAIN | grep -v MOLECULE > tmp
+                        line=`head -1 tmp `
+                        chain=`echo $line | awk '{print $4}' `
+                        nowords=`echo $line | wc -w`
+                        four=4
+                        if  [ $nowords -eq $four ]
+                        then
+                            chain=`echo $chain | tr -d ";"`
+                        else
+                            chain=`echo $chain | tr -d ","`
+                        fi
+                        echo "Cleaning $uniprot_id chain $chain" ; echo 
+                        python clean_pdb.py ${uniprot_id}.pdb ${chain}
+                        if  [ -e ${uniprot_id}_${chain}.pdb ]
+                        then
+                            echo "chain ID: $chain"
+                            mv ${uniprot_id}_${chain}.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
+                            rm ${uniprot_id}_${chain}.fasta ${uniprot_id}.pdb
+                            echo "success. Adding ${uniprot_id} to $WORKDIR/receptors_contracted list with E flag."
+                            echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
+                            break
+                        else
+                            echo "failed. Trying to predict the structure."
+                            if   [ ! -e $vini_dir/genes/fasta_files/${uniprot_id}.fasta ]
+                            then
+                                wget -O ${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
+                                mv ${uniprot_id}.fasta $vini_dir/genes/fasta_files/${uniprot_id}.fasta
+                            fi
+                            fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
+                            sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+                            echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
+                            echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "W" >> $WORKDIR/receptors_contracted
+                        fi
+                    done
                 else
-                    echo "no."
-                    if  [ ! -e $vini_dir/genes/fasta_files/${uniprot_id}.fasta ]
-                    then
-                        wget -O $vini_dir/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get fasta sequence
-                    fi
+                    echo "no RCSB single model found. Trying to predict the structure."
+                    wget -O $vini_dir/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
                     fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
                     sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
-
                     echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
-                    echo $KEGG_entry_id $KEGG_gene_name ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
-                fi
-            else
-                echo -n " with structure. Checking if in repo..."
-                if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]
-                then 
-                    echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
-                    echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
-                else
-                    echo "no. Analyzing available RCSB structures, may take a while... "  
-                    rm -f $WORKDIR/completeness_list
-                    sh create_completeness_list ${uniprot_id}
-                    noentries=`wc -l < $WORKDIR/completeness_list`
-                    if  [ $noentries -ne $NULL ]
-                    then
-                        for (( i=1; i<$((noentries+1)); i++ ))
-                        do
-                            accession_code=`head -$i $WORKDIR/completeness_list | tail -1    | awk '{print $1}'`
-                            echo "Downloading ${accession_code} structure from RCSB and cleaning it from water and ligands..."
-                            wget -q -O ${uniprot_id}.pdb.gz  http://www.rcsb.org/pdb/files/${accession_code}.pdb.gz
-                            gzip -df ${uniprot_id}.pdb.gz
-
-
-                            grep COMPND ${uniprot_id}.pdb | grep CHAIN | grep -v MOLECULE > tmp
-                            line=`head -1 tmp `
-
-                            #chain=`echo $line | awk -F'CHAIN ' '{split($2, chainArr, ";"); print chainArr[1]}'`
-
-                            chain=`echo $line | awk '{print $4}' `
-                            nowords=`echo $line | wc -w`
-                            four=4
-                            if  [ $nowords -eq $four ]
-                            then
-                                chain=`echo $chain | tr -d ";"`
-                            else
-                                chain=`echo $chain | tr -d ","`
-                            fi
-
-                            echo "Cleaning $uniprot_id chain $chain" ; echo 
-                            python clean_pdb.py ${uniprot_id}.pdb ${chain}
-                            if  [ -e ${uniprot_id}_${chain}.pdb ]
-                            then
-                                echo "chain ID: $chain"
-                                mv ${uniprot_id}_${chain}.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
-                                rm ${uniprot_id}_${chain}.fasta ${uniprot_id}.pdb
-                                echo "success. Adding ${uniprot_id} to $WORKDIR/receptors_contracted list with E flag."
-                                echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
-                                break
-                            else
-                                echo "failed. Trying to predict the structure."
-                                if   [ ! -e $vini_dir/genes/fasta_files/${uniprot_id}.fasta ]
-                                then
-                                    wget -O ${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
-                                    mv ${uniprot_id}.fasta $vini_dir/genes/fasta_files/${uniprot_id}.fasta
-                                fi
-                                fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
-                                sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
-                                echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
-                                echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "W" >> $WORKDIR/receptors_contracted
-                             fi
-                        done
-                    else
-                        echo "no RCSB single model found. Trying to predict the structure."
-                        wget -O $vini_dir/genes/fasta_files/${uniprot_id}.fasta --no-check-certificate -q https://www.uniprot.org/uniprot/${uniprot_id}.fasta #get & prep sequence
-                        fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
-                        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
-                        echo "Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "list with W flag."
-                        echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
-                    fi
+                    echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "W" >> $WORKDIR/receptors_contracted
                 fi
             fi
+        #fi
         fi
     fi
     let "entry++"
