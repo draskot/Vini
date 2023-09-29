@@ -76,9 +76,8 @@ do
             uniprot_id=`grep "${KEGG_gene_name}" kegg2uniprot | awk '{print $2}'`
             if  [ -z "$uniprot_id" ]
             then
-                echo "cannot convert ${KEGG_gene_name} to Uniprot ID. Vini will stop now."
-                echo "convert ${KEGG_gene_name} to $uniprot_id and update kegg2uniprot table."
-                echo "Vini will stop now."
+                echo "cannot convert ${KEGG_gene_name} to Uniprot ID. Vini will stop now." >> Vini.crashlog
+                echo "convert ${KEGG_gene_name} to $uniprot_id and update kegg2uniprot table." >> Vini.crashlog
                 masterpid=`cat masterpid`
                 kill -9 $masterpid
                 echo "brakepoint!" ; sleep 1000

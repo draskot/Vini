@@ -177,8 +177,6 @@ then
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
-    echo "export exhaustiveness=1000" >> $vini_dir/sourceme
-    echo "export threads=48" >> $vini_dir/sourceme     #this parameter is also valid for Rosetta
 else
     echo "yes."
 fi

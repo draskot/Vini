@@ -11,6 +11,7 @@ then
     cat $target_dir/Vglog* > $target_dir/Vg_values
     cat $target_dir/Rglog* > $target_dir/Rg_values
 
+
     nolines=$NULL
     while read -r line
     do
@@ -22,6 +23,7 @@ then
         fi
     done < ${target_dir}/Vg_values
     Vg_avg=`echo $Vg_sum $nolines | awk '{printf "%.9f \n", $1/$2}'`
+
 
     nolines=$NULL
     cat $target_dir/Vclog* > $target_dir/Vc_values
@@ -36,6 +38,11 @@ then
     done < ${target_dir}/Vc_values
     Vc_avg=`echo $Vc_sum $nolines | awk '{printf "%.9f \n", $1/$2}'`
 
+echo "Vg_avg: $Vg_avg Vc_avg: $Vc_avg"
+vi ${target_dir}/Rg_values
+#echo "Rg_avg: $Rg_avg Rc_avg: $Rc_avg"
+exit
+
     nolines=$NULL
     while read -r line
     do
@@ -49,6 +56,7 @@ then
     V_ratio=`echo $Vc_avg $Vg_avg | awk '{printf "%.9f \n", $1/$2}'`
     Rg_avg=`echo $Rg_sum $nolines | awk '{printf "%.9f \n", $1/$2}'`
     Rc_avg=`echo $Rg_avg $V_ratio | awk '{printf "%.9f \n", $1*$2}'`
+
 
     ls $target_dir/Rglog* > $target_dir/Rg_list
     ls $target_dir/Rclog* > $target_dir/Rc_list

@@ -1,39 +1,24 @@
 
-#input param: EB_matrix
-#output params: statistic, pvalue 
-
-from __future__ import print_function
-from scipy.stats import kstest
 
 import numpy as np
-import argparse
+from scipy.stats import kstest, norm
 
-from numpy.random import seed
-from numpy.random import poisson
+# Read data from the 'vec' file into a NumPy array
+with open('vec.tmp', 'r') as file:
+    data = np.array([float(line.strip()) for line in file])
 
-parse = argparse.ArgumentParser()
-parse.add_argument("-s")
-parse.add_argument("-t")
-args = parse.parse_args()
+# Perform the Kolmogorov-Smirnov test against a normal distribution
+ks_statistic, ks_p_value = kstest(data, 'norm')
 
-temp_buf = open(args.s)
-K = np.loadtxt(temp_buf)
-temp_buf.close()
+# Set a significance level (alpha)
+alpha = 0.05
 
-#E=np.linalg.eigvals(K)                        #compute eigenvalues
-#res = list(map(abs, E))
-#E_sorted=sorted(res, key=abs, reverse=True)     #sort eigenvalues by magnitude
+# Determine if the data is normally distributed
+is_normal = ks_p_value > alpha
 
-#perform Kolmogorov-Smirnov test
-data = poisson(5, 100)
-kstest(data, 'norm')
+# Write the result to the 'dist' file
+with open('dist', 'w') as output_file:
+    output_file.write('TRUE' if is_normal else 'FALSE')
 
-log = open(args.t, "w")       
-#print(E_sorted, file = log)
-log.close()
+print('Is the data normally distributed?', 'TRUE' if is_normal else 'FALSE')
 
-
-#An example of matrix with complex eigenvalues
-
-# 1 -1
-# 1  1

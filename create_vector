@@ -9,20 +9,36 @@ L=$3
 J=$4
 I=$5
 
-ls ${target_dir}/log* > tmp
+conversion_unit=2.00
+ls $target_dir/log* > tmp
 logs=`wc -l < tmp`
 
 > $target_dir/vec
-
-for (( N=1; N<$((logs+1)); N++ ))                     #create Rosetta energy vector
+for (( N=1; N<$((logs+1)); N++ ))                     #create energy vector / convert REU to kcal/mol values
 do
     printf -v comp_index "%03d" $N
-    REU=`cat ${target_dir}/log_${comp_index}`
-    echo $REU >> $target_dir/vec
+    mode=`cat ${target_dir}/log_${comp_index} | awk '{print $1}'`
+    energy=`cat ${target_dir}/log_${comp_index} | awk '{print $2}'`
+    if  [ $energy != ERROR ]
+    then
+        if  [ $mode == Rosetta ]
+        then
+            energy=`echo ${energy} ${conversion_unit} | awk '{print $1 / $2}'`
+        fi
+    fi
+    echo $energy >> $target_dir/vec
 done
+
+grep ERROR $target_dir/vec > tmp                      #replace ERROR entries with random value
+if [ -s tmp ]
+then
+    echo "Normalizing energy vector."
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
+    python $vini_dir/get_random_value.py
+    conda deactivate
+fi
     
-index=1
-> $target_dir/vec.tmp
 while read -r line
 do
     genex=`echo $line | awk '{print $6}'`

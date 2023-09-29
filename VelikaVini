@@ -163,21 +163,33 @@ do
 done < $WORKDIR/receptors_contracted ; echo "done."
 
 j=1
-mkdir -p $WORKDIR/${cancer_type}_data
-while  read -r line            
+mkdir -p $WORKDIR/${cancer_type}_data      #prepare receptors
+cp $ROSETTA_TOOLS/amino_acids.py ./
+cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
+source $INSTALL/miniconda2/bin/activate
+echo "Copying receptor structures to $WORKDIR/${cancer_type}_data area."
+while  read -r line
 do
        printf -v i "%03d" $j
-       gene=`echo $line | awk '{print $3}'` #get entry name
-       echo "Copying ${gene} structure to $WORKDIR/${cancer_type}_data area."
-       grep -v REMARK $vini_dir/genes/pdb_files/${gene}.pdb > tmp
-       grep -v TITLE tmp > ${gene}.pdb
-       grep -v AUTHOR ${gene}.pdb > tmp
-       grep -v JRNL tmp > ${gene}.pdb
-       grep -v EXPDTA ${gene}.pdb > tmp
-       grep -v REVDAT tmp > $WORKDIR/${cancer_type}_data/complex_${i}.pdb
-       rm ${gene}.pdb
+       gene=`echo $line | awk '{print $3}'` #get receptor name
+       cp $vini_dir/genes/pdb_files/${gene}.pdb ./
+       grep COMPND ${gene}.pdb > tmp
+       if [ ! -s tmp ]
+       then
+           grep ATOM ${gene}.pdb > tmp.pdb
+           python clean_pdb_keep_ligand.py tmp.pdb -ignorechain
+           mv tmp.pdb_00.pdb ${gene}.pdb
+           chain=`head -1 ${gene}.pdb | awk  '{print $5}'`
+           if  [ $chain != A ]
+           then
+               java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ${gene}.pdb $chain A
+               mv ${gene}.pdb_${chain}_to_A.pdb ${gene}.pdb
+           fi
+       fi
+       mv ${gene}.pdb $WORKDIR/${cancer_type}_data/complex_${i}.pdb
        let j++
 done < $WORKDIR/receptors_contracted
+conda deactivate
 
 i=1
 while  read -r line                                               #Copy ligand files to the stage
