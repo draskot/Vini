@@ -506,6 +506,34 @@ else
     echo "yes."
 fi
 
+grep Amber $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no." ; echo -n "Checking if Amber module(s) exist..."
+    module spider Amber &> tmp
+    grep -w error tmp > Amber
+    if   [ ! -s Amber ] #no error means module found
+    then
+        echo "yes"
+        cat tmp
+        echo "#******* Amber section *******" >> $vini_dir/sourceme
+        read -p "Select the Amber module:" Amber
+        echo "module load $Amber ">> $vini_dir/sourceme
+        source $vini_dir/sourceme
+    else
+        echo "no."
+        echo "Download Amber tar archive from http://ambermd.org/GetAmber.php and put it in the $INSTALL folder."
+        tar -xf $INSTALL/AmberTools23.tar.bz2 -C $INSTALL
+        rm $INSTALL/AmberTools23.tar.bz2
+        cd $INSTALL/amber22_src/build
+        #ensure that XZ software is installed and active
+        ./run_cmake
+        echo "#******* Amber section *******" >> $vini_dir/sourceme
+    fi
+else
+    echo "yes."
+fi
+
 
 echo -n "Checking if BCL is installed..."
 grep BCL $vini_dir/sourceme > tmp
@@ -542,5 +570,7 @@ then
 else
     echo "yes."
 fi
+
+
 
 echo "You have to re-login in order to changes make effect!"

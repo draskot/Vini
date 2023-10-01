@@ -17,6 +17,7 @@ then
     then
         echo "unable to get hardware info on compute nodes"
         rm -f $WORKDIR/gather_hardware_info
+        scancel -u $USER
     else
         > $WORKDIR/gather_hardware_info
     fi
@@ -32,6 +33,7 @@ then
     then
         echo "unable to get hardware info on compute nodes"
         rm -f $WORKDIR/gather_hardware_info
+        scancel -u $USER
     else
         > $WORKDIR/gather_hardware_info
     fi
@@ -47,6 +49,7 @@ then
     then
         echo "unable to get hardware info on large memory nodes"    #putting first unavailable large memory node on the list
         rm -f $WORKDIR/gather_hardware_info
+        scancel -u $USER
     else
         > $WORKDIR/gather_hardware_info
     fi
