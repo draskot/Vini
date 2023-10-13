@@ -1,0 +1,10 @@
+
+rm $vini_dir/genes/sequences/*
+cp $vini_dir/genes/backup/* $vini_dir/genes/sequences
+module purge
+echo -n "Activating miniconda3 environment..."   #Finding longest ORFs (Open Reading Frames)
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
+python find_longest_frame.py --input-dir $vini_dir/genes/sequences
+conda deactivate

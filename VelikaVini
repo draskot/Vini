@@ -186,7 +186,10 @@ do
                mv ${gene}.pdb_${chain}_to_A.pdb ${gene}.pdb
            fi
        fi
-       mv ${gene}.pdb $WORKDIR/${cancer_type}_data/complex_${i}.pdb
+       grep -v TER ${gene}.pdb  > tmp   #adjust PDB format
+       echo "TER                                                                           " >> tmp
+       mv tmp $WORKDIR/${cancer_type}_data/complex_${i}.pdb
+       rm ${gene}.pdb
        let j++
 done < $WORKDIR/receptors_contracted
 conda deactivate
@@ -209,7 +212,6 @@ do
     fi
     let i++
 done < $vini_dir/ligands/ligands_list
-rm tmp
 
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do

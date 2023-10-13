@@ -128,8 +128,8 @@ do
                              sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
                          else                             #drug is a mAb - checking if complex is compound     
                              grep ATOM complex_${comp_index}.pdb > tmp
-                             if  [ -s tmp ]
-                             then                         #swapping receptor-ligand and using Vina          
+                             if  [ ! -s tmp ]                  #if complex is a compound run Vina
+                             then                              #swap receptor-ligand          
                                  mv complex_${comp_index}.pdb tmp    
                                  mv ligand_${lig_index}.pdb complex_${comp_index}.pdb
                                  mv tmp ligand_${lig_index}.pdb
@@ -225,6 +225,7 @@ do
                                  echo "    echo Rosetta \${score} > $target_dir/log_${comp_index}"             >> rdock
                                  echo "fi"                                                                     >> rdock
                                  chmod u+x                                                                        rdock         
+                         echo "brakepoint" ; ls $comp_source/complex_${comp_index}.pdb ;  sleep 1000
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} -Q                                                                 rdock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point

@@ -1,0 +1,13 @@
+#input params: M, L, J, I, target_dir
+#output params: SLEM written in $WORKDIR/SLEM_values file
+
+
+therapy_level=`cat $WORKDIR/therapy_level`
+SLEM=`cat $target_dir/eigenvalues | awk -F','  '{print $2}'`
+
+case $therapy_level in
+     1) echo "SLEM_${M} ${SLEM}" >> $WORKDIR/SLEM_values ;;
+     2) echo "SLEM_${M}.${L} ${SLEM}" >> $WORKDIR/SLEM_values ;;
+     3) echo "SLEM_${M}.${L}.${J} ${SLEM}" >> $WORKDIR/SLEM_values ;;
+     4) echo "SLEM_${M}.${L}.${J}.${I} ${SLEM}" >> $WORKDIR/SLEM_values ;;
+esac
