@@ -2,7 +2,7 @@ ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type f
 CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
 CANCER_PATHWAY=$ORGANISM$CANCER_TYPE                #setting the cancer pathway
 UNIPROT_ID_LIST="_uniprot_entries.txt"
-MAX_NODES=`cat $WORKDIR/nodes`                   #maximum number of compute nodes Vini can use concurrently
+#MAX_NODES=`cat $WORKDIR/nodes`                   #maximum number of compute nodes Vini can use concurrently
 job_submit=`cat job_submit`
 outdir=$vini_dir/genes/pdb_files  #where the predicted structures are placed
 
@@ -12,6 +12,7 @@ cpus=`cat ${partition}_cores`
 mem=`cat ${partition}_memsize`
 base=`cat AlphaFold_base`
 outdir=$vini_dir/genes/pdb_files
+
 
 cp $ROSETTA/tools/protein_tools/scripts/clean_pdb.py ./
 cp $ROSETTA//tools/protein_tools/scripts/amino_acids.py ./

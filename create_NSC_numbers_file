@@ -1,11 +1,3 @@
-ORGANISM=`cat $WORKDIR/ORGANISM`
-cancer_type=`cat $WORKDIR/cancer_type`
-results="_results"
-cell_line=`cat cell_line`
-NULL=0
-ONES=1
-TWO=2
-
 if [ $cell_line == SF268 ] ; then  #map COSMIC to NCI-60 cell names
    cell_line=SF-268
 fi

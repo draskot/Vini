@@ -1,7 +1,7 @@
 
-#Input parameter: MAX_NODES
+#Input parameter: nodes
 
-MAX_NODES=$1
+nodes=$1
 job_status=`cat job_status`
 NULL=0
 
@@ -22,7 +22,8 @@ do
         done < $WORKDIR/all_user_jobs
         echo -n $allnodes ""
          
-        if  [ $allnodes -gt $MAX_NODES ] 
+        #if  [ $allnodes -gt $MAX_NODES ] 
+        if  [ $allnodes -gt $nodes ] 
         then
             sleep 4
         else

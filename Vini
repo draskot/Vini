@@ -3,11 +3,6 @@ echo "If using this program in your academic research , please cite:"           
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
 
-TWO=2
-HSA=hsa
-TRUE=1
-FALSE=0
-ONES=1
 
 
 if  [[ -e Vini_crash.log ]] &&  [[ ! -s Vini_crash.log ]] 
@@ -19,7 +14,14 @@ else
     > Vini.crashlog
     > restartfile
     > globals
-    echo init > state
+    TWO=2 ; TRUE=1 ; FALSE=0 ; ONES=1 ; NULL=0
+    echo "export TRUE=$TRUE"   >> $vini_dir/globals
+    echo "export FALSE=$FALSE" >> $vini_dir/globals
+    echo "export ONES=$ONES"   >> $vini_dir/globals
+    echo "export TWO=$TWO"     >> $vini_dir/globals
+    echo "export NULL=$NULL"   >> $vini_dir/globals
+    echo "export state=init"   >> $vini_dir/globals
+    #echo init > state
     rm -rf $WORKDIR/*_data
 fi
 
@@ -180,18 +182,17 @@ cores=`cat ${partition}_cores`
 
 
 read -e -p "Enter the maximum number of CPU cores per node Vini/Rosetta can use. Press enter to accept the default: " -i "24" threads
-echo "export threads=${threads}" >> $vini_dir/globals
+echo "export threads=$threads" >> globals
 
 read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
 maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
-
 max_jobs=`echo $maxcores $threads | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
-echo "export max_jobs=${max_jobs}" >> globals
+echo "export max_jobs=${max_jobs}" >> $vini_dir/globals
 
 nodes=`echo $maxcores $cores | awk '{print $1 / $2}'`
 nodes=${nodes%.*}
-echo $nodes > $WORKDIR/nodes
+echo "export nodes=$nodes" >> $vini_dir/globals
 echo "Number of concurrent Vinajobs (each job using $Vinathreads CPU cores) will be limited to $Vinajobs"
 echo "Number of concurrent  AlphaFold jobs (each job using $cores CPU cores) will be limited to $nodes"
 
@@ -228,7 +229,8 @@ sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files
 echo "AlphaFold will be used for protein structures prediction."
 partition=`cat active_partition`
 memsize=`cat ${partition}_memsize | tr -dc '0-9'`
-echo "full_dbs" > AlphaFold_base                  #Vini is using full AlphaFold base
+#echo "full_dbs" > AlphaFold_base                  #Vini is using full AlphaFold base
+echo "export AlphaFold_base=full_dbs" >> $vini_dir/globals
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic
 
@@ -270,9 +272,9 @@ else
     fi
     exp=noexp
 fi
-echo $kit > $WORKDIR/kit
-echo $cosmic > $WORKDIR/cosmic
-echo $exp > $WORKDIR/exp
+echo "export cosmic=$cosmic" >> $vini_dir/globals
+echo "export kit=$kit" >> $vini_dir/globals
+echo "export exp=$exp" > $WORKDIR/exp
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -292,7 +294,8 @@ cat $WORKDIR/organisms | less
 echo "" ; rm tmp tmp2
 read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept the default: " -i "hsa" ORGANISM
 
-echo $ORGANISM > $WORKDIR/ORGANISM
+echo "export ORGANISM=$ORGANISM" >> $vini_dir/globals
+
 
 echo -n "Trying to retrieve the list of available metabolic pathways from KEGG, please wait..."
 wget -O $vini_dir/tmp --no-check-certificate -q $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
@@ -307,13 +310,14 @@ echo "" ; read -p "Press enter to continue." cont
 cat $WORKDIR/pathways | less
 echo ""
 read -e -p "Write in the KEGG pathway number or press enter to accept the default:" -i "05215" cancer_type
-echo $cancer_type > $WORKDIR/cancer_type
+echo "export cancer_type=${cancer_type}" >> $vini_dir/globals
 data="_data"
 
 read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept the default: " -i "y" yesno
 if [ $yesno == y ]
 then
-    compute_cell_line=$TRUE ; echo $compute_cell_line > $WORKDIR/compute_cell_line
+    compute_cell_line=$TRUE
+    echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/globals
     #DU145, PC3, and LNCaP cells - prostate cell lines
     read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "DU-145" cell_line
     if  [ $cosmic == "y" ]
@@ -338,8 +342,9 @@ then
             rm -rf $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
         fi
     fi
-    echo $cell_line > cell_line
+    echo "export cell_line=${cell_line}" >> $vini_dir/globals
     echo "Creating ligands_list file with drugs in NCI-60 database."
+    source $vini_dir/globals
     sh $vini_dir/create_NSC_numbers_file
     > $WORKDIR/NCI-60_ligands_list
     while read -r line
@@ -357,15 +362,15 @@ then
     if  [ $file == NCI-60_ligands_list ]
     then
         mv $WORKDIR/NCI-60_ligands_list $vini_dir/ligands/ligands_list
-        echo "yes" > $WORKDIR/validate_NCI-60_data
+        echo "export NCI60=yes" >> globals
     else
-        echo "no" > $WORKDIR/validate_NCI-60_data
+        echo "export NCI60=no" >> globals
     fi
 else
     compute_cell_line=$FALSE
-    echo $compute_cell_line > $WORKDIR/compute_cell_line
+    echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/gobals
     cell_line=PUBLIC
-    echo $cell_line > cell_line
+    echo "export cell_line=PUBLIC" >> $vini_dir/gobals
 fi
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
@@ -385,24 +390,15 @@ else
     echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
 fi
 
-read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" therapy_level
-echo ${therapy_level} > $WORKDIR/max_therapy_level
+read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" max_therapy_level
+echo "export max_therapy_level=${max_therapy_level}" >> globals
 
 rm -rf $WORKDIR/$cancer_type$data
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
-num_modes=9
-echo $num_modes > $WORKDIR/num_modes
 read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "1000" exhaustiveness
-echo export exhaustiveness=${exhaustiveness} >> globals 
-#box_size=40
-#echo ${box_size} > $WORKDIR/box_size
-affinity=0.00 #In case of error we take zero binding energy
-echo $affinity > $WORKDIR/random_affinity
-
-#read -e -p "Write restart frequency (for restarting a simulation in case of a system crash). Press enter to accept the default : " -i "4800" restartfreq
-#echo $restartfreq > $WORKDIR/restartfreq
+echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
 if  [ $mode == n ]

@@ -1,27 +1,20 @@
-NULL=0
-ONES=1
-TWO=2
-ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
-cancer_type=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+source $vini_dir/globals
 CANCER_PATHWAY=$ORGANISM$cancer_type                #setting the cancer pathway
-therapy_level=`cat $WORKDIR/therapy_level`         #therapy level
-compute_cell_line=`cat $WORKDIR/compute_cell_line`
 cosmic=`cat $WORKDIR/cosmic`
 cell_line=`cat cell_line`                  #getting the cell line name
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
-random_affinity=`cat $WORKDIR/random_affinity`
-MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
 partition=`cat cpu_partition`
 walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
 excluded_nodes=`cat excluded_${partition}_nodes`
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 
-source $vini_dir/globals  #import global variables
+echo ${therapy_level} > $WORKDIR/therapy_level
 
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
 cd $WORKDIR
+rm -f $WORKDIR/SLEM_values
 
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in                  
@@ -118,11 +111,11 @@ do
                              echo "if  [ -e COMPLEX.pdbqt ]"                                               >> vdock
                              echo "then"                                                                   >> vdock                 
                              echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
-                             echo " Vina   echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                >> vdock
-                             echo "else"                                                                   >> vdock
-                             echo "    echo Vina ERROR > $target_dir/log_${comp_index}"                    >> vdock
-                             echo "fi"                                                                     >> vdock
-                             chmod u+x                                                                        vdock
+                             echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                >> vdock
+                             echo "else"                                                                  >> vdock
+                             echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> vdock
+                             echo "fi"                                                                    >> vdock
+                             chmod u+x                                                                       vdock
                              sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                              ${job_submit} -Q                                                                vdock
                              sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
@@ -225,7 +218,6 @@ do
                                  echo "    echo Rosetta \${score} > $target_dir/log_${comp_index}"             >> rdock
                                  echo "fi"                                                                     >> rdock
                                  chmod u+x                                                                        rdock         
-                         echo "brakepoint" ; ls $comp_source/complex_${comp_index}.pdb ;  sleep 1000
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} -Q                                                                 rdock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
@@ -253,13 +245,15 @@ do
                  echo "#SBATCH --output=${target_dir}/compute_SLEM.out"      >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --output=${target_dir}/compute_SLEM.err"      >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/compute_SLEM 
-                 cat $vini_dir/create_vector                                 >> ${target_dir}/compute_SLEM
+                 echo "module purge"                                         >> ${target_dir}/compute_SLEM
                  echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/compute_SLEM
+                 echo "INSTALL=${INSTALL}"                                   >> ${target_dir}/compute_SLEM
+                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/compute_SLEM
+                 echo "conda activate env310"                                >> ${target_dir}/compute_SLEM
+                 cat $vini_dir/create_vector                                 >> ${target_dir}/compute_SLEM
                  echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/compute_SLEM
                  echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/compute_SLEM
                  echo "echo \$complexes > complexes"                         >> ${target_dir}/compute_SLEM
-                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/compute_SLEM
-                 echo "conda activate env310"                                >> ${target_dir}/compute_SLEM
                  echo "python3 $vini_dir/create_energy_binding_matrix.py"    >> ${target_dir}/compute_SLEM
                  echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/compute_SLEM
                  echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM

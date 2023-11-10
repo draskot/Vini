@@ -1,17 +1,10 @@
-HSA=hsa
-ORGANISM=`cat $WORKDIR/ORGANISM`
 partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 job_submit=`cat job_submit`
-cosmic=`cat $WORKDIR/cosmic`
-kit=`cat $WORKDIR/kit`
-max_therapy_level=`cat $WORKDIR/max_therapy_level`
-compute_cell_line=`cat $WORKDIR/compute_cell_line`
-NCI60=`cat $WORKDIR/validate_NCI-60_data`
 
-TRUE=1
-FALSE=0
-ONES=1
+
+source $vini_dir/globals
+
 
 > $WORKDIR/missing_genes
 > $WORKDIR/failed_predictions
@@ -19,15 +12,10 @@ ONES=1
 
 rm -f $vini_dir/genes/cosmic_ids.csv
 
-if  [ $compute_cell_line -eq $TRUE ]
-then
-    cell_line=`cat cell_line`
-fi
 
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
 
-cancer_type=`cat $WORKDIR/cancer_type`          #getting cancer type from the preproc script
 mkdir -p $WORKDIR/${cancer_type}_data           #folder with an intermediate data
 grep $cancer_type $vini_dir/database/cross_references > tmp
 line=`cat tmp`

@@ -7,6 +7,9 @@ exp=`cat $WORKDIR/exp`
 therapy_level=`cat $WORKDIR/therapy_level`
 NULL=0
 
+
+source $vini_dir/globals
+
 cp $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}_named ./tmp
 sed -i -e 's/SLEM_//g' tmp  #delete SLEM_ prefix from lines            
 cat tmp | tr -s '[:blank:]' ',' > SLEM_values #convert text to csv file
