@@ -1,19 +1,9 @@
-#This subroutine is called from main program Vini. It creates receptors and relations files#
+#This subroutine creates receptors and relations files#
 
-
-ORGANISM=`cat $WORKDIR/ORGANISM`              #getting cancer type from the main script
-c=.xml
-sav=.sav
-
-CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from the main script
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
-PATHWAY_FILE=$CANCER_PATHWAY$c
+PATHWAY_FILE=${CANCER_PATHWAY}.xml
 PWD=`pwd`
 
-
 cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$PATHWAY_FILE $WORKDIR
-
-
 
 cd $WORKDIR
 

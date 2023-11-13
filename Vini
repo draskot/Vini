@@ -14,11 +14,12 @@ else
     > Vini.crashlog
     > restartfile
     > globals
-    TWO=2 ; TRUE=1 ; FALSE=0 ; ONES=1 ; NULL=0
+    SEVEN=7 ; TWO=2 ; TRUE=1 ; FALSE=0 ; ONES=1 ; NULL=0
     echo "export TRUE=$TRUE"   >> $vini_dir/globals
     echo "export FALSE=$FALSE" >> $vini_dir/globals
     echo "export ONES=$ONES"   >> $vini_dir/globals
     echo "export TWO=$TWO"     >> $vini_dir/globals
+    echo "export SEVEN=$SEVEN" >> $vini_dir/globals
     echo "export NULL=$NULL"   >> $vini_dir/globals
     echo "export state=init"   >> $vini_dir/globals
     #echo init > state
@@ -98,6 +99,7 @@ else
     sh $vini_dir/set_partitions
     read -e -p "Enter name of the default partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
     echo $active_partition > active_partition
+    echo "export active_partition=${active_partition}" >> $vini_dir/globals
     echo $JSS > $WORKDIR/JSS
 fi
 
@@ -143,7 +145,7 @@ then
     read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
-        timeout 10s sh $vini_dir/nodetest $partition $walltime
+        timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
         success=`echo $?`
         if [ $success -eq 124 ] ; then
            echo "Test aborted, cancelling jobs..." ; scancel -u $USER
@@ -151,7 +153,7 @@ then
     fi
 else
     echo "Nodetest will now be performed."
-    timeout 10s sh $vini_dir/nodetest $partition $walltime
+    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
         success=`echo $?`
         if [ $success -eq 124 ] ; then
            echo "Test aborted, cancelling jobs..." ; scancel -u $USER
@@ -236,6 +238,8 @@ read -e -p "Include cancer gene expressions and mutations from COSMIC into analy
 
 if  [ $cosmic == "y" ]
 then
+    echo "export cosmic=y" >> $vini_dir/globals
+    echo "export exp=exp"   >> $vini_dir/globals
     echo ; echo "If you have never registered for COSMIC before, stop here.. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving approval, enter your registration email and password here."
 
     # https://cancer.sanger.ac.uk/cell_lines  cell lines mutations and expressions
@@ -260,21 +264,19 @@ then
     fi
     touch -a -m -t 200001010101 $WORKDIR/COSMIC_token #reset time creation to 01-01-2000
     sh $vini_dir/renew_COSMIC_token #update COSMIC token if older than 24 hours
-    exp=exp
     kit="n"
 else
+    echo "export cosmic=n" >> $vini_dir/globals
+    echo "export exp=noexp"   >> $vini_dir/globals
     read -p "Do you want to include your own cancer gene expression data into the analysis (y/n)?" kit
     if   [ $kit == "y" ]
     then
+        echo "export kit=$kit" >> $vini_dir/globals
         echo "vi editor will open. Write the data in the form: genename uniprotID expression. Then press <:wq!> to save the data!."
         read -p "press enter when ready to continue." enter
         vi $vini_dir/database/genes/custom_genes
     fi
-    exp=noexp
 fi
-echo "export cosmic=$cosmic" >> $vini_dir/globals
-echo "export kit=$kit" >> $vini_dir/globals
-echo "export exp=$exp" > $WORKDIR/exp
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 
@@ -362,9 +364,9 @@ then
     if  [ $file == NCI-60_ligands_list ]
     then
         mv $WORKDIR/NCI-60_ligands_list $vini_dir/ligands/ligands_list
-        echo "export NCI60=yes" >> globals
+        echo "export NCI60=yes" >> $vini_dir/globals
     else
-        echo "export NCI60=no" >> globals
+        echo "export NCI60=no" >> $vini_dir/globals
     fi
 else
     compute_cell_line=$FALSE
@@ -395,6 +397,7 @@ echo "export max_therapy_level=${max_therapy_level}" >> globals
 
 rm -rf $WORKDIR/$cancer_type$data
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
+echo "export CANCER_PATHWAY=${CANCER_PATHWAY}" >> $vini_dir/globals
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
 read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "1000" exhaustiveness

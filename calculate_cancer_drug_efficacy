@@ -1,27 +1,12 @@
-ORGANISM=`cat $WORKDIR/ORGANISM`
-CANCER_TYPE=`cat $WORKDIR/cancer_type`
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
-exp=`cat $WORKDIR/exp`
-therapy_level=`cat $WORKDIR/therapy_level`
-compute_cell_line=`cat $WORKDIR/compute_cell_line`
-ONES=1
-TRUE=1
+source $vini_dir/globals
+
+
 vina_version=$1
-
-if [ $compute_cell_line -eq $TRUE ]
-then
-    cell_line=`cat $WORKDIR/NCI60_cell_line`
-else
-    cell_line=`cat cell_line`
-fi
-
 
 if [[ -e $WORKDIR/hsa05223_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_exp_named ]] && [[ -e $WORKDIR/hsa05223_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_noexp_named ]]
 then
-    exp=exp
     grep Water $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}_named > tmp
     SLEMcw=`cat tmp | awk '{print $2}'`
-    exp=noexp
     grep Water $WORKDIR/${CANCER_PATHWAY}_results/SLEM_${vina_version}_values_${cell_line}_thl${therapy_level}_${exp}_named > tmp
     SLEMnw=`cat tmp | awk '{print $2}'`
     echo -n "Computing cancer drug effectiveness..."

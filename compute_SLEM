@@ -1,8 +1,8 @@
 #input params: M, L, J, I, target_dir
 #output params: SLEM written in $WORKDIR/SLEM_values file
 
+source $vini_dir/globals
 
-therapy_level=`cat $WORKDIR/therapy_level`
 SLEM=`cat $target_dir/eigenvalues | awk -F','  '{print $2}'`
 
 case $therapy_level in

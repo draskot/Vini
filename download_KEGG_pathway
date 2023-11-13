@@ -1,10 +1,7 @@
 #This subroutine is called from main program Vini and is checking for KEGG pathway updates 
 
-ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting cancer type from the main script
 c=.xml
 
-CANCER_TYPE=`cat $WORKDIR/cancer_type`              #getting cancer type from the main script
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
 PATHWAY_FILE=${CANCER_PATHWAY}.xml
 
 wget -O $WORKDIR/$PATHWAY_FILE --no-check-certificate http://rest.kegg.jp/get/$CANCER_PATHWAY/kgml

@@ -1,9 +1,5 @@
-cell_line=`cat cell_line`
-cosmic=`cat $WORKDIR/cosmic`
+source $vini_dir/globals
 
-NULL=0
-ONES=1
-seven=7
 touch $vini_dir/database/genes/Uniprot_gene_table
 
 > $WORKDIR/receptors_contracted.tmp
@@ -11,7 +7,7 @@ while read -r line
 do
     Uniprot_ID=`echo $line | awk '{print $3}'` #check if entry is gene or compound
     nochars=`echo -n $Uniprot_ID | wc -c`
-    if  [ $nochars -gt $seven ]
+    if  [ $nochars -gt $SEVEN ]
     then
         echo $Uniprot_ID > tmp   #check if entry is compound or mutated gene
         grep pubchem tmp > tmp2

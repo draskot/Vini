@@ -1,11 +1,9 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
-partition=`cat  active_partition`      #Define AlphaFold parameters
+#partition=`cat  active_partition`      #Define AlphaFold parameters
 cpus=`cat ${partition}_cores`
-base=`cat AlphaFold_base`
 outdir=$vini_dir/genes/pdb_files
 
-cell_line=`cat cell_line`
 SEQDIR=$vini_dir/genes/sequences/
 
 rm -f $vini_dir/genes/sequences/*csv                               #DNA --> protein sequence translation
@@ -49,7 +47,7 @@ do
     then
         echo "Predicting the structure of mutated ${uniprot_id} with AlphaFold."
         fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
-        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${base} ${fasta_file} ${outdir}
+        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${AlphaFold_base} ${fasta_file} ${outdir}
     else
         echo "${uniprot_id} structure found in repository."
     fi

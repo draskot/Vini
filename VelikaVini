@@ -1,9 +1,10 @@
+
+source $vini_dir/globals
+
+
 partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 job_submit=`cat job_submit`
-
-
-source $vini_dir/globals
 
 
 > $WORKDIR/missing_genes
@@ -12,7 +13,6 @@ source $vini_dir/globals
 
 rm -f $vini_dir/genes/cosmic_ids.csv
 
-
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
 
@@ -20,9 +20,7 @@ mkdir -p $WORKDIR/${cancer_type}_data           #folder with an intermediate dat
 grep $cancer_type $vini_dir/database/cross_references > tmp
 line=`cat tmp`
 tissue=`echo $line | awk '{print $2}'`
-CANCER_PATHWAY=$ORGANISM$cancer_type
 mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
-
 
 sh download_KEGG_pathway
 
@@ -58,8 +56,6 @@ echo "Waiting for AlphaFold jobs to finish. This may take a while."
 sh $vini_dir/predict_protein_drug_structures
 sh $vini_dir/wait_until_jobs_finish
  
-
-
 if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
 then
     if [ $cosmic == y ]
@@ -97,7 +93,6 @@ else
     then
         sh $vini_dir/predict_mutated_genes
     fi
-
 
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors
@@ -149,6 +144,7 @@ do
         rm -rf $WORKDIR/${receptor}
     fi
 done < $WORKDIR/receptors_contracted ; echo "done."
+
 
 j=1
 mkdir -p $WORKDIR/${cancer_type}_data      #prepare receptors
@@ -203,7 +199,7 @@ done < $vini_dir/ligands/ligands_list
 
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
-    echo $therapy_level > $WORKDIR/therapy_level
+    echo "export therapy_level=${therapy_level}" >> $vini_dir/globals
     sh $vini_dir/malavini
 done
 

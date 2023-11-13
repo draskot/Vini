@@ -1,14 +1,7 @@
-ORGANISM=`cat $WORKDIR/ORGANISM`
-CANCER_TYPE=`cat $WORKDIR/cancer_type`
-CANCER_PATHWAY=$ORGANISM$CANCER_TYPE
-compute_cell_line=`cat $WORKDIR/compute_cell_line`
-cell_line=`cat $WORKDIR/NCI60_cell_line`
-exp=`cat $WORKDIR/exp`
-therapy_level=`cat $WORKDIR/therapy_level`
-NULL=0
 
 
 source $vini_dir/globals
+
 
 cp $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}_named ./tmp
 sed -i -e 's/SLEM_//g' tmp  #delete SLEM_ prefix from lines            
@@ -69,7 +62,7 @@ do
         printf "%s%s%s%s%s%s%s\n" "$drugname" "," " " "$SLEM" "," " " "$GI50" >> tmp
     fi
 done < SLEM_values
-rm SLEM_values sum
+rm sum
 
 mv tmp $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_Pearson_${exp}.csv
 echo "done. SLEM and GI50 values are in:" $WORKDIR/${CANCER_PATHWAY}_results/${cell_line}_Pearson_${exp}.csv "file."

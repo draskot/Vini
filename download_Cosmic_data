@@ -1,6 +1,5 @@
 module purge
 
-cell_line=`cat cell_line`
 echo -n "Activating miniconda3 environment..."
 source $INSTALL/miniconda3/bin/activate
 conda activate env310
@@ -16,7 +15,6 @@ python calculate_gene_expression_cell_line.py -g ./genes/Uniprot_ID_list -t ${ce
 echo "done."
 
 cp $vini_dir/genes/cosmic_ids.csv $vini_dir/genes/cosmic_ids.csv.orig
-
 
 echo -n "Downloading  gene mutations for ${cell_line} cell line from Cosmic, please wait..."
 python get_gene_mutation_cell_line.py -g ./genes/Uniprot_ID_list -c ${cell_line}
