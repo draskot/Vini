@@ -1,5 +1,9 @@
 source $vini_dir/globals
 
+SLEM_FILE=$WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
+> ${SLEM_FILE}_named
+
+
 while read -r line
 do
     echo -n "."
@@ -17,39 +21,59 @@ do
     
     if [[ $therapy_level == 1 ]]
     then
-        drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #get drug name 
-        drug1=`echo $drug1 | awk -F',' '{print $1}'`       
-        printf "%s%s%s%s\n" "SLEM_" $drug1 " " $SLEM >> ${SLEM_FILE}_named 
+        dot_count=$(echo "$word" | tr -cd '.' | wc -c)
+        if  [ ${dot_count} == $NULL ]
+        then
+            drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #get drug name 
+            drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+            printf "%s%s%s%s\n" "SLEM_" $drug1 " " $SLEM >> ${SLEM_FILE}_named 
+        fi
     else
         if  [[ $therapy_level == 2 ]]  
         then
-            drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
-            drug1=`echo $drug1 | awk -F',' '{print $1}'`       
-            drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
-            drug2=`echo $drug2 | awk -F',' '{print $1}'`       
-            printf "%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 " " $SLEM >> ${SLEM_FILE}_named 
-        else
-            if   [[ $therapy_level == 3 ]] 
+            word=`echo $line | awk '{print $1}'`
+            dot_count=$(echo "$word" | tr -cd '.' | wc -c)
+            if  [ ${dot_count} == $ONES ]
             then
                 drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
                 drug1=`echo $drug1 | awk -F',' '{print $1}'`       
                 drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
-                drug2=`echo $drug2 | awk -F',' '{print $1}'`
-                drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
-                drug3=`echo $drug3 | awk -F',' '{print $1}'`
-                printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 " " $SLEM >> ${SLEM_FILE}_named 
-            else
-                if  [[ $therapy_level == 4 ]]
+                drug2=`echo $drug2 | awk -F',' '{print $1}'`       
+                printf "%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 " " $SLEM >> ${SLEM_FILE}_named 
+                #echo "brakepoint! $dot_count" ; sleep 1000
+            fi
+        else
+            if   [[ $therapy_level == 3 ]] 
+            then
+                word=`echo $line | awk '{print $1}'`
+                dot_count=$(echo "$word" | tr -cd '.' | wc -c)
+                if  [ ${dot_count} == $TWO ]
                 then
-                    drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" 
-                    drug1=`echo $drug1 | awk -F',' '{print $1}'`
+                    drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
+                    drug1=`echo $drug1 | awk -F',' '{print $1}'`       
                     drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                     drug2=`echo $drug2 | awk -F',' '{print $1}'`
                     drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                     drug3=`echo $drug3 | awk -F',' '{print $1}'`
-                    drug4=`head -"$l" $vini_dir/ligands/ligands_list | tail -1` #convert "l" to name 
-                    drug4=`echo $drug4 | awk -F',' '{print $1}'`
-                    printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 "." $drug4 " " $SLEM >> ${SLEM_FILE}_named 
+                    printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 " " $SLEM >> ${SLEM_FILE}_named 
+                fi
+            else
+                if  [[ $therapy_level == 4 ]]
+                then
+                    word=`echo $line | awk '{print $1}'`
+                    dot_count=$(echo "$word" | tr -cd '.' | wc -c)
+                    if  [ ${dot_count} == $THREE ]
+                    then
+                        drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" 
+                        drug1=`echo $drug1 | awk -F',' '{print $1}'`
+                        drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
+                        drug2=`echo $drug2 | awk -F',' '{print $1}'`
+                        drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
+                        drug3=`echo $drug3 | awk -F',' '{print $1}'`
+                        drug4=`head -"$l" $vini_dir/ligands/ligands_list | tail -1` #convert "l" to name 
+                        drug4=`echo $drug4 | awk -F',' '{print $1}'`
+                        printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 "." $drug4 " " $SLEM >> ${SLEM_FILE}_named 
+                    fi
                 fi
             fi
         fi

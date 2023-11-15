@@ -25,8 +25,8 @@ do
      then
          echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
          echo ""                                                                          >> Vini.crashlog
-         requeued_job=`squeue -u eudraskot | grep Q07889 | awk '{print $1}'`
-         requeued_node=`squeue -u eudraskot | grep Q07889 | awk '{print $8}'`
+         requeued_job=`squeue -u $USER | grep Q07889 | awk '{print $1}'`
+         requeued_node=`squeue -u $USER | grep Q07889 | awk '{print $8}'`
          ${job_cancel} ${requeued_job}
          $job_cancel -u $USER
          masterpid=`cat masterpid`
@@ -42,9 +42,9 @@ do
          echo "You will need to re-login and then start Vini again."
          echo ""                                                      >> Vini.crashlog
          $job_cancel -u $USER
-         old="\/exa5\/scratch\/user\/eudraskot"
-         new="\/ceph\/hpc\/data\/r2022r03-224-users\/eudraskot\/WORKDIR"
-         sed -i -e "s/$old/$new/" $vini_dir/sourceme 
+         old=`grep WORKDIR $vini_dir/sourceme | awk -F'=' '{print $2}'`
+         new=`grep INSTALL $vini_dir/sourceme | awk -F'=' '{print $2}'`
+         sed -i -e "s|$old|$new|" "$vini_dir/sourceme"
          masterpid=`cat $vini_dir/masterpid`
          kill -9 $masterpid
      fi

@@ -1,7 +1,7 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
-#partition=`cat  active_partition`      #Define AlphaFold parameters
-cpus=`cat ${partition}_cores`
+
+cpus=`cat ${active_partition}_cores`
 outdir=$vini_dir/genes/pdb_files
 
 SEQDIR=$vini_dir/genes/sequences/

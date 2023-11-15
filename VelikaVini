@@ -88,6 +88,8 @@ then
 else
     sh $vini_dir/download_Cosmic_data
 
+
+
     rm -f $WORKDIR/*err $WORKDIR/*out    
     if  [ $cosmic == y ]
     then
@@ -197,8 +199,11 @@ do
     let i++
 done < $vini_dir/ligands/ligands_list
 
+rm -f $WORKDIR/SLEM_values
+rm -f $WORKDIR/${CANCER_PATHWAY}_results/*
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
+    sed -i '/\btherapy_level\b/d' $vini_dir/globals
     echo "export therapy_level=${therapy_level}" >> $vini_dir/globals
     sh $vini_dir/malavini
 done

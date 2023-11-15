@@ -1,5 +1,7 @@
 module purge
 
+source $vini_dir/globals
+
 echo -n "Activating miniconda3 environment..."
 source $INSTALL/miniconda3/bin/activate
 conda activate env310
