@@ -16,14 +16,15 @@ else
     > globals
     NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
     TRUE=1 ; FALSE=0
-    echo "export TRUE=$TRUE"   >> $vini_dir/globals
-    echo "export FALSE=$FALSE" >> $vini_dir/globals
-    echo "export ONES=$ONES"   >> $vini_dir/globals
-    echo "export TWO=$TWO"     >> $vini_dir/globals
-    echo "export THREE=$THREE" >> $vini_dir/globals
-    echo "export SEVEN=$SEVEN" >> $vini_dir/globals
-    echo "export NULL=$NULL"   >> $vini_dir/globals
-    echo "export state=init"   >> $vini_dir/globals
+    echo "export TRUE=$TRUE"                   >> $vini_dir/globals
+    echo "export FALSE=$FALSE"                 >> $vini_dir/globals
+    echo "export ONES=$ONES"                   >> $vini_dir/globals
+    echo "export TWO=$TWO"                     >> $vini_dir/globals
+    echo "export THREE=$THREE"                 >> $vini_dir/globals
+    echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
+    echo "export NULL=$NULL"                   >> $vini_dir/globals
+    echo "export state=init"                   >> $vini_dir/globals
+    echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
     #echo init > state
     rm -rf $WORKDIR/*_data
 fi
@@ -185,7 +186,7 @@ partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 
 
-read -e -p "Enter the maximum number of CPU cores per node Vini/Rosetta can use. Press enter to accept the default: " -i "24" threads
+read -e -p "Enter the maximum number of CPU cores per node Vini/Rosetta can use. Press enter to accept the default: " -i "48" threads
 echo "export threads=$threads" >> globals
 
 read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
@@ -412,6 +413,7 @@ if  [ $mode == n ]
 then
     nohup ./VelikaVini & 
     echo $! > masterpid
+    uname -n > login_node
     echo "Vini will now continue to work in the background."
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
 else

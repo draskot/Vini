@@ -1,5 +1,5 @@
 
-NULL=0
+source $vini_dir/globals
 module purge
 
 if  [ ! -e sourceme ]
@@ -177,6 +177,21 @@ then
     chmod u+x $INSTALL/vina
     echo "#***** Vina section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL:\$PATH" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
+echo -n "checking if Autodock4  is installed..."
+grep Autodock4 $vini_dir/sourceme > tmp
+nolines=`wc -l < tmp`
+if [ $nolines -eq $NULL ]
+then
+    echo "no. Installing Autodock4..."
+    mkdir -p $INSTALL/autodock4
+    wget -O $INSTALL/autodocksuite-4.2.6-x86_64Linux2.tar https://autodock.scripps.edu/wp-content/uploads/sites/56/2021/10/autodocksuite-4.2.6-x86_64Linux2.tar
+    tar -xvf $INSTALL/autodocksuite-4.2.6-x86_64Linux2.tar -C $INSTALL/autodock4
+    echo "#***** Autodock4 section******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/autodock4/x86_64Linux2:\$PATH" >> $vini_dir/sourceme
 else
     echo "yes."
 fi

@@ -24,9 +24,13 @@ do
         dot_count=$(echo "$word" | tr -cd '.' | wc -c)
         if  [ ${dot_count} == $NULL ]
         then
-            drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #get drug name 
-            drug1=`echo $drug1 | awk -F',' '{print $1}'`       
-            printf "%s%s%s%s\n" "SLEM_" $drug1 " " $SLEM >> ${SLEM_FILE}_named 
+            drug=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #get drug name 
+            drug=`echo $drug | awk -F',' '{print $1}'`       
+            word_count=$(echo "$drug" | wc -w)
+            if  [ "$word_count" -eq 2 ] ;then
+                drug=$(echo "$drug" | sed 's/ /_/g') ; drug=${drug}
+            fi
+            printf "%s%s%s%s\n" "SLEM_" ${drug} " " $SLEM >> ${SLEM_FILE}_named 
         fi
     else
         if  [[ $therapy_level == 2 ]]  
@@ -37,10 +41,17 @@ do
             then
                 drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
                 drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+                word_count=$(echo "$drug1" | wc -w)
+                if  [ "$word_count" -eq 2 ] ;then
+                    drug1=$(echo "$drug1" | sed 's/ /_/g') ; drug1=${drug1}
+                fi
                 drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                 drug2=`echo $drug2 | awk -F',' '{print $1}'`       
+                word_count=$(echo "$drug2" | wc -w)
+                if  [ "$word_count" -eq 2 ] ;then
+                    drug2=$(echo "$drug2" | sed 's/ /_/g') ; drug2=${drug2}
+                fi
                 printf "%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 " " $SLEM >> ${SLEM_FILE}_named 
-                #echo "brakepoint! $dot_count" ; sleep 1000
             fi
         else
             if   [[ $therapy_level == 3 ]] 
@@ -51,10 +62,22 @@ do
                 then
                     drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" to name 
                     drug1=`echo $drug1 | awk -F',' '{print $1}'`       
+                    word_count=$(echo "$drug1" | wc -w)
+                    if  [ "$word_count" -eq 2 ] ;then
+                        drug1=$(echo "$drug1" | sed 's/ /_/g') ; drug1=${drug1}
+                    fi
                     drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                     drug2=`echo $drug2 | awk -F',' '{print $1}'`
+                    word_count=$(echo "$drug2" | wc -w)
+                    if  [ "$word_count" -eq 2 ] ;then
+                        drug2=$(echo "$drug2" | sed 's/ /_/g') ; drug2=${drug2}
+                    fi
                     drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                     drug3=`echo $drug3 | awk -F',' '{print $1}'`
+                    word_count=$(echo "$drug3" | wc -w)
+                    if  [ "$word_count" -eq 2 ] ;then
+                        drug3=$(echo "$drug3" | sed 's/ /_/g') ; drug3=${drug3}
+                    fi
                     printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 " " $SLEM >> ${SLEM_FILE}_named 
                 fi
             else
@@ -66,12 +89,28 @@ do
                     then
                         drug1=`head -"$i" $vini_dir/ligands/ligands_list | tail -1` #convert "i" 
                         drug1=`echo $drug1 | awk -F',' '{print $1}'`
+                        word_count=$(echo "$drug1" | wc -w)
+                        if  [ "$word_count" -eq 2 ] ;then
+                            drug1=$(echo "$drug1" | sed 's/ /_/g') ; drug1=${drug1}
+                        fi
                         drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
                         drug2=`echo $drug2 | awk -F',' '{print $1}'`
+                        word_count=$(echo "$drug2" | wc -w)
+                        if  [ "$word_count" -eq 2 ] ;then
+                            drug2=$(echo "$drug2" | sed 's/ /_/g') ; drug2=${drug2}
+                        fi
                         drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                         drug3=`echo $drug3 | awk -F',' '{print $1}'`
+                        word_count=$(echo "$drug3" | wc -w)
+                        if  [ "$word_count" -eq 2 ] ;then
+                            drug3=$(echo "$drug3" | sed 's/ /_/g') ; drug3=${drug3}
+                        fi
                         drug4=`head -"$l" $vini_dir/ligands/ligands_list | tail -1` #convert "l" to name 
                         drug4=`echo $drug4 | awk -F',' '{print $1}'`
+                        word_count=$(echo "$drug4" | wc -w)
+                        if  [ "$word_count" -eq 2 ] ;then
+                            drug4=$(echo "$drug4" | sed 's/ /_/g') ; drug4=${drug4}
+                        fi
                         printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $drug1 "." $drug2 "." $drug3 "." $drug4 " " $SLEM >> ${SLEM_FILE}_named 
                     fi
                 fi
