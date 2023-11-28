@@ -1,5 +1,8 @@
 
-source $vini_dir/globals
+if [ -e $vini_dir/globals ]
+then
+    source $vini_dir/globals
+fi
 module purge
 
 if  [ ! -e sourceme ]
@@ -13,7 +16,7 @@ then
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
-    echo "#************General section**********" >> $vini_dir/sourceme
+    echo "#************General**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir"   >> $vini_dir/sourceme
     echo "export SLURMACCT=$SLURMACCT" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR"     >> $vini_dir/sourceme

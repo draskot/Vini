@@ -13,7 +13,8 @@ then
 else
     > Vini.crashlog
     > restartfile
-    > globals
+    > $vini_dir/globals
+    chmod u+x $vini_dir/globals
     NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
     TRUE=1 ; FALSE=0
     echo "export TRUE=$TRUE"                   >> $vini_dir/globals
@@ -43,9 +44,9 @@ echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
     echo "The following software is installed:" 
-    cat sourceme | grep section | sed 's/section//' | sed 's/General//'
+    #cat sourceme | grep section | sed 's/section//' | sed 's/General//'
     programs=`grep section sourceme | wc -l`
-    NOPROGS=10   #the number of 3rd programs Vini is using
+    NOPROGS=15   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
