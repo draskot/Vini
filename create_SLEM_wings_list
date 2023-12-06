@@ -34,8 +34,8 @@ do
              line_transpose2=`grep -w SLEM_${j}.${i} ${SLEM_FILE}_reduced`
              SLEM_1=`echo ${line_transpose1} | awk 'NF>1{print $NF}'`              #Get transposed SLEM value
              SLEM_2=`echo ${line_transpose2} | awk 'NF>1{print $NF}'`              #Get transposed SLEM value
-             SLEM_wing=`echo ${SLEM_1} ${SLEM_2}  | awk '{printf "%.9f \n", $1 + $2}'` #compute SLEM wing
-             SLEM_wing=`echo ${SLEM_wing} ${therapy_level}  | awk '{printf "%.4f \n", $1 / $2}'`
+             SLEM_wing=`echo ${SLEM_1} ${SLEM_2}  | awk '{printf "%.18f \n", $1 + $2}'` #compute SLEM wing
+             SLEM_wing=`echo ${SLEM_wing} ${therapy_level}  | awk '{printf "%.18f \n", $1 / $2}'`
              printf "%s%s%s%s%s%s\n" "SLEM_" $i "." $j " " $SLEM_wing >> ${SLEM_WINGS}
          fi
      fi
@@ -59,11 +59,11 @@ do
              SLEM_4=`echo ${line_transpose4} | awk 'NF>1{print $NF}'`              #Get 4th transposed SLEM value
              SLEM_5=`echo ${line_transpose5} | awk 'NF>1{print $NF}'`              #Get 5th transposed SLEM value
              SLEM_6=`echo ${line_transpose6} | awk 'NF>1{print $NF}'`              #Get 6th transposed SLEM value
-             SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6}  | awk '{printf "%.9f \n", $1 + $2 + $3 +$4 + $5 + $6}'` #compute SLEM wing
+             SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6}  | awk '{printf "%.18f \n", $1 + $2 + $3 +$4 + $5 + $6}'` #compute SLEM wing
              echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6}
          echo $SLEM_wing
          PERM=6
-         SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.9f \n", $1 / $2}'`
+         SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.18f \n", $1 / $2}'`
          echo $SLEM_wing
          printf "%s%s%s%s%s%s%s%s\n" "SLEM_" $i "." $j "." $k " " $SLEM_wing >> ${SLEM_WINGS}
          fi
@@ -124,9 +124,9 @@ do
              SLEM_23=`echo ${line_transpose23} | awk 'NF>1{print $NF}'`            #Get 23th transposed SLEM value
              SLEM_24=`echo ${line_transpose24} | awk 'NF>1{print $NF}'`            #Get 24th transposed SLEM value
 
-             SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6} ${SLEM_7} ${SLEM_8} ${SLEM_9} ${SLEM_10} ${SLEM_11} ${SLEM_12} ${SLEM_13} ${SLEM_14} ${SLEM_15} ${SLEM_16} ${SLEM_17} ${SLEM_18} ${SLEM_19} ${SLEM_20} ${SLEM_21} ${SLEM_22} ${SLEM_23} ${SLEM_24} | awk '{printf "%.4f \n", $1 + $2 + $3 +$4 + $5 + $6 + $7 + $8 + $9 + $10 + $11 + $12 + $13 + $14 + $15 + $16 + $17 + $18 + $19 + $20 + $21 + $22 + $23 + $24}'` #compute SLEM wing
+             SLEM_wing=`echo ${SLEM_1} ${SLEM_2} ${SLEM_3} ${SLEM_4} ${SLEM_5} ${SLEM_6} ${SLEM_7} ${SLEM_8} ${SLEM_9} ${SLEM_10} ${SLEM_11} ${SLEM_12} ${SLEM_13} ${SLEM_14} ${SLEM_15} ${SLEM_16} ${SLEM_17} ${SLEM_18} ${SLEM_19} ${SLEM_20} ${SLEM_21} ${SLEM_22} ${SLEM_23} ${SLEM_24} | awk '{printf "%.18f \n", $1 + $2 + $3 +$4 + $5 + $6 + $7 + $8 + $9 + $10 + $11 + $12 + $13 + $14 + $15 + $16 + $17 + $18 + $19 + $20 + $21 + $22 + $23 + $24}'` #compute SLEM wing
              PERM=24
-             SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.4f \n", $1 / $2}'`
+             SLEM_wing=`echo ${SLEM_wing} ${PERM}  | awk '{printf "%.18f \n", $1 / $2}'`
              printf "%s%s%s%s%s%s%s%s%s%s\n" "SLEM_" $i "." $j "." $k "." $l " " $SLEM_wing >> ${SLEM_WINGS}
          fi
      fi

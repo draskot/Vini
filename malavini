@@ -88,7 +88,11 @@ do
                          if  [ $drugtype == S ]
                          then                                               #drug is a small molecule - using Vina or ADT
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./
-                             UNKN1=`grep -w Pt ligand_${lig_index}.pdbqt | awk '{print $3}'`
+			     UNKN1=`grep -w PT ligand_${lig_index}.pdbqt | awk '{print $3}'`
+                             if [ -z $UNKN1 ]
+                             then
+			         UNKN1=`grep -w Pt ligand_${lig_index}.pdbqt | awk '{print $3}'`
+                             fi
                              UNKN2=`grep -w B ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              if  [[ -z $UNKN1 ]] && [[ -z $UNKN2 ]]
                              then
@@ -121,37 +125,54 @@ do
                                  ${job_submit} -Q                                                                vdock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
                              else
-                                 $MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt
-                                 $MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.gpf
-                                 echo "parameter_file param_file" > tmp
-                                 cat complex_${comp_index}.gpf >> tmp
-                                 mv tmp complex_${comp_index}.gpf
-                                 autogrid4 -p complex_${comp_index}.gpf -l complex_${comp_index}.glg
-                                 $MGLBIN/pythonsh $MGLUTILS/prepare_dpf42.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.dpf
-                                 echo "parameter_file param_file" > tmp
-                                 cat complex_${comp_index}.dpf >> tmp
-                                 mv tmp complex_${comp_index}.dpf
-                                 echo "#!/bin/bash"                                                            > vdock
-                                 echo "#SBATCH --time="$walltime                                              >> vdock
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> vdock
-                                 echo "#SBATCH --partition="$partition                                        >> vdock
-                                 echo "#SBATCH --nodes=1"                                                     >> vdock
-                                 echo "#SBATCH --ntasks=1"                                                    >> vdock
-                                 echo "#SBATCH --cpus-per-task="$threads                                      >> vdock
-                                 echo "#SBATCH --job-name=V${M}.${N}"                                         >> vdock
-                                 echo "#SBATCH --output=V${M}.${N}.out"                                       >> vdock
-                                 echo "#SBATCH --error=V${M}.${N}.err"                                        >> vdock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> vdock
-                                 echo "autodock4 -p complex_${comp_index}.dpf -l complex_${comp_index}.log"   >> vdock
-                                 echo "grep  \"DOCKED: USER \" complex_001.log | grep  \"Estimated Free Energy of Binding \" | sort -k2 -n -r > tmp" >> vdock
-                                 echo "head -1 tmp | awk '{print \$9}' > log_${comp_index}"                   >> vdock
-                                 echo "python3 $vini_dir/extract_docked_ligand_coordinates.py complex_${comp_index}.log ligand_${lig_index}.pdbqt"   >> vdock
-                                 echo "cat complex_${comp_index}.pdbqt > COMPLEX.pdbqt"                       >> vdock
-                                 echo "cat ligand_${lig_index}.pdbqt  >> COMPLEX.pdbqt"                       >> vdock
-                                 echo "obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
-                                 chmod u+x                                                                       vdock
+                                 if  [ ! -z $UNKN1 ]
+                                 then
+                                     grep -w Pt $vini_dir/AD4_parameters_for_metal_ions > param_file
+                                 else  
+                                     grep -w B $vini_dir/AD4_parameters_for_metal_ions > param_file
+                                 fi
+                                 echo "#!/bin/bash"                                                                  > adock
+                                 echo "#SBATCH --time="$walltime                                                    >> adock
+                                 echo "#SBATCH --account=$SLURMACCT"                                                >> adock
+                                 echo "#SBATCH --partition="$partition                                              >> adock
+                                 echo "#SBATCH --nodes=1"                                                           >> adock
+                                 echo "#SBATCH --ntasks=1"                                                          >> adock
+                                 echo "#SBATCH --cpus-per-task="$threads                                            >> adock
+                                 echo "#SBATCH --job-name=A${M}.${N}"                                               >> adock
+                                 echo "#SBATCH --output=A${M}.${N}.out"                                             >> adock
+                                 echo "#SBATCH --error=A${M}.${N}.err"                                              >> adock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                         >> adock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> adock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.gpf" >> adock
+                                 echo "echo "parameter_file param_file" > tmp"                                      >> adock
+                                 echo "cat complex_${comp_index}.gpf >> tmp"                                        >> adock
+                                 echo "mv tmp complex_${comp_index}.gpf"                                            >> adock
+                                 echo "autogrid4 -p complex_${comp_index}.gpf -l complex_${comp_index}.glg"         >> adock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_dpf42.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.dpf" >> adock
+                                 echo "echo "parameter_file param_file" > tmp"                                      >> adock
+                                 echo "cat complex_${comp_index}.dpf >> tmp"                                        >> adock
+                                 echo "mv tmp complex_${comp_index}.dpf"                                            >> adock
+                                 echo "autodock4 -p complex_${comp_index}.dpf -l complex_${comp_index}.log"         >> adock
+                                 echo "python3 $vini_dir/extract_docked_ligand_coordinates.py complex_${comp_index}.log ligand_${lig_index}.pdbqt"   >> adock
+                                 echo "cat complex_${comp_index}.pdbqt > COMPLEX.pdbqt"                             >> adock
+                                 echo "cat ligand_${lig_index}.pdbqt  >> COMPLEX.pdbqt"                             >> adock
+                                 echo "if  [ -e COMPLEX.pdbqt ]"                                                    >> adock
+                                 echo "then"                                                                        >> adock
+                                 echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb"   >> adock
+                                 echo "    grep  \"DOCKED: USER \" complex_${comp_index}.log | grep  \"Estimated Free Energy of Binding \" | sort -k2 -n > tmp" >> adock
+                                 echo "    a=\`head -1 tmp | awk '{print \$9}'\`"                                   >> adock
+                                 echo "    if  awk \"BEGIN {exit !(\$a > 0)}\""                                     >> adock
+                                 echo "    then"                                                                    >> adock
+                                 echo "        echo ERROR > $target_dir/log_${comp_index}"                          >> adock
+                                 echo "    else"                                                                    >> adock
+                                 echo "        echo \$a > $target_dir/log_${comp_index}"                            >> adock
+                                 echo "    fi"                                                                      >> adock
+                                 echo "else"                                                                        >> adock
+                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                              >> adock
+                                 echo "fi"                                                                          >> adock
+                                 chmod u+x                                                                             adock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                                 ${job_submit} -Q                                                                vdock
+                                 ${job_submit} -Q                                                                      adock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
                              fi
                          else                             #drug is a mAb - checking if complex is compound     
@@ -295,7 +316,7 @@ do
                  echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
                  cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
                  chmod u+x                                                      ${target_dir}/compute_SLEM
-                 ${job_submit} -Q                                               ${target_dir}/compute_SLEM ${target_dir} $M $L $J $I
+                 ${job_submit} -Q                                               ${target_dir}/compute_SLEM ${target_dir} ${WORKDIR} $M $L $J $I
                  sh $vini_dir/wait_until_jobs_finish
                  let ligand_number++
              done   #end of 4thloop

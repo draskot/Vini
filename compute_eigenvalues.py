@@ -1,30 +1,26 @@
-
-#input param: EB_matrix
-#output param: descending sort of eigenvalue magnitudes
-
-from __future__ import print_function
 import numpy as np
 import argparse
 
-parse = argparse.ArgumentParser()
-parse.add_argument("-s")
-parse.add_argument("-t")
-args = parse.parse_args()
+def compute_and_sort_eigenvalues(matrix_file, eigenvalues_file):
+    # Load matrix from file
+    matrix = np.loadtxt(matrix_file)
 
-temp_buf = open(args.s)
-K = np.loadtxt(temp_buf)
-temp_buf.close()
+    # Compute eigenvalues
+    eigenvalues = np.linalg.eigvals(matrix)
 
-E=np.linalg.eigvals(K)                        #compute eigenvalues
-res = list(map(abs, E))
-E_sorted=sorted(res, key=abs, reverse=True)     #sort eigenvalues by magnitude
+    # Sort eigenvalues in descending order
+    eigenvalues = np.sort(eigenvalues)[::-1]
 
-log = open(args.t, "w")       
-print(E_sorted, file = log)
-log.close()
+    # Save eigenvalues to file without scientific notation
+    np.savetxt(eigenvalues_file, eigenvalues, fmt='%.18f')
 
+if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Compute and sort eigenvalues of a square matrix.")
+    parser.add_argument("-s", "--matrix-file", help="Path to the matrix file", required=True)
+    parser.add_argument("-t", "--eigenvalues-file", help="Path to the eigenvalues file", required=True)
+    args = parser.parse_args()
 
-#An example of matrix with complex eigenvalues
+    # Compute and sort eigenvalues
+    compute_and_sort_eigenvalues(args.matrix_file, args.eigenvalues_file)
 
-# 1 -1
-# 1  1

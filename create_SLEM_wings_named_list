@@ -33,7 +33,8 @@ do
             drug2=`head -"$j" $vini_dir/ligands/ligands_list | tail -1` #convert "j" to name 
             drug2=`echo $drug2 | awk -F',' '{print $1}'`       
             echo "SLEM_${drug1}.${drug2} ${SLEM}" >> ${SLEM_WINGS}_named
-            
+            python3 $vini_dir/remove_redundant_lines.py ${SLEM_WINGS}_named tmp           
+            mv tmp ${SLEM_WINGS}_named
         else
             if   [[ $therapy_level == 3 ]] 
             then
@@ -44,6 +45,8 @@ do
                 drug3=`head -"$k" $vini_dir/ligands/ligands_list | tail -1` #convert "k" to name 
                 drug3=`echo $drug3 | awk -F',' '{print $1}'`
                 echo "SLEM_${drug1}.${drug2}.${drug3} ${SLEM}" >> ${SLEM_WINGS}_named
+                python3 $vini_dir/remove_redundant_lines.py ${SLEM_WINGS}_named tmp           
+                mv tmp ${SLEM_WINGS}_named
             else
                 if  [[ $therapy_level == 4 ]]
                 then
@@ -56,6 +59,8 @@ do
                 drug4=`head -"$l" $vini_dir/ligands/ligands_list | tail -1` #convert "l" to name 
                 drug4=`echo $drug4 | awk -F',' '{print $1}'`
                 echo "SLEM_${drug1}.${drug2}.${drug3}.${drug4}    ${SLEM}" >> ${SLEM_WINGS}_named
+                python3 $vini_dir/remove_redundant_lines.py ${SLEM_WINGS}_named tmp
+                mv tmp ${SLEM_WINGS}_named
                 fi
             fi
         fi
