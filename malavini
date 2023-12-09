@@ -289,7 +289,7 @@ do
                  cd $WORKDIR
                  echo ${target_dir} > target_dir
 
-                 echo "Computing SLEM."
+                 echo "Computing SLEM..."
                  echo ${therapy_level} > $WORKDIR/therapy_level    #input for the create_energy_binding_matrix.py script 
                  rm -f ${target_dir}/vec*
                  echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM

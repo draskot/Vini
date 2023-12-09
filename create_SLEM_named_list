@@ -119,5 +119,5 @@ do
     fi
 done < ${SLEM_FILE}_reduced
 
-sort -k2 -n -r ${SLEM_FILE}_named > $WORKDIR/tmp  #Sort and format the list
+sort -k2 -n ${SLEM_FILE}_named > $WORKDIR/tmp  #Sort and format the list
 column -t $WORKDIR/tmp > ${SLEM_FILE}_named

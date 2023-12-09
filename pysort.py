@@ -20,7 +20,8 @@ except FileNotFoundError:
 data = [line.strip().split() for line in lines]
 
 # Sort the data based on the last numeric value in each line
-sorted_data = sorted(data, key=lambda x: float(x[-1]), reverse=True)
+#sorted_data = sorted(data, key=lambda x: float(x[-1]), reverse=True)
+sorted_data = sorted(data, key=lambda x: float(x[-1]))
 
 # Find the maximum lengths of drug combinations and numeric values
 max_len_combinations = max(len('.'.join(line[:-1])) for line in sorted_data)

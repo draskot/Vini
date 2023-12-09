@@ -136,5 +136,5 @@ done < $SLEM_FILE$reduced
 if  [[ $therapy_level != 1 ]] #Sorting the list
 then
     mv ${SLEM_WINGS} $WORKDIR/temp_buf                      
-    sort -k2 -n -r $WORKDIR/temp_buf > ${SLEM_WINGS}
+    sort -k2 -n $WORKDIR/temp_buf > ${SLEM_WINGS}
 fi
