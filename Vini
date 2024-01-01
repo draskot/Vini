@@ -5,12 +5,12 @@ echo ; sleep 1
 
 
 
-if  [[ -e Vini_crash.log ]] &&  [[ ! -s Vini_crash.log ]] 
-then 
-    echo "Vini is continuing processing after the system failure in the background. Check nohup.out for more information."
-    nohup ./$vini_dir/malavini &         #start again from the restart point
-    exit
-else
+#if  [[ -e Vini_crash.log ]] &&  [[ ! -s Vini_crash.log ]] 
+#then 
+#    echo "Vini is continuing processing after the system failure in the background. Check nohup.out for more information."
+#    nohup ./$vini_dir/malavini &         #start again from the restart point
+#    exit
+#else
     > Vini.crashlog
     > restartfile
     > $vini_dir/globals
@@ -28,7 +28,7 @@ else
     echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
     #echo init > state
     rm -rf $WORKDIR/*_data
-fi
+#fi
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -409,14 +409,15 @@ mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "1000" exhaustiveness
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 
-read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
-if  [ $mode == n ]
-then
-    nohup ./VelikaVini & 
+#read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
+#if  [ $mode == n ]
+#then
+    #nohup ./VelikaVini & 
+    nohup ./VelikaVini 
     echo $! > masterpid
     uname -n > login_node
-    echo "Vini will now continue to work in the background."
+    #echo "Vini will now continue to work in the background."
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
-else
-    ./VelikaVini
-fi
+#else
+#    ./VelikaVini
+#fi

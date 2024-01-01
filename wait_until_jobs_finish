@@ -3,51 +3,81 @@ job_status=`cat $vini_dir/job_status`
 job_cancel=`cat $vini_dir/job_cancel`
 NULL=0
 
-> all_user_jobs
+#> all_user_jobs
+rm -f user_jobs
+
 echo -n $USER "jobs remaining: "
 while true
 do
-     sleep 1
-     $job_status -u $USER > all_user_jobs
-     lineno=`wc -l < all_user_jobs` #break loop if there are no more Vini jobs
-     let lineno--
-     echo -n $lineno
-     
-     if  [ $lineno -eq $NULL ]            #Checking for any remaining jons
-     then
-	 break
-     fi 
-
-     echo -n " "
-
-     grep "launch failed requeued held" all_user_jobs > requeued #Checking if SLURM is working properly
-     if [ -s requeued ]
-     then
-         echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
-         echo ""                                                                          >> Vini.crashlog
-         requeued_job=`squeue -u $USER | grep Q07889 | awk '{print $1}'`
-         requeued_node=`squeue -u $USER | grep Q07889 | awk '{print $8}'`
-         ${job_cancel} ${requeued_job}
-         $job_cancel -u $USER
-         masterpid=`cat masterpid`
-         kill -9 $masterpid
-     fi
-
-     timeout 10s touch $WORKDIR/test                                 #Checking if scratch file system is working
-     timeout 10s ls $WORKDIR/test > tmpfull 2> /dev/null
-     if [ ! -s tmpfull ]
-     then
-         echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
-         echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> Vini.crashlog
-         echo "You will need to re-login and then start Vini again."
-         echo ""                                                      >> Vini.crashlog
-         $job_cancel -u $USER
-         old=`grep WORKDIR $vini_dir/sourceme | awk -F'=' '{print $2}'`
-         new=`grep INSTALL $vini_dir/sourceme | awk -F'=' '{print $2}'`
-         sed -i -e "s|$old|$new|" "$vini_dir/sourceme"
-         masterpid=`cat $vini_dir/masterpid`
-         kill -9 $masterpid
-     fi
+    sleep 1
+    $job_status -u $USER > all_user_jobs
+    if  [ -e all_user_jobs ] 
+    then
+        lineno=`wc -l < all_user_jobs`                   #get the number of Vini jobs
+        let lineno--
+        echo -n $lineno
+        if  [ $lineno -eq $NULL ] ; then                      #exit loop if there are no more jobs
+            break
+        fi
+    else
+        sleep 10                                     #wait for 10 seconds if SLURM controller failed and try again
+        $job_status -u $USER > all_user_jobs
+        if  [ -e all_user_jobs ]
+        then
+            lineno=`wc -l < all_user_jobs`           #get the status of Vini jobs
+            let lineno--
+            echo -n $lineno
+                if  [ $lineno -eq $NULL ]  ; then              #exit loop if there are no more jobs
+                    break
+                fi
+        else
+            sleep 100                                #wait for 100 seconds if SLURM controller failed and try again 
+            $job_status -u $USER > all_user_jobs
+            if  [ -e all_user_jobs ]
+            then
+                lineno=`wc -l < all_user_jobs`           #get the status of Vini jobs
+                let lineno--
+                echo -n $lineno
+                if  [ $lineno -eq $NULL ] ; then             #exit loop if there are no more jobs
+                    break
+                fi
+            else
+                echo "unable to contact SLURM controller, ‚exiting."  >> Vini.crashlog
+                $job_cancel -u $USER
+                killall -u $USER
+            fi
+        fi
+    fi
+    echo -n " "
 done
+
+     #grep "launch failed requeued held" all_user_jobs > requeued #Checking if SLURM is working properly
+     #if [ -s requeued ]
+     #then
+     #    echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
+     #    echo ""                                                                          >> Vini.crashlog
+     #    requeued_job=`squeue -u $USER | grep Q07889 | awk '{print $1}'`
+     #    requeued_node=`squeue -u $USER | grep Q07889 | awk '{print $8}'`
+     #    ${job_cancel} ${requeued_job}
+     #    $job_cancel -u $USER
+     #    masterpid=`cat masterpid`
+     #    kill -9 $masterpid
+     #fi
+
+     #timeout 3600s touch $WORKDIR/test                                 #Checking if scratch file system is working
+     #timeout 3600s ls $WORKDIR/test > tmpfull 2> /dev/null
+     #if [ ! -s tmpfull ]
+     #then
+     #    echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
+         #echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> $vini_dir/Vini.crashlog
+         #echo "You will need to re-login and then start Vini again."
+         #echo ""                                                      >> $vini_dir/Vini.crashlog
+     #    $job_cancel -u $USER
+         #old=`grep WORKDIR $vini_dir/sourceme | awk -F'=' '{print $2}'`
+         #new=`grep INSTALL $vini_dir/sourceme | awk -F'=' '{print $2}'`
+         #sed -i -e "s|$old|$new|" "$vini_dir/sourceme"
+     #    masterpid=`cat $vini_dir/masterpid`
+     #    kill -9 $masterpid
+     #fi
 
 echo "Done."

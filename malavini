@@ -284,7 +284,6 @@ do
 
                  sh $vini_dir/wait_until_jobs_finish
 
-
                  
                  cd $WORKDIR
                  echo ${target_dir} > target_dir
@@ -324,6 +323,7 @@ do
     done            #end of 2nd loop
 done                #end of 1st loop
 
+sleep 4
 sh $vini_dir/wait_until_jobs_finish
 
 if  [ $cosmic == y ] ; then
