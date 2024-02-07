@@ -271,7 +271,11 @@ do
                                  echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> rdock
                                  echo "    $ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
                                  echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> rdock
-                                 echo "    echo Rosetta \${score} > $target_dir/log_${comp_index}"             >> rdock
+                                 echo "    if  [ -z \${score} ] ; then"                                        >> rdock
+                                 echo "        echo ERROR > $target_dir/log_${comp_index}"                     >> rdock
+                                 echo "    else"                                                               >> rdock
+                                 echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
+                                 echo "    fi"                                                                 >> rdock
                                  echo "fi"                                                                     >> rdock
                                  chmod u+x                                                                        rdock         
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}

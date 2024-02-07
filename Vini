@@ -409,15 +409,13 @@ mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "1000" exhaustiveness
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 
-#read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (debug): " -i "y" mode
-#if  [ $mode == n ]
-#then
-    #nohup ./VelikaVini & 
+read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (no debug): " -i "n" mode
+if  [ $mode == n ]
+then
     nohup ./VelikaVini 
     echo $! > masterpid
     uname -n > login_node
-    #echo "Vini will now continue to work in the background."
     echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
-#else
-#    ./VelikaVini
-#fi
+else
+    ./VelikaVini
+fi
