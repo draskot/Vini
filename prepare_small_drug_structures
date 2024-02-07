@@ -8,10 +8,11 @@ N=`wc -l < $vini_dir/ligands/ligands_list`
 for (( i=1; i<(N+1); i++ ))
 do
     line=`head -$i $vini_dir/ligands/ligands_list | tail -1`
+    drug=`echo $line | awk -F','  '{print $1}'`
     type=`echo $line | awk -F','  '{print $2}'`
     if  [ $type == S ]
     then
-        drug=`echo $line | awk -F','  '{print $1}'`
+        #drug=`echo $line | awk -F','  '{print $1}'`
         if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] || [[ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]]
         then
             code=`echo $line | awk -F','  '{print $3}'`
@@ -65,7 +66,6 @@ do
         mv "${drug}".pdb tmp.pdb
         $MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l tmp.pdb -o tmp.pdbqt
         mv tmp.pdbqt $vini_dir/ligands/pdbqt_files/"${drug}".pdbqt
-        
     else
         echo "$drug is not a small molecule, continuing."
     fi
