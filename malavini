@@ -258,13 +258,7 @@ do
                                  echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                                                             >> rdock
                                  echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
                                  echo "then"                                                                   >> rdock
-                                 echo "    if  [ -e score.sc ]"                                                >> rdock
-                                 echo "    then"                                                               >> rdock
-                                 echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                 >> rdock
-                                 echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
-                                 echo "    else"                                                               >> rdock
                                  echo "        echo "ERROR" > $target_dir/log_${comp_index}"                   >> rdock
-                                 echo "    fi"                                                                 >> rdock
                                  echo "else"                                                                   >> rdock
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
                                  echo "    string=\`grep partners flag_global_docking\`"                       >> rdock

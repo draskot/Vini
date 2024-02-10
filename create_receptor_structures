@@ -70,7 +70,6 @@ do
                 echo "convert ${KEGG_gene_name} to $uniprot_id and update kegg2uniprot table." >> Vini.crashlog
                 masterpid=`cat masterpid`
                 kill -9 $masterpid
-                echo "brakepoint!" ; sleep 1000
             fi
         fi
         echo $uniprot_id >> $vini_dir/database/KEGG_cancer_pathways/${CANCER_PATHWAY}/${CANCER_PATHWAY}${UNIPROT_ID_LIST}

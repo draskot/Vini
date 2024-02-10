@@ -5,30 +5,22 @@ echo ; sleep 1
 
 
 
-#if  [[ -e Vini_crash.log ]] &&  [[ ! -s Vini_crash.log ]] 
-#then 
-#    echo "Vini is continuing processing after the system failure in the background. Check nohup.out for more information."
-#    nohup ./$vini_dir/malavini &         #start again from the restart point
-#    exit
-#else
-    > Vini.crashlog
-    > restartfile
-    > $vini_dir/globals
-    chmod u+x $vini_dir/globals
-    NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
-    TRUE=1 ; FALSE=0
-    echo "export TRUE=$TRUE"                   >> $vini_dir/globals
-    echo "export FALSE=$FALSE"                 >> $vini_dir/globals
-    echo "export ONES=$ONES"                   >> $vini_dir/globals
-    echo "export TWO=$TWO"                     >> $vini_dir/globals
-    echo "export THREE=$THREE"                 >> $vini_dir/globals
-    echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
-    echo "export NULL=$NULL"                   >> $vini_dir/globals
-    echo "export state=init"                   >> $vini_dir/globals
-    echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
-    #echo init > state
-    rm -rf $WORKDIR/*_data
-#fi
+> Vini.crashlog
+> restartfile
+> $vini_dir/globals
+chmod u+x $vini_dir/globals
+NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
+TRUE=1 ; FALSE=0
+echo "export TRUE=$TRUE"                   >> $vini_dir/globals
+echo "export FALSE=$FALSE"                 >> $vini_dir/globals
+echo "export ONES=$ONES"                   >> $vini_dir/globals
+echo "export TWO=$TWO"                     >> $vini_dir/globals
+echo "export THREE=$THREE"                 >> $vini_dir/globals
+echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
+echo "export NULL=$NULL"                   >> $vini_dir/globals
+echo "export state=init"                   >> $vini_dir/globals
+echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
+rm -rf $WORKDIR/*_data
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -406,16 +398,20 @@ CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer
 echo "export CANCER_PATHWAY=${CANCER_PATHWAY}" >> $vini_dir/globals
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
-read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "1000" exhaustiveness
+read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "10" exhaustiveness
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 
-read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default (no debug): " -i "n" mode
-if  [ $mode == n ]
+read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno
+if  [ $yesno == n ]
 then
-    nohup ./VelikaVini 
+    uname -n > node
+    node=`cat node`
+    echo "Starting drug discovery on $node"
+    echo "Vini will now run in the background. You can follow the progress by inspecting the nohup.out file in this folder."
+    nohup ./VelikaVini &
     echo $! > masterpid
-    uname -n > login_node
-    echo "You can follow the progress of Vini by inspecting the nohup.out file in this folder."
+    masterpid=`cat masterpid`
+    echo -n "If you want to stop Vini, execute kill -9 $masterpid from the login node $node"
 else
     ./VelikaVini
 fi

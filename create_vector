@@ -19,13 +19,10 @@ do
     cat $target_dir/log_${comp_index} >>  ${target_dir}/vec
 done
 
-#python3 $vini_dir/vector_init.py ${target_dir}                      #create energy vector
-
 grep ERROR ${target_dir}/vec > tmp                                   #replace ERROR entries with random value
 if [ -s tmp ]
 then
     echo "Normalizing energy vector."
-    #python3 $vini_dir/get_random_value.py ${target_dir}/vec
     python3 $vini_dir/get_random_value.py ${target_dir}/vec
 fi
 
