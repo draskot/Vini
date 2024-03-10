@@ -205,7 +205,7 @@ do
                                  echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
                                  echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                    >> vdock
                                  echo "else"                                                                   >> vdock
-                                 echo "    echo Vina ERROR > $target_dir/log_${comp_index}"                    >> vdock
+                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                    >> vdock
                                  echo "fi"                                                                     >> vdock
                                  chmod u+x                                                                        vdock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}

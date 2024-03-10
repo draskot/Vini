@@ -3,7 +3,7 @@ echo "If using this program in your academic research , please cite:"           
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
 
-
+vini_dir=`pwd` ; export vini_dir
 
 > Vini.crashlog
 > restartfile
@@ -93,7 +93,7 @@ else
     echo scancel > job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh $vini_dir/set_partitions
-    read -e -p "Enter name of the default partition Vini will use (press enter to accept the default):" -i "cpu" active_partition
+    read -e -p "Enter name of the default partition Vini will use (press enter to accept the default):" -i "$default" active_partition
     echo $active_partition > active_partition
     echo "export active_partition=${active_partition}" >> $vini_dir/globals
     echo $JSS > $WORKDIR/JSS

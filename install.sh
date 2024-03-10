@@ -143,6 +143,7 @@ then
     echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> $vini_dir/sourceme
     echo "Installation done. Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py , otherwise it will not work as expected!" 
+    read -p  "Press return when the registration is done." enter
 else
     echo "yes."
 fi
