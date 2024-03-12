@@ -401,6 +401,8 @@ mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
 read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
+num_modes=10
+echo "export num_modes=${num_modes}" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno
 if  [ $yesno == n ]
