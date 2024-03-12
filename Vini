@@ -93,7 +93,8 @@ else
     echo scancel > job_cancel
     echo "SLURM" > $WORKDIR/scheduler
     sh $vini_dir/set_partitions
-    read -e -p "Enter name of the default partition Vini will use (press enter to accept the default):" -i "$default" active_partition
+    default=`cat cpu_partition`
+    read -e -p "Enter name of partition Vini will use (press enter to accept the default):" -i "$default" active_partition
     echo $active_partition > active_partition
     echo "export active_partition=${active_partition}" >> $vini_dir/globals
     echo $JSS > $WORKDIR/JSS
@@ -179,10 +180,10 @@ partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 
 
-read -e -p "Enter the maximum number of CPU cores per node Vini/Rosetta can use. Press enter to accept the default: " -i "48" threads
+read -e -p "Vini uses Autodock Vina in its calculations. Enter the number of threads per node for Autodock Vina. Press enter to accept the default: " -i "48" threads
 echo "export threads=$threads" >> globals
 
-read -e -p "Enter the maximum number of CPU cores Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
+read -e -p "Enter the maximum number of threads Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
 maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
 max_jobs=`echo $maxcores $threads | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
@@ -191,7 +192,7 @@ echo "export max_jobs=${max_jobs}" >> $vini_dir/globals
 nodes=`echo $maxcores $cores | awk '{print $1 / $2}'`
 nodes=${nodes%.*}
 echo "export nodes=$nodes" >> $vini_dir/globals
-echo "Number of concurrent Vinajobs (each job using $Vinathreads CPU cores) will be limited to $Vinajobs"
+echo "Number of concurrent Vina jobs (each job using $Vinathreads CPU cores) will be limited to $Vinajobs"
 echo "Number of concurrent  AlphaFold jobs (each job using $cores CPU cores) will be limited to $nodes"
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
@@ -398,7 +399,7 @@ CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer
 echo "export CANCER_PATHWAY=${CANCER_PATHWAY}" >> $vini_dir/globals
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
-read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "10" exhaustiveness
+read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno

@@ -14,5 +14,5 @@
 
 
 
-tar --exclude=software --exclude=test --exclude=GI50.csv --exclude=drugbank_vocabulary.csv --exclude=drug_links.csv --exclude=sourceme --exclude=make_vini_tar --exclude=components.cif  --exclude=./genes --exclude=./ligands --exclude='./distros' --exclude='./draskot' --exclude-vcs  -cvjf $HOME/Vini_5_0.tar.bz2 *
+tar --exclude=software --exclude=test --exclude=GI50.csv --exclude=drugbank_vocabulary.csv --exclude=drug_links.csv --exclude=sourceme --exclude=make_vini_tar --exclude=components.cif  --exclude=./genes --exclude=./ligands --exclude=amber --exclude=debug --exclude=pmemd --exclude=sander --exclude=curcumin --exclude=database/RCSB_structures --exclude='./distros' --exclude='./draskot' --exclude-vcs  -cvjf $HOME/Vini_5_0.tar.bz2 *
 
