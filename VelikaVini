@@ -87,15 +87,11 @@ then
     sh add_expressions_to_relations
 else
     sh $vini_dir/download_Cosmic_data
-
-
-
     rm -f $WORKDIR/*err $WORKDIR/*out    
     if  [ $cosmic == y ]
     then
         sh $vini_dir/predict_mutated_genes
     fi
-
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors
     sh add_expressions_to_relations

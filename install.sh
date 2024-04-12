@@ -367,7 +367,7 @@ then
         cd $INSTALL/${rosetta_src}/main/source
         scons -j 24 mode=release bin extras=cxx11thread
         ROSETTA=$INSTALL/${rosetta_src}/main
-        ROSETTA_BIN=$ROSETTA//source/bin
+        ROSETTA_BIN=$ROSETTA/source/bin
         ROSETTA_DB=$ROSETTA/database
         ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
         ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst

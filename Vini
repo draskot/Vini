@@ -134,42 +134,46 @@ echo $slurm_account > $WORKDIR/slurm_account
 partition=`cat active_partition`
 walltime=6   #max time is 6 minutes
 
-if [ -e $WORKDIR/nodetest ]
-then
-    birth=`stat $WORKDIR/nodetest | grep Birth`
-    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
+#if [ -e $WORKDIR/nodetest ]
+#then
+#    birth=`stat $WORKDIR/nodetest | grep Birth`
+#    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
 
-    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-    if [ $yesno == y ]
-    then
-        timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-        success=`echo $?`
-        if [ $success -eq 124 ] ; then
-           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-        fi
-    fi
-else
-    echo "Nodetest will now be performed."
-    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-        success=`echo $?`
-        if [ $success -eq 124 ] ; then
-           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-        fi
-fi
+#    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
+#    if [ $yesno == y ]
+#    then
+#        timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
+#        success=`echo $?`
+#        if [ $success -eq 124 ] ; then
+#           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
+#        fi
+#    fi
+#else
+#    echo "Nodetest will now be performed."
+#    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
+#        success=`echo $?`
+#        if [ $success -eq 124 ] ; then
+#           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
+#        fi
+#fi
 
 
-if [ -e $WORKDIR/gather_hardware_info ]
-then
-    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
-    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
-    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-    if [ $yesno == y ]
-    then
-        sh $vini_dir/gather_hardware_info
-    fi
-else
-    sh $vini_dir/gather_hardware_info
-fi
+#if [ -e $WORKDIR/gather_hardware_info ]
+#then
+#    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
+#    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
+#    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
+#    if [ $yesno == y ]
+#    then
+#        sh $vini_dir/gather_hardware_info
+#    fi
+#else
+#    sh $vini_dir/gather_hardware_info
+#fi
+
+
+cores=128 ; echo $cores > ${partition}_cores
+memsize=225gb ; echo $memsize > ${partition}_memsize
 
 
 sh $vini_dir/prepare_SLURM_scripts
@@ -403,6 +407,8 @@ read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter t
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 num_modes=10
 echo "export num_modes=${num_modes}" >> $vini_dir/globals
+read -e -p "Run Rosetta in MPI mode (y/n). Press enter to accept the default : " -i "y" mpi
+echo "export mpi=$mpi" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno
 if  [ $yesno == n ]

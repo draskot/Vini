@@ -1,5 +1,7 @@
 source $vini_dir/globals
 
+
+
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
 partition=`cat cpu_partition`
@@ -83,6 +85,7 @@ do
                          echo "ERROR" > $target_dir/log_${comp_index}
                      else
                          cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
+                         cp $vini_dir/modify_chain_id.py $vini_dir/update_pdb.py ./
                          if  [ $drugtype == S ]
                          then                                               #drug is a small molecule - using Vina or ADT
                              cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./
@@ -107,28 +110,40 @@ do
                                  echo "#SBATCH --exclude=${excluded_nodes}"                                   >> vdock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> vdock
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> vdock
-                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt"                                                                                                    >> vdock
-                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt"                                                                                                        >> vdock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt"                                                                                                     >> vdock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt"                                                                                                         >> vdock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> vdock
-                                 echo "vina --cpu ${threads} --num_modes ${num_modes} --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log_${comp_index}"                                                                                                           >> vdock
-                                 echo "if  [ -e ligand.pdbqt ]"                                               >> vdock
-                                 echo "then"                                                                  >> vdock                
+
+                                 #echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out COMPLEX.pdbqt > log_${comp_index}"     >> vdock
+                                 #echo "if  [ -e COMPLEX.pdbqt ]"                                              >> vdock
+                                 #echo "then"                                                                  >> vdock                 
+                                 #echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
+                                 #echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                >> vdock
+                                 #echo "else"                                                                  >> vdock
+                                 #echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> vdock
+                                 #echo "fi"                                                                    >> vdock
+
+                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log"                      >> vdock
+                                 echo "if  [ -e ligand.pdbqt ]"                                                 >> vdock
+                                 echo "then"                                                                    >> vdock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> vdock
-                                 echo "    infile=complex_${comp_index}.pdb"        >> vdock #get last ATOM/HETATM number from receptor
+                                 echo "    infile=complex_${comp_index}.pdb"                                    >> vdock #get last ATOM/HETATM number from receptor
                                  echo "    last_order_number=\$(awk '/^(ATOM|HETATM)/{order=\$2} END{print order}' "\${infile}")" >> vdock
-                                 echo "    obabel -ipdbqt ligand.pdbqt -O tmp.pdb"                            >> vdock
-                                 echo "    grep -we HETATM -we END tmp.pdb > ligand.pdb"                      >> vdock
-                                 echo "    chain_id=\`grep -m 1 "ATOM" complex_${comp_index}.pdb | awk '{print \$5}'\`" >> vdock
-                                 echo "    python3 modify_chain_id.py ligand.pdb tmp \$chain_id"              >> vdock
-                                 echo "    python3 update_pdb.py \$last_order_number tmp ligand.pdb"          >> vdock  #modify ATOM numbers
-                                 echo "    cat complex_${comp_index}.pdb > tmp"                               >> vdock
-                                 echo "    cat ligand.pdb >> tmp"                                             >> vdock
+                                 echo "    obabel -ipdbqt ligand.pdbqt -O tmp.pdb"                              >> vdock
+                                 echo "    grep -we HETATM -we END tmp.pdb > ligand.pdb"                        >> vdock
+                                 echo "    chain_id=\`grep -m 1 "ATOM" complex_${comp_index}.pdb | awk '{print \$5}'\`"    >> vdock
+                                 echo "    python3 modify_chain_id.py ligand.pdb tmp \$chain_id"                >> vdock
+                                 echo "    python3 update_pdb.py \$last_order_number tmp ligand.pdb"            >> vdock  #modify ATOM numbers
+                                 echo "    sed -i -e "s/UNL/$ligand/" ligand.pdb"                               >> vdock
+                                 echo "    cat complex_${comp_index}.pdb > tmp"                                 >> vdock
+                                 echo "    cat ligand.pdb >> tmp"                                               >> vdock
                                  echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> vdock
-                                 echo "    line=\$((39 + num_modes))"                                         >> vdock
+                                 echo "    line=\$((39 + num_modes))"                                           >> vdock
                                  echo "    head -\${line} log | tail -1 | awk '{print \$2}' > $target_dir/log_${comp_index}" >> vdock
-                                 echo "else"                                                                  >> vdock
-                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> vdock
-                                 echo "fi"                                                                    >> vdock
+                                 echo "else"                                                                    >> vdock
+                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                          >> vdock
+                                 echo "fi"                                                                      >> vdock
+
                                  chmod u+x                                                                       vdock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} -Q                                                                vdock
@@ -201,36 +216,59 @@ do
                                  echo "#SBATCH --job-name=V${M}.${N}"                                         >> vdock
                                  echo "#SBATCH --output=V${M}.${N}.out"                                       >> vdock
                                  echo "#SBATCH --error=V${M}.${N}.err"                                        >> vdock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> vdock
+                                 #echo "#SBATCH --exclude=${excluded_nodes}"                                  >> vdock
                                  echo "touch ${target_dir}/Vina"                                              >> vdock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> vdock
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> vdock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt"                                                                                                     >> vdock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt"                                                                                                         >> vdock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> vdock
-                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out COMPLEX.pdbqt > log_${comp_index}"                                                                                                             >> vdock
-                                 echo "if  [ -e COMPLEX.pdbqt ]"                                               >> vdock
-                                 echo "then"                                                                   >> vdock
-                                 echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
-                                 echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                    >> vdock
-                                 echo "else"                                                                   >> vdock
-                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                    >> vdock
-                                 echo "fi"                                                                     >> vdock
-                                 chmod u+x                                                                        vdock
+
+                                 #echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out COMPLEX.pdbqt > log_${comp_index}"    >> vdock
+                                 #echo "if  [ -e COMPLEX.pdbqt ]"                                             >> vdock
+                                 #echo "then"                                                                 >> vdock
+                                 #echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
+                                 #echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/log_${comp_index}"                                                                                                    >> vdock
+                                 #echo "else"                                                                 >> vdock
+                                 #echo "    echo ERROR > $target_dir/log_${comp_index}"                       >> vdock
+                                 #echo "fi"                                                                   >> vdock
+
+                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> vdock
+                                 echo "if  [ -e ligand.pdbqt ]"                                               >> vdock
+                                 echo "then"                                                                  >> vdock
+                                 echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> vdock
+                                 echo "    infile=complex_${comp_index}.pdb"                                  >> vdock #get last ATOM/HETATM number from receptor
+                                 echo "    last_order_number=\$(awk '/^(ATOM|HETATM)/{order=\$2} END{print order}' "\${infile}")" >> vdock
+                                 echo "    obabel -ipdbqt ligand.pdbqt -O tmp.pdb"                            >> vdock
+                                 echo "    grep -we HETATM -we END tmp.pdb > ligand.pdb"                      >> vdock
+                                 echo "    chain_id=\`grep -m 1 "ATOM" complex_${comp_index}.pdb | awk '{print \$5}'\`" >> vdock
+                                 echo "    python3 modify_chain_id.py ligand.pdb tmp \$chain_id"              >> vdock
+                                 echo "    python3 update_pdb.py \$last_order_number tmp ligand.pdb"          >> vdock  #modify ATOM numbers
+                                 echo "    sed -i -e "s/UNL/$ligand/" ligand.pdb"                             >> vdock
+                                 echo "    cat complex_${comp_index}.pdb > tmp"                               >> vdock
+                                 echo "    cat ligand.pdb >> tmp"                                             >> vdock
+                                 echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> vdock
+                                 echo "    line=\$((39 + num_modes))"                                         >> vdock
+                                 echo "    head -\${line} log | tail -1 | awk '{print \$2}' > $target_dir/log_${comp_index}" >> vdock
+                                 echo "else"                                                                  >> vdock
+                                 echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> vdock
+                                 echo "fi"                                                                    >> vdock
+
+                                 chmod u+x                                                                       vdock
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                                  ${job_submit} -Q                                                                 vdock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
-                             else                                             #using Amber
+                             else                                             #using Rosetta
                                  cp $ROSETTA_TOOLS/amino_acids.py ./
                                  cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
-                                 #cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
+                                 cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking $vini_dir/docking.mac ./
                                  source $INSTALL/miniconda2/bin/activate
                                  python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
                                  mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
                                  conda deactivate
                                  fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
                                  chains=`grep -c ">" ${fasta_file}`     
-                                 #cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
+                                 cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
                                  if  [ $chains -eq $ONES ]
                                  then
                                      java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
@@ -242,61 +280,61 @@ do
                                          java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
                                          java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
                                          mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
-                                         #sed -i -e "s/chains/BC/" flag_global_docking
+                                         sed -i -e "s/chains/BC/" flag_global_docking
                                      else
                                          sed -i -e "s/chains/BCDEFGHIJK/" flag_global_docking       #This for Alemtuzumab only
                                      fi
                                  fi
-                                 rm -f *err *out *rst
-                                 cp $vini_dir/equil.in $vini_dir/heat.in $vini_dir/density.in $vini_dir/min.in $vini_dir/prod.in ./
-                                 cp $vini_dir/docking.mac ./
-                                 cp $vini_dir/tleap.in $vini_dir/mmpbsa.in  ./
+                                 echo "#!/bin/bash"                                                             > rdock
+                                 echo "#SBATCH --time=$walltime"                                               >> rdock
+                                 echo "#SBATCH --account=$SLURMACCT"                                           >> rdock
+                                 echo "#SBATCH --partition=$partition"                                         >> rdock
+                                 echo "#SBATCH --nodes=1"                                                      >> rdock
+                                 echo "#SBATCH --ntasks-per-node="$threads                                     >> rdock
+                                 echo "#SBATCH --cpus-per-task=1"                                              >> rdock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                          >> rdock
+                                 echo "#SBATCH --output=R${M}.${N}.out"                                        >> rdock
+                                 echo "#SBATCH --error=R_${M}.${N}.err"                                        >> rdock
+                                 echo "module purge"                                                           >> rdock
+                                 echo "module load libGLU/9.0.2-GCCcore-11.3.0"                                >> rdock
+                                 echo "module load OpenMPI/4.1.1-GCC-11.2.0"                                   >> rdock
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                              >> rdock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                  >> rdock
+                                 echo "cp $vini_dir/docking.mac ./"                                            >> rdock
+                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> rdock
+                                 echo "cp complex.pdb complex_${comp_index}.pdb"                               >> rdock
+                                 echo "if  [ $mpi == y ]"                                                      >> rdock
+                                 echo "then"                                                                   >> rdock
+                                 echo "    mpirun -np $threads $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s complex_${comp_index}.pdb @flag_input_relax -overwrite" >> rdock
+                                 echo "    mpirun -np $threads $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s complex_${comp_index}_0001.pdb @flag_global_docking" >> rdock
+                                 echo "else"                                                                   >> rdock
+                                 echo "    $ROSETTA/source/bin/relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax" >> rdock
+                                 echo "    $ROSETTA/source/bin/docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking" >> rdock
+                                 echo "fi"                                                                     >> rdock
 
-                                 cp complex_${comp_index}.pdb receptor.pdb
-                                 cp ligand_${lig_index}.pdb ligand.pdb
-                                 reduce -BUILD receptor.pdb > tmp ; mv tmp receptor.pdb
-                                 reduce -BUILD ligand.pdb > tmp ; mv tmp ligand.pdb
-                                 hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log
-                                 pdb4amber -i receptor.pdb -o tmp.pdb ; mv tmp.pdb receptor.pdb
-                                 pdb4amber -i ligand.pdb -o tmp.pdb ; mv tmp.pdb ligand.pdb
-                                 cp complex.pdb complex.orig
-                                 pdb4amber -i complex.pdb -o tmp.pdb ; mv tmp.pdb complex.pdb
-                                 sed -i -e "s#AMBERHOME#${AMBERHOME}#" tleap.in
-                                 tleap -s -f tleap.in
-                                 #  awk '/^TER/ && !done {done=1; next} 1' complex.pdb > tmp ; mv tmp complex.pdb
-
-                                 ntasks=96
-                                 echo "#!/bin/bash"                                                            > amber
-                                 echo "#SBATCH --time="$walltime                                              >> amber
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> amber
-                                 echo "#SBATCH --partition="$partition                                        >> amber
-                                 echo "#SBATCH --nodes=4"                                                     >> amber
-                                 echo "#SBATCH --ntasks="$ntasks                                              >> amber
-                                 echo "#SBATCH --tasks-per-node=24"                                           >> amber
-                                 echo "#SBATCH --job-name=A${M}.${N}"                                         >> amber
-                                 echo "#SBATCH --output=A${M}.${N}.out"                                       >> amber
-                                 echo "#SBATCH --error=A${M}.${N}.err"                                        >> amber
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> amber
-
-                                 echo "mpirun -np $ntasks sander.MPI -O -i min.in -o min.out -p COMP_solvated.prmtop -c COMP_solvated.inpcrd -r min.rst -ref COMP_solvated.inpcrd" >> amber
-                                 echo "mpirun -np $ntasks sander.MPI -O -i heat.in -o heat.out -p COMP_solvated.prmtop -c min.rst -r heat.rst -x heat.mdcrd -ref min.rst"          >> amber
-                                 echo "mpirun -np $ntasks sander.MPI -O -i density.in -o density.out -p COMP_solvated.prmtop -c heat.rst -r density.rst -x density.mdcrd -ref heat.rst" >> amber
-                                 echo "mpirun -np $ntasks sander.MPI -O -i equil.in -o equil.out -p COMP_solvated.prmtop -c density.rst -r equil.rst -x equil.mdcrd"               >> amber
-
-                                 echo "mpirun -np $ntasks sander.MPI -O -i prod.in -o prod.out -p COMP_solvated.prmtop -c equil.rst -r prod1.rst -x prod.mdcrd"                   >> amber
-
-                                 echo "$AMBERHOME/bin/MMPBSA.py -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd > progress.log" >> amber
-                                 echo "if [ ! -e FINAL_RESULTS_MMPBSA.dat ]"                                         >> amber
-                                 echo "then"                                                                         >> amber
-                                 echo "        echo "ERROR" > $target_dir/log_${comp_index}"                         >> amber
-                                 echo "else"                                                                         >> amber
-                                 echo "    DG=\`grep DELTA FINAL_RESULTS_MMPBSA.dat | tail -1 | awk '{print \$5}'\`" >> amber
-                                 echo "    echo \${DG} > $target_dir/log_${comp_index}"                              >> amber
-                                 echo "    cp complex.orig $target_dir/complex_${comp_index}.pdb"                    >> amber
-                                 echo "fi"                                                                           >> amber
-                                 chmod u+x                                                                              amber         
+                                 echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
+                                 echo "then"                                                                   >> rdock
+                                 echo "    echo "ERROR" > $target_dir/log_${comp_index}"                       >> rdock
+                                 echo "else"                                                                   >> rdock
+                                 echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
+                                 echo "    string=\`grep partners flag_global_docking\`"                       >> rdock
+                                 echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> rdock
+                                 echo "    if  [ $mpi == y ]"                                                  >> rdock
+                                 echo "    then"                                                               >> rdock
+                                 echo "        mpirun -np $threads $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
+                                 echo "    else"                                                               >> rdock
+                                 echo "        $ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
+                                 echo "    fi"                                                                 >> rdock
+                                 echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> rdock
+                                 echo "    if  [ -z \${score} ] ; then"                                        >> rdock
+                                 echo "        echo ERROR > $target_dir/log_${comp_index}"                     >> rdock
+                                 echo "    else"                                                               >> rdock
+                                 echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
+                                 echo "    fi"                                                                 >> rdock
+                                 echo "fi"                                                                     >> rdock
+                                 chmod u+x                                                                        rdock         
                                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
-                                 ${job_submit} -Q                                                                       amber
+                                 ${job_submit} -Q                                                                 rdock
                                  sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
                              fi
                          fi
