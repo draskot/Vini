@@ -361,11 +361,13 @@ then
         rm -f $INSTALL/${rosetta_bundle}
 
         echo "Compiling Rosetta source, may take a while..."
-        . $HOME/spack/share/spack/setup-env.sh
-        spack load scons
+        #. $HOME/spack/share/spack/setup-env.sh
+        #spack load scons
+        module load OpenMPI/4.1.1-GCC-11.2.0
         rosetta_src=`ls $INSTALL | grep rosetta`
-        cd $INSTALL/${rosetta_src}/main/source
-        scons -j 24 mode=release bin extras=cxx11thread
+        cd $INSTALL/${rosetta_src}/main/source/
+        #scons -j 24 mode=release bin extras=cxx11thread
+        ./scons.py -j 8 bin mode=release extras=mpi
         ROSETTA=$INSTALL/${rosetta_src}/main
         ROSETTA_BIN=$ROSETTA/source/bin
         ROSETTA_DB=$ROSETTA/database
