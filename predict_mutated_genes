@@ -1,7 +1,8 @@
 #Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
 
 
-cpus=`cat ${active_partition}_cores`
+
+source $vini_dir/globals
 outdir=$vini_dir/genes/pdb_files
 
 SEQDIR=$vini_dir/genes/sequences/

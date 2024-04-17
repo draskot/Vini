@@ -1,6 +1,4 @@
-partition=`cat cpu_partition`
-cpus=`cat ${partition}_cores`
-mem=`cat ${partition}_memsize`
+source $vini_dir/globals
 outdir=$vini_dir/ligands/pdb_files
 
 while read -r line

@@ -22,5 +22,5 @@ protein = chimera.openModels.open(PDB_file)
 prep(protein, addHFunc=None, addCharges=False)
 
 # Write the modified protein structure to a new PDB file in the current directory
-output_filename = os.path.splitext(PDB_file)[0] + "_with_missing_residues.pdb"
+output_filename = os.path.splitext(PDB_file)[0] + "_res.pdb"
 Midas.write(protein, None, output_filename)
