@@ -7,8 +7,13 @@ cpus=`cat ${partition}_cores`
 mem=`cat ${partition}_memsize`
 outdir=$vini_dir/genes/pdb_files
 
+NULL=0
+TWO=2
+FOUR=4
+
 cp $ROSETTA/tools/protein_tools/scripts/clean_pdb.py ./
 cp $ROSETTA//tools/protein_tools/scripts/amino_acids.py ./
+rm -f *pdb
 
 #http://mmb.irbbarcelona.org/gitlab/DBW/PDBBrowser/raw/d80ad01c7569f5cfaac3a247f6e086d63db815cc/PDBData/cmpd_res.idx
 #The database of all RCSB structure names
@@ -117,8 +122,7 @@ do
                         line=`head -1 tmp `
                         chain=`echo $line | awk '{print $4}' `
                         nowords=`echo $line | wc -w`
-                        four=4
-                        if  [ $nowords -eq $four ]
+                        if  [ $nowords -eq $FOUR ]
                         then
                             chain=`echo $chain | tr -d ";"`
                         else
@@ -126,11 +130,14 @@ do
                         fi
                         echo "Cleaning $uniprot_id chain $chain" ; echo 
                         python clean_pdb.py ${uniprot_id}.pdb ${chain}
+
                         if  [ -e ${uniprot_id}_${chain}.pdb ]
                         then
-                            echo "chain ID: $chain"
-                            mv ${uniprot_id}_${chain}.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
-                            rm ${uniprot_id}_${chain}.fasta ${uniprot_id}.pdb
+                            mv ${uniprot_id}_${chain}.pdb ${uniprot_id}.pdb
+                            echo "Adding missing residues with Chimera, please wait..."
+                            chimera --nogui --script "add_missing_residues.py ${uniprot_id}" | tee -a chimera_log.${uniprot_id}
+                            mv ${uniprot_id}_with_missing_residues.pdb $vini_dir/genes/pdb_files/${uniprot_id}.pdb
+                            rm ${uniprot_id}.pdb ${uniprot_id}_${chain}.fasta
                             echo "success. Adding ${uniprot_id} to $WORKDIR/receptors_contracted list with E flag."
                             echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
                             break
@@ -166,4 +173,4 @@ awk '!seen[$0]++' $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCE
 shuf $WORKDIR/tmp -o tmp2 ; mv tmp2 $WORKDIR/tmp
 grep "\S" $WORKDIR/tmp > $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY$UNIPROT_ID_LIST #remove empty lines
 cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST} $vini_dir/genes/Uniprot_ID_list
-rm $WORKDIR/tmp
+rm $WORKDIR/tmp chimera_log.*

@@ -343,38 +343,39 @@ then
             chmod g-r,o-r $WORKDIR/Rosetta_password
         fi        
         
-        module purge
-
-        rosetta_src=`ls $INSTALL | grep rosetta`
+        rosetta_src=`ls $INSTALL | grep rosetta.source`
         if  [ -z ${rosetta_src+x} ]
         then
-            echo -n "Performing cleanup. This will take a while, do not interrupt."
+            echo -n "Rosetta source already exists, performing cleanup. This may take a while, please do not interrupt."
             rm -rf $INSTALL/${rosetta_src}
         fi
-        read -p "Enter Rosetta version you want to download (e.g. 3.13)" rosetta_version
-        rosetta_bundle=rosetta_src_linux_${rosetta_version}_bundle.tgz
-        read -p "Enter Rosetta download link:" link
-        echo -n "Downloading Rosetta ${rosetta_version} source, do not interrupt." 
-        wget -O $INSTALL/${rosetta_bundle} --user=${Rosetta_username} --password=${Rosetta_password} $link
+
+        Rosetta_version=3.14
+        Rosetta_release=371
+
+        echo -n "Downloading Rosetta ${Rosetta_version} release ${Rosetta?release} source, do not interrupt."
+        wget -O $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/3.14/rosetta_src_${Rosetta_version}_bundle.tar.bz2
+
         echo "Unpacking Rosetta source. May take several minutes to finish, do not interrupt."
-        tar -xf $INSTALL/${rosetta_bundle} --checkpoint=.4000 -C $INSTALL
+        tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
         rm -f $INSTALL/${rosetta_bundle}
 
         echo "Compiling Rosetta source, may take a while..."
-        #. $HOME/spack/share/spack/setup-env.sh
-        #spack load scons
-        module load OpenMPI/4.1.1-GCC-11.2.0
-        rosetta_src=`ls $INSTALL | grep rosetta`
-        cd $INSTALL/${rosetta_src}/main/source/
-        #scons -j 24 mode=release bin extras=cxx11thread
+        module purge
+        module load OpenMPI/4.1.5-GCC-12.3.0
+        cd $INSTALL/rosetta.source.release-${Rosetta_release}/main/source
         ./scons.py -j 8 bin mode=release extras=mpi
-        ROSETTA=$INSTALL/${rosetta_src}/main
+
+        rosetta_src=$INSTALL/rosetta.source.release-${Rosetta_release}
+
+        ROSETTA=$INSTALL/rosetta.source.release-${Rosetta_release}/main
         ROSETTA_BIN=$ROSETTA/source/bin
         ROSETTA_DB=$ROSETTA/database
         ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
         ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
+
         echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
-        echo "export ROSETTA=$INSTALL/${rosetta_src}/main"                            >> $vini_dir/sourceme
+        echo "export ROSETTA=$ROSETTA"                                                >> $vini_dir/sourceme
         echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme 
         echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
         echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
