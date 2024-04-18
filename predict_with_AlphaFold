@@ -5,6 +5,7 @@ fasta_file=$4
 outdir=$5
 
 
+
 ONES=1
 maxlines1=23
 #maxlines2=40
@@ -21,6 +22,7 @@ fi
 walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are trying to run AF on cpu nodes
 antibody=`basename ${fasta_file} .fasta`
 nolines=`wc -l < ${fasta_file}`                     #Checking resources for large sequences
+
 
 if  [ $nolines -le $maxlines1 ]   
 then
@@ -95,14 +97,17 @@ echo "alphafold --data_dir=${ALPHAFOLD_DATA_DIR} --fasta_paths=${fasta_file} --o
 echo "conda deactivate"  >> $WORKDIR/AlphaFold_${antibody}
 echo "if [ -e $WORKDIR/${antibody}/ranked_0.pdb ]"         >> $WORKDIR/AlphaFold_${antibody}
 echo "then"                                                >> $WORKDIR/AlphaFold_${antibody}
-echo "cp $WORKDIR/${antibody}/ranked_0.pdb $outdir/${antibody}.pdb" >> $WORKDIR/AlphaFold_${antibody}
+echo "    cp $WORKDIR/${antibody}/ranked_0.pdb $outdir/${antibody}.pdb" >> $WORKDIR/AlphaFold_${antibody}
 echo "else"                                                >> $WORKDIR/AlphaFold_${antibody}
-echo "echo ${antibody} > $WORKDIR/failed_predictions"      >> $WORKDIR/AlphaFold_${antibody}
+echo "    echo ${antibody} > $WORKDIR/failed_predictions"      >> $WORKDIR/AlphaFold_${antibody}
 echo "fi"                                                  >> $WORKDIR/AlphaFold_${antibody}
-chmod u+x                                                  $WORKDIR/AlphaFold_${antibody}
+chmod u+x                                                     $WORKDIR/AlphaFold_${antibody}
+
 
 rm -rf $WORKDIR/${antibody} #cleanup
 job_submit=`cat job_submit`
+
+
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
 #job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
 #squeue -u | grep ${job_id} | grep  launch failed
