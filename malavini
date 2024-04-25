@@ -210,6 +210,7 @@ do
                                  echo "#SBATCH --time="$walltime                                              >> vdock
                                  echo "#SBATCH --account=$SLURMACCT"                                          >> vdock
                                  echo "#SBATCH --partition="$partition                                        >> vdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> vdock
                                  echo "#SBATCH --nodes=1"                                                     >> vdock
                                  echo "#SBATCH --ntasks=1"                                                    >> vdock
                                  echo "#SBATCH --cpus-per-task="$threads                                      >> vdock
@@ -277,6 +278,7 @@ do
                                  echo "#SBATCH --time=$walltime"                                               >> rdock
                                  echo "#SBATCH --account=$SLURMACCT"                                           >> rdock
                                  echo "#SBATCH --partition=$partition"                                         >> rdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                    >> rdock
                                  echo "#SBATCH --nodes=1"                                                      >> rdock
                                  echo "#SBATCH --ntasks-per-node="$threads                                     >> rdock
                                  echo "#SBATCH --cpus-per-task=1"                                              >> rdock
@@ -291,8 +293,8 @@ do
                                  echo "cp $vini_dir/docking.mac ./"                                            >> rdock
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> rdock
                                  echo "cp complex.pdb complex_${comp_index}.pdb"                               >> rdock
-                                 echo "    mpirun -np $threads $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s complex_${comp_index}.pdb @flag_input_relax -overwrite" >> rdock
-                                 echo "    mpirun -np $threads $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb @flag_global_docking" >> rdock
+                                 echo "mpirun -np $threads $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s complex_${comp_index}.pdb @flag_input_relax -overwrite" >> rdock
+                                 echo "mpirun -np $threads $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb @flag_global_docking" >> rdock
 
                                  echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
                                  echo "then"                                                                   >> rdock
@@ -301,7 +303,7 @@ do
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
                                  echo "    string=\`grep partners flag_global_docking\`"                       >> rdock
                                  echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> rdock
-                                 echo "        mpirun -np $threads $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
+                                 echo "    mpirun -np $threads $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
                                  echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> rdock
                                  echo "    if  [ -z \${score} ] ; then"                                        >> rdock
                                  echo "        echo ERROR > $target_dir/log_${comp_index}"                     >> rdock

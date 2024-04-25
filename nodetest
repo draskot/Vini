@@ -1,5 +1,10 @@
-partition=$1
-walltime=$2
+#partition=$1
+partition=cpu
+#walltime=$2
+walltime=60
+
+source $vini_dir/globals
+echo $SLURMACCT
 
 job_submit=`cat job_submit`
 
@@ -14,6 +19,7 @@ available_nodes=$(sinfo -N -o "%N %T" -p ${partition} | awk '(NR>1) {  if($2=="m
 
 echo ${excluded_nodes} > excluded_${partition}_nodes
 echo ${available_nodes} > available_${partition}_nodes
+echo exit
 
 cpu_node_suffix=`sinfo -N -o "%N %T" -p ${partition} | head -2 | tail -1 | awk '{print $1}' | sed 's/[0-9]//g'`
 
@@ -68,6 +74,7 @@ else
 
     for node in $(<$WORKDIR/tmp)
     do
+echo -n "." 
         echo "#! /bin/bash"                                   > $WORKDIR/${partition}_nodetest
         echo "#SBATCH --time=00:$walltime:00"                >> $WORKDIR/${partition}_nodetest
         echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/${partition}_nodetest

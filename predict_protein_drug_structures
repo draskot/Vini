@@ -7,8 +7,11 @@ do
     type=`echo $line | awk -F','  '{print $2}'`
     if  [ $type == P ] && [ ! -e ${outdir}/${drug}.pdb ]
     then
-        sh $vini_dir/nodes_control_script ${nodes}
-        fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta
-        sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${AlphaFold_base} ${fasta_file} ${outdir}
+        if [ ! -e $vini_dir/database/ligands/pdb_files/${drug}.pdb ]
+        then
+            sh $vini_dir/nodes_control_script ${nodes}
+            fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta
+            sh $vini_dir/predict_with_AlphaFold ${cpus} ${partition} ${AlphaFold_base} ${fasta_file} ${outdir}
+        fi
     fi
 done < $vini_dir/ligands/ligands_list

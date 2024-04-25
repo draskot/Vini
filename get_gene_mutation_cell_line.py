@@ -10,7 +10,7 @@ import requests
 t0 = time.time()
 # this token has to be manually obtained from https://cancer.sanger.ac.uk/cosmic/download
 
-TOKEN_NUMBER = "11439731505086207628950617616774994"
+TOKEN_NUMBER = "73690516324850393233861606877048219"
 WORKING_DIR_MUTATIONS = os.path.join(os.path.realpath('.'), 'genes', 'mutations')
 WORKING_DIR_SEQUENCES = os.path.join(os.path.realpath('.'), 'genes', 'sequences')
 
@@ -24,16 +24,16 @@ failed_downloads = []
 
 def getCellLineMutations(CELL_LINE):
     try:
-        # print ('Connecting to CosmicDB')
+        print ('Connecting to CosmicDB')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                        "table=V96_38_MUTANT" + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
+                        "table=V99_38_MUTANT" + "&samplename=" + CELL_LINE + "&token=" + TOKEN_NUMBER)
         number_of_attempts = 5
         current_attempt = 0
         print ("getCellLineMutations URL: ", download_url)
         print ('Downloading gene mutations for cell line %s' % CELL_LINE)
         while current_attempt < number_of_attempts:
             current_attempt += 1
-            #print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
+            print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
             r = requests.get(download_url)
             if r.text != "No data available." and r.status_code == 200:
                 filename = cosmicTools.getMutationFileName(CELL_LINE, WORKING_DIR_MUTATIONS)
@@ -57,18 +57,18 @@ def getCellLineMutations(CELL_LINE):
 
 def getFASTAseq(GENE_NAME, COSMIC_GENE_ID):
     try:
-        # print ('Connecting to CosmicDB')
+        print ('Connecting to CosmicDB for downloading FASTA sequence...')
         download_url = ("https://cancer.sanger.ac.uk/cosmic-download/download/index?" +
-                        "table=V96_38_ALLGENES" + "&" + "genename=" + COSMIC_GENE_ID + "&" + "token=" + TOKEN_NUMBER)
+                        "table=V99_38_ALLGENES" + "&" + "genename=" + COSMIC_GENE_ID + "&" + "token=" + TOKEN_NUMBER)
         number_of_attempts = 10
         current_attempt = 0
         print (download_url)
         print ('Downloading FASTA sequence from CosmicDB for gene %s [%s]' % (GENE_NAME, COSMIC_GENE_ID))
         while current_attempt < number_of_attempts:
             current_attempt += 1
-            #print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
+            print ("Attempt %s/%s" % (current_attempt, number_of_attempts))
             r = requests.get(download_url)
-            #print ('Cosmic response: %s', (r.status_code))
+            print ('Cosmic response: %s', (r.status_code))
             if r.text != "No data available." and r.status_code == 200:
                 filename = cosmicTools.getSequenceFileName(GENE_NAME, WORKING_DIR_SEQUENCES)
                 with open(filename, 'wb') as f:

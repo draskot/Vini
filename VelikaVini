@@ -55,6 +55,7 @@ rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/
 echo "Waiting for AlphaFold jobs to finish. This may take a while."
 sh $vini_dir/predict_protein_drug_structures
 sh $vini_dir/wait_until_jobs_finish
+cp $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands/pdb_files
  
 if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
 then

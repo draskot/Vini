@@ -44,8 +44,12 @@ do
         pubchem_id=`head -1 $WORKDIR/tmp | awk '{print $2}'`
 
         echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
-        if  [ -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]  
+        if  [[ -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]] || [[ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]]  
         then 
+            if [ ! -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]
+            then
+                cp $vini_dir/genes/database/pdb_files/${pubchem_id}.pdb $vini_dir/genes/pdb_files
+            fi
             echo " yes. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with E flag."
             echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "E" >> $WORKDIR/receptors_contracted
         else
@@ -103,8 +107,12 @@ do
             fi
         else
             echo -n " with structure. Checking if in repo..."
-            if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]
+            if  [[ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]] || [[ -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]]
             then 
+                if  [ ! -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ] 
+                then
+                    cp $vini_dir/database&genes/pdb_files/${uniprot_id}.pdb $vini_dir/genes/pdb_files
+                fi
                 echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
                 echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
             else
@@ -178,6 +186,8 @@ do
     fi
     let "entry++"
 done < $WORKDIR/receptors_expanded
+
+cp $vini_dir/genes/pdb_files/* $vini_dir/database/genes/pdb_files
 
 awk '!seen[$0]++' $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST} > $WORKDIR/tmp #remove duplicate lines
 shuf $WORKDIR/tmp -o tmp2 ; mv tmp2 $WORKDIR/tmp

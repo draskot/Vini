@@ -12,8 +12,8 @@ do
     type=`echo $line | awk -F','  '{print $2}'`
     if  [ $type == S ]
     then
-        #drug=`echo $line | awk -F','  '{print $1}'`
-        if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] || [[ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]]
+        #if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] || [[ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]]
+        if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] && [[ ! -e $vini_dir/database/ligands/pdb_files/"${drug}".pdb ]]
         then
             code=`echo $line | awk -F','  '{print $3}'`
             if [ $code != NA ]
@@ -58,7 +58,11 @@ do
                 fi
             fi
         else
-            echo "${drug} 3D structure found in repo, continuing..."
+            echo "${drug} 3D structure exists in database, continuing..."
+            if  [ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]
+            then
+                cp $vini_dir/database/ligands/pdb_files/"${drug}".pdb $vini_dir/ligands/pdb_files
+            fi
         fi
         ls $vini_dir/ligands/pdb_files/"${drug}".pdb > tmp
         cp $vini_dir/ligands/pdb_files/"${drug}".pdb ./

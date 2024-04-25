@@ -132,44 +132,46 @@ read -e -p "Enter your SLURM account provided by admin. Press enter to accept " 
 echo $slurm_account > $WORKDIR/slurm_account
 
 partition=`cat active_partition`
-walltime=6   #max time is 6 minutes
 
-#if [ -e $WORKDIR/nodetest ]
-#then
-#    birth=`stat $WORKDIR/nodetest | grep Birth`
-#    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
+walltime=60   #max time is 60 minutes
 
-#    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-#    if [ $yesno == y ]
-#    then
-#        timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-#        success=`echo $?`
-#        if [ $success -eq 124 ] ; then
-#           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-#        fi
-#    fi
-#else
-#    echo "Nodetest will now be performed."
-#    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-#        success=`echo $?`
-#        if [ $success -eq 124 ] ; then
-#           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-#        fi
-#fi
+if [ -e $WORKDIR/nodetest ]
+then
+    birth=`stat $WORKDIR/nodetest | grep Birth`
+    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
+
+    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
+    if [ $yesno == y ]
+    then
+        #timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
+        sh $vini_dir/nodetest ${active_partition} $walltime
+        success=`echo $?`
+        if [ $success -eq 124 ] ; then
+           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
+        fi
+    fi
+else
+    echo "Nodetest will now be performed."
+    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
+        success=`echo $?`
+        if [ $success -eq 124 ] ; then
+           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
+        fi
+fi
 
 
-#if [ -e $WORKDIR/gather_hardware_info ]
-#then
-#    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
-#    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
-#    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-#    if [ $yesno == y ]
-#    then
-#        sh $vini_dir/gather_hardware_info
-#    fi
-#else
-#    sh $vini_dir/gather_hardware_info
-#fi
+if [ -e $WORKDIR/gather_hardware_info ]
+then
+    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
+    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
+    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
+    if [ $yesno == y ]
+    then
+        sh $vini_dir/gather_hardware_info
+    fi
+else
+    sh $vini_dir/gather_hardware_info
+fi
 
 
 cores=128 ; echo $cores > ${partition}_cores
@@ -226,6 +228,7 @@ cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.orig #saving th
 
 sh $vini_dir/prepare_ligands_list
 sh $vini_dir/prepare_small_drug_structures                 #prepare pdb files for Rosetta docking
+cp $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
 
 

@@ -1,21 +1,18 @@
-email=`cat $WORKDIR/Drugbank_email`
-password=`cat $WORKDIR/Drugbank_password`
 
-
-echo -n "Downloading the data from DrugBank, please wait..."
-
-wget -O drug?links.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+if [[ ! -e ./database/drug?links.csv.zip ]] || [[ ! -e ./database/drugbank_all_drugbank_vocabulary.csv.zip ]]
+then
+    email=`cat $WORKDIR/Drugbank_email`
+    password=`cat $WORKDIR/Drugbank_password`
+    echo -n "Downloading the data from DrugBank, please wait..."
+    wget -O drug?links.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+    wget -O drugbank_all_drugbank_vocabulary.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-10/downloads/all-drugbank-vocabulary
+    cp drug?links.csv.zip drugbank_all_drugbank_vocabulary.csv.zip ./database
+else
+    cp ./database/drug?links.csv.zip ./
+    cp ./database/drugbank_all_drugbank_vocabulary.csv.zip ./
+fi
 
 unzip -o drug?links.csv.zip
-
 mv 'drug links.csv' drug_links.csv
-
-wget -O drugbank_all_drugbank_vocabulary.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-10/downloads/all-drugbank-vocabulary
-
 unzip -o drugbank_all_drugbank_vocabulary.csv.zip
-
 mv 'drugbank vocabulary.csv' drugbank_vocabulary.csv
-
-rm drugbank_all_drugbank_vocabulary.csv.zip
-
-rm 'drug?links.csv.zip'
