@@ -17,34 +17,24 @@ else
     model=multimer
 fi
 
-echo "#!/bin/bash"                                                       > $WORKDIR/AlphaFold_${antibody}
-if  [[ $partition == gpu ]] 
-then
-    echo "#SBATCH --gres=gpu:1"                                         >> $WORKDIR/AlphaFold_${antibody}
-else
-    nolines=`wc -l < ${fasta_file}`                 s
-    maxlines1=23 ; maxlines2=42
-    if  [[ $nolines -gt $maxlines1 ]] && [[ $nolines -le $maxlines2 ]]
-    then
-        partition=`cat longcpu_partition`
-    else
-        echo "Running AlphaFold on $partition node exceeds walltime limit"                        >> Vini.crashlog
-        echo "Run AlphaFold on GPU nodes"                                                         >> Vini.crashlog
-        echo "Then put ${antibody}.pdb in $vini_dir/genes/pdb_files folder and start Vini again." >> Vini.crashlog
-        echo "Then put ${antibody}.pdb in $vini_dir/genes/pdb_files folder and start Vini again." >> Vini.crashlog
-        if [ -s masterpid ]
-        then
-            scancel -u $USER
-            masterpid=`cat masterpid`
-            kill -9 $masterpid
-        else
-            echo "exit now with Ctrl-C." ; sleep 1000
-        fi
-    fi
-fi
-
+maxlines1=23
+maxlines2=42
 walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
 excluded_nodes=`cat excluded_${partition}_nodes`
+nolines=`wc -l < ${fasta_file}`
+let nolines--
+
+echo "#!/bin/bash"                                                       > $WORKDIR/AlphaFold_${antibody}
+if  [ $nolines -gt $maxlines1 ] 
+then
+    if  [[ $nolines -gt $maxlines1 ]] && [[ $nolines -le $maxlines2 ]]
+    then                                                                   #Running AlphaFold on longcpu nodes
+        partition=`cat longcpu_partition`
+    else                                                                   #Running AlphaFold on gpu nodes
+        partition=`cat gpu_partition`
+        echo "#SBATCH --gres=gpu:1"                                     >> $WORKDIR/AlphaFold_${antibody}
+    fi
+fi
 
 echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
@@ -58,7 +48,6 @@ echo "#SBATCH --nodes=1"                                                >> $WORK
 echo "#SBATCH --ntasks-per-node=1"                                      >> $WORKDIR/AlphaFold_${antibody}
 echo "#SBATCH --cpus-per-task="$cpus                                    >> $WORKDIR/AlphaFold_${antibody}
 echo "WORKDIR=${WORKDIR}"                                               >> $WORKDIR/AlphaFold_${antibody}
-
 echo "source $INSTALL/miniconda3/bin/activate"                          >> $WORKDIR/AlphaFold_${antibody}
 echo "conda activate env310"                                            >> $WORKDIR/AlphaFold_${antibody}
 echo "alphafold --data_dir=${ALPHAFOLD_DATA_DIR} --fasta_paths=${fasta_file} --output_dir=${WORKDIR} --model_preset=${model} --db_preset=${base} --use_gpu_relax=False --num_multimer_predictions_per_model=1 --max_template_date=2020-06-05" >> $WORKDIR/AlphaFold_${antibody}
@@ -81,4 +70,3 @@ ${job_submit} $WORKDIR/AlphaFold_${antibody}
 
 #job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
 #squeue -u | grep ${job_id} | grep  launch failed
-

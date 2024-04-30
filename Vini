@@ -143,8 +143,8 @@ then
     read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
-        #timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-        sh $vini_dir/nodetest ${active_partition} $walltime
+        timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
+        #sh $vini_dir/nodetest ${active_partition} $walltime
         success=`echo $?`
         if [ $success -eq 124 ] ; then
            echo "Test aborted, cancelling jobs..." ; scancel -u $USER
@@ -152,13 +152,13 @@ then
     fi
 else
     echo "Nodetest will now be performed."
-    timeout 10s sh $vini_dir/nodetest ${active_partition} $walltime
-        success=`echo $?`
-        if [ $success -eq 124 ] ; then
-           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-        fi
+    timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
+    #sh $vini_dir/nodetest ${active_partition} $walltime
+    success=`echo $?`
+    if [ $success -eq 124 ] ; then
+       echo "Test aborted, cancelling jobs..." ; scancel -u $USER
+    fi
 fi
-
 
 if [ -e $WORKDIR/gather_hardware_info ]
 then
