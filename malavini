@@ -48,6 +48,7 @@ fi
  
 SECONDS=$NULL
 
+rm -f $WORKDIR/dock_id_list
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
@@ -210,31 +211,6 @@ do
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
                              else                                             #using Rosetta
-                                 echo "#SBATCH --ntasks-per-node="$threads                                    >> dock
-                                 echo "#SBATCH --cpus-per-task=1"                                             >> dock
-
-
-
-                                 #fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
-                                 #chains=`grep -c ">" ${fasta_file}`     
-                                 #if  [ $chains -eq $ONES ]
-                                 #then
-                                 #    java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
-                                 #    mv ligand_${lig_index}.pdb_A_to_B.pdb ligand_${lig_index}.pdb
-                                 #    sed -i -e "s/chains/B/" flag_global_docking
-                                 #else
-                                 #    if  [ $chains -eq $TWO ]
-                                 #    then
-                                 #        java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
-                                 #        java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
-                                 #        mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
-                                 #        sed -i -e "s/chains/QZ/" flag_global_docking
-                                 #    else
-                                 #        sed -i -e "s/chains/BCDEFGHIJK/" flag_global_docking       #This for Alemtuzumab only
-                                 #    fi
-                                 #fi
-
-
                                  cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./
                                  cp $vini_dir/analyze_chains.py ./
                                  cp $ROSETTA_TOOLS/amino_acids.py ./
@@ -243,8 +219,10 @@ do
                                  python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
                                  mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
                                  conda deactivate
-                                 
                                  python3 analyze_chains.py ${comp_index} ${lig_index}
+
+                                 echo "#SBATCH --ntasks-per-node="$threads                                     >> dock
+                                 echo "#SBATCH --cpus-per-task=1"                                              >> dock
                                  echo "module purge"                                                           >> dock
                                  echo "module load libGLU/9.0.2-GCCcore-11.3.0"                                >> dock
                                  echo "module load OpenMPI/4.1.1-GCC-11.2.0"                                   >> dock
@@ -275,15 +253,21 @@ do
                      fi
                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                  chmod u+x dock
-                 ${job_submit} dock
+                 #${job_submit} dock
+                 dock_id=$(sbatch dock)
+                 dock_id=`echo ${dock_id} | awk '{print $4}'`
+                 echo "$M $L $J $I ${dock_id}" >> $WORKDIR/dock_id_list
+
                  echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
 
-                 sh $vini_dir/wait_until_jobs_finish
+                 #sh $vini_dir/wait_until_jobs_finish
 
                  
                  cd $WORKDIR
                  echo ${target_dir} > target_dir
+                 echo ${WORKDIR} > working_dir
+                 echo $M > M; echo $L > L; echo $J > J; echo $I > I
 
                  echo "Computing SLEM..."
                  echo ${therapy_level} > $WORKDIR/therapy_level    #input for the create_energy_binding_matrix.py script 
@@ -312,9 +296,14 @@ do
                  echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
                  cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
                  chmod u+x                                                      ${target_dir}/compute_SLEM
-                 ${job_submit} -Q                                               ${target_dir}/compute_SLEM ${target_dir} ${WORKDIR} $M $L $J $I
-                 #sh $vini_dir/submission_script                                ${target_dir}/compute_SLEM ${target_dir} ${WORKDIR} $M $L $J $I
+
+                 #${job_submit}                                                 ${target_dir}/compute_SLEM ${target_dir} ${WORKDIR} $M $L $J $I
+
+                 input_file="$WORKDIR/dock_id_list" #generate sbatch command from $WORKDIR/dock_id_list
+                 sh $vini_dir/generate_sbatch_command.sh "$input_file" "$target_dir" > SLEM
+                 chmod u+x SLEM
                  sh $vini_dir/wait_until_jobs_finish
+                 ./SLEM
                  let ligand_number++
              done   #end of 4thloop
          done       #end of 3rd loop

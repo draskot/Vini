@@ -3,12 +3,15 @@
 #input params: target_dir, M, L, J, I
 #output params: SLEM written in $WORKDIR/SLEM_values file
 
-target_dir=$1
-WORKDIR=$2
-M=$3
-L=$4
-J=$5
-I=$6
+#target_dir=$1
+#WORKDIR=$2
+#M=$3
+#L=$4
+#J=$5
+#I=$6
+
+target_dir=`cat $WORKDIR/target_dir`
+WORKDIR=`cat $WORKDIR/working_dir`
 
 ls $target_dir/log* > tmp                                          
 logs=`wc -l < tmp`

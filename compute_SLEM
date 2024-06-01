@@ -6,6 +6,11 @@ source $vini_dir/globals
 #SLEM=`cat $target_dir/eigenvalues | awk -F','  '{print $2}'`
 SLEM=`tail -1 $target_dir/eigenvalues`
 
+M=`cat $WORKDIR/M`
+L=`cat $WORKDIR/L`
+I=`cat $WORKDIR/I`
+J=`cat $WORKDIR/J`
+
 case $therapy_level in
      1) echo "SLEM_${M} ${SLEM}" >> $WORKDIR/SLEM_values ;;
      2) echo "SLEM_${M}.${L} ${SLEM}" >> $WORKDIR/SLEM_values ;;
