@@ -1,7 +1,6 @@
 source $vini_dir/globals
 
 UNIPROT_ID_LIST="_uniprot_entries.txt"
-job_submit=`cat job_submit`
 outdir=$vini_dir/genes/pdb_files  #where the predicted structures are placed
 
 partition=`cat active_partition`      #Define AlphaFold parameters

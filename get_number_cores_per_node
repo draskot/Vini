@@ -35,6 +35,7 @@ echo "Trying to determine the number of CPU cores per ${partition} node. This ma
 rm -f $WORKDIR/cores.*
 
 $job_submit -Q $WORKDIR/get_number_of_cores
+#sh $vini_dir/submission_script $WORKDIR/get_number_of_cores
 timeout ${walltime}s $vini_dir/wait_until_jobs_finish
 if [ -e $WORKDIR/cores.out ]
 then

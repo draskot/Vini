@@ -1,4 +1,4 @@
-echo "The Vini in silico model of cancer is supercomputing application for performing multi-drug pathway based virtual drug screening."
+echo "The Vini in silico model of cancer is supercomputing application for perfo##rming multi-drug pathway based virtual drug screening."
 echo "If using this program in your academic research , please cite:"                                                   #
 echo " Tomic D., Skala K., Kranjcevic L., Pirkic B., Stifter S., et al. (2018) Evaluation of the Efficacy of Cancer Drugs by Using the Second Largest Eigenvalue of Metabolic Cancer Pathways. J Comput Sci Syst Biol 11: 240-248. doi:10.4172/jcsb.1000280"
 echo ; sleep 1
@@ -6,7 +6,6 @@ echo ; sleep 1
 vini_dir=`pwd` ; export vini_dir
 
 > Vini.crashlog
-> restartfile
 > $vini_dir/globals
 chmod u+x $vini_dir/globals
 NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
@@ -20,7 +19,7 @@ echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
 echo "export NULL=$NULL"                   >> $vini_dir/globals
 echo "export state=init"                   >> $vini_dir/globals
 echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
-rm -rf $WORKDIR/*_data
+#rm -rf $WORKDIR/*_data
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -121,10 +120,10 @@ else
 fi
 rm -f jobs
 
-cd $WORKDIR #Cleanup
-rm -f complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
-rm -f *err *out
-cd $vini_dir
+#cd $WORKDIR #Cleanup
+#rm -f complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
+#rm -f *err *out
+#cd $vini_dir
 
 cat COPYRIGHT
 
@@ -135,16 +134,16 @@ partition=`cat active_partition`
 
 walltime=60   #max time is 60 minutes
 
-if [ -e $WORKDIR/nodetest ]
+
+if [ -e $WORKDIR/${partition}_nodetest ]
 then
-    birth=`stat $WORKDIR/nodetest | grep Birth`
+    birth=`stat $WORKDIR/${partition}_nodetest | grep Birth`
     echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
 
     read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
     if [ $yesno == y ]
     then
         timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
-        #sh $vini_dir/nodetest ${active_partition} $walltime
         success=`echo $?`
         if [ $success -eq 124 ] ; then
            echo "Test aborted, cancelling jobs..." ; scancel -u $USER
@@ -153,29 +152,24 @@ then
 else
     echo "Nodetest will now be performed."
     timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
-    #sh $vini_dir/nodetest ${active_partition} $walltime
     success=`echo $?`
     if [ $success -eq 124 ] ; then
        echo "Test aborted, cancelling jobs..." ; scancel -u $USER
     fi
 fi
 
-if [ -e $WORKDIR/gather_hardware_info ]
+
+if [[ ! -e cpu_cores ]] || [[ ! -e cpu_cores ]]
 then
-    birth=`stat $WORKDIR/gather_hardware_info | grep Birth`
-    echo "Hardware information (CPU cores, node memory size) has been already gathered on $birth."
-    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-    if [ $yesno == y ]
-    then
-        sh $vini_dir/gather_hardware_info
-    fi
-else
-    sh $vini_dir/gather_hardware_info
+    echo "Getting info about $cpu nodes, do not interrupt!"
+    timeout 3600s sh $vini_dir/gather_hardware_info $walltime
 fi
 
 
-cores=128 ; echo $cores > ${partition}_cores
-memsize=225gb ; echo $memsize > ${partition}_memsize
+
+#cores=128 ; echo $cores > ${partition}_cores
+#memsize=225gb ; echo $memsize > ${partition}_memsize
+
 
 
 sh $vini_dir/prepare_SLURM_scripts
@@ -275,14 +269,17 @@ then
 else
     echo "export cosmic=n" >> $vini_dir/globals
     echo "export exp=noexp"   >> $vini_dir/globals
-    read -p "Do you want to include your own cancer gene expression data into the analysis (y/n)?" kit
-    if   [ $kit == "y" ]
-    then
-        echo "export kit=$kit" >> $vini_dir/globals
-        echo "vi editor will open. Write the data in the form: genename uniprotID expression. Then press <:wq!> to save the data!."
-        read -p "press enter when ready to continue." enter
-        vi $vini_dir/database/genes/custom_genes
-    fi
+fi
+
+read -p "Do you want to include your own cancer gene expression data into the analysis (y/n)?" kit
+if  [ $kit == "y" ]
+then
+    echo "export kit=$kit" >> $vini_dir/globals
+    echo "vi editor will open. Write the data in the form: genename uniprotID expression. Then press <:wq!> to save the data!."
+    read -p "press enter when ready to continue." enter
+    vi $vini_dir/database/genes/custom_genes
+else
+    echo "export kit=$kit" >> $vini_dir/globals
 fi
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
@@ -377,10 +374,12 @@ then
     fi
 else
     compute_cell_line=$FALSE
-    echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/gobals
+    echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/globals
     cell_line=PUBLIC
-    echo "export cell_line=PUBLIC" >> $vini_dir/gobals
+    echo $cell_line > cell_line
+    echo "export cell_line=PUBLIC" >> $vini_dir/globals
 fi
+
 
 ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
 
@@ -411,8 +410,6 @@ read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter t
 echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
 num_modes=10
 echo "export num_modes=${num_modes}" >> $vini_dir/globals
-#read -e -p "Run Rosetta in MPI mode (y/n). Press enter to accept the default : " -i "y" mpi
-#echo "export mpi=$mpi" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno
 if  [ $yesno == n ]

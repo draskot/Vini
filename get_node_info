@@ -52,7 +52,9 @@ echo "free -h"                               >> $WORKDIR/get_memsize
 chmod u+x                                       $WORKDIR/get_memsize
 
 $job_submit -Q $WORKDIR/get_number_cores
+#sh $vini_dir/submission_script $WORKDIR/get_number_cores
 $job_submit -Q $WORKDIR/get_memsize
+#sh $vini_dir/submission_script $WORKDIR/get_memsize
 sh $vini_dir/wait_until_jobs_finish
 
 if [ -e $WORKDIR/cores.out ]

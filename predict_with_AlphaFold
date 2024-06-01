@@ -67,6 +67,5 @@ echo "fi"                                                               >> $WORK
 chmod u+x $WORKDIR/AlphaFold_${antibody}
 job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
+#sh $vini_dir/submission_script $WORKDIR/AlphaFold_${antibody}
 
-#job_id=`${job_submit} $WORKDIR/AlphaFold_${antibody} | awk '{print $4}'`
-#squeue -u | grep ${job_id} | grep  launch failed

@@ -50,34 +50,28 @@ do
     fi
     echo -n " "
 done
+     nolines=`squeue -u eudraskot | grep "launch failed requeued held" | wc -l` #clear stucked job
+     if  [ $nolines -gt $NULL ] 
+     then
+         jobID=`squeue -u eudraskot | grep "launch failed requeued held" | awk '{print $1}'`
+         scancel $jobID
+     fi
 
-     #grep "launch failed requeued held" all_user_jobs > requeued #Checking if SLURM is working properly
-     #if [ -s requeued ]
-     #then
-     #    echo "Error while submitting SLURM jobs (launch failed requeued held). Exiting." >> Vini.crashlog
-     #    echo ""                                                                          >> Vini.crashlog
-     #    requeued_job=`squeue -u $USER | grep Q07889 | awk '{print $1}'`
-     #    requeued_node=`squeue -u $USER | grep Q07889 | awk '{print $8}'`
-     #    ${job_cancel} ${requeued_job}
-     #    $job_cancel -u $USER
-     #    masterpid=`cat masterpid`
-     #    kill -9 $masterpid
-     #fi
 
-     #timeout 3600s touch $WORKDIR/test                                 #Checking if scratch file system is working
-     #timeout 3600s ls $WORKDIR/test > tmpfull 2> /dev/null
-     #if [ ! -s tmpfull ]
-     #then
-     #    echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
-         #echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> $vini_dir/Vini.crashlog
-         #echo "You will need to re-login and then start Vini again."
-         #echo ""                                                      >> $vini_dir/Vini.crashlog
-     #    $job_cancel -u $USER
+     timeout 3600s touch $WORKDIR/test                                 #Checking if scratch file system is working
+     timeout 3600s ls $WORKDIR/test > tmpfull 2> /dev/null
+     if [ ! -s tmpfull ]
+     then
+         echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
+         echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> $vini_dir/Vini.crashlog
+         echo "You will need to re-login and then start Vini again."
+         echo ""                                                      >> $vini_dir/Vini.crashlog
+         $job_cancel -u $USER
          #old=`grep WORKDIR $vini_dir/sourceme | awk -F'=' '{print $2}'`
          #new=`grep INSTALL $vini_dir/sourceme | awk -F'=' '{print $2}'`
          #sed -i -e "s|$old|$new|" "$vini_dir/sourceme"
-     #    masterpid=`cat $vini_dir/masterpid`
-     #    kill -9 $masterpid
-     #fi
+         masterpid=`cat $vini_dir/masterpid`
+         kill -9 $masterpid
+     fi
 
 echo "Done."

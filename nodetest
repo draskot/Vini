@@ -90,6 +90,7 @@ echo -n "."
         echo "grep MemAvailable /proc/meminfo"               >> $WORKDIR/${partition}_nodetest
         chmod u+x $WORKDIR/${partition}_nodetest
         $job_submit -Q $WORKDIR/${partition}_nodetest
+        #vini_dir/submission_script                             $WORKDIR/${partition}_nodetest
         echo -n "."
     done
     echo

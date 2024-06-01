@@ -32,6 +32,7 @@ rm -f $WORKDIR/END
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
 sh $vini_dir/create_receptor_structures
 
+
 if  [ -s $WORKDIR/missing_genes ]
 then
     echo "Cannot continue as the following KEGG genes are missing entry in Uniprot:"
@@ -49,50 +50,45 @@ then
     echo "Exiting." ; exit
 fi
 
+
+if  [ ! -e $vini_dir/genes/${cell_line} ]
+then
+    mkdir $vini_dir/genes/${cell_line}
+fi
 rm -f $vini_dir/genes/cosmic_ids.csv
 rm -f $vini_dir/genes/expressions/* $vini_dir/genes/mutations/* $vini_dir/genes/sequences/* 
 
-echo "Waiting for AlphaFold jobs to finish. This may take a while."
-sh $vini_dir/predict_protein_drug_structures
-sh $vini_dir/wait_until_jobs_finish
-cp $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands/pdb_files
- 
-if  [ $compute_cell_line -eq $FALSE ]     #then we analyse public data
+
+if [ ! -e $vini_dir/ligands/${cell_line} ]
 then
-    if [ $cosmic == y ]
-    then
-        if  [ ! -e $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv ] #get expressions
+    echo -n "Performing cleanup..."
+    while read -r line
+    do
+        drug=`echo $line | awk -F',' '{print $1}'`
+        type=`echo $line | awk -F',' '{print $2}'`
+        if  [ $type == P ]
         then
-            sh get_gene_expressions_from_CosmicDB ${cores}
-            $job_submit $WORKDIR/genex
-            sh wait_until_jobs_finish ; rm $WORKDIR/genex.out
-            cp $vini_dir/database/genes/expression_scores.csv $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
-        else
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv $vini_dir/database/genes
+            echo -n "."
+            rm -f $WORKDIR/AlphaFold_${drug}
+            rm -f $WORKDIR/${drug}.err $WORKDIR/${drug}.out
+            rm -rf $WORKDIR/${drug}
         fi
-        if  [ ! -d $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations ] #get mutations/sequences
-        then
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
-            mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
-            sh get_gene_mutations_from_CosmicDB
-            #python generateMutatedFASTAseq.py #IN ERROR!
-            cp $vini_dir/database/genes/mutations/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations
-            cp $vini_dir/database/genes/sequences/* $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences
-        else
-            rm -f $vini_dir/database/genes/mutations/* $vini_dir/database/genes/sequences/*
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/mutations/* $vini_dir/database/genes/mutations
-            cp $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/sequences/* $vini_dir/database/genes/sequences
-        fi
-    fi
-    sh add_expressions_to_receptors
-    sh add_expressions_to_relations
-else
+    done < $vini_dir/ligands/ligands_list
+    mkdir -p $vini_dir/ligands/${cell_line}
+    echo "Predicting mAb drug structures with AlphaFold. May take up to 2 days, do not interrupt!."
+    sh $vini_dir/predict_protein_drug_structures
+    sh $vini_dir/wait_until_jobs_finish
+fi
+
+cp -r $vini_dir/ligands/${cell_line} $vini_dir/ligands/pdb_files
+
+ 
+if  [ $cosmic == y ]
+then
+    echo "Downloading the data from Cosmic, do not interrupt!"
     sh $vini_dir/download_Cosmic_data
     rm -f $WORKDIR/*err $WORKDIR/*out    
-    if  [ $cosmic == y ]
-    then
-        sh $vini_dir/predict_mutated_genes
-    fi
+    sh $vini_dir/predict_mutated_genes
     echo -n "Adding gene expressions to receptors and relations..."
     sh add_cell_expressions_to_receptors
     sh add_expressions_to_relations
@@ -117,24 +113,11 @@ then
     done < $vini_dir/database/genes/custom_genes
 fi
 
-echo -n "Performing cleanup..."
-while read -r line
-do
-    drug=`echo $line | awk -F',' '{print $1}'`
-    type=`echo $line | awk -F',' '{print $2}'`
-    if  [ $type == P ]
-    then
-        echo -n "."
-        rm -f $WORKDIR/AlphaFold_${drug}
-        rm -f $WORKDIR/${drug}.err $WORKDIR/${drug}.out
-        rm -rf $WORKDIR/${drug}
-    fi
-done < $vini_dir/ligands/ligands_list
 
-while read -r line
+while read -r line  #Cleanup
 do
     receptor=`echo $line | awk '{print $3}'`
-    state=`echo $line | awk '{print $5}'`
+    state=`echo $line | awk '{print $4}'`
     if  [ $state == W ]
     then
         echo -n "."
@@ -178,6 +161,7 @@ done < $WORKDIR/receptors_contracted
 conda deactivate
 
 i=1
+rm -f $WORKDIR/ligands_stage/*
 while  read -r line                                               #Copy ligand files to the stage
 do
     drug=`echo $line | awk -F',' '{print $1}'`
@@ -186,8 +170,6 @@ do
     echo "Copying "${drug}" structure to the stagging area."
     if  [ $type == S ]
     then
-        echo "drug: $drug type: $type "
-        cp $vini_dir/ligands/sdf_files/"${drug}".sdf $WORKDIR/ligands_stage/ligand_${lig_index}.sdf
         cp $vini_dir/ligands/pdb_files/"${drug}".pdb $WORKDIR/ligands_stage/ligand_${lig_index}.pdb
         cp $vini_dir/ligands/pdbqt_files/"$drug".pdbqt $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt
     else
@@ -196,8 +178,6 @@ do
     let i++
 done < $vini_dir/ligands/ligands_list
 
-rm -f $WORKDIR/SLEM_values
-rm -f $WORKDIR/${CANCER_PATHWAY}_results/*
 for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
 do
     sed -i '/\btherapy_level\b/d' $vini_dir/globals
@@ -217,4 +197,5 @@ fi
 cp $vini_dir/ligands/ligands_list.orig $vini_dir/ligands/ligands_list #returning the original list of drugs
 
 end_date=`date`
+rm $WORKDIR/restartfile
 echo "Analysis completed at"  $end_date
