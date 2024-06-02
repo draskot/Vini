@@ -49,6 +49,7 @@ fi
 SECONDS=$NULL
 
 rm -f $WORKDIR/dock_id_list
+rm -f $WORKDIR/SLEM_id_list
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
@@ -253,16 +254,12 @@ do
                      fi
                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                  chmod u+x dock
-                 #${job_submit} dock
                  dock_id=$(sbatch dock)
                  dock_id=`echo ${dock_id} | awk '{print $4}'`
                  echo "$M $L $J $I ${dock_id}" >> $WORKDIR/dock_id_list
 
                  echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
-
-                 #sh $vini_dir/wait_until_jobs_finish
-
                  
                  cd $WORKDIR
                  echo ${target_dir} > target_dir
@@ -296,13 +293,9 @@ do
                  echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
                  cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
                  chmod u+x                                                      ${target_dir}/compute_SLEM
-
-                 #${job_submit}                                                 ${target_dir}/compute_SLEM ${target_dir} ${WORKDIR} $M $L $J $I
-
                  input_file="$WORKDIR/dock_id_list" #generate sbatch command from $WORKDIR/dock_id_list
                  sh $vini_dir/generate_sbatch_command.sh "$input_file" "$target_dir" > SLEM
                  chmod u+x SLEM
-                 sh $vini_dir/wait_until_jobs_finish
                  ./SLEM
                  let ligand_number++
              done   #end of 4thloop
@@ -310,18 +303,7 @@ do
     done            #end of 2nd loop
 done                #end of 1st loop
 
-sleep 4
-sh $vini_dir/wait_until_jobs_finish
 
-if  [ $cosmic == y ] ; then
-    exp=exp
-else
-    exp=noexp
-fi
-
-cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
-
-echo "Finalizing SLEM lists."
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
 echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
@@ -333,6 +315,15 @@ echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
+echo "sleep 4"                                       >> $WORKDIR/postproc
+echo "if  [ $cosmic == y ]"                          >> $WORKDIR/postproc
+echo "then"                                          >> $WORKDIR/postproc
+echo "    exp=exp"                                   >> $WORKDIR/postproc
+echo "else"                                          >> $WORKDIR/postproc
+echo "    exp=noexp"                                 >> $WORKDIR/postproc
+echo "fi"                                            >> $WORKDIR/postproc
+echo "cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}" >> $WORKDIR/postproc
+echo "Finalizing SLEM lists."                        >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
 echo "if  [ $therapy_level -ne $ONES ]"              >> $WORKDIR/postproc
@@ -340,8 +331,9 @@ echo "then"                                          >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_list"       >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_named_list" >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
+echo "Done. The results are in $WORKDIR/${CANCER_PATHWAY}_results directory." >> $WORKDIR/postproc
 chmod u+x                                               $WORKDIR/postproc
-$job_submit -Q                                          $WORKDIR/postproc
-sh $vini_dir/wait_until_jobs_finish
 
-echo "Done. The results are in $WORKDIR/${CANCER_PATHWAY}_results directory."
+sh $vini_dir/generate_postproc_job.sh $WORKDIR/SLEM_id_list $WORKDIR/postproc > POSTPROC
+chmod u+x POSTPROC
+./POSTPROC
