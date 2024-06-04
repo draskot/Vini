@@ -93,7 +93,7 @@ else
     echo "SLURM" > $WORKDIR/scheduler
     sh $vini_dir/set_partitions
     default=`cat cpu_partition`
-    read -e -p "Enter name of partition Vini will use (press enter to accept the default):" -i "$default" active_partition
+    read -e -p "Enter name of partition Vini will use (press enter to accept the default): " -i "$default" active_partition
     echo $active_partition > active_partition
     echo "export active_partition=${active_partition}" >> $vini_dir/globals
     echo $JSS > $WORKDIR/JSS
@@ -116,7 +116,7 @@ else
         job=`echo $line | awk '{print $1}'`
         $job_cancel $job
     done
-    sh $vini_dir/wait_until_jobs_finish
+    #sh $vini_dir/wait_until_jobs_finish
 fi
 rm -f jobs
 
@@ -134,6 +134,13 @@ partition=`cat active_partition`
 
 walltime=60   #max time is 60 minutes
 
+read -e -p "Restarting Vini from the previous restart point (y/n)? Press enter to accept default: " -i "n" restart
+if  [ $restart == n ]
+then
+
+    > $WORKDIR/dock_id_list  #Clear precedence lists
+    > $WORKDIR/slem_id_list
+    > $WORKDIR/slem_id_list
 
 if [ -e $WORKDIR/${partition}_nodetest ]
 then
@@ -183,7 +190,7 @@ cores=`cat ${partition}_cores`
 read -e -p "Vini uses Autodock Vina in its calculations. Enter the number of threads per node for Autodock Vina. Press enter to accept the default: " -i "48" threads
 echo "export threads=$threads" >> globals
 
-read -e -p "Enter the maximum number of threads Vini can use at the same time. Press enter to accept the default: " -i "32000" maxcores
+read -e -p "Enter the maximum number of threads Vini can use at the same time. Press enter to accept the default: " -i "500000" maxcores
 maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
 max_jobs=`echo $maxcores $threads | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
@@ -221,9 +228,10 @@ sh $vini_dir/renew_Drugbank_data  #update drug?links.csv file
 cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.orig #saving the original list of drugs
 
 sh $vini_dir/prepare_ligands_list
-sh $vini_dir/prepare_small_drug_structures                 #prepare pdb files for Rosetta docking
-cp $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands
+sh $vini_dir/prepare_small_drug_structures                
+cp -r $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands/pdb_files
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
+
 
 
 echo "AlphaFold will be used for protein structures prediction."
@@ -233,7 +241,7 @@ echo "export AlphaFold_base=full_dbs" >> $vini_dir/globals
 echo "export cpus=128" >> $vini_dir/globals
 echo "export partition=${active_partition}" >> $vini_dir/globals
 
-read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "y" cosmic
+read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "n" cosmic
 
 if  [ $cosmic == "y" ]
 then
@@ -348,6 +356,7 @@ then
             rm -rf $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
         fi
     fi
+
     echo "export cell_line=${cell_line}" >> $vini_dir/globals
     echo "Creating ligands_list file with drugs in NCI-60 database."
     source $vini_dir/globals
@@ -416,12 +425,21 @@ if  [ $yesno == n ]
 then
     uname -n > node
     node=`cat node`
-    echo "Starting drug discovery on $node"
-    echo "Vini will now run in the background. You can follow the progress by inspecting the nohup.out file in this folder."
+    echo -n "Starting Vini in the background. You can follow the progress by inspecting the file nohup.out in the folder " ; pwd
     nohup ./VelikaVini &
     echo $! > masterpid
     masterpid=`cat masterpid`
-    echo -n "If you want to stop Vini, execute kill -9 $masterpid from the login node $node"
+    echo -n "If you want to stop Vini, execute kill -9 $masterpid on the node $node"
 else
     ./VelikaVini
+fi
+
+else
+    uname -n > node
+    node=`cat node`
+    echo -n "Restarting Vini in the background. You can follow the progress by inspecting the nohup.out file in the folder " ; pwd
+    rm -f $WORKDIR/restartfie
+    nohup ./malavini &
+    echo $! > masterpid
+    echo -n "If you want to stop Vini, execute kill -9 $masterpid on the node $node"
 fi

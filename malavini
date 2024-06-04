@@ -1,7 +1,6 @@
 source $vini_dir/globals
 
 
-
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
 partition=`cat cpu_partition`
@@ -9,7 +8,6 @@ walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we a
 excluded_nodes=`cat excluded_${partition}_nodes`
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
-
 
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
 cd $WORKDIR
@@ -48,9 +46,6 @@ fi
  
 SECONDS=$NULL
 
-rm -f $WORKDIR/dock_id_list
-rm -f $WORKDIR/SLEM_id_list
-
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
 for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
@@ -81,24 +76,12 @@ do
                      mkdir -p $WORKDIR/$comp_index
                      cd $WORKDIR/$comp_index   #move to the working area
                      rm -rf *
-
-                     echo "#!/bin/bash"                                                            > dock  
-                     echo "#SBATCH --time="$walltime                                              >> dock
-                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
-                     echo "#SBATCH --partition="$partition                                        >> dock
-                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
-                     echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
-                     echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
-                     echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
-                     echo "#SBATCH --nodes=1"                                                     >> dock
-
                      if [ $drugtype == P ] #get ligand
                      then
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                      else
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./
                      fi
-
                      if  [ ! -e $comp_source/complex_${comp_index}.pdb ]
                      then
                          echo "ERROR" > $target_dir/log_${comp_index}
@@ -107,14 +90,22 @@ do
                          cp $vini_dir/modify_chain_id.py $vini_dir/update_pdb.py ./
                          if  [ $drugtype == S ]
                          then                                               #drug is a small molecule - using Vina or ADT
-                             echo "#SBATCH --ntasks=1"                                                   >> dock
-                             echo "#SBATCH --cpus-per-task="$threads                                     >> dock
-                             echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
-			     
                              UNKN1=`grep -w PT ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              UNKN2=`grep -w B ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              if  [[ -z $UNKN1 ]] && [[ -z $UNKN2 ]] #No metal ions, using Autodock Vina
                              then
+                                 echo "#!/bin/bash"                                                            > dock  
+                                 echo "#SBATCH --time="$walltime                                              >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                 echo "#SBATCH --partition="$partition                                        >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                 echo "#SBATCH --nodes=1"                                                     >> dock
+                                 echo "#SBATCH --ntasks=1"                                                    >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> dock
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
@@ -146,7 +137,18 @@ do
                                  else  
                                      grep -w B $vini_dir/AD4_parameters_for_metal_ions > param_file
                                  fi
-
+                                 echo "#!/bin/bash"                                                            > dock  
+                                 echo "#SBATCH --time="$walltime                                              >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                 echo "#SBATCH --partition="$partition                                        >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                 echo "#SBATCH --nodes=1"                                                     >> dock
+                                 echo "#SBATCH --ntasks=1"                                                   >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                     >> dock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.gpf" >> dock
                                  echo "echo "parameter_file param_file" > tmp"                                      >> dock
                                  echo "cat complex_${comp_index}.gpf >> tmp"                                        >> dock
@@ -179,12 +181,20 @@ do
                              grep HETATM complex_${comp_index}.pdb > tmp
                              if  [ -s tmp ]             #if complex is a compound swap ligand_receptor and run Vina
                              then                                         
+                                 echo "#!/bin/bash"                                                            > dock  
+                                 echo "#SBATCH --time="$walltime                                              >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                 echo "#SBATCH --partition="$partition                                        >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                 echo "#SBATCH --nodes=1"                                                     >> dock
                                  echo "#SBATCH --ntasks=1"                                                    >> dock
                                  echo "#SBATCH --cpus-per-task="$threads                                      >> dock
-
-                                 mv complex_${comp_index}.pdb tmp    
-                                 mv ligand_${lig_index}.pdb complex_${comp_index}.pdb
-                                 mv tmp ligand_${lig_index}.pdb
+                                 echo "mv complex_${comp_index}.pdb tmp"                                      >> dock
+                                 echo "mv ligand_${lig_index}.pdb complex_${comp_index}.pdb"                  >> dock
+                                 echo "mv tmp ligand_${lig_index}.pdb"                                        >> dock
                                  echo "touch ${target_dir}/Vina"                                              >> dock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
@@ -212,18 +222,26 @@ do
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
                              else                                             #using Rosetta
-                                 cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./
-                                 cp $vini_dir/analyze_chains.py ./
-                                 cp $ROSETTA_TOOLS/amino_acids.py ./
-                                 cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
-                                 source $INSTALL/miniconda2/bin/activate
-                                 python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
-                                 mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
-                                 conda deactivate
-                                 python3 analyze_chains.py ${comp_index} ${lig_index}
-
+                                 echo "#!/bin/bash"                                                            > dock  
+                                 echo "#SBATCH --time="$walltime                                              >> dock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                 echo "#SBATCH --partition="$partition                                        >> dock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                 echo "#SBATCH --nodes=1"                                                     >> dock
                                  echo "#SBATCH --ntasks-per-node="$threads                                     >> dock
                                  echo "#SBATCH --cpus-per-task=1"                                              >> dock
+                                 echo "cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./"                 >> dock
+                                 echo "cp $vini_dir/analyze_chains.py ./"                                      >> dock
+                                 echo "cp $ROSETTA_TOOLS/amino_acids.py ./"                                    >> dock
+                                 echo "cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./"                            >> dock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                >> dock
+                                 echo "python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain" >> dock
+                                 echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"          >> dock
+                                 echo "conda deactivate"                                                       >> dock
+                                 echo "python3 analyze_chains.py ${comp_index} ${lig_index}"                   >> dock
                                  echo "module purge"                                                           >> dock
                                  echo "module load libGLU/9.0.2-GCCcore-11.3.0"                                >> dock
                                  echo "module load OpenMPI/4.1.1-GCC-11.2.0"                                   >> dock
@@ -254,9 +272,15 @@ do
                      fi
                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                  chmod u+x dock
-                 dock_id=$(sbatch dock)
-                 dock_id=`echo ${dock_id} | awk '{print $4}'`
-                 echo "$M $L $J $I ${dock_id}" >> $WORKDIR/dock_id_list
+
+                 input_list=NONE                                    #generate sbatch command
+                 out_list=$WORKDIR/dock_id_list
+                 slurm_script=dock
+                 output_command_file=$WORKDIR/dock
+                 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 chmod u+x $WORKDIR/dock
+                 sh $WORKDIR/dock                                   #submit 
+                 
 
                  echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
@@ -266,8 +290,7 @@ do
                  echo ${WORKDIR} > working_dir
                  echo $M > M; echo $L > L; echo $J > J; echo $I > I
 
-                 echo "Computing SLEM..."
-                 echo ${therapy_level} > $WORKDIR/therapy_level    #input for the create_energy_binding_matrix.py script 
+                 echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
                  rm -f ${target_dir}/vec*
                  echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM
                  echo "#SBATCH --time="$walltime                             >> ${target_dir}/compute_SLEM
@@ -293,16 +316,20 @@ do
                  echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
                  cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
                  chmod u+x                                                      ${target_dir}/compute_SLEM
-                 input_file="$WORKDIR/dock_id_list" #generate sbatch command from $WORKDIR/dock_id_list
-                 sh $vini_dir/generate_sbatch_command.sh "$input_file" "$target_dir" > SLEM
-                 chmod u+x SLEM
-                 ./SLEM
+
+                 input_list=$WORKDIR/dock_id_list                   #generate sbatch command and submit job
+                 out_list=$WORKDIR/slem_id_list
+                 slurm_script=${target_dir}/compute_SLEM
+                 output_command_file=$WORKDIR/SLEM
+                 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 chmod u+x $WORKDIR/SLEM
+                 sh $WORKDIR/SLEM                                   
+
                  let ligand_number++
              done   #end of 4thloop
          done       #end of 3rd loop
     done            #end of 2nd loop
 done                #end of 1st loop
-
 
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
@@ -323,17 +350,28 @@ echo "else"                                          >> $WORKDIR/postproc
 echo "    exp=noexp"                                 >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
 echo "cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}" >> $WORKDIR/postproc
-echo "Finalizing SLEM lists."                        >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
+
 echo "if  [ $therapy_level -ne $ONES ]"              >> $WORKDIR/postproc
 echo "then"                                          >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_list"       >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_named_list" >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
-echo "Done. The results are in $WORKDIR/${CANCER_PATHWAY}_results directory." >> $WORKDIR/postproc
-chmod u+x                                               $WORKDIR/postproc
 
-sh $vini_dir/generate_postproc_job.sh $WORKDIR/SLEM_id_list $WORKDIR/postproc > POSTPROC
-chmod u+x POSTPROC
-./POSTPROC
+echo "cp $vini_dir/ligands/ligands_list.orig $vini_dir/ligands/ligands_list" >> $WORKDIR/postproc
+echo "if  [[ ${compute_cell_line} -eq $TRUE ]] && [[ ${max_therapy_level} -eq $ONES ]]" >> $WORKDIR/postproc
+echo "then"                                          >> $WORKDIR/postproc
+echo "    if  [ $NCI60 == yes ]"                     >> $WORKDIR/postproc
+echo "    then"                                      >> $WORKDIR/postproc
+echo "        sh $vini_dir/validate_cell_line"       >> $WORKDIR/postproc
+echo "    fi"                                        >> $WORKDIR/postproc
+echo "fi"                                            >> $WORKDIR/postproc
+
+input_list=$WORKDIR/slem_id_list                   #generate sbatch command and submit job
+out_list=$WORKDIR/postproc_id_list
+slurm_script=$WORKDIR/postproc
+output_command_file=$WORKDIR/POSTPROC
+sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+chmod u+x $WORKDIR/POSTPROC
+sh $WORKDIR/POSTPROC                                   

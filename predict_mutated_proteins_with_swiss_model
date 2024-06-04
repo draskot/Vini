@@ -1,0 +1,67 @@
+#https://swissmodel.expasy.org/coreapi/
+#input params: fasta_file, output folder where predicted pdb file is placed 
+#output: $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb
+
+echo "Activating conda, please wait.!"
+source $INSTALL/miniconda3/bin/activate
+conda activate env310
+echo "done."
+
+fasta_file=`cat fasta_file`
+outdir=`cat outdir`
+uniprot_id=`basename ${fasta_file} .fasta`
+
+six=6
+
+size=${#uniprot_id}
+if  [ $size -eq $six ]
+then
+    sed '1d' ${fasta_file} > ${uniprot_id}.fasta
+    tr -d '\n' < ${uniprot_id}.fasta > tmp
+    cat tmp | awk '{ gsub(/ /,""); print }' > ${uniprot_id}.fasta
+    fasta_sequence=`cat ${uniprot_id}.fasta`
+else
+    fasta_sequence=`cat ${fasta_file}`
+fi
+
+project_id=${uniprot_id}
+
+uname=`cat $WORKDIR/SWISS-MODEL_email`
+pwd=`cat $WORKDIR/SWISS-MODEL_password`
+
+coreapi get https://swissmodel.expasy.org/coreapi/ > tmp  #Authorization
+coreapi action api-token-auth create -p username=$uname -p password=$pwd  > tmp
+ 
+token=`grep token tmp | awk '{print $2}'`
+echo $token | sed 's/^.//'  > tmp
+token=`cat tmp`
+echo "coreapi credentials add swissmodel.expasy.org  \"Token" $token > tom
+sh tom
+
+echo "coreapi action automodel create -p target_sequences="$fasta_sequence "-p project_title="${project_id} > tom
+sh tom > tmp
+
+project_id=`grep project_id tmp | awk '{print $2}'`
+echo $project_id | sed 's/.$//' > project_id
+project_id=`cat project_id | sed 's/^.//;s/.$//'`
+
+while true
+do
+    echo "coreapi action project models summary read -p project_id"=${project_id} > tom
+    sh tom > tmp
+    grep COMPLETED tmp > tmp2
+    if [ -s tmp2 ] ; then
+       break
+    fi
+    sleep 4
+done
+
+grep model_id tmp > tmp2
+model_id=`head -1 tmp2 | awk '{print $2}'`
+echo $model_id | sed 's/.$//' > tmp
+model_id=`cat tmp | sed 's/^.//;s/.$//'`
+
+echo "coreapi action project models read -p project_id="${project_id}  "-p model_id="${model_id}  > tom
+sh tom > ${outdir}/${uniprot_id}.pdb
+rm -f tmp tmp2 tom project_id ${uniprot_id}.fasta
+conda deactivate

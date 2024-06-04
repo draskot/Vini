@@ -1,0 +1,20 @@
+
+echo -n"downloading and uncompressing complete gene expression file from COSMIC. Please wait, may take a while..."
+email=`cat $WORKDIR/COSMIC_email` 
+pwd=`cat $WORKDIR/COSMIC_password`
+
+curl -o link -s -u "$email:$pwd" https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v97/CosmicCompleteGeneExpression.tsv.gz
+
+cat link | cut -c 9- > tmp
+cat tmp | rev | cut -c3- | rev > link
+
+link=`cat link`
+
+echo "curl -o CosmicCompleteGeneExpression.tsv.gz \"$link\"" > get
+
+chmod u+x get
+
+sh get
+
+gzip -d CosmicCompleteGeneExpression.tsv.gz
+echo "done."

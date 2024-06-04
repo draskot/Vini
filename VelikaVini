@@ -89,11 +89,12 @@ then
     sh $vini_dir/download_Cosmic_data
     rm -f $WORKDIR/*err $WORKDIR/*out    
     sh $vini_dir/predict_mutated_genes
-    echo -n "Adding gene expressions to receptors and relations..."
-    sh add_cell_expressions_to_receptors
-    sh add_expressions_to_relations
-    echo "done."
 fi
+echo -n "Adding gene expressions to receptors and relations..."
+sh add_cell_expressions_to_receptors
+sh add_expressions_to_relations
+echo "done."
+
 
 if [ $kit == y ]
 then
@@ -184,18 +185,3 @@ do
     echo "export therapy_level=${therapy_level}" >> $vini_dir/globals
     sh $vini_dir/malavini
 done
-
-if  [[ ${compute_cell_line} -eq $TRUE ]] && [[ ${max_therapy_level} -eq $ONES ]]    #prepare the data for Pearson analysis
-then 
-    if  [ $NCI60 == yes ]
-    then
-        echo "Validating results against NCI-60 data..."
-        sh $vini_dir/validate_cell_line
-    fi
-fi
-
-cp $vini_dir/ligands/ligands_list.orig $vini_dir/ligands/ligands_list #returning the original list of drugs
-
-end_date=`date`
-rm $WORKDIR/restartfile
-echo "Analysis completed at"  $end_date
