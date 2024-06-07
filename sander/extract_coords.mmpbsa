@@ -1,0 +1,36 @@
+@GENERAL
+
+PREFIX                  snapshot
+PATH                    ./
+COMPLEX                 1
+RECEPTOR                1
+LIGAND                  1
+COMPT                   ./COMP.prmtop
+RECPT                   ./REC.prmtop
+LIGPT                   ./LIG.prmtop
+GC                      1
+AS                      0
+DC                      0
+MM                      0
+GB                      0
+PB                      0
+MS                      0
+NM                      0
+@MAKECRD
+BOX                     YES
+NTOTAL                  42193
+NSTART                  1
+NSTOP                   200
+NFREQ                   1
+NUMBER_LIG_GROUPS       1
+LSTART                  2622
+LSTOP                   3862
+NUMBER_REC_GROUPS       1
+RSTART                  1
+RSTOP                   2621
+@TRAJECTORY
+TRAJECTORY              ./prod1.mdcrd
+TRAJECTORY              ./prod2.mdcrd
+TRAJECTORY              ./prod3.mdcrd
+TRAJECTORY              ./prod4.mdcrd
+@PROGRAMS

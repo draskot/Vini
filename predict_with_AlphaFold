@@ -67,5 +67,4 @@ echo "fi"                                                               >> $WORK
 chmod u+x $WORKDIR/AlphaFold_${antibody}
 job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
-#sh $vini_dir/submission_script $WORKDIR/AlphaFold_${antibody}
 

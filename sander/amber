@@ -1,0 +1,24 @@
+#!/bin/bash
+#SBATCH --time=2-00:00:00
+#SBATCH --account=r2022r03-224-users
+#SBATCH --partition=cpu
+#SBATCH --nodes=8
+#SBATCH --ntasks=128
+#SBATCH --tasks-per-node=16
+#SBATCH --mem=16GB
+#SBATCH --job-name=sander
+#SBATCH --output=amber.out
+#SBATCH --error=amber.err
+#SBATCH --exclude=cn0053,cn0081,cn0138,cn0139,cn0140,cn0141,cn0144,cn0181,cn0183,cn0203,cn0235,cn0245,cn0260,cn0301,cn0308,cn0310,cn0311,cn0312,cn0321,cn0322,cn0323,cn0324,cn0325,cn0326,cn0327,cn0434,cn0504,cn0505,cn0506,cn0507,cn0521,cn0526,cn0527,cn0528,cn0553,cn0631,cn0632,cn0633,cn0684,cn0687,cn0734,cn0735,cn0750,cn0751,cn0752,cn0753,cn0757,cn0758,cn0759,cn0771,cn0781,cn0782,cn0783,cn0784,cn0786,cn0787,cn0789,cn0848,cn0861,cn0869,cn0935
+module purge
+module load Amber/22.0-foss-2021b-AmberTools-22.3
+mpirun -np 128 sander.MPI -O -i min.in -o min.out -p COMP_solvated.prmtop -c COMP_solvated.inpcrd -r min.rst -ref COMP_solvated.inpcrd
+mpirun -np 128 sander.MPI -O -i heat.in -o heat.out -p COMP_solvated.prmtop -c min.rst -r heat.rst -x heat.mdcrd -ref min.rst
+mpirun -np 128 sander.MPI -O -i density.in -o density.out -p COMP_solvated.prmtop -c heat.rst -r density.rst -x density.mdcrd -ref heat.rst
+mpirun -np 128 sander.MPI -O -i equil.in -o equil.out -p COMP_solvated.prmtop -c density.rst -r equil.rst -x equil.mdcrd
+mpirun -np 128 sander.MPI -O -i prod.in -o prod1.out -p COMP_solvated.prmtop -c equil.rst -r prod1.rst -x prod1.mdcrd
+mpirun -np 128 sander.MPI -O -i prod.in -o prod2.out -p COMP_solvated.prmtop -c prod1.rst -r prod2.rst -x prod2.mdcrd
+mpirun -np 128 sander.MPI -O -i prod.in -o prod3.out -p COMP_solvated.prmtop -c prod2.rst -r prod3.rst -x prod3.mdcrd
+mpirun -np 128 sander.MPI -O -i prod.in -o prod4.out -p COMP_solvated.prmtop -c prod3.rst -r prod4.rst -x prod4.mdcrd
+mpirun -np 4 /cvmfs/sling.si/modules/el7/software/Amber/22.0-foss-2021b-AmberTools-22.3/bin/MMPBSA.py.MPI -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd > progress.log
+DG=`grep DELTA FINAL_RESULTS_MMPBSA.dat | tail -1 | awk '{print $5}'`

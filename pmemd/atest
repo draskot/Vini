@@ -1,0 +1,85 @@
+module load Java/11.0.2
+module --ignore-cache load Amber/22.0-AmberTools-22.3-MPICH-4.1.2
+source /ceph/hpc/software/amber/amber22/amber.sh
+
+
+ONES=1
+tasks=256 
+nodes=16
+tasksPerNode=`echo $tasks $nodes | awk '{print $1 / $2}'`
+mem=${tasksPerNode}GB
+partition=cpu
+
+comp_source=$WORKDIR/05215_data     
+comp_index=001
+lig_index=001
+drug=Aflibercept
+excluded_nodes=`cat $vini_dir/excluded_${partition}_nodes`
+walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
+
+rm -f *err *out *rst
+cp $vini_dir/equil.in $vini_dir/heat.in $vini_dir/density.in $vini_dir/min.in $vini_dir/prod.in ./
+cp $vini_dir/docking.mac ./
+cp $vini_dir/tleap.in $vini_dir/mmpbsa.in  ./
+sed -i -e "s#AMBERHOME#${AMBERHOME}#" tleap.in
+
+
+#cp $comp_source/complex_${comp_index}.pdb receptor.pdb                 #get receptor
+cp $vini_dir/genes/pdb_files/P31213.pdb receptor.pdb                    #get receptor
+
+
+cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./                   #prepare ligand
+fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
+chains=`grep -c ">" ${fasta_file}`
+if  [ $chains -eq $ONES ]
+then
+    java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
+    mv ligand_${lig_index}.pdb_A_to_B.pdb ligand.pdb
+else
+    java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
+    java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
+    mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand.pdb
+fi
+
+reduce -BUILD receptor.pdb > tmp ; mv tmp receptor.pdb
+reduce -BUILD ligand.pdb > tmp ; mv tmp ligand.pdb
+
+echo "docking"
+
+hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log
+
+pdb4amber -i receptor.pdb -o tmp.pdb ; mv tmp.pdb receptor.pdb
+pdb4amber -i ligand.pdb -o tmp.pdb ; mv tmp.pdb ligand.pdb
+pdb4amber -i complex.pdb -o tmp.pdb ; mv tmp.pdb complex.pdb
+
+tleap -s -f tleap.in
+
+awk '/^TER/ && !done {done=1; next} 1' complex.pdb > tmp ; mv tmp complex.pdb
+
+scancel -u $USER
+
+echo "#!/bin/bash"                                                            > amber
+echo "#SBATCH --time="$walltime                                              >> amber
+echo "#SBATCH --account=$SLURMACCT"                                          >> amber
+echo "#SBATCH --partition="$partition                                        >> amber
+echo "#SBATCH --nodes="$nodes                                                >> amber
+echo "#SBATCH --ntasks="$tasks                                               >> amber
+echo "#SBATCH --tasks-per-node="$tasksPerNode                                >> amber
+echo "#SBATCH --mem="$mem                                                    >> amber
+echo "#SBATCH --job-name=amber"                                              >> amber
+echo "#SBATCH --output=amber.out"                                            >> amber
+echo "#SBATCH --error=amber.err"                                             >> amber
+echo "#SBATCH --exclude=${excluded_nodes}"                                   >> amber
+
+echo "mpirun -np $tasks pmemd.MPI -O -i min.in -o min.out -p COMP_solvated.prmtop -c COMP_solvated.inpcrd -r min.rst -ref COMP_solvated.inpcrd" >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i heat.in -o heat.out -p COMP_solvated.prmtop -c min.rst -r heat.rst -x heat.mdcrd -ref min.rst"          >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i density.in -o density.out -p COMP_solvated.prmtop -c heat.rst -r density.rst -x density.mdcrd -ref heat.rst" >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i equil.in -o equil.out -p COMP_solvated.prmtop -c density.rst -r equil.rst -x equil.mdcrd"               >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i prod.in -o prod1.out -p COMP_solvated.prmtop -c equil.rst -r prod1.rst -x prod1.mdcrd"                   >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i prod.in -o prod2.out -p COMP_solvated.prmtop -c prod1.rst -r prod2.rst -x prod2.mdcrd"                   >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i prod.in -o prod3.out -p COMP_solvated.prmtop -c prod2.rst -r prod3.rst -x prod3.mdcrd"                   >> amber
+echo "mpirun -np $tasks pmemd.MPI -O -i prod.in -o prod4.out -p COMP_solvated.prmtop -c prod3.rst -r prod4.rst -x prod4.mdcrd"                   >> amber
+echo "mpirun -np 4 MMPBSA.py.MPI -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd > progress.log" >> amber
+echo "DG=\`grep DELTA FINAL_RESULTS_MMPBSA.dat | tail -1 | awk '{print \$5}'\`" >> amber
+chmod u+x amber
+sbatch amber    #execute

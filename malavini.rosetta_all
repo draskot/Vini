@@ -1,0 +1,400 @@
+NULL=0
+ONES=1
+TWO=2
+ORGANISM=`cat $WORKDIR/ORGANISM`                    #getting the organism type from the main script
+cancer_type=`cat $WORKDIR/cancer_type`              #getting the cancer type from the main script
+CANCER_PATHWAY=$ORGANISM$cancer_type                #setting the cancer pathway
+therapy_level=`cat $WORKDIR/therapy_level`         #therapy level
+compute_cell_line=`cat $WORKDIR/compute_cell_line`
+cosmic=`cat $WORKDIR/cosmic`
+cell_line=`cat cell_line`                  #getting the cell line name
+job_status=`cat job_status`       
+job_submit=`cat job_submit`
+random_affinity=`cat $WORKDIR/random_affinity`
+max_jobs=`cat $WORKDIR/max_jobs` #maximum number of Vina jobs
+MAX_NODES=`cat $WORKDIR/nodes`       #maximum number of compute nodes Vini can use concurrently
+partition=`cat cpu_partition`
+walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
+excluded_nodes=`cat excluded_${partition}_nodes`
+receptors=`wc -l < $WORKDIR/receptors_contracted`
+ligands=`wc -l < $vini_dir/ligands/ligands_list`
+Vina=1
+
+mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
+cd $WORKDIR
+
+L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
+case $therapy_level in                  
+     1) L4=$ligands ;;
+     2) L3=$ligands; L4=$ligands ;;
+     3) L2=$ligands; L3=$ligands; L4=$ligands ;;
+     4) L1=$ligands; L2=$ligands; L3=$ligands; L4=$ligands ;;
+esac
+
+state=`cat $vini_dir/state`                 #setting loop control parameters
+dir=$WORKDIR/${cancer_type}_data 
+if  [ $state == crash ]
+then
+    ligand_number=`grep ligand_number $WORKDIR/restartfile | awk '{print $2}'`
+    Kappa=`grep          I         $WORKDIR/restartfile | awk '{print $2}'`
+    Lambda=`grep         J         $WORKDIR/restartfile | awk '{print $2}'`
+    Mu=`grep             L         $WORKDIR/restartfile | awk '{print $2}'`
+    Nu=`grep             M         $WORKDIR/restartfile | awk '{print $2}'`
+    Xi=$ONES
+    echo "deleting SLEM values after the last checkpoint"
+    MaxSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligands} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
+    NoSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligand_number} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
+    Delete=`echo $MaxSLEMvalues $NoSLEMvalues $ONES | awk '{print $1 - $2 - $3}'`
+    head -$Delete $vini_dir/ligands/ligands_list > $WORKDIR/tmp
+    mv $WORKDIR/tmp $WORKDIR/SLEM_values
+else
+    ligand_number=1                #initializing ligand index
+    Kappa=$ONES
+    Lambda=$ONES
+    Mu=$ONES
+    Nu=$ONES
+    Xi=$ONES
+    #> $WORKDIR/SLEM_values    #delete SLEM values from the previous run
+fi
+ 
+SECONDS=$NULL
+
+echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
+
+for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
+do
+    for (( J=$((Lambda)); J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
+    do
+         for (( L=$((Mu)); L<$((L3+1)); L++ )) #3rd loop -2nd therapy level
+         do
+             for (( M=$((Nu)); M<$((L4+1)); M++ )) #4th loop - M = the number of ligands - 1st therapy level
+             do
+                 printf -v lig_index "%03d" $M  
+                 case $therapy_level in
+                     1) comp_source=$dir;          target_dir=$dir/$M ;;
+                     2) comp_source=$dir/$M;       target_dir=$dir/$M/$L ;;
+                     3) comp_source=$dir/$M/$L;    target_dir=$dir/$M/$L/$J ;;
+                     4) comp_source=$dir/$M/$L/$J; target_dir=$dir/$M/$L/$J/$I ;;
+                 esac
+                 mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
+                 for (( N=$((Xi)); N<$((receptors+1)); N++ )) #5th loop - N is the number of KEGG receptors
+       	         do
+                     printf -v n "%03d" $N
+                     comp_index=$n
+                     conf_index=$comp_index
+                     log_index=$comp_index
+                     line=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
+                     drug=`echo $line | awk -F',' '{print $1}'`
+                     drugtype=`echo $line | awk -F','  '{print $2}'`
+                     mkdir -p $WORKDIR/$comp_index
+                     cd $WORKDIR/$comp_index   #move to the working area
+                     rm -rf *
+                     
+                     if  [ ! -e $comp_source/complex_${comp_index}.pdb ]
+                     then
+                         echo "ERROR" > $target_dir/log_${log_index}
+                     else
+                         cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
+                         cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
+                         cp $ROSETTA_TOOLS/amino_acids.py ./
+                         cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./
+                         
+                         if  [ $drugtype == S ]
+                         then
+                             if  [ $Vina == 1 ]
+                             then
+                                 echo "#!/bin/bash"                                                            > vdock   #run Vina 
+                                 echo "#SBATCH --time="$walltime                                              >> vdock
+                                 echo "#SBATCH --account=$SLURMACCT"                                          >> vdock
+                                 echo "#SBATCH --partition="$partition                                        >> vdock
+                                 echo "#SBATCH --nodes=1"                                                     >> vdock
+                                 echo "#SBATCH --ntasks=1"                                                    >> vdock
+                                 echo "#SBATCH --cpus-per-task="$threads                                      >> vdock
+                                 echo "#SBATCH --job-name=V${M}.${N}"                                         >> vdock
+                                 echo "#SBATCH --output=V${M}.${N}.out"                                       >> vdock
+                                 echo "#SBATCH --error=V${M}.${N}.err"                                        >> vdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> vdock
+                                 echo "touch ${target_dir}/Vina"                                              >> vdock 
+                                 echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> vdock
+                                 echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> vdock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt"                                                                                                     >> vdock
+                                 echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt"                                                                                                         >> vdock
+                                 echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> vdock
+                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out COMPLEX.pdbqt > log_${comp_index}"                                                                                                             >> vdock
+                                 echo "if  [ -e COMPLEX.pdbqt ]"                                               >> vdock
+                                 echo "then"                                                                   >> vdock                 
+                                 echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb" >> vdock
+                                 echo "    echo \`cat log_${comp_index} | head -39 | tail -1 | awk '{print \$2}'\` > $target_dir/Vlog_${comp_index}"                                                                                                   >> vdock
+                                 echo "else"                                                                   >> vdock
+                                 echo "    echo ERROR > $target_dir/Vlog_${comp_index}"                        >> vdock
+                                 echo "fi"                                                                     >> vdock
+                                 chmod u+x                                                                       vdock
+                                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                                 ${job_submit} -Q                                                                vdock
+                                 sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
+                             else
+                                 echo "#!/bin/bash"                                                                    > rdock
+                                 echo "#SBATCH --time=$walltime"                                                      >> rdock
+                                 echo "#SBATCH --account=$SLURMACCT"                                                  >> rdock
+                                 echo "#SBATCH --partition=$partition"                                                >> rdock
+                                 echo "#SBATCH --nodes=1"                                                             >> rdock
+                                 echo "#SBATCH --ntasks=1"                                                            >> rdock
+                                 echo "#SBATCH --cpus-per-task="$threads                                              >> rdock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                                 >> rdock
+                                 echo "#SBATCH --output=R${M}.${N}.out"                                               >> rdock
+                                 echo "#SBATCH --error=R${M}.${N}.err"                                                >> rdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                           >> rdock 
+                                 echo "if  [ ! -s tmp ]"                                                              >> rdock
+                                 echo "then"                                                                          >> rdock
+                                 echo "    sed -i '$ d' complex_${comp_index}.pdb"                                    >> rdock
+                                 echo "    grep -w TER complex_${comp_index}.pdb > tmp"                               >> rdock
+                                 echo "if  [ -s tmp ] ; then "                                                        >> rdock
+                                 echo "echo \"TER                                                                            \" >> complex_${comp_index}.pdb" >> rdock
+                                 echo "fi"                                                                            >> rdock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> rdock
+                                 echo "python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain"        >> rdock
+                                 echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"                 >> rdock
+                                 echo "conda deactivate"                                                              >> rdock
+                                 echo "fi"                                                                            >> rdock
+                                 echo "cp $vini_dir/dock.xml $vini_dir/docking.mac $vini_dir/flag_ligand_docking ./"  >> rdock
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                                     >> rdock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> rdock
+                                 echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames $WORKDIR/ligands_stage/ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> rdock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> rdock
+                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                                           >> rdock
+                                 echo "conda deactivate"                                                              >> rdock
+                                 echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> rdock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> rdock
+                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> rdock
+                                 echo "grep -v REMARK complex.pdb > tmp"                                              >> rdock
+                                 echo "sed -i '$ d' tmp"                                                              >> rdock
+                                 echo "echo  \"TER                                                                             \" >> tmp" >> rdock
+                                 echo "mv tmp crystal_complex.pdb"                                                    >> rdock
+                                 echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb" >> rdock
+                                 echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                            >> rdock
+                                 echo "if  [ $genetype == COMPND ]"                                                   >> rdock
+                                 echo "then"                                                                          >> rdock
+                                 echo "    echo ERROR > $target_dir/Rlog_${comp_index}"                               >> rdock
+                                 echo "else"                                                                          >> rdock
+                                 echo "    if [ -e ROSETTA_CRASH.log ]"                                               >> rdock       
+                                 echo "    then"                                                                      >> rdock
+                                 echo "        echo ERROR > $target_dir/Rlog_${comp_index}"                           >> rdock
+                                 echo "    else"                                                                      >> rdock
+                                 echo "        cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb"                                                                                                                   >> rdock
+                                 echo "        $ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_ligand_${lig_index}_0001.pdb -interface A_X -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
+      
+                                 echo "        score=\`tail -1 interface.sc | awk '{print \$6}'\`"                    >> rdock
+                                 echo "        echo \${score} > $target_dir/Rlog_${comp_index}"                       >> rdock
+                                 echo "    fi"                                                                        >> rdock
+                                 echo "fi"                                                                            >> rdock
+                                 chmod u+x                                                                               rdock
+                                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                                 ${job_submit} -Q                                                                        rdock
+                                 sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
+                             fi
+                         else                             #drug is a mab      
+                             if [ $genetype == COMPND ]
+                             then 
+                                 cp $vini_dir/dock.xml $vini_dir/flag_ligand_docking $vini_dir/docking.mac  ./ 
+                                 cp complex_${comp_index}.pdb tmp                   #swapping receptor and ligand
+                                 cp ligand_${lig_index}.pdb complex_${comp_index}.pdb
+                                 cp tmp ligand_${lig_index}.pdb
+                                 echo "#!/bin/bash"                                                                    > rdock
+                                 echo "#SBATCH --time=$walltime"                                                      >> rdock
+                                 echo "#SBATCH --account=$SLURMACCT"                                                  >> rdock
+                                 echo "#SBATCH --partition=$partition"                                                >> rdock
+                                 echo "#SBATCH --nodes=1"                                                             >> rdock
+                                 echo "#SBATCH --ntasks=1"                                                            >> rdock
+                                 echo "#SBATCH --cpus-per-task="$threads                                              >> rdock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                                 >> rdock
+                                 echo "#SBATCH --output=R_${M}.${N}.out"                                              >> rdock
+                                 echo "#SBATCH --error=R_${M}.${N}.err"                                               >> rdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                           >> rdock
+                                 echo "obabel -ipdb ligand_${lig_index}.pdb -osdf -O ligand_${lig_index}.sdf -h"      >> rdock
+                                 echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames ligand_${lig_index}.sdf -conformers_single_file ligand_${lig_index}_conformers.sdf -max_iterations 500 -top_models 50" >> rdock
+                                 echo "source $INSTALL/miniconda2/bin/activate"                                       >> rdock
+                                 echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand_${lig_index} --clobber --conformers-in-one-file ligand_${lig_index}_conformers.sdf"                                            >> rdock
+                                 echo "conda deactivate"                                                              >> rdock
+                                 echo "sed -i -e 's/LIG.params/ligand_${lig_index}.params/g' flag_ligand_docking"     >> rdock
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                                     >> rdock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                         >> rdock
+                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"                >> rdock
+                                 echo "grep -v REMARK complex.pdb > tmp"                                              >> rdock
+                                 echo "sed -i '$ d' tmp"                                                              >> rdock
+                                 echo "echo  \"TER                                                                             \" >> tmp" >> rdock
+                                 echo "mv tmp crystal_complex.pdb"                                                    >> rdock
+                                 echo "cat complex_${comp_index}.pdb ligand_${lig_index}.pdb > complex_${comp_index}_ligand_${lig_index}.pdb"                                                                                                            >> rdock
+                                 echo "rosetta_scripts.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_ligand_${lig_index}.pdb -multithreading:total_threads 48 @flag_ligand_docking"                                                       >> rdock
+                                 echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
+                                 echo "then"                                                                   >> rdock
+                                 echo "    if  [ -e score.sc ]"                                                >> rdock
+                                 echo "    then"                                                               >> rdock
+                                 echo "        score=\`tail -1 score.sc | awk '{print \$48}'\`"                >> rdock
+                                 echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
+                                 echo "    else"                                                               >> rdock
+                                 echo "        echo "ERROR" > $target_dir/log_${comp_index}"                   >> rdock
+                                 echo "    fi"                                                                 >> rdock
+                                 echo "else"                                                                   >> rdock
+                                 echo "    cp complex_${comp_index}_ligand_${lig_index}_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
+                                 echo "    score=\`tail -1 score.sc | awk '{print \$48}'\`"                    >> rdock
+                                 echo "    echo \${score} > $target_dir/log_${comp_index}"                     >> rdock
+                                 echo "fi"                                                                     >> rdock
+                                 chmod u+x                                                                        rdock     
+                                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                                 ${job_submit} -Q                                                                 rdock
+                                 sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
+                             else
+                                 if  [ ! -s tmp ]
+                                 then
+                                     sed -i '$ d' complex_${comp_index}.pdb
+                                     grep -w TER complex_${comp_index}.pdb > tmp
+                                     if  [ -s tmp ]
+                                     then
+                                         echo "TER                                                                            " >> complex_${comp_index}.pdb
+                                     fi
+                                     source $INSTALL/miniconda2/bin/activate
+                                     python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain
+                                     mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb
+                                     conda deactivate
+                                 fi
+                                 fasta_file=${vini_dir}/ligands/fasta_files/${drug}.fasta #set chains ID in ligand
+                                 chains=`grep -c ">" ${fasta_file}`     
+                                 cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./
+                                 if  [ $chains -eq $ONES ]
+                                 then
+                                     java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb A B
+                                     mv ligand_${lig_index}.pdb_A_to_B.pdb ligand_${lig_index}.pdb
+                                     sed -i -e "s/chains/B/" flag_global_docking
+                                 else
+                                     if  [ $chains -eq $TWO ]
+                                     then
+                                         java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb B Z
+                                         java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ligand_${lig_index}.pdb_B_to_Z.pdb A Q
+                                         mv ligand_${lig_index}.pdb_B_to_Z.pdb_A_to_Q.pdb ligand_${lig_index}.pdb
+                                         sed -i -e "s/chains/BC/" flag_global_docking
+                                     else
+                                         sed -i -e "s/chains/BCDEFGHIJK/" flag_global_docking       #This for Alemtuzumab only
+                                     fi
+                                 fi
+                                 echo "#!/bin/bash"                                                             > rdock
+                                 echo "#SBATCH --time=$walltime"                                               >> rdock
+                                 echo "#SBATCH --account=$SLURMACCT"                                           >> rdock
+                                 echo "#SBATCH --partition=$partition"                                         >> rdock
+                                 echo "#SBATCH --nodes=1"                                                      >> rdock
+                                 echo "#SBATCH --ntasks=1"                                                     >> rdock
+                                 echo "#SBATCH --cpus-per-task="$threads                                       >> rdock
+                                 echo "#SBATCH --job-name=R${M}.${N}"                                          >> rdock
+                                 echo "#SBATCH --output=R${M}.${N}.out"                                        >> rdock
+                                 echo "#SBATCH --error=R_${M}.${N}.err"                                        >> rdock
+                                 echo "#SBATCH --exclude=${excluded_nodes}"                                    >> rdock 
+                                 echo "cp complex_${comp_index}.pdb receptor.pdb"                              >> rdock
+                                 echo "cp ligand_${lig_index}.pdb ligand.pdb"                                  >> rdock
+                                 echo "cp $vini_dir/docking.mac ./"                                            >> rdock
+                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> rdock
+                                 echo "cp complex.pdb complex_${comp_index}.pdb"                               >> rdock
+                                 echo "relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads 48 @flag_input_relax"                                                                                                >> rdock
+                                 echo "docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads 48 @flag_global_docking"                                                                             >> rdock
+                                 echo "if [ -e ROSETTA_CRASH.log ]"                                            >> rdock
+                                 echo "then"                                                                   >> rdock
+                                 echo "    if  [ -e score.sc ]"                                                >> rdock
+                                 echo "    then"                                                               >> rdock
+                                 echo "        score=\`tail -1 score.sc | awk '{print \$2}'\`"                 >> rdock
+                                 echo "        echo \${score} > $target_dir/log_${comp_index}"                 >> rdock
+                                 echo "    else"                                                               >> rdock
+                                 echo "        echo "ERROR" > $target_dir/log_${comp_index}"                   >> rdock
+                                 echo "    fi"                                                                 >> rdock
+                                 echo "else"                                                                   >> rdock
+                                 echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> rdock
+                                 echo "    string=\`grep partners flag_global_docking\`"                       >> rdock
+                                 echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> rdock
+                                 echo "    $ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> rdock
+                                 echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> rdock
+                                 echo "    echo \${score} > $target_dir/log_${comp_index}"                     >> rdock
+                                 echo "fi"                                                                     >> rdock
+                                 chmod u+x                                                                        rdock         
+                                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                                 ${job_submit} -Q                                                                 rdock
+                                 sh $vini_dir/write_checkpoint ${ligand_number} ${I} ${J} ${L} ${M}    #write restart point
+                             fi
+                         fi
+                     fi
+    	         done # end of 5th loop
+
+                 sh $vini_dir/wait_until_jobs_finish
+
+                 if  [ -e ${target_dir}/Vina ]
+                 then
+                     echo -n "Normalizing binding energy values."
+                     sh $vini_dir/map_Vina_to_Rosetta_values ${target_dir} ${drugtype}
+                 fi
+                 
+                 cd $WORKDIR
+                 echo ${target_dir} > target_dir
+
+                 echo "Computing SLEM."
+                 rm -f ${target_dir}/vec*
+                 echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM
+                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --output=${target_dir}/compute_SLEM.out"      >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --output=${target_dir}/compute_SLEM.err"      >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/compute_SLEM 
+                 cat $vini_dir/create_vector                                 >> ${target_dir}/compute_SLEM
+                 echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/compute_SLEM
+                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/compute_SLEM
+                 echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/compute_SLEM
+                 echo "echo \$complexes > complexes"                         >> ${target_dir}/compute_SLEM
+                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/compute_SLEM
+                 echo "conda activate env310"                                >> ${target_dir}/compute_SLEM
+                 echo "python3 $vini_dir/create_energy_binding_matrix.py"    >> ${target_dir}/compute_SLEM
+                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/compute_SLEM
+                 echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
+                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
+                 chmod u+x                                                      ${target_dir}/compute_SLEM
+                 ${job_submit} -Q                                               ${target_dir}/compute_SLEM ${target_dir} $M $L $J $I
+                 sh $vini_dir/wait_until_jobs_finish
+
+                 let ligand_number++
+             done   #end of 4thloop
+         done       #end of 3rd loop
+    done            #end of 2nd loop
+done                #end of 1st loop
+
+sh $vini_dir/wait_until_jobs_finish
+
+if  [ $cosmic == y ] ; then
+    exp=exp
+else
+    exp=noexp
+fi
+
+cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}
+
+echo "Finalizing SLEM lists."
+echo "#!/bin/bash"                                    > $WORKDIR/postproc
+echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
+echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
+echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
+echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
+echo "#SBATCH --job-name=postproc"                   >> $WORKDIR/postproc
+echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
+echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
+echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
+echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
+cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
+cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
+echo "if  [ $therapy_level -ne $ONES ]"              >> $WORKDIR/postproc
+echo "then"                                          >> $WORKDIR/postproc
+echo "    sh $vini_dir/create_SLEM_wings_list"       >> $WORKDIR/postproc
+echo "    sh $vini_dir/create_SLEM_wings_named_list" >> $WORKDIR/postproc
+echo "fi"                                            >> $WORKDIR/postproc
+chmod u+x                                               $WORKDIR/postproc
+$job_submit -Q                                          $WORKDIR/postproc
+sh $vini_dir/wait_until_jobs_finish
+
+echo "Done. The results are in $WORKDIR/${CANCER_PATHWAY}_results directory."

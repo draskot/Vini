@@ -88,6 +88,7 @@ do
                      else
                          cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
                          cp $vini_dir/modify_chain_id.py $vini_dir/update_pdb.py ./
+                         cp $vini_dir/extract_affinity.py ./
                          if  [ $drugtype == S ]
                          then                                               #drug is a small molecule - using Vina or ADT
                              UNKN1=`grep -w PT ligand_${lig_index}.pdbqt | awk '{print $3}'`
@@ -125,8 +126,7 @@ do
                                  echo "    cat complex_${comp_index}.pdb > tmp"                                 >> dock
                                  echo "    cat ligand.pdb >> tmp"                                               >> dock
                                  echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> dock
-                                 echo "    line=\$((39 + num_modes))"                                           >> dock
-                                 echo "    head -\${line} log | tail -1 | awk '{print \$2}' > $target_dir/log_${comp_index}" >> dock
+                                 echo "    python3 extract_affinity.py ${target_dir}/log_${comp_index}"         >> dock
                                  echo "else"                                                                    >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                          >> dock
                                  echo "fi"                                                                      >> dock
@@ -216,8 +216,7 @@ do
                                  echo "    cat complex_${comp_index}.pdb > tmp"                               >> dock
                                  echo "    cat ligand.pdb >> tmp"                                             >> dock
                                  echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> dock
-                                 echo "    line=\$((39 + num_modes))"                                         >> dock
-                                 echo "    head -\${line} log | tail -1 | awk '{print \$2}' > $target_dir/log_${comp_index}" >> dock
+                                 echo  "    python3 extract_affinity.py ${target_dir}/log_${comp_index}"        >> dock
                                  echo "else"                                                                  >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
@@ -274,17 +273,15 @@ do
                  chmod u+x dock
 
                  input_list=NONE                                    #generate sbatch command
-                 out_list=$WORKDIR/dock_id_list
+                 out_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}
                  slurm_script=dock
-                 output_command_file=$WORKDIR/dock
+                 output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-                 chmod u+x $WORKDIR/dock
-                 sh $WORKDIR/dock                                   #submit 
-                 
-
+                 chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}
+                 sh $WORKDIR/dock_${I}_${J}_${L}_${M}                                   #submit 
                  echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
-                 
+
                  cd $WORKDIR
                  echo ${target_dir} > target_dir
                  echo ${WORKDIR} > working_dir
@@ -317,14 +314,13 @@ do
                  cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
                  chmod u+x                                                      ${target_dir}/compute_SLEM
 
-                 input_list=$WORKDIR/dock_id_list                   #generate sbatch command and submit job
-                 out_list=$WORKDIR/slem_id_list
+                 input_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}           #generate sbatch command and submit job
+                 out_list=$WORKDIR/slemidlist
                  slurm_script=${target_dir}/compute_SLEM
-                 output_command_file=$WORKDIR/SLEM
+                 output_command_file=$WORKDIR/SLEM_${I}_${J}_${L}_${M}
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-                 chmod u+x $WORKDIR/SLEM
-                 sh $WORKDIR/SLEM                                   
-
+                 chmod u+x $WORKDIR/SLEM_${I}_${J}_${L}_${M}
+                 sh $WORKDIR/SLEM_${I}_${J}_${L}_${M}                                   
                  let ligand_number++
              done   #end of 4thloop
          done       #end of 3rd loop
@@ -342,7 +338,6 @@ echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
-echo "sleep 4"                                       >> $WORKDIR/postproc
 echo "if  [ $cosmic == y ]"                          >> $WORKDIR/postproc
 echo "then"                                          >> $WORKDIR/postproc
 echo "    exp=exp"                                   >> $WORKDIR/postproc
@@ -368,10 +363,11 @@ echo "        sh $vini_dir/validate_cell_line"       >> $WORKDIR/postproc
 echo "    fi"                                        >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
 
-input_list=$WORKDIR/slem_id_list                   #generate sbatch command and submit job
-out_list=$WORKDIR/postproc_id_list
+input_list=$WORKDIR/slemidlist                   #generate sbatch command and submit job
+out_list=$WORKDIR/postprocidlist
 slurm_script=$WORKDIR/postproc
 output_command_file=$WORKDIR/POSTPROC
+
 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
 chmod u+x $WORKDIR/POSTPROC
 sh $WORKDIR/POSTPROC                                   

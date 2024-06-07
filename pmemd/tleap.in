@@ -1,0 +1,18 @@
+source /ceph/hpc/software/amber/amber22/dat/leap/cmd/leaprc.protein.ff19SB
+source /ceph/hpc/software/amber/amber22/dat/leap/cmd/leaprc.water.opc
+
+REC = loadpdb receptor.pdb
+LIG = loadpdb ligand.pdb
+COMP = loadpdb complex.pdb
+COMP_solvated = loadpdb complex.pdb
+
+charge COMP_solvated
+set default PBRadii mbondi2
+solvatebox COMP_solvated OPCBOX 15.0
+
+saveamberparm REC REC.prmtop REC.inpcrd
+saveamberparm LIG LIG.prmtop LIG.inpcrd
+saveamberparm COMP COMP.prmtop COMP.inpcrd
+saveamberparm COMP_solvated COMP_solvated.prmtop COMP_solvated.inpcrd
+
+quit

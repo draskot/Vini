@@ -1,0 +1,97 @@
+
+=>> Init data
+    Presuming executables of amber suite to be in /cvmfs/sling.si/modules/el7/software/Amber/22.0-foss-2021b-AmberTools-22.3/bin
+
+=>> Reading input parameters
+    Found VERBOSE => 0
+    Found PARALLEL => 0
+    Found PREFIX => snapshot
+    Found PATH => ./
+    Found START => 1
+    Found STOP => 200
+    Found OFFSET => 1
+    Found COMPLEX => 1
+    Found RECEPTOR => 1
+    Found LIGAND => 1
+    Found COMPT => ./COMP.prmtop
+    Found RECPT => ./REC.prmtop
+    Found LIGPT => ./LIG.prmtop
+    Found GC => 0
+    Found AS => 0
+    Found DC => 0
+    Found MM => 1
+    Found GB => 1
+    Found PB => 1
+    Found MS => 1
+    Found NM => 0
+    Found PROC => 2
+    Found REFE => 0
+    Found INDI => 1.0
+    Found EXDI => 80.0
+    Found SCALE => 2
+    Found LINIT => 1000
+    Found ISTRNG => 0.0
+    Found RADIOPT => 0
+    Found ARCRES => 0.0625
+    Found INP => 1
+    Found SURFTEN => 0.005
+    Found SURFOFF => 0.00
+    Found IVCAP => 0
+    Found CUTCAP => -1.0
+    Found XCAP => 0.0
+    Found YCAP => 0.0
+    Found ZCAP => 0.0
+    Found DIELC => 1.0
+    Found IGB => 2
+    Found GBSA => 1
+    Found SALTCON => 0.00
+    Found EXTDIEL => 80.0
+    Found INTDIEL => 1.0
+    Found SURFTEN => 0.005
+    Found SURFOFF => 0.00
+    Found PROBE => 0.0
+
+=>> Checking sanity
+    Checking GENERAL
+    Checking MM
+    Checking PB
+    Checking GB
+    Checking MS
+
+=>> Creating input
+    Sander input
+    PBSA input
+
+=>> Calculating energy / entropy contributions
+
+=>> Doing statistics
+=>> Reading input
+=>> Reordering files
+    Final order:
+    1. snapshot_com.all.out: - 
+    2. snapshot_rec.all.out: - 
+    3. snapshot_lig.all.out: - 
+=>> Reading files
+    Reading snapshot_com.all.out
+    Reading snapshot_rec.all.out
+    Reading snapshot_lig.all.out
+=>> Values of parameters
+    TEMP   = 300
+    R      = 8.314
+    gammaP = 0.005
+    betaP  = 0.00
+    gammaG = 0.005
+    betaG  = 0.00
+=>> Treat special parameters
+=>> Calc missing parameters
+    Processing MM INT
+    Processing MM GAS
+    Processing MM ELE
+    Processing MM VDW
+    Processing GB GBSOL
+    Processing GB GBELE
+    Processing GB GBTOT
+    Processing PB PBTOT
+    Processing PB PBELE
+    Processing PB PBSOL
+=>> Calc delta from raw data

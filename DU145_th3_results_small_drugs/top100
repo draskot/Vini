@@ -1,0 +1,59 @@
+Drug          Frequency    Action
+
+Alectinib     9            ALK inhibition
+Fludarabine   9            DNA synthesis inhibition
+Venetoclax    9            BCL-2 inhibition
+Temsirolimus  7            mTOR inhibition
+Triptorelin   7            GnRH agonist
+Axitinib      3            VEGFR-1, VEGFR-2, and VEGFR-3 inhibition
+Bicalutamide: 2            AR inhibition
+Regorafenib:  2            VEGFR-1, VEGFR-2, VEGFR-3, PDGFR-β, FGFR, KIT, RET, and RAF inhibition
+Abemaciclib:  2            CDK4 and CDK6 kinase
+Eribulin:     2            microtubule inhibitor
+Nilotinib:    2            tyrosine kinase inhibitor
+Abiraterone:  1            anti-androgen
+
+Drug combination                        SLEM                         Targets
+
+Temsirolimus.Abiraterone.Triptorelin    -50.010000000000005116        mTOR, CYP17, GnRH
+Temsirolimus.Alectinib.Fludarabine      -44.609999999999999432        mTOR, ALK, DNA synthesis 
+Temsirolimus.Alectinib.Venetoclax       -44.609999999999999432        mTOR, ALK, BCL-2
+Temsirolimus.Alectinib.Triptorelin      -44.579999999999998295        mTOR, ALK, GnRH
+Venetoclax.Fludarabine.Triptorelin      -43.859999999999999432        BCL-2, DNA synthesis, GnRH
+Triptorelin.Bicalutamide.Regorafenib    -43.650000000000005684        GnRH, AR
+Temsirolimus.Fludarabine.Alectinib      -43.619999999999997442        mTOR, DNA synthesis
+Temsirolimus.Fludarabine.Triptorelin    -43.590000000000003411        mTOR, DNA synthesis, GnRH
+Venetoclax.Fludarabine.Axitinib         -43.350000000000001421        GnRH, DNA synthesis, CDK4, CDK6
+Triptorelin.Bicalutamide.Abemaciclib    -43.229999999999996874        GnRH, AR, CDK4,CDK6
+Venetoclax.Alectinib.Eribulin           -43.109999999999999432        BCL-2, ALK, MTs
+Venetoclax.Alectinib.Fludarabine        -43.049999999999997158        BCL-2, ALK, DNA synthesis
+Venetoclax.Alectinib.Temsirolimus       -43.049999999999997158        BCL-2, ALK, mTOR
+Venetoclax.Alectinib.Axitinib           -43.020000000000003126        BCL-2, ALK, CDK4, CDK6
+Nilotinib.Fludarabine.Alectinib         -42.689999999999997726        TK, DNA synthesis, ALK
+Nilotinib.Fludarabine.Regorafenib       -42.659999999999996589        TK, DNA synthesis, VEGFR-1, VEGFR-2, VEGFR-3, PDGFR-β, FGFR, KIT, RET, RAF
+Venetoclax.Eribulin.Axitinib            -42.090000000000003411        BCL-2, microtubule inhibitor, VEGFR-1, VEGFR-2,VEGFR-3
+Triptorelin.Venetoclax.Abemaciclib      -42.060000000000002274        GnRH, BCL-2, CDK4, CDK6
+
+The list of abbreviations
+
+mTOR    - mammalian Target Of Rapamycin 
+CYP1a7  - 17 αhydroxylase/C17,20-lyase
+GnRH    - Gonadotropin-Releasing Hormone
+ALK     - Anaplastic Lymphoma Kinase
+BCL-2   - Proteins in the B Cell CLL/Lymphoma 2 family
+AR      - Androgen Receptor
+CDK4    - Cyclin-Dependent Kinases 4 
+CDK6    - Cyclin-Dependent Kinases 4
+MTs     - Microtubules
+VEGFR-1 - Vascular Endothelial Growth Factor Receptor-1
+VEGFR-2 - Vascular Endothelial Growth Factor Receptor-3
+VEGFR-3 - Vascular Endothelial Growth Factor Receptor-3
+PDGFR-β - Growth Factor Receptor beta 
+FGFR    - Fibroblast growth factor receptors
+KIT     - KIT gene, receptor tyrosine kinase
+RET     - REarranged during Transfection receptor tyrosine kinase
+RAF     - Rapidly Accelerated Fibrosarcoma gene
+
+
+
+

@@ -1,0 +1,29 @@
+
+tasks=4
+threads=1                                                                                #for debug only
+nodes=4
+partition=cpu
+N=1
+excluded_nodes=`cat $vini_dir/excluded_${partition}_nodes`
+walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
+
+
+echo "#!/bin/bash"                                                            > mmpbsa
+echo "#SBATCH --time="$walltime                                              >> mmpbsa
+echo "#SBATCH --account=$SLURMACCT"                                          >> mmpbsa
+echo "#SBATCH --partition="$partition                                        >> mmpbsa
+echo "#SBATCH --nodes="$nodes                                                >> mmpbsa
+echo "#SBATCH --ntasks="$tasks                                               >> mmpbsa
+echo "#SBATCH --cpus-per-task="$threads                                      >> mmpbsa
+echo "#SBATCH --job-name=mmpbsa${N}"                                         >> mmpbsa
+echo "#SBATCH --output=mmpbsa${N}.out"                                       >> mmpbsa
+echo "#SBATCH --error=mmpbsa${N}.err"                                        >> mmpbsa
+echo "#SBATCH --exclude=${excluded_nodes}"                                   >> mmpbsa
+echo "module purge"                                                          >> mmpbsa
+echo "module load Amber/22.0-foss-2021b-AmberTools-22.3"                     >> mmpbsa
+#echo "source $INSTALL/miniconda3/bin/activate"                               >> mmpbsa
+#echo "conda activate env310"                                                 >> mmpbsa
+echo "mpirun -np $tasks $AMBERHOME/bin/MMPBSA.py.MPI -O -i mmpbsa.in -o FINAL_RESULTS_MMPBSA.dat -sp COMP_solvated.prmtop -cp COMP.prmtop -rp REC.prmtop -lp LIG.prmtop -y *.mdcrd" >> mmpbsa
+#echo "conda deactivate"                                                      >> mmpbsa
+chmod u+x                                                                       mmpbsa
+sbatch                                                                          mmpbsa

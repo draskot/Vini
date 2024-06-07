@@ -1,7 +1,6 @@
 
 source $vini_dir/globals
 
-
 partition=`cat cpu_partition`
 cores=`cat ${partition}_cores`
 job_submit=`cat job_submit`
@@ -10,6 +9,10 @@ job_submit=`cat job_submit`
 > $WORKDIR/missing_genes
 > $WORKDIR/failed_predictions
 > $WORKDIR/SLEM_values    #delete SLEM values from the previous run
+rm -f $WORKDIR/slem*
+rm -f $WORKDIR/dock*
+rm -f $WORKDIR/postproc*
+rm -f $WORKDIR/SLEM*
 
 rm -f $vini_dir/genes/cosmic_ids.csv
 
@@ -49,7 +52,6 @@ then
     echo "Then upload these strucures to $vini_dir/database/genes/pdb_file directory and start Vini again."
     echo "Exiting." ; exit
 fi
-
 
 if  [ ! -e $vini_dir/genes/${cell_line} ]
 then
@@ -127,7 +129,6 @@ do
         rm -rf $WORKDIR/${receptor}
     fi
 done < $WORKDIR/receptors_contracted ; echo "done."
-
 
 j=1
 mkdir -p $WORKDIR/${cancer_type}_data      #prepare receptors
