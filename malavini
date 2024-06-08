@@ -20,7 +20,8 @@ case $therapy_level in
      4) L1=$ligands; L2=$ligands; L3=$ligands; L4=$ligands ;;
 esac
 
-dir=$WORKDIR/${cancer_type}_data         #setting loop control parameters
+#dir=$WORKDIR/${cancer_type}_data         #setting loop control parameters
+data_dir=$WORKDIR/${cancer_type}_data
 if  [ $state == crash ]
 then
     ligand_number=`grep ligand_number $WORKDIR/restartfile | awk '{print $2}'`
@@ -43,8 +44,8 @@ else
     Nu=$ONES
     Xi=$ONES
 fi
- 
 SECONDS=$NULL
+
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
@@ -58,37 +59,54 @@ do
              do
                  printf -v lig_index "%03d" $M  
                  case $therapy_level in
-                     1) comp_source=$dir;          target_dir=$dir/$M ;;
-                     2) comp_source=$dir/$M;       target_dir=$dir/$M/$L ;;
-                     3) comp_source=$dir/$M/$L;    target_dir=$dir/$M/$L/$J ;;
-                     4) comp_source=$dir/$M/$L/$J; target_dir=$dir/$M/$L/$J/$I ;;
+                     #1) comp_source=${data_dir};          target_dir=${data_dir}/$M ;;
+                     #2) comp_source=${data_dir}/$M;       target_dir=${data_dir}/$M/$L ;;
+                     #3) comp_source=${data_dir}/$M/$L;    target_dir=${data_dir}/$M/$L/$J ;;
+                     #4) comp_source=${data_dir}/$M/$L/$J; target_dir=${data_dir}/$M/$L/$J/$I ;;
+
+                     1) eval comp_source_$M_$L_$J_$I=$data_dir;           eval target_dir_$M_$L_$J_$I=$data_dir/$M ;;
+                     2) eval comp_source_$M_$L_$J_$I=$data_dir/$M;        eval target_dir_$M_$L_$J_$I=$data_dir/$M/$L ;;
+                     3) eval comp_source_$M_$L_$J_$I=$data_dir/$M/$L;     eval target_dir_$M_$L_$J_$I=$data_dir/$M/$L/$J ;;
+                     4) eval comp_source_$M_$L_$J_$I=$data_dir/$M/$L/$J;  eval target_dir=$M_$L_$J_$I=$data_dir/$M/$L/$J/$I ;;
                  esac
+
+                 eval echo \$comp_source_$M_$L_$J_$I > $WORKDIR/comp_source_$M_$L_$J_$I
+                 eval echo \$target_dir_$M_$L_$J_$I  > $WORKDIR/target_dir_$M_$L_$J_$I
+
+                 comp_source=`cat $WORKDIR/comp_source_$M_$L_$J_$I`
+                 target_dir=`cat $WORKDIR/target_dir_$M_$L_$J_$I`
+
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
                  for (( N=$((Xi)); N<$((receptors+1)); N++ )) #5th loop - N is the number of KEGG receptors
        	         do
                      printf -v n "%03d" $N
                      comp_index=$n
+                     eval comp_index_$M_$L_$J_$I=$n
+                     eval echo \$comp_index_$M_$L_$J_$I > $WORKDIR/comp_index_$M_$L_$J_$I
+                     comp_index=`cat $WORKDIR/comp_index_$M_$L_$J_$I`
                      conf_index=$comp_index
                      log_index=$comp_index
+
                      line=`head -"$ligand_number" $vini_dir/ligands/ligands_list | tail -1`
                      drug=`echo $line | awk -F',' '{print $1}'`
                      drugtype=`echo $line | awk -F','  '{print $2}'`
-                     mkdir -p $WORKDIR/$comp_index
-                     cd $WORKDIR/$comp_index   #move to the working area
+
+                     mkdir -p $WORKDIR/${comp_index}_${I}_${J}_${L}_${M}
+                     cd $WORKDIR/${comp_index}_${I}_${J}_${L}_${M}   #move to the working area
                      rm -rf *
+
                      if [ $drugtype == P ] #get ligand
                      then
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./
                      else
                          cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./
                      fi
+
                      if  [ ! -e $comp_source/complex_${comp_index}.pdb ]
                      then
                          echo "ERROR" > $target_dir/log_${comp_index}
                      else
-                         cp $comp_source/complex_${comp_index}.pdb ./     #prepare receptor
-                         cp $vini_dir/modify_chain_id.py $vini_dir/update_pdb.py ./
-                         cp $vini_dir/extract_affinity.py ./
+                         cp $comp_source/complex_${comp_index}.pdb $vini_dir/modify_chain_id.py $vini_dir/update_pdb.py $vini_dir/extract_affinity.py ./ 
                          if  [ $drugtype == S ]
                          then                                               #drug is a small molecule - using Vina or ADT
                              UNKN1=`grep -w PT ligand_${lig_index}.pdbqt | awk '{print $3}'`
@@ -282,13 +300,7 @@ do
                  echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
 
-                 cd $WORKDIR
-                 echo ${target_dir} > target_dir
-                 echo ${WORKDIR} > working_dir
-                 echo $M > M; echo $L > L; echo $J > J; echo $I > I
-
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
-                 rm -f ${target_dir}/vec*
                  echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM
                  echo "#SBATCH --time="$walltime                             >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/compute_SLEM
@@ -296,10 +308,11 @@ do
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --output=${target_dir}/compute_SLEM.out"      >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --output=${target_dir}/compute_SLEM.err"      >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --output=SLEM.out"                            >> ${target_dir}/compute_SLEM
+                 echo "#SBATCH --output=SLEM.err"                            >> ${target_dir}/compute_SLEM
                  echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/compute_SLEM 
                  echo "module purge"                                         >> ${target_dir}/compute_SLEM
+                 echo "target_dir=$target_dir"                               >> ${target_dir}/compute_SLEM
                  echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/compute_SLEM
                  echo "INSTALL=${INSTALL}"                                   >> ${target_dir}/compute_SLEM
                  echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/compute_SLEM

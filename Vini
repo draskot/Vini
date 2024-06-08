@@ -279,16 +279,14 @@ else
     echo "export exp=noexp"   >> $vini_dir/globals
 fi
 
-read -p "Do you want to include your own cancer gene expression data into the analysis (y/n)?" kit
+read -e -p "Do you want to include your own cancer gene expression data into the analysis (y/n)? Enter for default: " -i "n" kit
 if  [ $kit == "y" ]
 then
-    echo "export kit=$kit" >> $vini_dir/globals
     echo "vi editor will open. Write the data in the form: genename uniprotID expression. Then press <:wq!> to save the data!."
     read -p "press enter when ready to continue." enter
     vi $vini_dir/database/genes/custom_genes
-else
-    echo "export kit=$kit" >> $vini_dir/globals
 fi
+echo "export kit=$kit" >> $vini_dir/globals
 
 #https://www.uniprot.org/uniprot/?query=database:(type:pdb)&format=tab&columns=id,entry%20name,reviewed,database(PDB) #uniprot PDB cross-references --> uniprot_db_new
 

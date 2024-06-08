@@ -1,31 +1,20 @@
-#  affinity vector is created and multiplied with gene expression values from receptors_contracted file
-
-#input params: target_dir, M, L, J, I
-#output params: SLEM written in $WORKDIR/SLEM_values file
-
 source $vini_dir/globals
 
-target_dir=`cat $WORKDIR/target_dir`
-WORKDIR=`cat $WORKDIR/working_dir`
-M=`cat $WORKDIR/M`
-L=`cat $WORKDIR/L`
-I=`cat $WORKDIR/I`
-J=`cat $WORKDIR/J`
-
-ls $target_dir/log* > tmp                                          
+ls log* > tmp                                          
 logs=`wc -l < tmp`
-> ${target_dir}/vec                                                  
+> vec                                                  
 for (( N=1; N<$((logs+1)); N++ ))                     
 do
     printf -v comp_index "%03d" $N
-    cat $target_dir/log_${comp_index} >>  ${target_dir}/vec
+    cat log_${comp_index} >>  vec
+    echo "" >> vec
 done
 
-grep ERROR ${target_dir}/vec > tmp                                   #replace ERROR entries with random value
+grep ERROR vec > tmp                                   #replace ERROR entries with random value
 if [ -s tmp ]
 then
     echo "Normalizing energy vector."
-    python3 $vini_dir/get_random_value.py ${target_dir}/vec
+    python3 $vini_dir/get_random_value.py vec
 fi
 
-python3 $vini_dir/create_vector.py ${target_dir} ${WORKDIR}
+#python3 $vini_dir/create_vector.py ${target_dir} ${WORKDIR}
