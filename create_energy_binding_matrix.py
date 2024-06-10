@@ -5,6 +5,12 @@ import numpy as np
 t0 = time.time()
 
 def main(argv):
+    if len(argv) < 1:
+        print("Usage: script.py <path_to_target_dir_file>")
+        exit()
+        
+    target_dir_path = argv[0]
+
     try:
         WORKDIR = os.environ['WORKDIR']
     except KeyError:
@@ -12,18 +18,26 @@ def main(argv):
         exit()
 
     try:
-        with open(os.path.join(WORKDIR, 'target_dir'), 'r') as f:
+        with open(target_dir_path, 'r') as f:
             target_dir = f.read()
             TARGETDIR = os.path.join(target_dir.strip("\n"))
     except:
         print("Can't open file with target directory")
         exit()
 
-    with open(os.path.join(WORKDIR, 'complexes'), 'r') as f:
-        dim = f.read().strip("\n")
+    try:
+        with open(os.path.join(WORKDIR, 'complexes'), 'r') as f:
+            dim = f.read().strip("\n")
+    except:
+        print("Can't open file with complexes")
+        exit()
 
-    with open(os.path.join(WORKDIR, 'therapy_level'), 'r') as f:
-        therapy_level = f.read().strip("\n")
+    try:
+        with open(os.path.join(WORKDIR, 'therapy_level'), 'r') as f:
+            therapy_level = f.read().strip("\n")
+    except:
+        print("Can't open file with therapy_level")
+        exit()
 
     try:
         os.remove(os.path.join(WORKDIR, 'temp_buf'))
@@ -31,9 +45,13 @@ def main(argv):
         print("No temp_buf to remove")
 
     # Loading files into DataFrames
-    receptors_contracted_df = pd.read_csv(os.path.join(WORKDIR, 'receptors_contracted'), sep=' ', header=None)
-    relations_df = pd.read_csv(os.path.join(WORKDIR, 'relations'), sep=' ', header=None)
-    affinity_values = pd.read_csv(os.path.join(TARGETDIR, 'vec'), header=None)
+    try:
+        receptors_contracted_df = pd.read_csv(os.path.join(WORKDIR, 'receptors_contracted'), sep=' ', header=None)
+        relations_df = pd.read_csv(os.path.join(WORKDIR, 'relations'), sep=' ', header=None)
+        affinity_values = pd.read_csv(os.path.join(TARGETDIR, 'vec'), header=None)
+    except:
+        print("Error loading CSV files")
+        exit()
 
     # Initializing energy binding matrix (dim x dim)
     main.EB_matrix = pd.DataFrame(np.zeros((int(dim), int(dim)), dtype=object))
@@ -45,9 +63,9 @@ def main(argv):
         # Adding expression values for off-diagonal elements
         result = [applyToEB(relation, receptors_contracted_df)
                   for relation in relations_df.iloc[:, :].to_numpy()]
+
     print(os.path.join(TARGETDIR, 'EB_matrix'))
     main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix'), sep=" ", header=False, index=False)
-
 
 def applyToEB(relation, receptors_contracted_df):
     source_id = relation[0]
@@ -65,3 +83,4 @@ def applyToEB(relation, receptors_contracted_df):
 if __name__ == "__main__":
     main(sys.argv[1:])
     print('calculated in {:.3f} sec'.format(time.time() - t0))
+
