@@ -306,35 +306,36 @@ echo $M > $target_dir/M
 
                  echo $target_dir > $target_dir/target_dir
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
-                 echo "#!/bin/bash"                                           > ${target_dir}/compute_SLEM
-                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --output=SLEM.out"                            >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --output=SLEM.err"                            >> ${target_dir}/compute_SLEM
-                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/compute_SLEM 
-                 echo "module purge"                                         >> ${target_dir}/compute_SLEM
-                 echo "target_dir=$target_dir"                               >> ${target_dir}/compute_SLEM
-                 echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/compute_SLEM
-                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/compute_SLEM
-                 echo "conda activate env310"                                >> ${target_dir}/compute_SLEM
+                 echo "#!/bin/bash"                                           > ${target_dir}/SLEM
+                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/SLEM
+                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
+                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
+                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
+                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/SLEM
+                 echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
+                 echo "#SBATCH --output=SLEM.out"                            >> ${target_dir}/SLEM
+                 echo "#SBATCH --error=SLEM.err"                             >> ${target_dir}/SLEM
+                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/SLEM 
+                 echo "source $vini_dir/globals"                             >> ${target_dir}/SLEM
+                 echo "module purge"                                         >> ${target_dir}/SLEM
+                 echo "target_dir=$target_dir"                               >> ${target_dir}/SLEM
+                 echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/SLEM
+                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/SLEM
+                 echo "conda activate env310"                                >> ${target_dir}/SLEM
                  
-                 cat $vini_dir/create_vector                                 >> ${target_dir}/compute_SLEM
-                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/compute_SLEM
-                 echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/compute_SLEM
-                 echo "echo \$complexes > complexes"                         >> ${target_dir}/compute_SLEM
-                 echo "python3 $vini_dir/create_energy_binding_matrix.py $target_dir/target_dir" >> ${target_dir}/compute_SLEM
-                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/compute_SLEM
-                 echo "conda deactivate"                                     >> ${target_dir}/compute_SLEM
-                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/compute_SLEM
-                 chmod u+x                                                      ${target_dir}/compute_SLEM
+                 cat $vini_dir/create_vector                                 >> ${target_dir}/SLEM
+                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM
+                 echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/SLEM
+                 echo "echo \$complexes > complexes"                         >> ${target_dir}/SLEM
+                 echo "python3 $vini_dir/create_energy_binding_matrix.py $target_dir/target_dir" >> ${target_dir}/SLEM
+                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/SLEM
+                 echo "conda deactivate"                                     >> ${target_dir}/SLEM
+                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/SLEM
+                 chmod u+x                                                      ${target_dir}/SLEM
 
                  input_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}           #generate sbatch command and submit job
                  out_list=$WORKDIR/slemidlist
-                 slurm_script=${target_dir}/compute_SLEM
+                 slurm_script=${target_dir}/SLEM
                  output_command_file=$WORKDIR/SLEM_${I}_${J}_${L}_${M}
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
                  chmod u+x $WORKDIR/SLEM_${I}_${J}_${L}_${M}
@@ -344,6 +345,7 @@ echo $M > $target_dir/M
          done       #end of 3rd loop
     done            #end of 2nd loop
 done                #end of 1st loop
+
 
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
