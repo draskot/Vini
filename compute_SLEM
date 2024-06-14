@@ -1,8 +1,8 @@
 SLEM=`tail -1 $target_dir/eigenvalues`
-M=`cat M`
-L=`cat L`
-J=`cat J`
-I=`cat I`
+M=`cat $target_dir/M`
+L=`cat $target_dir/L`
+J=`cat $target_dir/J`
+I=`cat $target_dir/I`
 
 case $therapy_level in
      1) echo "SLEM_${M} ${SLEM}" >> $WORKDIR/SLEM_values ;;
