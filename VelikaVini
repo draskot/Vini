@@ -1,4 +1,3 @@
-
 source $vini_dir/globals
 
 partition=`cat cpu_partition`
@@ -15,6 +14,9 @@ rm -f $WORKDIR/postproc*
 rm -f $WORKDIR/SLEM*
 
 rm -f $vini_dir/genes/cosmic_ids.csv
+
+nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
+nr_complexes=`cat $WORKDIR/nr_complexes`
 
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
@@ -180,9 +182,10 @@ do
     let i++
 done < $vini_dir/ligands/ligands_list
 
-for (( therapy_level=1; therapy_level<$((max_therapy_level+1)); therapy_level++ ))
+nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
+echo $nr_complexes > $WORKDIR/nr_complexes
+for (( therapy_level=1; therapy_level<=max_therapy_level; therapy_level++ ))
 do
-    sed -i '/\btherapy_level\b/d' $vini_dir/globals
-    echo "export therapy_level=${therapy_level}" >> $vini_dir/globals
+    echo $therapy_level > $vini_dir/therapy_level
     sh $vini_dir/malavini
 done

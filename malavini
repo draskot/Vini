@@ -8,76 +8,57 @@ walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we a
 excluded_nodes=`cat excluded_${partition}_nodes`
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
+nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
+nr_complexes=`cat $WORKDIR/nr_complexes`
+DIR=$WORKDIR/${cancer_type}_data
+therapy_level=`cat $vini_dir/therapy_level`
 
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
 cd $WORKDIR
 
+
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
-case $therapy_level in                  
-     1) L4=$ligands ;;
-     2) L3=$ligands; L4=$ligands ;;
-     3) L2=$ligands; L3=$ligands; L4=$ligands ;;
-     4) L1=$ligands; L2=$ligands; L3=$ligands; L4=$ligands ;;
+case $therapy_level in
+     1) L4=$nr_ligands ;;
+     2) L3=$nr_ligands; L4=$nr_ligands ;;
+     3) L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
+     4) L1=$nr_ligands; L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
 esac
 
-#dir=$WORKDIR/${cancer_type}_data         #setting loop control parameters
 data_dir=$WORKDIR/${cancer_type}_data
-if  [ $state == crash ]
-then
-    ligand_number=`grep ligand_number $WORKDIR/restartfile | awk '{print $2}'`
-    Kappa=`grep          I         $WORKDIR/restartfile | awk '{print $2}'`
-    Lambda=`grep         J         $WORKDIR/restartfile | awk '{print $2}'`
-    Mu=`grep             L         $WORKDIR/restartfile | awk '{print $2}'`
-    Nu=`grep             M         $WORKDIR/restartfile | awk '{print $2}'`
-    Xi=$ONES
-    echo "deleting SLEM values after the last checkpoint"
-    MaxSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligands} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
-    NoSLEMvalues=`echo ${Kappa} ${Lambda} ${Mu} ${Nu} ${Xi} ${ligand_number} | awk '{print $1 * $2 * $3 * $4 * $5 * $6 }'`
-    Delete=`echo $MaxSLEMvalues $NoSLEMvalues $ONES | awk '{print $1 - $2 - $3}'`
-    head -$Delete $vini_dir/ligands/ligands_list > $WORKDIR/tmp
-    mv $WORKDIR/tmp $WORKDIR/SLEM_values
-else
-    ligand_number=1                #initializing ligand index
-    Kappa=$ONES
-    Lambda=$ONES
-    Mu=$ONES
-    Nu=$ONES
-    Xi=$ONES
-fi
+ligand_number=1                #initializing ligand index
 SECONDS=$NULL
-
 
 echo "Calculating free binding energies for therapy level ${therapy_level}. This may take a while, please be patient."
 
-for (( I=$((Kappa)); I<$((L1+1)); I++ )) #1st loop - 4th therapy level
+for (( I=1; I<$((L1+1)); I++ )) #1st loop - 4th therapy level
 do
-    for (( J=$((Lambda)); J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
+    for (( J=1; J<$((L2+1)); J++ )) #2nd loop -3rd therapy level
     do
-         for (( L=$((Mu)); L<$((L3+1)); L++ )) #3rd loop -2nd therapy level
+         for (( L=1; L<$((L3+1)); L++ )) #3rd loop -2nd thl
          do
-             for (( M=$((Nu)); M<$((L4+1)); M++ )) #4th loop - M = the number of ligands - 1st therapy level
+             for (( M=1; M<$((L4+1)); M++ )) #4th loop - 1st thl
              do
                  printf -v lig_index "%03d" $M  
-                 case $therapy_level in
-                     #1) comp_source=${data_dir};          target_dir=${data_dir}/$M ;;
-                     #2) comp_source=${data_dir}/$M;       target_dir=${data_dir}/$M/$L ;;
-                     #3) comp_source=${data_dir}/$M/$L;    target_dir=${data_dir}/$M/$L/$J ;;
-                     #4) comp_source=${data_dir}/$M/$L/$J; target_dir=${data_dir}/$M/$L/$J/$I ;;
 
-                     1) eval comp_source_$M_$L_$J_$I=$data_dir;           eval target_dir_$M_$L_$J_$I=$data_dir/$M ;;
-                     2) eval comp_source_$M_$L_$J_$I=$data_dir/$M;        eval target_dir_$M_$L_$J_$I=$data_dir/$M/$L ;;
-                     3) eval comp_source_$M_$L_$J_$I=$data_dir/$M/$L;     eval target_dir_$M_$L_$J_$I=$data_dir/$M/$L/$J ;;
-                     4) eval comp_source_$M_$L_$J_$I=$data_dir/$M/$L/$J;  eval target_dir=$M_$L_$J_$I=$data_dir/$M/$L/$J/$I ;;
+                case $therapy_level in
+                     #1) comp_source=$DIR;          target_dir=$DIR/$M ;;
+                     #2) comp_source=$DIR/$M;       target_dir=$DIR/$M/$L ;;
+                     #3) comp_source=$DIR/$M/$L;    target_dir=$DIR/$M/$L/$J ;;
+                     #4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
+                     1) eval comp_source_$M_$L_$J_$I=$DIR;           eval target_dir_$M_$L_$J_$I=$DIR/$M ;;
+                     2) eval comp_source_$M_$L_$J_$I=$DIR/$M;        eval target_dir_$M_$L_$J_$I=$DIR/$M/$L ;;
+                     3) eval comp_source_$M_$L_$J_$I=$DIR/$M/$L;     eval target_dir_$M_$L_$J_$I=$DIR/$M/$L/$J ;;
+                     4) eval comp_source_$M_$L_$J_$I=$DIR/$M/$L/$J;  eval target_dir=$M_$L_$J_$I=$DIR/$M/$L/$J/$I ;;
                  esac
-
+                 
                  eval echo \$comp_source_$M_$L_$J_$I > $WORKDIR/comp_source_$M_$L_$J_$I
                  eval echo \$target_dir_$M_$L_$J_$I  > $WORKDIR/target_dir_$M_$L_$J_$I
-
                  comp_source=`cat $WORKDIR/comp_source_$M_$L_$J_$I`
                  target_dir=`cat $WORKDIR/target_dir_$M_$L_$J_$I`
 
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
-                 for (( N=$((Xi)); N<$((receptors+1)); N++ )) #5th loop - N is the number of KEGG receptors
+                 for (( N=1; N<$((nr_complexes+1)); N++ )) #5th loop
        	         do
                      printf -v n "%03d" $N
                      comp_index=$n
@@ -297,7 +278,6 @@ do
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
                  chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}
                  sh $WORKDIR/dock_${I}_${J}_${L}_${M}                                   #submit 
-                 echo "ligand: ${ligand_number}     I: $I     J: $J     L: $L     M: $M" >> $WORKDIR/restartfile
     	         done # end of 5th loop
 echo $I > $target_dir/I
 echo $J > $target_dir/J
@@ -313,8 +293,8 @@ echo $M > $target_dir/M
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
                  echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/SLEM
                  echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
-                 echo "#SBATCH --output=SLEM.out"                            >> ${target_dir}/SLEM
-                 echo "#SBATCH --error=SLEM.err"                             >> ${target_dir}/SLEM
+                 echo "#SBATCH --output=${target_dir}/SLEM.out"              >> ${target_dir}/SLEM
+                 echo "#SBATCH --error=${target_dir}/SLEM.err"               >> ${target_dir}/SLEM
                  echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/SLEM 
                  echo "source $vini_dir/globals"                             >> ${target_dir}/SLEM
                  echo "module purge"                                         >> ${target_dir}/SLEM
@@ -322,17 +302,30 @@ echo $M > $target_dir/M
                  echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/SLEM
                  echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/SLEM
                  echo "conda activate env310"                                >> ${target_dir}/SLEM
-                 
-                 cat $vini_dir/create_vector                                 >> ${target_dir}/SLEM
-                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM
+
+                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM #create vector
+                 echo "logs=\`wc -l < tmp\`"                                 >> ${target_dir}/SLEM
+                 echo "> ${target_dir}/vec"                                  >> ${target_dir}/SLEM
+                 echo "for (( N=1; N<\$((logs+1)); N++ ))"                   >> ${target_dir}/SLEM
+                 echo "do"                                                   >> ${target_dir}/SLEM
+                 echo "    printf -v comp_index "%03d" \$N"                  >> ${target_dir}/SLEM
+                 echo "    affinity_value=\$(cat \${target_dir}/log_\${comp_index})" >> ${target_dir}/SLEM
+                 echo "    echo \$affinity_value >> \${target_dir}/vec"      >> ${target_dir}/SLEM
+                 echo "done"                                                 >> ${target_dir}/SLEM
+                 echo "grep ERROR ${target_dir}/vec > tmp"                   >> ${target_dir}/SLEM
+                 echo "if  [ -s tmp ]"                                       >> ${target_dir}/SLEM
+                 echo "then"                                                 >> ${target_dir}/SLEM
+                 echo "    python3 $vini_dir/get_random_value.py ${target_dir}/vec" >> ${target_dir}/SLEM
+                 echo "fi"                                                   >> ${target_dir}/SLEM
+
+                 echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM #create matrix & eigenvalues
                  echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/SLEM
                  echo "echo \$complexes > complexes"                         >> ${target_dir}/SLEM
                  echo "python3 $vini_dir/create_energy_binding_matrix.py $target_dir/target_dir" >> ${target_dir}/SLEM
                  echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/SLEM
                  echo "conda deactivate"                                     >> ${target_dir}/SLEM
-                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/SLEM
+                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/SLEM #compute SLEM
                  chmod u+x                                                      ${target_dir}/SLEM
-
                  input_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}           #generate sbatch command and submit job
                  out_list=$WORKDIR/slemidlist
                  slurm_script=${target_dir}/SLEM
@@ -345,7 +338,6 @@ echo $M > $target_dir/M
          done       #end of 3rd loop
     done            #end of 2nd loop
 done                #end of 1st loop
-
 
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
 echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
@@ -367,13 +359,11 @@ echo "fi"                                            >> $WORKDIR/postproc
 echo "cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}" >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
-
 echo "if  [ $therapy_level -ne $ONES ]"              >> $WORKDIR/postproc
 echo "then"                                          >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_list"       >> $WORKDIR/postproc
 echo "    sh $vini_dir/create_SLEM_wings_named_list" >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
-
 echo "cp $vini_dir/ligands/ligands_list.orig $vini_dir/ligands/ligands_list" >> $WORKDIR/postproc
 echo "if  [[ ${compute_cell_line} -eq $TRUE ]] && [[ ${max_therapy_level} -eq $ONES ]]" >> $WORKDIR/postproc
 echo "then"                                          >> $WORKDIR/postproc
@@ -382,12 +372,10 @@ echo "    then"                                      >> $WORKDIR/postproc
 echo "        sh $vini_dir/validate_cell_line"       >> $WORKDIR/postproc
 echo "    fi"                                        >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
-
 input_list=$WORKDIR/slemidlist                   #generate sbatch command and submit job
 out_list=$WORKDIR/postprocidlist
 slurm_script=$WORKDIR/postproc
 output_command_file=$WORKDIR/POSTPROC
-
 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
 chmod u+x $WORKDIR/POSTPROC
 sh $WORKDIR/POSTPROC                                   

@@ -17,9 +17,8 @@ echo "export TWO=$TWO"                     >> $vini_dir/globals
 echo "export THREE=$THREE"                 >> $vini_dir/globals
 echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
 echo "export NULL=$NULL"                   >> $vini_dir/globals
-echo "export state=init"                   >> $vini_dir/globals
+echo "export restart=n"                    >> $vini_dir/globals
 echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
-#rm -rf $WORKDIR/*_data
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -120,11 +119,6 @@ else
 fi
 rm -f jobs
 
-#cd $WORKDIR #Cleanup
-#rm -f complex_*.job ligand_*.pdbqt cancer_type complexes receptors receptors_contracted receptors_expanded relations stats target_dir therapy_level Vina complex_???.jo* temp_buf
-#rm -f *err *out
-#cd $vini_dir
-
 cat COPYRIGHT
 
 read -e -p "Enter your SLURM account provided by admin. Press enter to accept " -i "r2022r03-224-users" slurm_account
@@ -134,9 +128,9 @@ partition=`cat active_partition`
 
 walltime=60   #max time is 60 minutes
 
-read -e -p "Restarting Vini from the previous restart point (y/n)? Press enter to accept default: " -i "n" restart
-if  [ $restart == n ]
-then
+#read -e -p "Restarting Vini from the previous restart point (y/n)? Press enter to accept default: " -i "n" restart
+#if  [ $restart == n ]
+#then
 
     > $WORKDIR/dock_id_list  #Clear precedence lists
     > $WORKDIR/slem_id_list
@@ -430,14 +424,4 @@ then
     echo -n "If you want to stop Vini, execute kill -9 $masterpid on the node $node"
 else
     ./VelikaVini
-fi
-
-else
-    uname -n > node
-    node=`cat node`
-    echo -n "Restarting Vini in the background. You can follow the progress by inspecting the nohup.out file in the folder " ; pwd
-    rm -f $WORKDIR/restartfie
-    nohup ./malavini &
-    echo $! > masterpid
-    echo -n "If you want to stop Vini, execute kill -9 $masterpid on the node $node"
 fi
