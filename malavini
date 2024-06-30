@@ -287,7 +287,8 @@ echo $M > $target_dir/M
                  echo $target_dir > $target_dir/target_dir
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
                  echo "#!/bin/bash"                                           > ${target_dir}/SLEM
-                 echo "#SBATCH --time="$walltime                             >> ${target_dir}/SLEM
+                 echo "#SBATCH --time=00:05:00"                              >> ${target_dir}/SLEM
+                 #echo "#SBATCH --time="$walltime                            >> ${target_dir}/SLEM
                  echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
@@ -302,7 +303,6 @@ echo $M > $target_dir/M
                  echo "WORKDIR=${WORKDIR}"                                   >> ${target_dir}/SLEM
                  echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/SLEM
                  echo "conda activate env310"                                >> ${target_dir}/SLEM
-
                  echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM #create vector
                  echo "logs=\`wc -l < tmp\`"                                 >> ${target_dir}/SLEM
                  echo "> ${target_dir}/vec"                                  >> ${target_dir}/SLEM
@@ -324,8 +324,21 @@ echo $M > $target_dir/M
                  echo "python3 $vini_dir/create_energy_binding_matrix.py $target_dir/target_dir" >> ${target_dir}/SLEM
                  echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/SLEM
                  echo "conda deactivate"                                     >> ${target_dir}/SLEM
-                 cat $vini_dir/compute_SLEM                                  >> ${target_dir}/SLEM #compute SLEM
+
+                 echo "therapy_level=\`cat $vini_dir/therapy_level\`"        >> ${target_dir}/SLEM #compute SLEM
+                 echo "SLEM=\`tail -1 $target_dir/eigenvalues\`"             >> ${target_dir}/SLEM
+                 echo "M=\`cat $target_dir/M\`"                              >> ${target_dir}/SLEM
+                 echo "L=\`cat $target_dir/L\`"                              >> ${target_dir}/SLEM
+                 echo "J=\`cat $target_dir/J\`"                              >> ${target_dir}/SLEM
+                 echo "I=\`cat $target_dir/I\`"                              >> ${target_dir}/SLEM
+                 echo "case \$therapy_level in"                               >> ${target_dir}/SLEM
+                 echo "     1) echo "SLEM_${M} \${SLEM}" >> $WORKDIR/SLEM_values ;;" >> ${target_dir}/SLEM
+                 echo "     2) echo "SLEM_${M}.${L} \${SLEM}" >> $WORKDIR/SLEM_values ;;" >> ${target_dir}/SLEM
+                 echo "     3) echo "SLEM_${M}.${L}.${J} \${SLEM}" >> $WORKDIR/SLEM_values ;;" >> ${target_dir}/SLEM
+                 echo "     4) echo "SLEM_${M}.${L}.${J}.${I} \${SLEM}" >> $WORKDIR/SLEM_values ;;" >> ${target_dir}/SLEM
+                 echo "esac"                                                 >> ${target_dir}/SLEM
                  chmod u+x                                                      ${target_dir}/SLEM
+
                  input_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}           #generate sbatch command and submit job
                  out_list=$WORKDIR/slemidlist
                  slurm_script=${target_dir}/SLEM
