@@ -53,6 +53,7 @@ else
 fi
 
 sh $vini_dir/clean
+rm -f $WORKDIR/dockidlist* $WORKDIR/slemidlist* $WORKDIR/SLEM*
 
 echo -n "Checking for the ligands_list file..."
 if [ -e $vini_dir/ligands/ligands_list ]

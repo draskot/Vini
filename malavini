@@ -1,6 +1,5 @@
 source $vini_dir/globals
 
-
 job_status=`cat job_status`       
 job_submit=`cat job_submit`
 partition=`cat cpu_partition`
@@ -16,7 +15,6 @@ therapy_level=`cat $vini_dir/therapy_level`
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results #Create directory for results
 cd $WORKDIR
 
-
 L1=1; L2=1; L3=1; L4=1;                 #Initializing main loops
 case $therapy_level in
      1) L4=$nr_ligands ;;
@@ -24,6 +22,7 @@ case $therapy_level in
      3) L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
      4) L1=$nr_ligands; L2=$nr_ligands; L3=$nr_ligands; L4=$nr_ligands ;;
 esac
+
 
 data_dir=$WORKDIR/${cancer_type}_data
 ligand_number=1                #initializing ligand index
@@ -41,11 +40,8 @@ do
              do
                  printf -v lig_index "%03d" $M  
 
+
                 case $therapy_level in
-                     #1) comp_source=$DIR;          target_dir=$DIR/$M ;;
-                     #2) comp_source=$DIR/$M;       target_dir=$DIR/$M/$L ;;
-                     #3) comp_source=$DIR/$M/$L;    target_dir=$DIR/$M/$L/$J ;;
-                     #4) comp_source=$DIR/$M/$L/$J; target_dir=$DIR/$M/$L/$J/$I ;;
                      1) eval comp_source_$M_$L_$J_$I=$DIR;           eval target_dir_$M_$L_$J_$I=$DIR/$M ;;
                      2) eval comp_source_$M_$L_$J_$I=$DIR/$M;        eval target_dir_$M_$L_$J_$I=$DIR/$M/$L ;;
                      3) eval comp_source_$M_$L_$J_$I=$DIR/$M/$L;     eval target_dir_$M_$L_$J_$I=$DIR/$M/$L/$J ;;
@@ -58,13 +54,14 @@ do
                  target_dir=`cat $WORKDIR/target_dir_$M_$L_$J_$I`
 
                  mkdir -p $comp_source $target_dir # nr. of target dirs equals nr. of ligands
+                 nr_complexes=`ls ${comp_source}/complex* | wc -l`
                  for (( N=1; N<$((nr_complexes+1)); N++ )) #5th loop
        	         do
-                     printf -v n "%03d" $N
-                     comp_index=$n
-                     eval comp_index_$M_$L_$J_$I=$n
-                     eval echo \$comp_index_$M_$L_$J_$I > $WORKDIR/comp_index_$M_$L_$J_$I
-                     comp_index=`cat $WORKDIR/comp_index_$M_$L_$J_$I`
+                     printf -v comp_index "%03d" $N  
+                     workdir="${I}_${J}_${L}_${M}_${N}"
+                     mkdir -p $WORKDIR/$workdir
+                     cd $WORKDIR/${workdir}   #move to the working area
+                     rm -rf *
                      conf_index=$comp_index
                      log_index=$comp_index
 
@@ -72,9 +69,6 @@ do
                      drug=`echo $line | awk -F',' '{print $1}'`
                      drugtype=`echo $line | awk -F','  '{print $2}'`
 
-                     mkdir -p $WORKDIR/${comp_index}_${I}_${J}_${L}_${M}
-                     cd $WORKDIR/${comp_index}_${I}_${J}_${L}_${M}   #move to the working area
-                     rm -rf *
 
                      if [ $drugtype == P ] #get ligand
                      then
@@ -105,6 +99,8 @@ do
                                  echo "#SBATCH --nodes=1"                                                     >> dock
                                  echo "#SBATCH --ntasks=1"                                                    >> dock
                                  echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                 echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
+                                 echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> dock
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> dock
@@ -145,8 +141,10 @@ do
                                  echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                  echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                  echo "#SBATCH --nodes=1"                                                     >> dock
-                                 echo "#SBATCH --ntasks=1"                                                   >> dock
-                                 echo "#SBATCH --cpus-per-task="$threads                                     >> dock
+                                 echo "#SBATCH --ntasks=1"                                                    >> dock
+                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                 echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
+                                 echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.gpf" >> dock
                                  echo "echo "parameter_file param_file" > tmp"                                      >> dock
@@ -196,6 +194,8 @@ do
                                  echo "mv tmp ligand_${lig_index}.pdb"                                        >> dock
                                  echo "touch ${target_dir}/Vina"                                              >> dock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> dock
+                                 echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
+                                 echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l ligand_${lig_index}.pdb -o ligand_${lig_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
@@ -271,24 +271,34 @@ do
                  sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
                  chmod u+x dock
 
+
                  input_list=NONE                                    #generate sbatch command
                  out_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}
-                 slurm_script=dock
-                 output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}
+                 slurm_script=$WORKDIR/${workdir}/dock
+                 output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-                 chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}
-                 sh $WORKDIR/dock_${I}_${J}_${L}_${M}                                   #submit 
+TWO=2  #debug
+if [ $therapy_level -eq $TWO ] 
+then
+    echo comp_index: $comp_index
+    echo input_list: ${input_list}
+    echo out_list: ${out_list}
+    echo slurm_script: ${slurm_script}
+    echo output_command_file: ${output_command_file}
+fi
+                 chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
+                 sh $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}                                   #submit 
     	         done # end of 5th loop
 echo $I > $target_dir/I
 echo $J > $target_dir/J
 echo $L > $target_dir/L
 echo $M > $target_dir/M
 
+
                  echo $target_dir > $target_dir/target_dir
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
                  echo "#!/bin/bash"                                           > ${target_dir}/SLEM
                  echo "#SBATCH --time=00:05:00"                              >> ${target_dir}/SLEM
-                 #echo "#SBATCH --time="$walltime                            >> ${target_dir}/SLEM
                  echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM

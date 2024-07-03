@@ -188,4 +188,5 @@ for (( therapy_level=1; therapy_level<=max_therapy_level; therapy_level++ ))
 do
     echo $therapy_level > $vini_dir/therapy_level
     sh $vini_dir/malavini
+    sh $vini_dir/wait_until_jobs_finish
 done

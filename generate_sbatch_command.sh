@@ -10,6 +10,9 @@ slurm_script=$3
 output_command_file=$4
 I=$5 ; J=$6 ; L=$7 ; M=$8
 
+echo $I $J $L $M
+
+
 if  [ ${input_list} == "NONE" ]
 then
     sbatch_command="jobid=\$(sbatch $slurm_script)"
