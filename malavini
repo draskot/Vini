@@ -277,28 +277,19 @@ do
                  slurm_script=$WORKDIR/${workdir}/dock
                  output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-TWO=2  #debug
-if [ $therapy_level -eq $TWO ] 
-then
-    echo comp_index: $comp_index
-    echo input_list: ${input_list}
-    echo out_list: ${out_list}
-    echo slurm_script: ${slurm_script}
-    echo output_command_file: ${output_command_file}
-fi
                  chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}                                   #submit 
     	         done # end of 5th loop
-echo $I > $target_dir/I
-echo $J > $target_dir/J
-echo $L > $target_dir/L
-echo $M > $target_dir/M
 
+                 echo $I > $target_dir/I
+                 echo $J > $target_dir/J
+                 echo $L > $target_dir/L
+                 echo $M > $target_dir/M
 
                  echo $target_dir > $target_dir/target_dir
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
                  echo "#!/bin/bash"                                           > ${target_dir}/SLEM
-                 echo "#SBATCH --time=00:05:00"                              >> ${target_dir}/SLEM
+                 echo "#SBATCH --time=00:30:00"                              >> ${target_dir}/SLEM
                  echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
                  echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
                  echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
@@ -373,12 +364,8 @@ echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
 echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
 echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
-echo "if  [ $cosmic == y ]"                          >> $WORKDIR/postproc
-echo "then"                                          >> $WORKDIR/postproc
-echo "    exp=exp"                                   >> $WORKDIR/postproc
-echo "else"                                          >> $WORKDIR/postproc
-echo "    exp=noexp"                                 >> $WORKDIR/postproc
-echo "fi"                                            >> $WORKDIR/postproc
+echo "source $vini_dir/globals"                      >> $WORKDIR/postproc
+echo "therapy_level=\`cat $vini_dir/therapy_level\`" >> $WORKDIR/postproc
 echo "cp $WORKDIR/SLEM_values $WORKDIR/${CANCER_PATHWAY}_results/SLEM_values_${cell_line}_thl${therapy_level}_${exp}" >> $WORKDIR/postproc
 cat $vini_dir/delete_SLEM_entries_with_equal_indices >> $WORKDIR/postproc  
 cat $vini_dir/create_SLEM_named_list                 >> $WORKDIR/postproc
