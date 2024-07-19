@@ -328,7 +328,13 @@ do
                  out_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}
                  slurm_script=$WORKDIR/${workdir}/dock
                  output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
-                 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 if [ $SCTYPE=="SLURM" ]
+                 then
+                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 elif [ $SCTYPE="PBS" ]
+                 then
+                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 fi
                  chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}                                   #submit 
     	         done # end of 5th loop
@@ -409,7 +415,13 @@ do
                  out_list=$WORKDIR/slemidlist
                  slurm_script=${target_dir}/SLEM
                  output_command_file=$WORKDIR/SLEM_${I}_${J}_${L}_${M}
-                 sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 if [ $SCTYPE=="SLURM" ]
+                 then
+                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 elif [ $SCTYPE=="PBS" ]
+                 then
+                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                 fi
                  chmod u+x $WORKDIR/SLEM_${I}_${J}_${L}_${M}
                  sh $WORKDIR/SLEM_${I}_${J}_${L}_${M}                                   
                  let ligand_number++
@@ -464,6 +476,12 @@ input_list=$WORKDIR/slemidlist                   #generate sbatch command and su
 out_list=$WORKDIR/postprocidlist
 slurm_script=$WORKDIR/postproc
 output_command_file=$WORKDIR/POSTPROC
-sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+if [ $SCTYPE=="SLURM" ]
+then
+    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+elif [ $SCTYPE=="PBS" ]
+then
+    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+fi
 chmod u+x $WORKDIR/POSTPROC
 sh $WORKDIR/POSTPROC                                   
