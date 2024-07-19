@@ -1,3 +1,5 @@
+source $vini_dir/globals
+ 
 cpus=$1
 partition=$2
 base=$3
@@ -32,21 +34,39 @@ then
         partition=`cat longcpu_partition`
     else                                                                   #Running AlphaFold on gpu nodes
         partition=`cat gpu_partition`
-        echo "#SBATCH --gres=gpu:1"                                     >> $WORKDIR/AlphaFold_${antibody}
+	if [ SCTYPE="SLURM" ]
+	then
+            echo "#SBATCH --gres=gpu:1"                                     >> $WORKDIR/AlphaFold_${antibody}
+	elif [SCTYPE="PBS" ]
+	then
+	echo "#PBS -l gpus:3						>> $WORKDIR/AlphaFold_${antibody}
     fi
 fi
 
-echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --exclude=${excluded_nodes}"                              >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --job-name=$antibody"                                     >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --account=$SLURMACCT"                                     >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --exclusive"                                              >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --output=$WORKDIR/$antibody.out"                          >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --error=$WORKDIR/$antibody.err"                           >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --nodes=1"                                                >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --ntasks-per-node=1"                                      >> $WORKDIR/AlphaFold_${antibody}
-echo "#SBATCH --cpus-per-task="$cpus                                    >> $WORKDIR/AlphaFold_${antibody}
+if [ SCTYPE="SLURM" ]
+then
+    echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --exclude=${excluded_nodes}"                              >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --job-name=$antibody"                                     >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --account=$SLURMACCT"                                     >> $WORKDIR/AlphaFold_${antibody}
+    #echo "#SBATCH --exclusive"                                              >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --output=$WORKDIR/$antibody.out"                          >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --error=$WORKDIR/$antibody.err"                           >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --nodes=1"                                                >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --ntasks-per-node=1"                                      >> $WORKDIR/AlphaFold_${antibody}
+    echo "#SBATCH --cpus-per-task="$cpus                                    >> $WORKDIR/AlphaFold_${antibody}
+elif [ SCTYPE="PBS" ]
+then
+    echo "#PBS -l walltime=$walltime"					    >> $WORKDIR/AlphaFold_${antibody}
+    echo "#PBS -q "$partition						    >> $WORKDIR/AlphaFold_${antibody}
+    echo "#PBS -N $antibody"						    >> $WORKDIR/AlphaFold_${antibody}
+#    echo "#PBS -A"							>> $WORKDIR/AlphaFold_${antibody}	SLURMACCT?
+    echo "#PBS -o $WORKDIR/$antibody.out"				    >> $WORKDIR/AlphaFold_${antibody}
+    echo "#PBS -e $WORKDIR/$antibody.err"				    >> $WORKDIR/AlphaFold_${antibody}
+    echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$cpu  >> $WORKDIR/AlphaFold_${antibody}
+fi
+
 echo "WORKDIR=${WORKDIR}"                                               >> $WORKDIR/AlphaFold_${antibody}
 echo "source $INSTALL/miniconda3/bin/activate"                          >> $WORKDIR/AlphaFold_${antibody}
 echo "conda activate env310"                                            >> $WORKDIR/AlphaFold_${antibody}
@@ -67,4 +87,3 @@ echo "fi"                                                               >> $WORK
 chmod u+x $WORKDIR/AlphaFold_${antibody}
 job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}
-

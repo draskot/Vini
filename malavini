@@ -88,17 +88,30 @@ do
                              UNKN2=`grep -w B ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              if  [[ -z $UNKN1 ]] && [[ -z $UNKN2 ]] #No metal ions, using Autodock Vina
                              then
-                                 echo "#!/bin/bash"                                                            > dock  
-                                 echo "#SBATCH --time="$walltime                                              >> dock
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
-                                 echo "#SBATCH --partition="$partition                                        >> dock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
-                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
-                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
-                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
-                                 echo "#SBATCH --nodes=1"                                                     >> dock
-                                 echo "#SBATCH --ntasks=1"                                                    >> dock
-                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+				 if [ SCTYPE="SLURM" ]
+				 then
+                                     echo "#!/bin/bash"                                                            > dock  
+                                     echo "#SBATCH --time="$walltime                                              >> dock
+                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --partition="$partition                                        >> dock
+                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                     echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                     echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                     echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                     echo "#SBATCH --nodes=1"                                                     >> dock
+                                     echo "#SBATCH --ntasks=1"                                                    >> dock
+                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+				 elif [ SCTYPE="PBS" ]
+				 then
+				     echo "#PBS -l walltime="$walltime						  >> dock
+				     # echo "#PBS -A"								    >> dock		SLURMACCT?
+				     echo "#PBS -q "$partition							  >> dock
+				     echo "#PBS -N D${M}.${N}"							  >> dock
+				     echo "#PBS -o D${M}.${N}.out"						  >> dock
+				     echo "#PBS -e D${M}.${N}.err"						  >> dock
+				     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread	  >> dock
+				 fi
+
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
                                  echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
@@ -132,17 +145,30 @@ do
                                  else  
                                      grep -w B $vini_dir/AD4_parameters_for_metal_ions > param_file
                                  fi
-                                 echo "#!/bin/bash"                                                            > dock  
-                                 echo "#SBATCH --time="$walltime                                              >> dock
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
-                                 echo "#SBATCH --partition="$partition                                        >> dock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
-                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
-                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
-                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
-                                 echo "#SBATCH --nodes=1"                                                     >> dock
-                                 echo "#SBATCH --ntasks=1"                                                    >> dock
-                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+				 if [ SCTYPE="SLURM" ]
+				 then
+                                     echo "#!/bin/bash"                                                            > dock  
+                                     echo "#SBATCH --time="$walltime                                              >> dock
+                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --partition="$partition                                        >> dock
+                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                     echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                     echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                     echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                     echo "#SBATCH --nodes=1"                                                     >> dock
+                                     echo "#SBATCH --ntasks=1"                                                    >> dock
+                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+				 elif [ SCTYPE="PBS" ]
+				 then
+				     echo "#PBS -l walltime="$walltime						  >> dock
+				     # echo "#PBS -A"								   >> dock		SLURMACCT?
+				     echo "#PBS -q "$partition							  >> dock
+				     echo "#PBS -N D${M}.${N}"                                                    >> dock
+                                     echo "#PBS -o D${M}.${N}.out"                                                >> dock
+                                     echo "#PBS -e D${M}.${N}.err"                                                >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread       >> dock
+				 fi
+
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
                                  echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
@@ -177,18 +203,31 @@ do
                          else                             #drug is a mAb - checking if complex is compound     
                              grep HETATM complex_${comp_index}.pdb > tmp
                              if  [ -s tmp ]             #if complex is a compound swap ligand_receptor and run Vina
-                             then                                         
-                                 echo "#!/bin/bash"                                                            > dock  
-                                 echo "#SBATCH --time="$walltime                                              >> dock
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
-                                 echo "#SBATCH --partition="$partition                                        >> dock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
-                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
-                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
-                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
-                                 echo "#SBATCH --nodes=1"                                                     >> dock
-                                 echo "#SBATCH --ntasks=1"                                                    >> dock
-                                 echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                             then
+				 if [ SCTYPE="SLURM" ]
+				 then                                         
+                                     echo "#!/bin/bash"                                                            > dock  
+                                     echo "#SBATCH --time="$walltime                                              >> dock
+                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --partition="$partition                                        >> dock
+                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                     echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                     echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                     echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                     echo "#SBATCH --nodes=1"                                                     >> dock
+                                     echo "#SBATCH --ntasks=1"                                                    >> dock
+                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+				 elif [ SCTYPE="PBS" ]
+				 then
+                                     echo "#PBS -l walltime="$walltime                                            >> dock
+                                     # echo "#PBS -A"                                                               >> dock         SLURMACCT?
+                                     echo "#PBS -q "$partition                                                    >> dock
+                                     echo "#PBS -N D${M}.${N}"                                                    >> dock
+                                     echo "#PBS -o D${M}.${N}.out"                                                >> dock
+                                     echo "#PBS -e D${M}.${N}.err"                                                >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread       >> dock
+				 fi
+
                                  echo "mv complex_${comp_index}.pdb tmp"                                      >> dock
                                  echo "mv ligand_${lig_index}.pdb complex_${comp_index}.pdb"                  >> dock
                                  echo "mv tmp ligand_${lig_index}.pdb"                                        >> dock
@@ -219,18 +258,31 @@ do
                                  echo "else"                                                                  >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
-                             else                                             #using Rosetta
-                                 echo "#!/bin/bash"                                                            > dock  
-                                 echo "#SBATCH --time="$walltime                                              >> dock
-                                 echo "#SBATCH --account=$SLURMACCT"                                          >> dock
-                                 echo "#SBATCH --partition="$partition                                        >> dock
-                                 echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
-                                 echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
-                                 echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
-                                 echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
-                                 echo "#SBATCH --nodes=1"                                                     >> dock
-                                 echo "#SBATCH --ntasks-per-node="$threads                                     >> dock
-                                 echo "#SBATCH --cpus-per-task=1"                                              >> dock
+                             else  
+				 if [ SCTYPE="SLURM" ]                                           #using Rosetta
+                                 then
+				     echo "#!/bin/bash"                                                            > dock  
+                                     echo "#SBATCH --time="$walltime                                              >> dock
+                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --partition="$partition                                        >> dock
+                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
+                                     echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
+                                     echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
+                                     echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
+                                     echo "#SBATCH --nodes=1"                                                     >> dock
+                                     echo "#SBATCH --ntasks-per-node="$threads                                    >> dock
+                                     echo "#SBATCH --cpus-per-task=1"                                             >> dock
+				 elif [ SCTYPE="PBS" ]
+				 then
+                                     echo "#PBS -l walltime="$walltime                                            >> dock
+                                     # echo "#PBS -A"                                                               >> dock         SLURMACCT?
+                                     echo "#PBS -q "$partition                                                    >> dock
+                                     echo "#PBS -N D${M}.${N}"                                                    >> dock
+                                     echo "#PBS -o D${M}.${N}.out"                                                >> dock
+                                     echo "#PBS -e D${M}.${N}.err"                                                >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$thread    >> dock
+				 fi
+
                                  echo "cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./"                 >> dock
                                  echo "cp $vini_dir/analyze_chains.py ./"                                      >> dock
                                  echo "cp $ROSETTA_TOOLS/amino_acids.py ./"                                    >> dock
@@ -287,17 +339,30 @@ do
                  echo $M > $target_dir/M
 
                  echo $target_dir > $target_dir/target_dir
-                 echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM 
+                 echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM
                  echo "#!/bin/bash"                                           > ${target_dir}/SLEM
-                 echo "#SBATCH --time=00:30:00"                              >> ${target_dir}/SLEM
-                 echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
-                 echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
-                 echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
-                 echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/SLEM
-                 echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
-                 echo "#SBATCH --output=${target_dir}/SLEM.out"              >> ${target_dir}/SLEM
-                 echo "#SBATCH --error=${target_dir}/SLEM.err"               >> ${target_dir}/SLEM
-                 echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/SLEM 
+		 if [ SCTYPE="SLURM" ]
+		 then
+                     echo "#SBATCH --time=00:30:00"                              >> ${target_dir}/SLEM
+                     echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
+                     echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
+                     echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
+                     echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/SLEM
+                     echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
+                     echo "#SBATCH --output=${target_dir}/SLEM.out"              >> ${target_dir}/SLEM
+                     echo "#SBATCH --error=${target_dir}/SLEM.err"               >> ${target_dir}/SLEM
+                     echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/SLEM
+		 elif [ SCTYPE="PBS" ]
+		 then
+                    echo "#PBS -l walltime=00:30:00"                             >> ${target_dir}/SLEM
+                    # echo "#PBS -A"                                                >> ${target_dir}/SLEM	SLURMACCT?
+                    echo "#PBS -q "$partition                                    >> ${target_dir}/SLEM
+                    echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1         >> ${target_dir}/SLEM	
+		    echo "#PBS -N SLEM"						 >> ${target_dir}/SLEM
+		    echo "#PBS -o ${target_dir}/SLEM.out"			 >> ${target_dir}/SLEM
+		    echo "#PBS -e ${target_dir}/SLEM.err"			 >> ${target_dir}/SLEM
+		 fi
+ 
                  echo "source $vini_dir/globals"                             >> ${target_dir}/SLEM
                  echo "module purge"                                         >> ${target_dir}/SLEM
                  echo "target_dir=$target_dir"                               >> ${target_dir}/SLEM
@@ -354,15 +419,28 @@ do
 done                #end of 1st loop
 
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
-echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
-echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
-echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
-echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
-echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
-echo "#SBATCH --job-name=postproc"                   >> $WORKDIR/postproc
-echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
-echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
-echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
+if [ SCTYPE="SLURM" ]
+then
+    echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
+    echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
+    echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
+    echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
+    echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
+    echo "#SBATCH --job-name=postproc"                   >> $WORKDIR/postproc
+    echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
+    echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
+    echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
+elif [ SCTYPE="PBS" ]
+then
+    echo "#PBS -l walltime="$walltime			 >> $WORKDIR/postproc
+    # echo "#PBS -A"			                   >> $WORKDIR/postproc		SLURMACCT?
+    echo "#PBS -q "$partition				 >> $WORKDIR/postproc
+    echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1" >> $WORKDIR/postproc
+    echo "#PBS -N postproc"				 >> $WORKDIR/postproc
+    echo "#PBS -o $WORKDIR/postproc.out"                 >> $WORKDIR/postproc
+    echo "#PBS -e $WORKDIR/postproc.err"                 >> $WORKDIR/postproc
+fi
+
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
 echo "source $vini_dir/globals"                      >> $WORKDIR/postproc
 echo "therapy_level=\`cat $vini_dir/therapy_level\`" >> $WORKDIR/postproc

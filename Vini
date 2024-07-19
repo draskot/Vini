@@ -77,16 +77,42 @@ mkdir -p $vini_dir/genes/mutations
 mkdir -p $vini_dir/genes/sequences
 
 
+# Added checking for PBS and global variable for script type
+
 echo -n "Checking for SLURM..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
 grep "command not found" tmp > tmp2
 if [ -s tmp2 ]
 then
-    echo "not found. Exiting."
-    exit
+    echo "not found."
+#####
+    echo -n "Checking for PBS..."
+    pbsnodes 2&> tmp3 # trying to detect PBS
+    grep "command not found" tmp3 > tmp4
+    if [ -s tmp4 ]
+    then
+        echo "not found. Exiting."
+	exit
+    else
+	echo "found."
+	JSS = 2
+	echo "export SCTYPE="PBS" >> $vini_dir/globals
+	echo qstat > job_status
+	echo qsub > job_submit
+	echo qdel > job_cancel
+	echo "PBS" > $WORKDIR/scheduler
+	sh $vini_dir/set_partitions
+	default=`cat cpu_partition`
+	read -e -p "Enter name of partition Vini will use (press enter to accept the default): " -i "$default" active_partition
+	echo $active_partition > active_partition
+	echo "export active_partition=${active_partition}" >> $vini_dir/globals
+	echo $JSS > $WORKDIR/JSS
+    fi
+#####
 else
     echo "found."
     JSS=1
+    echo "export SCTYPE="SLURM"	>> $vini_dir/globals
     echo squeue > job_status
     echo sbatch > job_submit
     echo scancel > job_cancel
@@ -116,7 +142,6 @@ else
         job=`echo $line | awk '{print $1}'`
         $job_cancel $job
     done
-    #sh $vini_dir/wait_until_jobs_finish
 fi
 rm -f jobs
 
@@ -129,12 +154,8 @@ partition=`cat active_partition`
 
 walltime=60   #max time is 60 minutes
 
-#read -e -p "Restarting Vini from the previous restart point (y/n)? Press enter to accept default: " -i "n" restart
-#if  [ $restart == n ]
-#then
 
     > $WORKDIR/dock_id_list  #Clear precedence lists
-    > $WORKDIR/slem_id_list
     > $WORKDIR/slem_id_list
 
 if [ -e $WORKDIR/${partition}_nodetest ]
@@ -167,13 +188,7 @@ then
     timeout 3600s sh $vini_dir/gather_hardware_info $walltime
 fi
 
-
-
-#cores=128 ; echo $cores > ${partition}_cores
-#memsize=225gb ; echo $memsize > ${partition}_memsize
-
-
-
+# Add for PBS?
 sh $vini_dir/prepare_SLURM_scripts
 
 echo "rosetta" > $WORKDIR/docking

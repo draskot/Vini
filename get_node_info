@@ -1,3 +1,4 @@
+source $vini_dir/globals
 partition=$1
 walltime=$2
 
@@ -13,43 +14,83 @@ rm -f $WORKDIR/memory.out tmp2
 
 echo "Trying to determine the number of CPU cores and memory size per ${partition} node. May last up to $walltime minutes, wait."
 echo "#! /bin/bash"                           > $WORKDIR/get_number_cores
-echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_cores
-echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_number_cores
-echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_cores
-echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_cores
-echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_number_cores
-echo "#SBATCH --exclude=$excluded_nodes"     >> $WORKDIR/get_number_cores
-if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
-then
-    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_number_cores
-fi
-echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_cores
-echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_cores
-echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_cores
-echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_cores
-echo "lscpu"                                 >> $WORKDIR/get_number_cores
-chmod u+x                                       $WORKDIR/get_number_cores
 
-echo "#! /bin/bash"                           > $WORKDIR/get_memsize
-echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_memsize
-echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_memsize
-echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_memsize
-echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_memsize
-echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_memsize
-echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_memsize
-if  [ ${partition} == gpu ] ; then
-    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
-fi
-if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+if [ $SCTYPE == "SLURM" ]
 then
-    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
+    echo "#SBATCH --job-name=cores"              >> $WORKDIR/get_number_cores
+    echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_number_cores
+    echo "#SBATCH --output=$WORKDIR/cores.out"   >> $WORKDIR/get_number_cores
+    echo "#SBATCH --error=$WORKDIR/cores.err"    >> $WORKDIR/get_number_cores
+    echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_number_cores
+    echo "#SBATCH --exclude=$excluded_nodes"     >> $WORKDIR/get_number_cores
+    #if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+    #then
+    #    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_number_cores
+    #fi
+    echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_number_cores
+    echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_number_cores
+    echo "#SBATCH --partition="$partition        >> $WORKDIR/get_number_cores
+    echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_cores
+    echo "lscpu"                                 >> $WORKDIR/get_number_cores
+    chmod u+x                                       $WORKDIR/get_number_cores
+
+    echo "#! /bin/bash"                           > $WORKDIR/get_memsize
+    echo "#SBATCH --job-name=memory"             >> $WORKDIR/get_memsize
+    echo "#SBATCH --account=$SLURMACCT"          >> $WORKDIR/get_memsize
+    echo "#SBATCH --output=$WORKDIR/memory.out"  >> $WORKDIR/get_memsize
+    echo "#SBATCH --error=$WORKDIR/memory.err"   >> $WORKDIR/get_memsize
+    echo "#SBATCH --time=00:$walltime:00"        >> $WORKDIR/get_memsize
+    echo "#SBATCH --cpus-per-task=1"             >> $WORKDIR/get_memsize
+    #if  [ ${partition} == gpu ] ; then
+    #    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
+    #fi
+    #if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+    #then
+    #    echo "#SBATCH --gres=gpu:0"              >> $WORKDIR/get_memsize
+    #fi
+    echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_memsize
+    echo "#SBATCH --partition="$partition        >> $WORKDIR/get_memsize
+    echo "#SBATCH --exclude=${excluded_nodes}"   >> $WORKDIR/get_memsize
+    echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_memsize
+    echo "free -h"                               >> $WORKDIR/get_memsize
+    chmod u+x                                       $WORKDIR/get_memsize
+
+elif [ $SCTYPE == "PBS" ]
+then
+    echo "#PBS -N cores"			 >> $WORKDIR/get_number_cores
+#    echo "#PBS -A $SLURMACCT"			  >> $WORKDIR/get_number_cores
+    echo "#PBS -o $WORKDIR/cores.out"		 >> $WORKDIR/get_number_cores
+    echo "#PBS -e $WORKDIR/cores.err"		 >> $WORKDIR/get_number_cores
+    echo "#PBS -l walltime=00:$walltime:00"	 >> $WORKDIR/get_number_cores
+    #if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+    #then
+    #    echo "#PBS -l gpus=0"              >> $WORKDIR/get_number_cores
+    #fi
+    echo "#PBS -l EC_threads_per_task=1:mem=2gb" >> $WORKDIR/get_number_cores
+    echo "#PBS -q "$partition			 >> $WORKDIR/get_number_cores
+    echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_number_cores
+    echo "lscpu"                                 >> $WORKDIR/get_number_cores
+    chmod u+x                                       $WORKDIR/get_number_cores
+
+    echo "#! /bin/bash"				  > $WORKDIR/get_memsize
+    echo "#PBS -N memory"			 >> $WORKDIR/get_memsize
+#    echo "#PBS -A $SLURMACCT"          >> $WORKDIR/get_memsize
+    echo "#PBS -o $WORKDIR/memory.out"		 >> $WORKDIR/get_memsize
+    echo "#PBS -e $WORKDIR/memory.err"		 >> $WORKDIR/get_memsize
+    echo "#PBS -l walltime=00:$walltime:00"	 >> $WORKDIR/get_memsize
+    echo "#PBS -l EC_threads_per_task=1:mem=2gb" >> $WORKDIR/get_memsize
+    #if  [ ${partition} == gpu ] ; then
+    #    echo "#PBS -l gpus:0"              >> $WORKDIR/get_memsize
+    #fi
+    #if  [[ $partition == gpu ]] && [[ -e /etc/slurm/gres.conf ]]
+    #then
+    #    echo "#PBS -l gpus:0"              >> $WORKDIR/get_memsize
+    #fi
+    echo "#PBS -q "$partition			 >> $WORKDIR/get_memsize
+    echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_memsize
+    echo "free -h"                               >> $WORKDIR/get_memsize
+    chmod u+x                                       $WORKDIR/get_memsize
 fi
-echo "#SBATCH --mem=2gb"                     >> $WORKDIR/get_memsize
-echo "#SBATCH --partition="$partition        >> $WORKDIR/get_memsize
-echo "#SBATCH --exclude=${excluded_nodes}"   >> $WORKDIR/get_memsize
-echo "WORKDIR=$WORKDIR"                      >> $WORKDIR/get_memsize
-echo "free -h"                               >> $WORKDIR/get_memsize
-chmod u+x                                       $WORKDIR/get_memsize
 
 $job_submit -Q $WORKDIR/get_number_cores
 $job_submit -Q $WORKDIR/get_memsize
