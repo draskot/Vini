@@ -47,7 +47,6 @@ if [ SCTYPE="SLURM" ]
 then
     echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --exclude=${excluded_nodes}"                              >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --job-name=$antibody"                                     >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --account=$SLURMACCT"                                     >> $WORKDIR/AlphaFold_${antibody}
     #echo "#SBATCH --exclusive"                                              >> $WORKDIR/AlphaFold_${antibody}
@@ -85,5 +84,4 @@ echo "    fi"                                                           >> $WORK
 echo "fi"                                                               >> $WORKDIR/AlphaFold_${antibody}
 
 chmod u+x $WORKDIR/AlphaFold_${antibody}
-job_submit=`cat job_submit`
 ${job_submit} $WORKDIR/AlphaFold_${antibody}

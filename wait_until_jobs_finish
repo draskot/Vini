@@ -1,6 +1,4 @@
-
-job_status=`cat $vini_dir/job_status`
-job_cancel=`cat $vini_dir/job_cancel`
+source $vini_dir/globals
 NULL=0
 
 #> all_user_jobs
@@ -50,10 +48,10 @@ do
     fi
     echo -n " "
 done
-     nolines=`squeue -u eudraskot | grep "launch failed requeued held" | wc -l` #clear stucked job
+     nolines=`squeue -u $USER | grep "launch failed requeued held" | wc -l` #clear stucked job
      if  [ $nolines -gt $NULL ] 
      then
-         jobID=`squeue -u eudraskot | grep "launch failed requeued held" | awk '{print $1}'`
+         jobID=`squeue -u $USER | grep "launch failed requeued held" | awk '{print $1}'`
          scancel $jobID
      fi
 

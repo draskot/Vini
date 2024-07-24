@@ -1,10 +1,7 @@
 source $vini_dir/globals
 
-job_status=`cat job_status`       
-job_submit=`cat job_submit`
 partition=`cat cpu_partition`
 walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
-excluded_nodes=`cat excluded_${partition}_nodes`
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
@@ -94,7 +91,6 @@ do
                                      echo "#SBATCH --time="$walltime                                              >> dock
                                      echo "#SBATCH --account=$SLURMACCT"                                          >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
-                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
@@ -151,7 +147,6 @@ do
                                      echo "#SBATCH --time="$walltime                                              >> dock
                                      echo "#SBATCH --account=$SLURMACCT"                                          >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
-                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
@@ -210,7 +205,6 @@ do
                                      echo "#SBATCH --time="$walltime                                              >> dock
                                      echo "#SBATCH --account=$SLURMACCT"                                          >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
-                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
@@ -265,7 +259,6 @@ do
                                      echo "#SBATCH --time="$walltime                                              >> dock
                                      echo "#SBATCH --account=$SLURMACCT"                                          >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
-                                     echo "#SBATCH --exclude=${excluded_nodes}"                                   >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
@@ -357,7 +350,6 @@ do
                      echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
                      echo "#SBATCH --output=${target_dir}/SLEM.out"              >> ${target_dir}/SLEM
                      echo "#SBATCH --error=${target_dir}/SLEM.err"               >> ${target_dir}/SLEM
-                     echo "#SBATCH --exclude=${excluded_nodes}"                  >> ${target_dir}/SLEM
 		 elif [ SCTYPE="PBS" ]
 		 then
                     echo "#PBS -l walltime=00:30:00"                             >> ${target_dir}/SLEM
@@ -441,7 +433,6 @@ then
     echo "#SBATCH --job-name=postproc"                   >> $WORKDIR/postproc
     echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
     echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
-    echo "#SBATCH --exclude=${excluded_nodes}"           >> $WORKDIR/postproc
 elif [ SCTYPE="PBS" ]
 then
     echo "#PBS -l walltime="$walltime			 >> $WORKDIR/postproc

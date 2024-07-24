@@ -10,9 +10,9 @@ then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
     read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
-    read -p "Please enter path for your scratch data on the high-performance storage (e.g. /exa5/scratch/user/$USER):" WORKDIR
+    read -p "Please enter path for your scratch data on the high-performance storage (e.g. /scratch/IRB/$USER):" WORKDIR
     echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
-    read -p "Please enter path for Vini's 3rd party software installation (e.g. /ceph/hpc/data/r2022r03-224-users/$USER):" INSTALL
+    read -p "Please enter path for Vini's 3rd party software installation (e.g. /scratch/IRB/$USER/INSTALL):" INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
@@ -47,7 +47,7 @@ then
     rm -rf  $INSTALL/miniconda2
     unset PYTHONPATH
     echo "Please wait while downloading and installing miniconda2..."
-    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    wget --no-check-certificate  -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda2-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda2
     source $INSTALL/miniconda2/etc/profile.d/conda.sh
     conda create -n env27 --yes numpy pandas requests mpi4py pyqt python=2.7
@@ -66,7 +66,7 @@ then
     unset PYTHONPATH
     echo "done."
     echo "Please wait while downloading and installing miniconda3..."
-    wget -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    wget --no-check-certificate  -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
     conda create -n env310 --yes numpy scipy pandas requests mpi4py pyqt python=3.9
@@ -124,8 +124,8 @@ grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
 if  [ ! -s tmp ]
 then
     echo "no."
-    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i"chimera-1.17.3-linux_x86_64" chimera 
-    chimera=chimera-1.17.3-linux_x86_64
+    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i "chimera-1.18-linux_x86_64" chimera 
+    #chimera=chimera-1.17.3-linux_x86_64
     echo -n "Chimera installation directory must be empty. Performing cleanup..."
     rm -rf $INSTALL/${chimera}
     echo "done."
@@ -311,80 +311,87 @@ fi
 
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
+if  [ ! -s tmp ]  #install Rosetta
 then
-    echo "no." ; echo -n "Checking if Rosetta module(s) exist..."
-    module spider rosetta &> tmp
-    grep -w error tmp > rosetta
-    if   [ ! -s rosetta ] #no error means module found
+    module spider Rosetta > tmp
+    grep error tmp 2&> tmp2
+    if  [ ! -s tmp2 ]
     then
-	echo "yes"
-	cat tmp
-        echo "#******* Rosetta section *******" >> $vini_dir/sourceme
-        read -p "Select the Rosetta module:" rosetta
-        echo "module load" $rosetta >> $vini_dir/sourceme
-        source $vini_dir/sourceme
-    else
-	echo "no."
+        echo "Rosetta module not exists! Installing local copy of Rosetta."
+
         if  [ -e $WORKDIR/Rosetta_username ] && [ -e $WORKDIR/Rosetta_password ]
         then
-	    echo "registration data exist."
+            echo "no, installing."
             Rosetta_username=`cat $WORKDIR/Rosetta_username`
             Rosetta_password=`cat $WORKDIR/Rosetta_password`
-	else
+        else
             echo "In order to run Rosetta you must obtain license from https://els2.comotion.uw.edu/product/rosetta"
-	    echo "This license is free for academic users."
-	    echo "Upon receiving a license, enter username and password here."
+            echo "This license is free for academic users."
+            echo "Upon receiving a license, enter username and password here."
             read -p "Enter username:" Rosetta_username
             echo -n "Enter password:"; read -s Rosetta_password ; echo ""
             echo $Rosetta_username > $WORKDIR/Rosetta_username
             echo $Rosetta_password > $WORKDIR/Rosetta_password
             chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
-        fi        
-        
-        rosetta_src=`ls $INSTALL | grep rosetta.source`
-        if  [ -z ${rosetta_src+x} ]
-        then
-            echo -n "Rosetta source already exists, performing cleanup. This may take a while, please do not interrupt."
-            rm -rf $INSTALL/${rosetta_src}
-        fi
-
+        fi    
         Rosetta_version=3.14
         Rosetta_release=371
+        if  [ ! -e $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 ] ; then
+            echo "Downloading Rosetta"
+            wget -O $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2  https://downloads.rosettacommons.org/downloads/academic/3.14/rosetta_src_3.14_bundle.tar.bz2
+        fi
 
-        echo -n "Downloading Rosetta ${Rosetta_version} release ${Rosetta?release} source, do not interrupt."
-        wget -O $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --user=${Rosetta_username} --password=${Rosetta_password} https://www.rosettacommons.org/downloads/academic/3.14/rosetta_src_${Rosetta_version}_bundle.tar.bz2
+        if  [ ! -d $INSTALL/rosetta.source.release-${Rosetta_release} ] ; then
+            echo "Unpacking Rosetta source, do not interrupt."
+            tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
+        fi
 
-        echo "Unpacking Rosetta source. May take several minutes to finish, do not interrupt."
-        tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
-        rm -f $INSTALL/${rosetta_bundle}
+        cd $INSTALL
 
-        echo "Compiling Rosetta source, may take a while..."
         module purge
-        module load OpenMPI/4.1.5-GCC-12.3.0
+        echo "Compiling Rosetta requires GCC and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
+
+        module spider gcc 
+        sh $vini_dir/wait_for_key.sh "cont"
+        read -p "Select GCC module to load and press enter to continue: " gcc
+        module load ${gcc}
+
+        echo "The list of available OpenMPI modules is shown next." ; sleep 3
+        module spider OpenMPI 
+        sh $vini_dir/wait_for_key.sh "cont"
+        read -p "Select OpenMPI module to load and press enter to start compiling: " openmpi
+        module load ${openmpi}
+    
         cd $INSTALL/rosetta.source.release-${Rosetta_release}/main/source
         ./scons.py -j 8 bin mode=release extras=mpi
-
         rosetta_src=$INSTALL/rosetta.source.release-${Rosetta_release}
-
         ROSETTA=$INSTALL/rosetta.source.release-${Rosetta_release}/main
         ROSETTA_BIN=$ROSETTA/source/bin
         ROSETTA_DB=$ROSETTA/database
         ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
         ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
-
         echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
-        echo "export ROSETTA=$ROSETTA"                                                >> $vini_dir/sourceme
-        echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme 
-        echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
-        echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
-        echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
+    else
+        echo "Found following Rosetta module(s) : "
+        module spider Rosetta
+        read -p "Enter  one from the list: " rosetta
+        module load $rosetta
+        binary_path=$(which relax.mpi.linuxgccrelease)
+        ROSETTA=$(dirname "$(dirname "$(dirname "$binary_path")")")
+        ROSETTA_BIN=$ROSETTA/source/bin
+        ROSETTA_DB=$ROSETTA/database
+        ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
+        ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
+        echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
+        echo "module load $rosetta"                                                   >> $vini_dir/sourceme
     fi
-else
-    echo "yes."
+    echo "export ROSETTA=$ROSETTA"                                                >> $vini_dir/sourceme
+    echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme 
+    echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
+    echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
+    echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
 fi
-rm -f rosetta tmp
 
 #echo -n "Checking if NAMD is installed..."
 #grep NAMD $vini_dir/sourceme > tmp
@@ -461,43 +468,45 @@ rm -f rosetta tmp
 #fi
 #rm -f VMD tmp
 
-#grep OpenBabel $vini_dir/sourceme > tmp
-#if  [ ! -s tmp ]
-#then
-#    module spider Openbabel 2> tmp
-#    grep -w error tmp > openbabel
-#    if [ ! -s openbabel ]
-#    then
-#        echo "Found the following openbabel module(s):" ; cat tmp
-#        read -p "Please select one of Openbabel modules found:" openbabel
-#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-#        echo "module load" $openbabel >> $vini_dir/sourceme
-#    else
-#        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
-#        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
-#        
-#        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
-#        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
-#        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
-#        cd $INSTALL/openbabel-openbabel-3-1-1/build
-#        rm -rf $INSTALL/openbabel-3.1.1
-#        module purge
-#        #module load CMake/3.20.1-GCCcore-10.3.0
-#        module load CMake/3.23.1-GCCcore-11.3.0
-#        #module load Boost/1.76.0-GCC-10.3.0
-#        module load Boost/1.76.0-GCC-10.3.0
-#        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-#        make -j 4
-#        make install
-        #cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
-#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-#        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
-#        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
-#        cd $vini_dir
-#        echo -n "done."
-#    fi
-#fi
-#rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
+grep OpenBabel $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    module spider Openbabel 2> tmp
+    grep -w error tmp > openbabel
+    if [ ! -s openbabel ]
+    then
+        echo "Found the following openbabel module(s):" ; cat tmp
+        read -p "Please select one of Openbabel modules found:" openbabel
+        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+        echo "module load" $openbabel >> $vini_dir/sourceme
+    else
+        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
+        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
+        
+        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
+        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
+        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
+        cd $INSTALL/openbabel-openbabel-3-1-1/build
+        rm -rf $INSTALL/openbabel-3.1.1
+        module purge
+        module spider cmake
+        read -p "Enter cmake module to load:" cmake_module
+        module load ${cmake_module}
+        module spider boost
+        read -p "Enter Boost module to load:" boost_module
+        module load ${boost_module}
+        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+        make -j 4
+        make install
+        cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
+        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
+        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
+        cd $vini_dir
+        echo -n "done."
+    fi
+fi
+rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
 
 echo -n "Checking if Java is installed..."
 grep Java $vini_dir/sourceme > tmp
@@ -528,55 +537,55 @@ else
     echo "yes."
 fi
 
-grep Amber $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no." ; echo -n "Checking if Amber module(s) exist..."
-    module spider Amber &> tmp
-    grep -w error tmp > Amber
-    if   [ ! -s Amber ] #no error means module found
-    then
-        echo "yes"
-        cat tmp
-        echo "#******* Amber section *******" >> $vini_dir/sourceme
-        read -p "Select the Amber module:" Amber
-        echo "module load $Amber ">> $vini_dir/sourceme
-        source $vini_dir/sourceme
-    else
-        echo "no."
-        echo "Download Amber tar archive from http://ambermd.org/GetAmber.php and put it in the $INSTALL folder."
-        tar -xf $INSTALL/AmberTools23.tar.bz2 -C $INSTALL
-        rm $INSTALL/AmberTools23.tar.bz2
-        cd $INSTALL/amber22_src/build
+#grep Amber $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    echo "no." ; echo -n "Checking if Amber module(s) exist..."
+#    module spider Amber &> tmp
+#    grep -w error tmp > Amber
+#    if   [ ! -s Amber ] #no error means module found
+#    then
+#        echo "yes"
+#        cat tmp
+#        echo "#******* Amber section *******" >> $vini_dir/sourceme
+#        read -p "Select the Amber module:" Amber
+#        echo "module load $Amber ">> $vini_dir/sourceme
+#        source $vini_dir/sourceme
+#    else
+#        echo "no."
+#        echo "Download Amber tar archive from http://ambermd.org/GetAmber.php and put it in the $INSTALL folder."
+#        tar -xf $INSTALL/AmberTools23.tar.bz2 -C $INSTALL
+#        rm $INSTALL/AmberTools23.tar.bz2
+#        cd $INSTALL/amber22_src/build
         #ensure that XZ software is installed and active
-        ./run_cmake
-        echo "#******* Amber section *******" >> $vini_dir/sourceme
-    fi
-else
-    echo "yes."
-fi
+#        ./run_cmake
+#        echo "#******* Amber section *******" >> $vini_dir/sourceme
+#    fi
+#else
+#    echo "yes."
+#fi
 
 
-echo -n "Checking if BCL is installed..."
-grep BCL $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    module purge
-    module load Python/2.7.18-GCCcore-10.2.0
-    module load CMake/3.23.1-GCCcore-11.3.0
-    module load libGLU/9.0.2-GCCcore-11.3.0
-    echo "no. BCL will be installed. Performing the cleanup, please wait." 
-    rm -rf $INSTALL/bcl-master
-    wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
-    unzip -o $INSTALL/bcl.zip -d $INSTALL
-    rm $INSTALL/bcl.zip
-    cd $INSTALL/bcl-master
-    ./scripts/build/build_cmdline.linux.sh
-    echo "#******* BCL section *******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
-else
-    echo "yes."
-fi
+#echo -n "Checking if BCL is installed..."
+#grep BCL $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    module purge
+#    module load Python/2.7.18-GCCcore-10.2.0
+#    module load CMake/3.23.1-GCCcore-11.3.0
+#    module load libGLU/9.0.2-GCCcore-11.3.0
+#    echo "no. BCL will be installed. Performing the cleanup, please wait." 
+#    rm -rf $INSTALL/bcl-master
+#    wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
+#    unzip -o $INSTALL/bcl.zip -d $INSTALL
+#    rm $INSTALL/bcl.zip
+#    cd $INSTALL/bcl-master
+#    ./scripts/build/build_cmdline.linux.sh
+#    echo "#******* BCL section *******" >> $vini_dir/sourceme
+#    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
+#else
+#    echo "yes."
+#fi
 
 
 echo -n "Checking if Hex docking software is installed..."
@@ -585,7 +594,11 @@ if  [ ! -s tmp ]
 then
     echo "no. Hex will be installed." 
     echo "#******* Hex section *******" >> $vini_dir/sourceme
-    echo "module load libGLU/9.0.2-GCCcore-11.3.0" >> $vini_dir/sourceme
+    module spider libGLU 2&> tmp
+    grep error tmp 2&> tmp2
+    if [ ! -s tmp2 ] ; then
+       echo "module load libGLU/9.0.2-GCCcore-11.3.0" >> $vini_dir/sourceme
+    fi
     rm $INSTALL/hex-8.1.1-x64-centos7.run
     cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
     exec $INSTALL/hex-8.1.1-x64-centos7.run

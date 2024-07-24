@@ -18,7 +18,6 @@ echo "export THREE=$THREE"                 >> $vini_dir/globals
 echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
 echo "export NULL=$NULL"                   >> $vini_dir/globals
 echo "export restart=n"                    >> $vini_dir/globals
-echo "export SLURMACCT=r2022r03-224-users" >> $vini_dir/globals
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -29,14 +28,12 @@ else
     echo passed.
 fi
 
-
 echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
     echo "The following software is installed:" 
-    #cat sourceme | grep section | sed 's/section//' | sed 's/General//'
     programs=`grep section sourceme | wc -l`
-    NOPROGS=15   #the number of 3rd programs Vini is using
+    NOPROGS=13   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
@@ -76,58 +73,45 @@ mkdir -p $vini_dir/genes/expressions
 mkdir -p $vini_dir/genes/mutations
 mkdir -p $vini_dir/genes/sequences
 
-
 # Added checking for PBS and global variable for script type
 
-echo -n "Checking for SLURM..."
 sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
 grep "command not found" tmp > tmp2
 if [ -s tmp2 ]
 then
-    echo "not found."
-#####
-    echo -n "Checking for PBS..."
     pbsnodes 2&> tmp3 # trying to detect PBS
     grep "command not found" tmp3 > tmp4
     if [ -s tmp4 ]
     then
-        echo "not found. Exiting."
-	exit
+         exit
     else
-	echo "found."
-	JSS = 2
-	echo "export SCTYPE="PBS" >> $vini_dir/globals
-	echo qstat > job_status
-	echo qsub > job_submit
-	echo qdel > job_cancel
-	echo "PBS" > $WORKDIR/scheduler
-	sh $vini_dir/set_partitions
-	default=`cat cpu_partition`
-	read -e -p "Enter name of partition Vini will use (press enter to accept the default): " -i "$default" active_partition
-	echo $active_partition > active_partition
-	echo "export active_partition=${active_partition}" >> $vini_dir/globals
-	echo $JSS > $WORKDIR/JSS
+	echo "export SCTYPE=PBS"       >> $vini_dir/globals
+        echo "export job_status=qstat" >> $vini_dir/globals
+        echo "export job_submit=qsub"  >> $vini_dir/globals
+        echo "export job_cancel=qdel"  >> $vini_dir/globals
+        echo "PBS partitions are configured as:" ; pbsnodes
+	read -p "Enter the name of PBS partition Vini will use:" partition
+        cores=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.ncpus = \([0-9]*\)/\1/p' | head -n 1)
+        memsize=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.mem = \([0-9]*\)kb/\1/p' | head -n 1)
+        echo "export partition=${partition}" >> $vini_dir/globals
+        echo "export cores=${cores}"         >> $vini_dir/globals
+        echo "export memsize=${memsize}" >> $vini_dir/globals
     fi
-#####
-else
-    echo "found."
-    JSS=1
-    echo "export SCTYPE="SLURM"	>> $vini_dir/globals
-    echo squeue > job_status
-    echo sbatch > job_submit
-    echo scancel > job_cancel
-    echo "SLURM" > $WORKDIR/scheduler
-    sh $vini_dir/set_partitions
-    default=`cat cpu_partition`
-    read -e -p "Enter name of partition Vini will use (press enter to accept the default): " -i "$default" active_partition
-    echo $active_partition > active_partition
-    echo "export active_partition=${active_partition}" >> $vini_dir/globals
-    echo $JSS > $WORKDIR/JSS
+else 
+    echo "export SCTYPE=SLURM"   	>> $vini_dir/globals
+    echo "export job_status=squeue"     >> $vini_dir/globals
+    echo "export job_submit=sbatch"     >> $vini_dir/globals
+    echo "export job_cancel=scancel"    >> $vini_dir/globals
+    echo "SLURM partitions are configured as:" ; sinfo
+    read -p "Enter the name of partition Vini will use:" partition
+    cores=$(sinfo -o "%P %n %c" -p $partition | awk 'NR==2 {print $3}')
+    memsize=$(sinfo -o "%P %n %m" -p $partition | awk 'NR==2 {print $3}')
+    echo "export partition=${partition}" >> $vini_dir/globals
+    echo "export cores=${cores}" >> $vini_dir/globals
+    echo "export memsize=${memsize}" >> $vini_dir/globals
 fi
 
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
-job_status=`cat job_status`
-job_cancel=`cat job_cancel`
 
 $job_status -u $USER > jobs
 nolines=`wc -l < jobs`
@@ -147,70 +131,23 @@ rm -f jobs
 
 cat COPYRIGHT
 
-read -e -p "Enter your SLURM account provided by admin. Press enter to accept " -i "r2022r03-224-users" slurm_account
-echo $slurm_account > $WORKDIR/slurm_account
-
-partition=`cat active_partition`
+read -p "Enter your SLURM account or NONE if you do not have it:" slurm_account
+echo "export slurm_account=${slurm_account}" >> $vini_dir/globals
 
 walltime=60   #max time is 60 minutes
 
+> $WORKDIR/dock_id_list  #Clear precedence lists
+> $WORKDIR/slem_id_list
 
-    > $WORKDIR/dock_id_list  #Clear precedence lists
-    > $WORKDIR/slem_id_list
-
-if [ -e $WORKDIR/${partition}_nodetest ]
-then
-    birth=`stat $WORKDIR/${partition}_nodetest | grep Birth`
-    echo "Testing of computing nodes has already been done on $birth. If there have been any changes in the meantime, the procedure should be repeated. Warning: May last up to 1h to finish."
-
-    read -e -p "Do you want to repeat the procedure? (y/n). Press enter to accept the default: " -i "n" yesno
-    if [ $yesno == y ]
-    then
-        timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
-        success=`echo $?`
-        if [ $success -eq 124 ] ; then
-           echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-        fi
-    fi
-else
-    echo "Nodetest will now be performed."
-    timeout 3600s sh $vini_dir/nodetest ${active_partition} $walltime
-    success=`echo $?`
-    if [ $success -eq 124 ] ; then
-       echo "Test aborted, cancelling jobs..." ; scancel -u $USER
-    fi
-fi
-
-
-if [[ ! -e cpu_cores ]] || [[ ! -e cpu_cores ]]
-then
-    echo "Getting info about $cpu nodes, do not interrupt!"
-    timeout 3600s sh $vini_dir/gather_hardware_info $walltime
-fi
-
-# Add for PBS?
-sh $vini_dir/prepare_SLURM_scripts
-
-echo "rosetta" > $WORKDIR/docking
-
-partition=`cat cpu_partition`
-cores=`cat ${partition}_cores`
-
-
-read -e -p "Vini uses Autodock Vina in its calculations. Enter the number of threads per node for Autodock Vina. Press enter to accept the default: " -i "48" threads
-echo "export threads=$threads" >> globals
-
-read -e -p "Enter the maximum number of threads Vini can use at the same time. Press enter to accept the default: " -i "500000" maxcores
-maxcores=`echo $maxcores $TWO | awk '{print $1 / $2}'`
-max_jobs=`echo $maxcores $threads | awk '{print $1 / $2}'`
+maxcores=500000    #Vini is allowed to request 500000 cores
+max_jobs=`echo $maxcores $cores | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
-echo "export max_jobs=${max_jobs}" >> $vini_dir/globals
-
 nodes=`echo $maxcores $cores | awk '{print $1 / $2}'`
 nodes=${nodes%.*}
-echo "export nodes=$nodes" >> $vini_dir/globals
-echo "Number of concurrent Vina jobs (each job using $Vinathreads CPU cores) will be limited to $Vinajobs"
-echo "Number of concurrent  AlphaFold jobs (each job using $cores CPU cores) will be limited to $nodes"
+
+echo "export cores=${cores}"            >> $vini_dir/globals
+echo "export max_jobs=${max_jobs}"      >> $vini_dir/globals
+echo "export nodes=${nodes}"            >> $vini_dir/globals
 
 echo ; echo "If you never registered to Drugbank before, stop here. Go to https://go.drugbank.com/public_users/sign_up and sign-up. Upon receiving the approval, enter your registration email and password here."
 read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
@@ -423,10 +360,10 @@ CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer
 echo "export CANCER_PATHWAY=${CANCER_PATHWAY}" >> $vini_dir/globals
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
 #cp $vini_dir/prep_prot_lig.py $WORKDIR
-read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
-echo "export exhaustiveness=$exhaustiveness" >> $vini_dir/globals
-num_modes=10
-echo "export num_modes=${num_modes}" >> $vini_dir/globals
+#read -e -p "Enter the number of Autodock Vina exhaustive searches. Press enter to accept the default : " -i "100" exhaustiveness
+echo "export exhaustiveness=100" >> $vini_dir/globals
+#num_modes=10
+echo "export num_modes=10" >> $vini_dir/globals
 
 read -e -p "Run Vini in debug mode (output will be redirected to the screen) (y/n)?. Press enter to accept the default:" -i "n" yesno
 if  [ $yesno == n ]

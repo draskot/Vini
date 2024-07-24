@@ -1,8 +1,9 @@
+source $vini_dir/globals
 
 #Input parameter: nodes
 
 nodes=$1
-job_status=`cat job_status`
+
 NULL=0
 
 while true

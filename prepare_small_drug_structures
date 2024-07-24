@@ -12,7 +12,6 @@ do
     type=`echo $line | awk -F','  '{print $2}'`
     if  [ $type == S ]
     then
-        #if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] || [[ ! -e $vini_dir/ligands/sdf_files/"${drug}".sdf ]]
         if [[ ! -e $vini_dir/ligands/pdb_files/"${drug}".pdb ]] && [[ ! -e $vini_dir/database/ligands/pdb_files/"${drug}".pdb ]]
         then
             code=`echo $line | awk -F','  '{print $3}'`

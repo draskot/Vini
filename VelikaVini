@@ -1,10 +1,5 @@
 source $vini_dir/globals
 
-partition=`cat cpu_partition`
-cores=`cat ${partition}_cores`
-job_submit=`cat job_submit`
-
-
 > $WORKDIR/missing_genes
 > $WORKDIR/failed_predictions
 > $WORKDIR/SLEM_values    #delete SLEM values from the previous run
@@ -12,11 +7,10 @@ rm -f $WORKDIR/slem*
 rm -f $WORKDIR/dock*
 rm -f $WORKDIR/postproc*
 rm -f $WORKDIR/SLEM*
-
 rm -f $vini_dir/genes/cosmic_ids.csv
 
 nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
-nr_complexes=`cat $WORKDIR/nr_complexes`
+#nr_complexes=`cat $WORKDIR/nr_complexes`
 
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
@@ -36,7 +30,6 @@ rm -f $WORKDIR/END
 
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
 sh $vini_dir/create_receptor_structures
-
 
 if  [ -s $WORKDIR/missing_genes ]
 then
