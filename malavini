@@ -96,7 +96,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
 				 elif [ SCTYPE="PBS" ]
 				 then
 				     echo "#PBS -l walltime="$walltime						  >> dock
@@ -105,7 +105,7 @@ do
 				     echo "#PBS -N D${M}.${N}"							  >> dock
 				     echo "#PBS -o D${M}.${N}.out"						  >> dock
 				     echo "#PBS -e D${M}.${N}.err"						  >> dock
-				     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread	  >> dock
+				     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores 	  >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -115,7 +115,7 @@ do
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "vina --cpu $cores   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                                 >> dock
                                  echo "then"                                                                    >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
@@ -152,7 +152,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
 				 elif [ SCTYPE="PBS" ]
 				 then
 				     echo "#PBS -l walltime="$walltime						  >> dock
@@ -161,7 +161,7 @@ do
 				     echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread       >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores        >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -210,7 +210,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$threads                                      >> dock
+                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
 				 elif [ SCTYPE="PBS" ]
 				 then
                                      echo "#PBS -l walltime="$walltime                                            >> dock
@@ -219,7 +219,7 @@ do
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$thread       >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores        >> dock
 				 fi
 
                                  echo "mv complex_${comp_index}.pdb tmp"                                      >> dock
@@ -233,7 +233,7 @@ do
                                  echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l ligand_${lig_index}.pdb -o ligand_${lig_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $threads --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "vina --cpu $cores   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                               >> dock
                                  echo "then"                                                                  >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
@@ -263,7 +263,7 @@ do
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
-                                     echo "#SBATCH --ntasks-per-node="$threads                                    >> dock
+                                     echo "#SBATCH --ntasks-per-node="$cores                                      >> dock
                                      echo "#SBATCH --cpus-per-task=1"                                             >> dock
 				 elif [ SCTYPE="PBS" ]
 				 then
@@ -273,7 +273,7 @@ do
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$thread    >> dock
+                                     echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$cores     >> dock
 				 fi
 
                                  echo "cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./"                 >> dock
@@ -293,8 +293,8 @@ do
                                  echo "cp $vini_dir/docking.mac ./"                                            >> dock
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> dock
                                  echo "cp complex.pdb complex_${comp_index}.pdb"                               >> dock
-                                 echo "mpirun -np $threads $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s complex_${comp_index}.pdb @flag_input_relax -overwrite" >> dock
-                                 echo "mpirun -np $threads $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb @flag_global_docking" >> dock
+                                 echo "mpirun -np $cores   $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s complex_${comp_index}.pdb @flag_input_relax -overwrite" >> dock
+                                 echo "mpirun -np $cores   $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb @flag_global_docking" >> dock
                                  echo "if [ -e ROSETTA_CRASH.log ]"                                            >> dock
                                  echo "then"                                                                   >> dock
                                  echo "    echo "ERROR" > $target_dir/log_${comp_index}"                       >> dock
@@ -302,7 +302,7 @@ do
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                                  echo "    string=\`grep partners flag_global_docking\`"                       >> dock
                                  echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> dock
-                                 echo "    mpirun -np $threads $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> dock
+                                 echo "    mpirun -np $cores   $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite" >> dock
                                  echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> dock
                                  echo "    if  [ -z \${score} ] ; then"                                        >> dock
                                  echo "        echo ERROR > $target_dir/log_${comp_index}"                     >> dock
@@ -353,9 +353,9 @@ do
 		 elif [ SCTYPE="PBS" ]
 		 then
                     echo "#PBS -l walltime=00:30:00"                             >> ${target_dir}/SLEM
-                    # echo "#PBS -A"                                                >> ${target_dir}/SLEM	SLURMACCT?
+                    # echo "#PBS -A"                                             >> ${target_dir}/SLEM	SLURMACCT?
                     echo "#PBS -q "$partition                                    >> ${target_dir}/SLEM
-                    echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1         >> ${target_dir}/SLEM	
+                    echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1"        >> ${target_dir}/SLEM	
 		    echo "#PBS -N SLEM"						 >> ${target_dir}/SLEM
 		    echo "#PBS -o ${target_dir}/SLEM.out"			 >> ${target_dir}/SLEM
 		    echo "#PBS -e ${target_dir}/SLEM.err"			 >> ${target_dir}/SLEM
