@@ -11,15 +11,11 @@ then
     echo "Vini main directory will be set to $vini_dir" ; echo
     #read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
     read -p "Please enter path for your scratch data on the high-performance storage (e.g. /scratch/IRB/$USER):" WORKDIR
-    if [ -e $WORKDIR ] ; then
-       mkdir $WORKDIR
-    fi
+    mkdir -p $WORKDIR
 
     echo "High Performance Storage (scratch) will be set to $WORKDIR" ; echo
     read -p "Please enter path for Vini's 3rd party software installation (e.g. /scratch/IRB/$USER/INSTALL):" INSTALL
-    if [ -e $INSTALL ] ; then
-       mkdir $INSTALL
-    fi
+       mkdir -p $INSTALL
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
@@ -29,18 +25,10 @@ then
     echo "export SHARED=$SHARED"       >> $vini_dir/sourceme
     echo "export INSTALL=$INSTALL"     >> $vini_dir/sourceme
 else
-    echo "High-performace storage (scratch) is set to $WORKDIR"
-    read -e -p "Do you want to modify it's location (y/n)?. Enter to accept the default: " -i "n" yesno
-    if [ $yesno == y ]
-    then
-        read -p "Enter the path to your new scratch (e.g. /exa5/scratch/user/$USER):" WORKDIR
-        echo "High Performance Storage (scratch) will be on $WORKDIR" ; echo
-        lineno=`grep -n WORKDIR sourceme | head -1 | cut -d: -f1` #Get number of line to be replaced
-        newline=`echo "export WORKDIR=$WORKDIR"`
-        sed -i "$lineno i ${newline}" sourceme
-        let lineno++
-        sed -i "$lineno d" sourceme
-    fi
+    mkdir -p $WORKDIR
+    mkdir -p $INSTALL
+    echo "High-performace storage (scratch) is on $WORKDIR"
+    echo "Installation directory is $INSTALL"
 fi
 
 source $vini_dir/sourceme
@@ -249,28 +237,25 @@ grep AlphaFold $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
     echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
-    module spider Alphafold 2> tmp
-    grep -w error tmp > alphafold
+    module spider Alphafold 2&> tmp
+    grep -w error tmp 2&> alphafold
     if [ ! -s alphafold ]
     then
         echo "module(s) found" ; cat tmp
         echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-        read -p "Do you want to use module [m] or your local [l] Alphafold installation? (m/l)" ml
-        if  [ $ml == m ]
-        then
-            read -p "Select module:" alphafold
-            echo "module --ignore-cache load" $alphafold >> $vini_dir/sourceme
-            echo "ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR" >> $vini_dir/sourceme
-        else
-            sleep 1
-            read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
-	    echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	    echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	    echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-            echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
-	    echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
-        fi
+        read -p "Select module:" alphafold
+        echo "module --ignore-cache load" $alphafold >> $vini_dir/sourceme
+        echo "ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR" >> $vini_dir/sourceme
+        read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
+	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
+	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
+	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
+        echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
+	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
+        echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
+    else
+	echo "no."
+        read -p "Install Alphafold in the $INSTALL/AlphaFold directory. Press enter when ready to continue."	    
     fi
 else
     echo "yes."
@@ -319,19 +304,15 @@ echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]  #install Rosetta
 then
-    module spider Rosetta > tmp
+    module spider Rosetta 2&> tmp
     grep error tmp 2&> tmp2
-    if  [ ! -s tmp2 ]
+    if  [ -s tmp2 ]
     then
-        echo "Rosetta module not exists! Installing local copy of Rosetta."
+        echo "Rosetta module not exists! Will try to install local copy of Rosetta."
 
-        if  [ -e $WORKDIR/Rosetta_username ] && [ -e $WORKDIR/Rosetta_password ]
+        if  [ ! -e $WORKDIR/Rosetta_username ] || [ ! -e $WORKDIR/Rosetta_password ]
         then
-            echo "no, installing."
-            Rosetta_username=`cat $WORKDIR/Rosetta_username`
-            Rosetta_password=`cat $WORKDIR/Rosetta_password`
-        else
-            echo "In order to run Rosetta you must obtain license from https://els2.comotion.uw.edu/product/rosetta"
+            echo "In order to run Rosetta you need to obtain license from https://els2.comotion.uw.edu/product/rosetta"
             echo "This license is free for academic users."
             echo "Upon receiving a license, enter username and password here."
             read -p "Enter username:" Rosetta_username
@@ -340,7 +321,7 @@ then
             echo $Rosetta_password > $WORKDIR/Rosetta_password
             chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
-        fi    
+        fi
         Rosetta_version=3.14
         Rosetta_release=371
         if  [ ! -e $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 ] ; then
@@ -353,31 +334,28 @@ then
             tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
         fi
 
-	echo "brakepoint!" ; sleep 1000
 
         cd $INSTALL
 
-        #module purge
-        echo "Compiling Rosetta requires GCC, Python and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
+        module purge
+        echo "Compiling Rosetta requires GCC and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
 
-        module spider gcc 
+        module spider gcc
         #sh $vini_dir/wait_for_key.sh "cont"
-	read -p "Select GCC module (11.2 or higher)to load and press enter to continue: " gcc
+	read -p "Select GCC module (version 11.2.0 or higher) to load and press enter to continue: " gcc
         module load ${gcc}
 
-
-        read -p "The list of available Python  modules will be shown next. Enter to cont." enter
-        module spider python 
+	module spider python
         #sh $vini_dir/wait_for_key.sh "cont"
-	read -p "Select Python module (3.9 or higher) to load and press enter to continue: " python
-	module load ${python}
+        read -p "Select Python module (version 3.9.6 or higher) to load and press enter to continue: " gcc
+        module load ${gcc}
 
-        read -p "The list of available OpenMPI modules will be shown next. Enter to cont." enter
-        module spider OpenMPI 
+        echo "The list of available OpenMPI modules is shown next." ; sleep 2
+        module spider OpenMPI
         #sh $vini_dir/wait_for_key.sh "cont"
-	read -p "Select OpenMPI module (4.1 or higher)to load and press enter to start compiling: " openmpi
+	read -p "Select OpenMPI module to load (version 4.1.1 or higher) and press enter to start compiling: " openmpi
         module load ${openmpi}
-    
+
         cd $INSTALL/rosetta.source.release-${Rosetta_release}/main/source
         ./scons.py -j 8 bin mode=release extras=mpi
         rosetta_src=$INSTALL/rosetta.source.release-${Rosetta_release}
@@ -402,8 +380,8 @@ then
         echo "module load $rosetta"                                                   >> $vini_dir/sourceme
     fi
     echo "export ROSETTA=$ROSETTA"                                                >> $vini_dir/sourceme
-    echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme 
-    echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme 
+    echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme
+    echo "export ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst" >> $vini_dir/sourceme
     echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
     echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
 fi
