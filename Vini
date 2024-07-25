@@ -8,16 +8,14 @@ vini_dir=`pwd` ; export vini_dir
 > Vini.crashlog
 > $vini_dir/globals
 chmod u+x $vini_dir/globals
-NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7
-TRUE=1 ; FALSE=0
+NULL=0 ; ONES=1 ; TWO=2 ; THREE=3 ; SEVEN=7 ; TRUE=1 ; FALSE=0
 echo "export TRUE=$TRUE"                   >> $vini_dir/globals
 echo "export FALSE=$FALSE"                 >> $vini_dir/globals
+echo "export NULL=$NULL"                   >> $vini_dir/globals
 echo "export ONES=$ONES"                   >> $vini_dir/globals
 echo "export TWO=$TWO"                     >> $vini_dir/globals
 echo "export THREE=$THREE"                 >> $vini_dir/globals
 echo "export SEVEN=$SEVEN"                 >> $vini_dir/globals
-echo "export NULL=$NULL"                   >> $vini_dir/globals
-echo "export restart=n"                    >> $vini_dir/globals
 
 echo -n "Checking for user..." 
 if [[ $HOME == "/root" ]]
@@ -31,6 +29,7 @@ fi
 echo -n "Checking for the installation of the 3rd party software..."
 if  [ -e sourceme ]
 then
+    source $vini_dir/sourceme
     echo "The following software is installed:" 
     programs=`grep section sourceme | wc -l`
     NOPROGS=13   #the number of 3rd programs Vini is using
@@ -131,8 +130,8 @@ rm -f jobs
 
 cat COPYRIGHT
 
-read -p "Enter your SLURM account or NONE if you do not have it:" slurm_account
-echo "export slurm_account=${slurm_account}" >> $vini_dir/globals
+read -p "Enter your SLURM/PBS  account or NONE if you do not have it:" ACCOUNT
+echo "export ACCOUNT=${account}" >> $vini_dir/globals
 
 walltime=60   #max time is 60 minutes
 

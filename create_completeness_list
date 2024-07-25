@@ -1,7 +1,6 @@
 PDB=.pdb
-NULL=0
-one=1
-two=2
+
+source $vini_dir/sourceme
 
 > $WORKDIR/clean_structures
 > $WORKDIR/complex_structures
@@ -33,7 +32,7 @@ do
         grep -w CHAIN: $DOWNLOAD_DIR/$accession_code$PDB > $WORKDIR/chains
         grep "HET " $DOWNLOAD_DIR/$accession_code$PDB > $WORKDIR/ligands
         models=`wc -l < $WORKDIR/models` ; chains=`wc -l < $WORKDIR/chains` ; ligands=`wc -l < $WORKDIR/ligands`
-        if { [[ $models -ne $NULL ]] || [[ $ligands -gt $one ]] ||  [[ $chains -gt $two ]]; } #ignore multi-model, multi-ligand and multi-chain structures
+        if { [[ $models -ne $NULL ]] || [[ $ligands -gt $ONES ]] ||  [[ $chains -gt $TWO ]]; } #ignore multi-model, multi-ligand and multi-chain structures
         then 
             echo $accession_code "has" $models "models and" $chains "chain(s) and" $ligands "ligands, skipped." 
             #rm $DOWNLOAD_DIR/$accession_code$PDB

@@ -9,16 +9,22 @@ if  [ ! -e sourceme ]
 then
     vini_dir=$HOME/Vini
     echo "Vini main directory will be set to $vini_dir" ; echo
-    read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
+    #read -p "Please enter your SLURM account (e.g. r2022r03-224-users):" SLURMACCT
     read -p "Please enter path for your scratch data on the high-performance storage (e.g. /scratch/IRB/$USER):" WORKDIR
-    echo "High Performance Storage (scratch) will be on Lustre, mounted as $WORKDIR" ; echo
+    if [ -e $WORKDIR ] ; then
+       mkdir $WORKDIR
+    fi
+
+    echo "High Performance Storage (scratch) will be set to $WORKDIR" ; echo
     read -p "Please enter path for Vini's 3rd party software installation (e.g. /scratch/IRB/$USER/INSTALL):" INSTALL
+    if [ -e $INSTALL ] ; then
+       mkdir $INSTALL
+    fi
     echo "Third party software will be installed in $INSTALL directory" ; echo
     SHARED=`dirname $INSTALL`
     mkdir -p $INSTALL
     echo "#************General**********" >> $vini_dir/sourceme
     echo "export vini_dir=$vini_dir"   >> $vini_dir/sourceme
-    echo "export SLURMACCT=$SLURMACCT" >> $vini_dir/sourceme
     echo "export WORKDIR=$WORKDIR"     >> $vini_dir/sourceme
     echo "export SHARED=$SHARED"       >> $vini_dir/sourceme
     echo "export INSTALL=$INSTALL"     >> $vini_dir/sourceme
@@ -347,20 +353,29 @@ then
             tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
         fi
 
+	echo "brakepoint!" ; sleep 1000
+
         cd $INSTALL
 
-        module purge
-        echo "Compiling Rosetta requires GCC and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
+        #module purge
+        echo "Compiling Rosetta requires GCC, Python and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
 
         module spider gcc 
-        sh $vini_dir/wait_for_key.sh "cont"
-        read -p "Select GCC module to load and press enter to continue: " gcc
+        #sh $vini_dir/wait_for_key.sh "cont"
+	read -p "Select GCC module (11.2 or higher)to load and press enter to continue: " gcc
         module load ${gcc}
 
-        echo "The list of available OpenMPI modules is shown next." ; sleep 3
+
+        read -p "The list of available Python  modules will be shown next. Enter to cont." enter
+        module spider python 
+        #sh $vini_dir/wait_for_key.sh "cont"
+	read -p "Select Python module (3.9 or higher) to load and press enter to continue: " python
+	module load ${python}
+
+        read -p "The list of available OpenMPI modules will be shown next. Enter to cont." enter
         module spider OpenMPI 
-        sh $vini_dir/wait_for_key.sh "cont"
-        read -p "Select OpenMPI module to load and press enter to start compiling: " openmpi
+        #sh $vini_dir/wait_for_key.sh "cont"
+	read -p "Select OpenMPI module (4.1 or higher)to load and press enter to start compiling: " openmpi
         module load ${openmpi}
     
         cd $INSTALL/rosetta.source.release-${Rosetta_release}/main/source

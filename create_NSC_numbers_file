@@ -1,6 +1,6 @@
-NULL=0
 ONES=1
-#cell_line=DU145
+
+source $vini_dir/sourceme
 
 if [ $cell_line == SF268 ] ; then  #map COSMIC to NCI-60 cell names
    cell_line=SF-268

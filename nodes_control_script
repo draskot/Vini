@@ -4,8 +4,6 @@ source $vini_dir/globals
 
 nodes=$1
 
-NULL=0
-
 while true
 do
     $job_status -u $USER > $WORKDIR/all_user_jobs

@@ -6,7 +6,7 @@ lig_index=$1
 comp_index=$2
 conf_index=$3
 
-NULL=0
+source $vini_dir/sourceme
 
 $MGLBIN/pythonsh $MGLUTILS/prepare_gpf4.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt -o complex_${comp_index}.gpf
 

@@ -89,7 +89,7 @@ do
 				 then
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
-                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --account=$ACCOUNT"                                            >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
@@ -145,7 +145,7 @@ do
 				 then
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
-                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --account=$ACCOUNT"                                            >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
@@ -203,7 +203,7 @@ do
 				 then                                         
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
-                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --account=$ACCOUNT"                                            >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
@@ -257,7 +257,7 @@ do
                                  then
 				     echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
-                                     echo "#SBATCH --account=$SLURMACCT"                                          >> dock
+                                     echo "#SBATCH --account=$ACCOUNT"                                            >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
                                      echo "#SBATCH --job-name=D${M}.${N}"                                         >> dock
                                      echo "#SBATCH --output=D${M}.${N}.out"                                       >> dock
@@ -343,7 +343,7 @@ do
 		 if [ SCTYPE="SLURM" ]
 		 then
                      echo "#SBATCH --time=00:30:00"                              >> ${target_dir}/SLEM
-                     echo "#SBATCH --account=$SLURMACCT"                         >> ${target_dir}/SLEM
+                     echo "#SBATCH --account=$ACCOUNT"                           >> ${target_dir}/SLEM
                      echo "#SBATCH --partition="$partition                       >> ${target_dir}/SLEM
                      echo "#SBATCH --ntasks=1"                                   >> ${target_dir}/SLEM
                      echo "#SBATCH --cpus-per-task=1"                            >> ${target_dir}/SLEM
@@ -426,7 +426,7 @@ echo "#!/bin/bash"                                    > $WORKDIR/postproc
 if [ SCTYPE="SLURM" ]
 then
     echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
-    echo "#SBATCH --account=$SLURMACCT"                  >> $WORKDIR/postproc
+    echo "#SBATCH --account=$ACCOUNT"                    >> $WORKDIR/postproc
     echo "#SBATCH --partition="$partition                >> $WORKDIR/postproc
     echo "#SBATCH --ntasks=1"                            >> $WORKDIR/postproc
     echo "#SBATCH --cpus-per-task=1"                     >> $WORKDIR/postproc
