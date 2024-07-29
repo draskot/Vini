@@ -1,4 +1,3 @@
-ONES=1
 
 source $vini_dir/sourceme
 
@@ -47,7 +46,6 @@ then
     echo -n "Downloading AgentInfo file..."
     curl -o tmp -Ls https://ctepcore.nci.nih.gov/webobjs/CTEPWebsite/AgentInfo.html 
     python $HOME/.local/bin/html2text tmp > AgentInfo
-    rm AgentInfo.htlm
     echo "done."
 fi
 

@@ -1,12 +1,12 @@
 
 if [ "$#" -lt 8 ]; then # Check if the correct number of arguments is provided
-    echo "Usage: $0 <input_list> <input_list> <slurm_script> <output_command_file> <I> <J> <L> <M>"
+    echo "Usage: $0 <input_list> <input_list> <wlm_script> <output_command_file> <I> <J> <L> <M>"
     exit 1
 fi
 
 input_list=$1
 out_list=$2
-slurm_script=$3
+wlm_script=$3
 output_command_file=$4
 I=$5 ; J=$6 ; L=$7 ; M=$8
 
@@ -14,7 +14,7 @@ echo $I $J $L $M
 
 if  [ ${input_list} == "NONE" ]
 then
-    sbatch_command="jobid=\$(sbatch $slurm_script)"
+    sbatch_command="jobid=\$(sbatch $wlm_script)"
 
 else                              # Read the input list and extract job IDs
     job_dependencies="" 
@@ -27,7 +27,7 @@ else                              # Read the input list and extract job IDs
             job_dependencies="$job_dependencies,$job_id"
         fi
     done < "$input_list"
-    sbatch_command="jobid=\$(sbatch --dependency=afterany:$job_dependencies $slurm_script)"
+    sbatch_command="jobid=\$(sbatch --dependency=afterany:$job_dependencies $wlm_script)"
 
 fi
 

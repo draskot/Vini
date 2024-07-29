@@ -1,7 +1,13 @@
 source $vini_dir/globals
 
-partition=`cat cpu_partition`
-walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
+if [ $SCTYPE == SLURM ]
+then
+    walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'` #By default we are running Vini jobs on cpu nodes
+else
+    walltime=$(qmgr -c "list queue $partition" | grep "resources_max.walltime" | awk '{print $3}')
+fi
+
+
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
@@ -85,7 +91,7 @@ do
                              UNKN2=`grep -w B ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              if  [[ -z $UNKN1 ]] && [[ -z $UNKN2 ]] #No metal ions, using Autodock Vina
                              then
-				 if [ SCTYPE="SLURM" ]
+				 if [ $SCTYPE == SLURM ]
 				 then
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
@@ -97,15 +103,14 @@ do
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
                                      echo "#SBATCH --cpus-per-task="$cores                                        >> dock
-				 elif [ SCTYPE="PBS" ]
-				 then
+				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
-				     # echo "#PBS -A"								    >> dock		SLURMACCT?
+				     # echo "#PBS -A"			                                          >> dock		SLURMACCT?
 				     echo "#PBS -q "$partition							  >> dock
 				     echo "#PBS -N D${M}.${N}"							  >> dock
 				     echo "#PBS -o D${M}.${N}.out"						  >> dock
 				     echo "#PBS -e D${M}.${N}.err"						  >> dock
-				     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores 	  >> dock
+                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -141,7 +146,7 @@ do
                                  else  
                                      grep -w B $vini_dir/AD4_parameters_for_metal_ions > param_file
                                  fi
-				 if [ SCTYPE="SLURM" ]
+				 if [ $SCTYPE == SLURM ]
 				 then
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
@@ -153,15 +158,14 @@ do
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
                                      echo "#SBATCH --cpus-per-task="$cores                                        >> dock
-				 elif [ SCTYPE="PBS" ]
-				 then
+				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
 				     # echo "#PBS -A"								   >> dock		SLURMACCT?
 				     echo "#PBS -q "$partition							  >> dock
 				     echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores        >> dock
+                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -199,7 +203,7 @@ do
                              grep HETATM complex_${comp_index}.pdb > tmp
                              if  [ -s tmp ]             #if complex is a compound swap ligand_receptor and run Vina
                              then
-				 if [ SCTYPE="SLURM" ]
+				 if [ $SCTYPE == SLURM ]
 				 then                                         
                                      echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
@@ -211,15 +215,14 @@ do
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
                                      echo "#SBATCH --cpus-per-task="$cores                                        >> dock
-				 elif [ SCTYPE="PBS" ]
-				 then
+				 else
                                      echo "#PBS -l walltime="$walltime                                            >> dock
                                      # echo "#PBS -A"                                                               >> dock         SLURMACCT?
                                      echo "#PBS -q "$partition                                                    >> dock
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_total_tasks=1:EC_threads_per_task="$cores        >> dock
+                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
 				 fi
 
                                  echo "mv complex_${comp_index}.pdb tmp"                                      >> dock
@@ -253,7 +256,7 @@ do
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
                              else  
-				 if [ SCTYPE="SLURM" ]                                           #using Rosetta
+				 if [ $SCTYPE == SLURM ]                                           #using Rosetta
                                  then
 				     echo "#!/bin/bash"                                                            > dock  
                                      echo "#SBATCH --time="$walltime                                              >> dock
@@ -265,15 +268,14 @@ do
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks-per-node="$cores                                      >> dock
                                      echo "#SBATCH --cpus-per-task=1"                                             >> dock
-				 elif [ SCTYPE="PBS" ]
-				 then
+				 else
                                      echo "#PBS -l walltime="$walltime                                            >> dock
                                      # echo "#PBS -A"                                                               >> dock         SLURMACCT?
                                      echo "#PBS -q "$partition                                                    >> dock
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$cores     >> dock
+                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
 				 fi
 
                                  echo "cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./"                 >> dock
@@ -319,14 +321,13 @@ do
 
                  input_list=NONE                                    #generate sbatch command
                  out_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}
-                 slurm_script=$WORKDIR/${workdir}/dock
+                 wlm_script=$WORKDIR/${workdir}/dock
                  output_command_file=$WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
-                 if [ $SCTYPE=="SLURM" ]
+                 if [ $SCTYPE == SLURM ]
                  then
-                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-                 elif [ $SCTYPE="PBS" ]
-                 then
-                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
+                 else
+                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
                  fi
                  chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}                                   #submit 
@@ -340,7 +341,7 @@ do
                  echo $target_dir > $target_dir/target_dir
                  echo ${therapy_level} > $WORKDIR/therapy_level    #Computing SLEM
                  echo "#!/bin/bash"                                           > ${target_dir}/SLEM
-		 if [ SCTYPE="SLURM" ]
+		 if [ $SCTYPE == SLURM ]
 		 then
                      echo "#SBATCH --time=00:30:00"                              >> ${target_dir}/SLEM
                      echo "#SBATCH --account=$ACCOUNT"                           >> ${target_dir}/SLEM
@@ -350,15 +351,14 @@ do
                      echo "#SBATCH --job-name=SLEM"                              >> ${target_dir}/SLEM
                      echo "#SBATCH --output=${target_dir}/SLEM.out"              >> ${target_dir}/SLEM
                      echo "#SBATCH --error=${target_dir}/SLEM.err"               >> ${target_dir}/SLEM
-		 elif [ SCTYPE="PBS" ]
-		 then
+		 else
                     echo "#PBS -l walltime=00:30:00"                             >> ${target_dir}/SLEM
                     # echo "#PBS -A"                                             >> ${target_dir}/SLEM	SLURMACCT?
                     echo "#PBS -q "$partition                                    >> ${target_dir}/SLEM
-                    echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1"        >> ${target_dir}/SLEM	
 		    echo "#PBS -N SLEM"						 >> ${target_dir}/SLEM
 		    echo "#PBS -o ${target_dir}/SLEM.out"			 >> ${target_dir}/SLEM
 		    echo "#PBS -e ${target_dir}/SLEM.err"			 >> ${target_dir}/SLEM
+                    echo "#PBS -l nodes=1:ppn=$cores"                            >> ${target_dir}/SLEM
 		 fi
  
                  echo "source $vini_dir/globals"                             >> ${target_dir}/SLEM
@@ -405,14 +405,13 @@ do
 
                  input_list=$WORKDIR/dockidlist_${I}_${J}_${L}_${M}           #generate sbatch command and submit job
                  out_list=$WORKDIR/slemidlist
-                 slurm_script=${target_dir}/SLEM
+                 wlm_script=${target_dir}/SLEM
                  output_command_file=$WORKDIR/SLEM_${I}_${J}_${L}_${M}
-                 if [ $SCTYPE=="SLURM" ]
+                 if [ $SCTYPE == SLURM ]
                  then
-                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-                 elif [ $SCTYPE=="PBS" ]
-                 then
-                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+                    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
+                 else
+                    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
                  fi
                  chmod u+x $WORKDIR/SLEM_${I}_${J}_${L}_${M}
                  sh $WORKDIR/SLEM_${I}_${J}_${L}_${M}                                   
@@ -423,7 +422,7 @@ do
 done                #end of 1st loop
 
 echo "#!/bin/bash"                                    > $WORKDIR/postproc
-if [ SCTYPE="SLURM" ]
+if [ $SCTYPE == SLURM ]
 then
     echo "#SBATCH --time="$walltime                      >> $WORKDIR/postproc
     echo "#SBATCH --account=$ACCOUNT"                    >> $WORKDIR/postproc
@@ -433,15 +432,15 @@ then
     echo "#SBATCH --job-name=postproc"                   >> $WORKDIR/postproc
     echo "#SBATCH --output=$WORKDIR/postproc.out"        >> $WORKDIR/postproc
     echo "#SBATCH --error=$WORKDIR/postproc.err"         >> $WORKDIR/postproc
-elif [ SCTYPE="PBS" ]
-then
+else
     echo "#PBS -l walltime="$walltime			 >> $WORKDIR/postproc
-    # echo "#PBS -A"			                   >> $WORKDIR/postproc		SLURMACCT?
+    # echo "#PBS -A"			                 >> $WORKDIR/postproc		SLURMACCT?
     echo "#PBS -q "$partition				 >> $WORKDIR/postproc
     echo "#PBS -l EC_total_tasks=1:EC_threads_per_task=1" >> $WORKDIR/postproc
     echo "#PBS -N postproc"				 >> $WORKDIR/postproc
     echo "#PBS -o $WORKDIR/postproc.out"                 >> $WORKDIR/postproc
     echo "#PBS -e $WORKDIR/postproc.err"                 >> $WORKDIR/postproc
+    echo "#PBS -l nodes=1:ppn=$cores"                    >> $WORKDIR/postproc
 fi
 
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc
@@ -465,14 +464,13 @@ echo "    fi"                                        >> $WORKDIR/postproc
 echo "fi"                                            >> $WORKDIR/postproc
 input_list=$WORKDIR/slemidlist                   #generate sbatch command and submit job
 out_list=$WORKDIR/postprocidlist
-slurm_script=$WORKDIR/postproc
+wlm_script=$WORKDIR/postproc
 output_command_file=$WORKDIR/POSTPROC
-if [ $SCTYPE=="SLURM" ]
+if [ $SCTYPE == SLURM ]
 then
-    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
-elif [ $SCTYPE=="PBS" ]
-then
-    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${slurm_script} ${output_command_file} $I $J $L $M
+    sh $vini_dir/generate_sbatch_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
+else
+    sh $vini_dir/generate_qsub_command.sh ${input_list} ${out_list} ${wlm_script} ${output_command_file} $I $J $L $M
 fi
 chmod u+x $WORKDIR/POSTPROC
 sh $WORKDIR/POSTPROC                                   

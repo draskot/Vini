@@ -43,7 +43,7 @@ then
     fi
 fi
 
-if [ SCTYPE="SLURM" ]
+if [ $SCTYPE == SLURM ]
 then
     echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
@@ -54,8 +54,7 @@ then
     echo "#SBATCH --nodes=1"                                                >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --ntasks-per-node=1"                                      >> $WORKDIR/AlphaFold_${antibody}
     echo "#SBATCH --cpus-per-task="$cpus                                    >> $WORKDIR/AlphaFold_${antibody}
-elif [ SCTYPE="PBS" ]
-then
+else
     echo "#PBS -l walltime=$walltime"					    >> $WORKDIR/AlphaFold_${antibody}
     echo "#PBS -q "$partition						    >> $WORKDIR/AlphaFold_${antibody}
     echo "#PBS -N $antibody"						    >> $WORKDIR/AlphaFold_${antibody}
@@ -63,6 +62,7 @@ then
     echo "#PBS -o $WORKDIR/$antibody.out"				    >> $WORKDIR/AlphaFold_${antibody}
     echo "#PBS -e $WORKDIR/$antibody.err"				    >> $WORKDIR/AlphaFold_${antibody}
     echo "#PBS -l EC_nodes=1:EC_tasks_per_node=1:EC_threads_per_task="$cpu  >> $WORKDIR/AlphaFold_${antibody}
+    echo "#PBS -l nodes=1:ppn=$cores"                                       >> $WORKDIR/AlphaFold_${antibody}
 fi
 
 echo "WORKDIR=${WORKDIR}"                                               >> $WORKDIR/AlphaFold_${antibody}

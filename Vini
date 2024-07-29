@@ -88,10 +88,12 @@ then
         echo "export job_status=qstat" >> $vini_dir/globals
         echo "export job_submit=qsub"  >> $vini_dir/globals
         echo "export job_cancel=qdel"  >> $vini_dir/globals
-        echo "PBS partitions are configured as:" ; pbsnodes
+        echo "PBS partitions are configured as:" ; qstat -Q
 	read -p "Enter the name of PBS partition Vini will use:" partition
-        cores=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.ncpus = \([0-9]*\)/\1/p' | head -n 1)
-        memsize=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.mem = \([0-9]*\)kb/\1/p' | head -n 1)
+        #cores=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.ncpus = \([0-9]*\)/\1/p' | head -n 1)
+        #memsize=$(pbsnodes -a | sed -n "/partition=$partition/,/Mom=/p" | sed -n 's/^ *resources_available.mem = \([0-9]*\)kb/\1/p' | head -n 1)
+        cores=48
+        memsize=256GB
         echo "export partition=${partition}" >> $vini_dir/globals
         echo "export cores=${cores}"         >> $vini_dir/globals
         echo "export memsize=${memsize}" >> $vini_dir/globals
@@ -109,6 +111,7 @@ else
     echo "export cores=${cores}" >> $vini_dir/globals
     echo "export memsize=${memsize}" >> $vini_dir/globals
 fi
+
 
 echo -n "Cancelling any remaining jobs from the previous run, please wait..."
 
@@ -182,10 +185,8 @@ sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files
 
 echo "AlphaFold will be used for protein structures prediction."
 echo "AlphaFold is using 128 cores and 225 GB per node"
-partition=`cat active_partition`
 echo "export AlphaFold_base=full_dbs" >> $vini_dir/globals
 echo "export cpus=128" >> $vini_dir/globals
-echo "export partition=${active_partition}" >> $vini_dir/globals
 
 read -e -p "Include cancer gene expressions and mutations from COSMIC into analysis (y/n)? Press enter to accept the default: " -i "n" cosmic
 
