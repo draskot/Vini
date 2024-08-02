@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Home page for Vini web application">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet"  type="text/css" href="{{url_for('.static', filename='style.css')}}">
+    <title>Vini App</title>
+</head>
+<body>
+    <div class="card">
+        <div id="input-lists">
+
+            <form action="/" method="post">
+                <div>
+                    <label for="drug-choice">Choose a drug:</label>
+                    <input list="drug-list" id="drug-choice" name="drug-choice">
+
+                    <datalist id="drug-list">
+                        <option value="Drug 1"></option>
+                        <option value="Drug 2"></option>
+                    </datalist>
+                </div>
+
+                <div>
+                    <label for="cancer-choice">Choose a cancer cell line:</label>
+                    <input list="cancer-list" id="cancer-choice" name="cancer-choice">
+                    
+                    <datalist id="cancer-list">
+                        <option value="Cancer 1"></option>
+                        <option value="Cancer 2"></option>
+                    </datalist>
+                </div>
+
+                <input type="submit" value="Submit-job">
+            </form>
+
+        </div>
+    </div>
+</body>
+</html>
