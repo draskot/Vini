@@ -1,0 +1,16 @@
+
+#!/usr/bin/env bash
+
+partition=$1
+
+
+# Function to get max walltime
+get_max_walltime() {
+    qstat -Qf "$partition" 2>/dev/null | grep 'resources_max.walltime' | awk -F'=' '{gsub(/ /,"",$2); print $2}'
+}
+
+# Call function and capture its output
+walltime=$(get_max_walltime)
+
+echo "export walltime=${walltime}" >> $vini_dir/globals
+

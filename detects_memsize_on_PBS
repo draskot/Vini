@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# PBS queue to check
+#QUEUE="cpu"
+QUEUE=$1
+
+# Arrays to store results
+declare -a NODES
+declare -a MEM_MB_LIST
+
+# Temporary variables for current node
+current_node=""
+current_mem=""
+
+# Read pbsnodes output line by line
+while IFS= read -r line; do
+
+    # Track host name
+    if [[ "$line" =~ resources_available\.host[[:space:]]*=[[:space:]]*(.+) ]]; then
+        current_node="${BASH_REMATCH[1]}"
+        current_mem=""
+    fi
+
+    # Track memory for this node
+    if [[ "$line" =~ resources_available\.mem[[:space:]]*=[[:space:]]*([0-9]+)mb ]]; then
+        current_mem="${BASH_REMATCH[1]}"
+    fi
+
+    # Check if node belongs to the chosen queue
+    if [[ "$line" =~ resources_available\.Qlist[[:space:]]*=[[:space:]]*(.+) ]]; then
+        qlist="${BASH_REMATCH[1]}"
+        IFS=',' read -ra QUEUES <<< "$qlist"
+        for q in "${QUEUES[@]}"; do
+            if [[ "$q" == "$QUEUE" ]]; then
+                # Add node and its memory to arrays
+                NODES+=("$current_node")
+                MEM_MB_LIST+=("$current_mem")
+                break
+            fi
+        done
+    fi
+
+done < <(pbsnodes -a)
+
+# Check if we found nodes
+if [[ ${#NODES[@]} -eq 0 ]]; then
+    echo "No nodes found in queue '$QUEUE'"
+    exit 1
+fi
+
+# Print nodes
+#echo "Nodes in queue '$QUEUE': ${NODES[@]}"
+
+# Compute most common memory (mode)
+MEM_MB_MODE=$(printf "%s\n" "${MEM_MB_LIST[@]}" | sort | uniq -c | sort -nr | head -n1 | awk '{print $2}')
+MEM_GB=$(awk "BEGIN {printf \"%.0f\", $MEM_MB_MODE/1024}")
+memsize="${MEM_GB}GB"
+echo "export memory_per_node=${memsize}" >> $vini_dir/globals
+

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+QUEUE=$1
+declare -a NODES
+declare -a NCPUS_LIST
+
+current_node=""
+current_ncpus=""
+
+while IFS= read -r line; do
+
+    # Track host name
+    if [[ "$line" =~ resources_available\.host[[:space:]]*=[[:space:]]*(.+) ]]; then
+        current_node="${BASH_REMATCH[1]}"
+        current_ncpus=""
+    fi
+
+    # Track number of CPUs
+    if [[ "$line" =~ resources_available\.ncpus[[:space:]]*=[[:space:]]*([0-9]+) ]]; then
+        current_ncpus="${BASH_REMATCH[1]}"
+    fi
+
+    # Check if node belongs to chosen queue
+    if [[ "$line" =~ resources_available\.Qlist[[:space:]]*=[[:space:]]*(.+) ]]; then
+        qlist="${BASH_REMATCH[1]}"
+        IFS=',' read -ra QUEUES <<< "$qlist"
+        for q in "${QUEUES[@]}"; do
+            if [[ "$q" == "$QUEUE" ]]; then
+                NODES+=("$current_node")
+                NCPUS_LIST+=("$current_ncpus")
+                break
+            fi
+        done
+    fi
+
+done < <(pbsnodes -a)
+
+# Compute most common number of cores (mode)
+cores_per_node=$(printf "%s\n" "${NCPUS_LIST[@]}" | sort | uniq -c | sort -nr | head -n1 | awk '{print $2}')
+echo "export cores_per_node=${cores_per_node}" >> $vini_dir/globals
+

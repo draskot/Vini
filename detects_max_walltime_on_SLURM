@@ -1,0 +1,13 @@
+
+#!/usr/bin/env bash
+
+partition=$1
+
+
+get_max_walltime_slurm() {
+    # Extract MaxTime from scontrol show partition
+    scontrol show partition "$partition" 2>/dev/null | grep -i 'MaxTime' | head -n1 | awk -F= '{gsub(/ /,"",$2); print $2}'
+}
+
+walltime=$(get_max_walltime_slurm)
+echo "export walltime=${walltime}" >> $vini_dir/globals
