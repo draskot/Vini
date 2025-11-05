@@ -212,25 +212,6 @@ else
     echo "yes."
 fi
 
-echo -n "Checking if database is in place..."
-grep database $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo -n "no. Please wait while Vini database is downloaded..."
-    mkdir -p $vini_dir/database
-    wget -O $vini_dir/database/database.tar.bz2 --no-check-certificate -q https://mojoblak.irb.hr/s/4C3MbQ3SirGTKJm/download/database.tar.bz2
-    echo "done."
-    echo -n "Uncompressing database, please wait..."
-    cd $vini_dir/database
-    tar -xvf database.tar.bz2
-    echo "done."
-    echo "#***database section***" >> $vini_dir/sourceme
-    rm database.tar.bz2
-else
-    echo "yes."
-fi
-
-source $vini_dir/sourceme
 
 echo -n "Checking if Alphafold is installed..."
 grep AlphaFold $vini_dir/sourceme > tmp
@@ -254,8 +235,31 @@ then
 	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
         echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
     else
-	echo "no."
-        read -p "Install Alphafold in the $INSTALL/AlphaFold directory. Press enter when ready to continue."	    
+	#https://github.com/kalininalab/alphafold_non_docker?tab=readme-ov-file
+        echo "no. Installing Alphafold 2.3.1. may take a while. Do not interrupt!"
+        source $INSTALL/miniconda3/bin/activate
+        conda create -y --name alphafold python==3.8
+        conda update -n base conda
+        conda activate alphafold
+        conda install -y -c conda-forge openmm==7.5.1 cudatoolkit==11.2.2 pdbfixer
+        conda install -y -c bioconda hmmer hhsuite==3.3.0 kalign2
+        pip install absl-py==1.0.0 biopython==1.79 chex==0.0.7 dm-haiku==0.0.9 dm-tree==0.1.6 immutabledict==2.0.0 jax==0.3.25 ml-collections==0.1.0 numpy==1.21.6 pandas==1.3.4 protobuf==3.20.1 scipy==1.7.0 tensorflow-cpu==2.9.0
+        pip install --upgrade --no-cache-dir jax==0.3.25 jaxlib==0.3.25+cuda11.cudnn805 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+        wget -P $INSTALL https://github.com/deepmind/alphafold/archive/refs/tags/v2.3.1.tar.gz
+        cd $INSTALL
+        tar -xzf $INSTALL/v2.3.1.tar.gz -C $INSTALL
+        export alphafold_path=$INSTALL/alphafold-2.3.1
+        wget -P $alphafold_path/alphafold/common https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
+        cd $INSTALL/miniconda3/envs/alphafold/lib/python3.8/site-packages
+        patch -p0 < $alphafold_path/docker/openmm.patch
+        cp $vini_dir/run_alphafold.sh $INSTALL/alphafold-2.3.1
+        if  [ ! -e $INSTALL/alphafold_data ]
+        then
+            sh $vini_dir/download_db.sh -d $INSTALL/alphafold_data
+        fi
+        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
+        echo "export ALPHAFOLD_DATA_DIR=$INSTALL/alphafold_data" >> $vini_dir/sourceme
+        echo "export AlphaFoldSTART=$INSTALL/alphafold-2.3.1/run_alphafold.sh" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
@@ -334,7 +338,6 @@ then
             tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
         fi
 
-
         cd $INSTALL
 
         module purge
@@ -385,81 +388,6 @@ then
     echo "export PATH=${ROSETTA_BIN}:\$PATH"                                      >> $vini_dir/sourceme
     echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
 fi
-
-#echo -n "Checking if NAMD is installed..."
-#grep NAMD $vini_dir/sourceme > tmp
-#if  [ ! -s tmp ]
-#then
-#    echo "no." ; echo -n "Checking if NAMD module(s) exists..."
-#    module spider NAMD 2> tmp
-#    grep -w error tmp > NAMD
-#    if [ ! -s NAMD ]
-#    then
-#        echo "module(s) found" ; cat tmp
-#        read -p "Do you want to use an existing NAMD module [m] or your local NAMD installation [l]?" use
-#        if  [ $use == m ]
-#        then
-#            read -p "Select the module from the list above:" NAMD
-#            echo "#*****NAMD section******" >> $vini_dir/sourceme
-#            echo "module load" $NAMD >> $vini_dir/sourceme
-#        else
-#            read -p "Enter path where your NAMD distribution is located (e.g. /ceph/hpc/data/d2203-0100-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)" NAMD_PATH
-#            echo "#*****NAMD section******" >> $vini_dir/sourceme
-#            echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
-#        fi
-#    else
-#         echo "Download NAMD binary from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=NAMD to $INSTALL directory. (e.g. /ceph/hpc/data/r2022r03-224-users/eudraskot/NAMD_Git-2022-07-21_Linux-x86_64-verbs)"
-#         read -p "Enter path where your NAMD distribution is located:" enter
-#         echo "#*****NAMD section******" >> $vini_dir/sourceme
-#         echo "export PATH=${NAMD_PATH}:\$PATH" >> $vini_dir/sourceme
-#    fi
-#else
-#    echo "yes."
-#fi
-#rm -f NAMD tmp
-
-#echo -n "Checking if VMD is installed..."
-#grep VMD $vini_dir/sourceme > tmp
-#if  [ ! -s tmp ]
-#then
-#    echo "no." ; echo -n "Checking if VMD module(s) exists..."
-#    module spider VMD 2> tmp
-#    grep -w error tmp > VMD
-#    if [ ! -s VMD ]
-#    then
-#        echo "module(s) found" ; cat tmp
-#        read -p "Do you want to use one of the existing VMD modules [m] or install your own copy [i]?" use
-#        if  [ $use == m ]
-#        then
-#            read -p "Select the module from the list above:" VMD
-#            echo "#*****VMD section******" >> $vini_dir/sourceme
-#            echo "module load" $VMD >> $vini_dir/sourceme
-#        else
-#            if  [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
-#            then
-#                echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay> from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
-#                read -p "Press enter when the file is in place:" enter
-#            fi
-#            rm -rf $INSTALL/vmd-1.9.4
-#            tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
-#            echo "#*****VMD section******" >> $vini_dir/sourceme
-#            echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
-#        fi
-#    else
-#        if [ ! -e $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar ]
-#        then
-#            echo "Download VMD Version 1.9.4 <LINUX_64 (RHEL 7+) OpenGL, CUDA, OptiX RTX, OSPRay > from https://www.ks.uiuc.edu/Development/Download/download.cgi?PackageName=VMD to $INSTALL directory."
-#            read -p "Press enter when the file is in place:" enter
-#        fi
-#        rm -rf $INSTALL/vmd-1.9.4
-#        tar -xvf $INSTALL/vmd-1.9.4a57.bin.LINUXAMD64-CUDA102-OptiX650-OSPRay185.opengl.tar.gz -C $INSTALL
-#        echo "#*****VMD section******" >> $vini_dir/sourceme
-#        echo "export PATH=$INSTALL/vmd-1.9.3/scripts/:\$PATH" >> $vini_dir/sourceme
-#    fi
-#else
-#    echo "yes."
-#fi
-#rm -f VMD tmp
 
 grep OpenBabel $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -598,6 +526,64 @@ then
 else
     echo "yes."
 fi
+
+
+# Check if gdown is installed
+SOURCE_ME=$vini_dir/sourceme
+if grep -q "#\\*\\*\\*\\*\\* gdown section \\*\\*\\*\\*\\*" "$SOURCE_ME"; then
+    echo "✅ gdown already installed."
+else
+echo " gdown not iinstalled. Installing..."
+
+available_modules=$(module avail 2>&1 | grep -E "python|cray-python" | grep -v "legacy" | sort -V)
+
+# If at least one Python module is found
+if [[ -n "$available_modules" ]]; then
+    chosen_module=$(echo "$available_modules" | head -n 1 | awk '{print $1}')
+    echo "✅ Loading detected Python module: $chosen_module"
+    module load "$chosen_module"
+    python3 -m pip install --user --upgrade pip gdown
+    #gdown "https://drive.google.com/uc?id=19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O "${DEPMAP_DIR}/Depmap.tar.gz"
+    #tar -xvzf "${DEPMAP_DIR}/Depmap.tar.gz" -C ${DEPMAP_DIR}
+    #echo "✅ Depmap installed at $DEPMAP_DIR"
+    {
+    echo ""
+    echo "#***** gdown section *****"
+    #echo "export DEPMAP_DIR=$DEPMAP_DIR"
+    #echo "export PATH=\$DEPMAP_DIR/bin:\$PATH"
+    } >> "$SOURCE_ME"
+else
+    echo "❌ No Python module found in the module system!"
+    exit 1
+fi
+fi
+
+echo -n "Checking if database is in place..."
+grep "database section" $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    echo "no."
+    available_modules=$(module avail 2>&1 | grep -E "python|cray-python" | grep -v "legacy" | sort -V)
+    chosen_module=$(echo "$available_modules" | head -n 1 | awk '{print $1}')
+    echo "✅ Loading detected Python module: $chosen_module"
+    module load "$chosen_module"
+    python3 -m pip install --user --upgrade pip gdown
+    echo -n "no. Please wait while Vini database is downloaded..."
+    mkdir -p $vini_dir/database
+    gdown "https://drive.google.com/uc?id=1N1ky3VXpLjEoKPCeyfENHLhRu_LoURuU" -O "${vini_dir}/database/database.tar.bz2"
+    cd $vini_dir/database
+    tar -xvf database.tar.bz2
+    echo "#***database section***" >> $vini_dir/sourceme
+    rm database.tar.bz2
+    {
+    echo ""
+    echo "#***** database section *****"
+    } >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
+source $vini_dir/sourceme
 
 
 

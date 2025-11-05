@@ -15,6 +15,7 @@ nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
 data="_data"
 mkdir -p $vini_dir/database/KEGG_cancer_pathways
 
+
 mkdir -p $WORKDIR/${cancer_type}_data           #folder with an intermediate data
 grep $cancer_type $vini_dir/database/cross_references > tmp
 line=`cat tmp`
@@ -27,6 +28,7 @@ echo "Processing" $CANCER_PATHWAY "metabolic pathway"
 start_date=`date`
 echo "Analysis started at ${start_date} "
 rm -f $WORKDIR/END
+
 
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
 sh $vini_dir/create_receptor_structures

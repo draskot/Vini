@@ -1,18 +1,15 @@
 
-if [[ ! -e ./database/drug?links.csv.zip ]] || [[ ! -e ./database/drugbank_all_drugbank_vocabulary.csv.zip ]]
+if [[ ! -e ./database/drug_links.csv ]] || [[ ! -e drugbank_vocabulary.csv ]]
 then
-    email=`cat $WORKDIR/Drugbank_email`
-    password=`cat $WORKDIR/Drugbank_password`
-    echo -n "Downloading the data from DrugBank, please wait..."
-    wget -O drug?links.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
-    wget -O drugbank_all_drugbank_vocabulary.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-10/downloads/all-drugbank-vocabulary
-    cp drug?links.csv.zip drugbank_all_drugbank_vocabulary.csv.zip ./database
-else
-    cp ./database/drug?links.csv.zip ./
-    cp ./database/drugbank_all_drugbank_vocabulary.csv.zip ./
+    #email=`cat $WORKDIR/Drugbank_email`
+    #password=`cat $WORKDIR/Drugbank_password`
+    echo -n "Downloading the DrugBank data , please wait..."
+    #wget -O drug_links.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-7/downloads/approved-drug-links
+    #wget -O drugbank_all_drugbank_vocabulary.csv.zip --user $email --password $password -q https://go.drugbank.com/releases/5-1-10/downloads/all-drugbank-vocabulary
+    gdown -q "1jSCCW2RlllxIyN96F5UtVZJHpet3W4Xm" -O drug_links.csv.zip
+    gdown -q "1ZUCoeVG5YAUpTsjT2xdwzHrFBwrE51Rv" -O drugbank_all_drugbank_vocabulary.csv.zip
 fi
 
-unzip -o drug?links.csv.zip
-mv 'drug links.csv' drug_links.csv
-unzip -o drugbank_all_drugbank_vocabulary.csv.zip
-mv 'drugbank vocabulary.csv' drugbank_vocabulary.csv
+unzip -p drug_links.csv.zip > ./database/drug_links.csv
+unzip -p drugbank_all_drugbank_vocabulary.csv.zip > ./database/"drugbank_vocabulary.csv"
+#rm drugbank_all_drugbank_vocabulary.csv.zip drug_links.csv.zip 
