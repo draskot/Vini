@@ -1,19 +1,16 @@
+-nstruct 1
 
 -relax:constrain_relax_to_start_coords
 -relax:ramp_constraints false
 
--in:file:fullatom
-
--in:ignore_unrecognized_res
-
 -ex1
 -ex2
+
+-in:ignore_unrecognized_res
 
 -use_input_sc
 -flip_HNQ
 -no_optH false
-
--nstruct 2
 
 -out:path:pdb
 -out:path:score

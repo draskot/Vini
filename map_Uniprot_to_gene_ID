@@ -1,18 +1,50 @@
+#!/bin/bash
 
-#Maps Uniprot ID to preffered gene name
-#input parameter: Uniprot ID
-#output parameter: gene name or error in $vini_dir/genename file
+# ----- Paths -----
+MUTATIONS_FILE="$vini_dir/database/DepMap/cell_lines/PANC-1/mutations/PANC-1_mutations.txt"
+FASTA_DIR="$vini_dir/database/genes/fasta_files"
+RECEPTORS_FILE="$WORKDIR/receptors_contracted"
+UNIPROT_DB="$vini_dir/database/uniprot_db"
+SKIPPED_LOG="$WORKDIR/skipped_mutations.log"
 
-Uniprot_ID=$1
+echo "Skipped mutations log - $(date)" > "$SKIPPED_LOG"
 
-genename=Error
-echo $genename > $vini_dir/genename
+# ----- Function: Convert gene -> UniProt ID -----
+gene_to_uniprot() {
+    local gene="$1"
+    grep -w "$gene" "$UNIPROT_DB" | awk '{print $1}' | head -n 1
+}
 
+# ----- Main loop -----
+while read -r gene mutation type cellline; do
 
-genename=`grep $Uniprot_ID $vini_dir/database/uniprot_db`
-genename=`echo $genename | awk '{print $2}'`
-if  [ $genename != "Error" ]
-then
-    echo $genename > $vini_dir/genename
-    break
-fi
+    # 1. Convert gene → UniProt
+    uniprot=$(gene_to_uniprot "$gene")
+
+    if [[ -z "$uniprot" ]]; then
+        echo "No UniProt ID found for gene $gene. Skipping." | tee -a "$SKIPPED_LOG"
+        continue
+    fi
+
+    # 2. Check if UniProt ID is in the receptor list
+    if ! grep -qw "$uniprot" "$RECEPTORS_FILE"; then
+        echo "Protein $gene ($uniprot) not in KEGG pathway. Skipping." | tee -a "$SKIPPED_LOG"
+        continue
+    fi
+
+    # 3. Build FASTA path using UniProt ID, not gene name
+    FASTA_FILE="$FASTA_DIR/$uniprot.fasta"
+
+    if [[ ! -f "$FASTA_FILE" ]]; then
+        echo "FASTA for $gene ($uniprot) missing: $FASTA_FILE" | tee -a "$SKIPPED_LOG"
+        continue
+    fi
+
+    echo "Processing $gene ($uniprot) mutation $mutation ..."
+    # Here you will call VINI mutation + AlphaFold
+    # e.g. VINI_apply_mutation "$FASTA_FILE" "$mutation"
+
+done < "$MUTATIONS_FILE"
+
+echo "Finished processing mutations."
+

@@ -52,26 +52,37 @@ else
 fi
 
 echo -n "Checking if miniconda3 is installed..."
-grep miniconda3 $vini_dir/sourceme > tmp 
-if  [ ! -s tmp ]
-then
-    echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
+grep miniconda3 $vini_dir/sourceme > tmp
+if [ ! -s tmp ]; then
+    echo "no. Performing cleanup (may take several minutes)..."
     rm -rf $INSTALL/miniconda3
     unset PYTHONPATH
     echo "done."
-    echo "Please wait while downloading and installing miniconda3..."
-    wget --no-check-certificate  -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+
+    echo "Downloading and installing Miniconda3..."
+    wget --no-check-certificate -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
-    conda create -n env310 --yes numpy scipy pandas requests mpi4py pyqt python=3.9
+
+    echo "Accepting Conda Terms of Service..."
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+    echo "Creating Python 3.9 environment 'env310'..."
+    conda create -n env310 --yes python=3.9
     conda activate env310
-    #conda install -c conda-forge rdkit
+    conda install -c conda-forge rdkit
+    conda install  numpy scipy pandas requests mpi4py pyqt
     conda deactivate
+
     echo "#***miniconda3 section***" >> $vini_dir/sourceme
+
+    echo "Cleaning up installer..."
     rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
 else
     echo "yes."
 fi
+
 
 #echo -n "Checking if meeko is installed..."
 #grep meeko $vini_dir/sourceme > tmp
@@ -212,59 +223,10 @@ else
     echo "yes."
 fi
 
+echo -n "Checking if AlphaFold is installed..."
+sh $vini_dir/AlphaFold_install
 
-echo -n "Checking if Alphafold is installed..."
-grep AlphaFold $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no." ; echo -n "Checking if AlphaFold module(s) exists..."
-    module spider Alphafold 2&> tmp
-    grep -w error tmp 2&> alphafold
-    if [ ! -s alphafold ]
-    then
-        echo "module(s) found" ; cat tmp
-        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-        read -p "Select module:" alphafold
-        echo "module --ignore-cache load" $alphafold >> $vini_dir/sourceme
-        echo "ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold/ ; export ALPHAFOLD_DATA_DIR" >> $vini_dir/sourceme
-        read -p "no. Enter path where AlphaFold is installed (e.g. /ceph/hpc/data/r2022r03-224-users):" AlphaFold
-	echo "module load Python/3.9.6-GCCcore-11.2.0" >> $vini_dir/sourceme
-	echo "export PATH=$AlphaFold:\$PATH"  >> $vini_dir/sourceme
-	echo "export AlphaFoldBASE=$AlphaFold/alphafold-data" >> $vini_dir/sourceme
-        echo "export AlphaFoldIMAGE=$AlphaFold/alphafold2.sif" >> $vini_dir/sourceme
-	echo "export AlphaFoldSTART=$AlphaFold/run_singularity_all.py" >> $vini_dir/sourceme
-        echo "export AlphaFoldSTART=$AlphaFold/run_singularity_vega.py" >> $vini_dir/sourceme
-    else
-	#https://github.com/kalininalab/alphafold_non_docker?tab=readme-ov-file
-        echo "no. Installing Alphafold 2.3.1. may take a while. Do not interrupt!"
-        source $INSTALL/miniconda3/bin/activate
-        conda create -y --name alphafold python==3.8
-        conda update -n base conda
-        conda activate alphafold
-        conda install -y -c conda-forge openmm==7.5.1 cudatoolkit==11.2.2 pdbfixer
-        conda install -y -c bioconda hmmer hhsuite==3.3.0 kalign2
-        pip install absl-py==1.0.0 biopython==1.79 chex==0.0.7 dm-haiku==0.0.9 dm-tree==0.1.6 immutabledict==2.0.0 jax==0.3.25 ml-collections==0.1.0 numpy==1.21.6 pandas==1.3.4 protobuf==3.20.1 scipy==1.7.0 tensorflow-cpu==2.9.0
-        pip install --upgrade --no-cache-dir jax==0.3.25 jaxlib==0.3.25+cuda11.cudnn805 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-        wget -P $INSTALL https://github.com/deepmind/alphafold/archive/refs/tags/v2.3.1.tar.gz
-        cd $INSTALL
-        tar -xzf $INSTALL/v2.3.1.tar.gz -C $INSTALL
-        export alphafold_path=$INSTALL/alphafold-2.3.1
-        wget -P $alphafold_path/alphafold/common https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
-        cd $INSTALL/miniconda3/envs/alphafold/lib/python3.8/site-packages
-        patch -p0 < $alphafold_path/docker/openmm.patch
-        cp $vini_dir/run_alphafold.sh $INSTALL/alphafold-2.3.1
-        if  [ ! -e $INSTALL/alphafold_data ]
-        then
-            sh $vini_dir/download_db.sh -d $INSTALL/alphafold_data
-        fi
-        echo "#*****AlphaFold section******" >> $vini_dir/sourceme
-        echo "export ALPHAFOLD_DATA_DIR=$INSTALL/alphafold_data" >> $vini_dir/sourceme
-        echo "export AlphaFoldSTART=$INSTALL/alphafold-2.3.1/run_alphafold.sh" >> $vini_dir/sourceme
-    fi
-else
-    echo "yes."
-fi
-rm -f alphafold tmp
+
 
 echo -n "Checking if Blast is installed..."
 grep Blast $vini_dir/sourceme > tmp
@@ -308,6 +270,7 @@ echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]  #install Rosetta
 then
+    echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
     module spider Rosetta 2&> tmp
     grep error tmp 2&> tmp2
     if  [ -s tmp2 ]
@@ -326,48 +289,28 @@ then
             chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
         fi
-        Rosetta_version=3.14
-        Rosetta_release=371
-        if  [ ! -e $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 ] ; then
-            echo "Downloading Rosetta"
-            wget -O $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2  https://downloads.rosettacommons.org/downloads/academic/3.14/rosetta_src_3.14_bundle.tar.bz2
+        release=3.15
+        version=408
+        if [ ! -e $INSTALL/rosetta_source_${release}_bundle.tar.bz2 ] ; then
+           echo "Unpacking and compiling Rosetta source, do not interrupt."
+           wget -P $INSTALL https://downloads.rosettacommons.org/downloads/academic/${release}/rosetta_source_3.15_bundle.tar.bz2
+           tar -xjf "$INSTALL/rosetta_source_${release}_bundle.tar.bz2" --checkpoint=.4000 -C "$INSTALL"
+
+           module purge
+	   module load Python
+           module load OpenMPI/default
+           string=$(module -t list 2>&1 | grep '^OpenMPI/')
+           echo "module load $string" >> "$vini_dir/sourceme"
+
+           cd $INSTALL/rosetta.source.release-${version}/main/source
+           ./scons.py -j 8 bin mode=release extras=mpi
+           #rosetta_src=$INSTALL/rosetta.source.release-${version}
+           ROSETTA=$INSTALL/rosetta.source.release-${version}/main
+           ROSETTA_BIN=$ROSETTA/source/bin
+           ROSETTA_DB=$ROSETTA/database
+           ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
+           ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
         fi
-
-        if  [ ! -d $INSTALL/rosetta.source.release-${Rosetta_release} ] ; then
-            echo "Unpacking Rosetta source, do not interrupt."
-            tar -xf $INSTALL/rosetta_src_${Rosetta_version}_bundle.tar.bz2 --checkpoint=.4000 -C $INSTALL
-        fi
-
-        cd $INSTALL
-
-        module purge
-        echo "Compiling Rosetta requires GCC and OpenMPI. The list of available GCC modules will be shown next." ; sleep 2
-
-        module spider gcc
-        #sh $vini_dir/wait_for_key.sh "cont"
-	read -p "Select GCC module (version 11.2.0 or higher) to load and press enter to continue: " gcc
-        module load ${gcc}
-
-	module spider python
-        #sh $vini_dir/wait_for_key.sh "cont"
-        read -p "Select Python module (version 3.9.6 or higher) to load and press enter to continue: " gcc
-        module load ${gcc}
-
-        echo "The list of available OpenMPI modules is shown next." ; sleep 2
-        module spider OpenMPI
-        #sh $vini_dir/wait_for_key.sh "cont"
-	read -p "Select OpenMPI module to load (version 4.1.1 or higher) and press enter to start compiling: " openmpi
-        module load ${openmpi}
-
-        cd $INSTALL/rosetta.source.release-${Rosetta_release}/main/source
-        ./scons.py -j 8 bin mode=release extras=mpi
-        rosetta_src=$INSTALL/rosetta.source.release-${Rosetta_release}
-        ROSETTA=$INSTALL/rosetta.source.release-${Rosetta_release}/main
-        ROSETTA_BIN=$ROSETTA/source/bin
-        ROSETTA_DB=$ROSETTA/database
-        ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
-        ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
-        echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
     else
         echo "Found following Rosetta module(s) : "
         module spider Rosetta
@@ -379,8 +322,7 @@ then
         ROSETTA_DB=$ROSETTA/database
         ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts
         ROSETTA_PUB=$ROSETTA/source/src/apps/public/relax_w_allatom_cst
-        echo "#******* Rosetta section *******"                                       >> $vini_dir/sourceme
-        echo "module load $rosetta"                                                   >> $vini_dir/sourceme
+        echo "module load $rosetta"  >> $vini_dir/sourceme
     fi
     echo "export ROSETTA=$ROSETTA"                                                >> $vini_dir/sourceme
     echo "export ROSETTA_TOOLS=$ROSETTA/tools/protein_tools/scripts"              >> $vini_dir/sourceme
@@ -478,7 +420,7 @@ fi
 #        tar -xf $INSTALL/AmberTools23.tar.bz2 -C $INSTALL
 #        rm $INSTALL/AmberTools23.tar.bz2
 #        cd $INSTALL/amber22_src/build
-        #ensure that XZ software is installed and active
+#        ensure that XZ software is installed and active
 #        ./run_cmake
 #        echo "#******* Amber section *******" >> $vini_dir/sourceme
 #    fi
@@ -487,104 +429,100 @@ fi
 #fi
 
 
-#echo -n "Checking if BCL is installed..."
-#grep BCL $vini_dir/sourceme > tmp
+echo -n "Checking if BCL is installed..."
+grep BCL $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    module purge
+    module load Python/2.7.18-GCCcore-10.2.0
+    module load CMake/3.23.1-GCCcore-11.3.0
+    module load libGLU/9.0.2-GCCcore-11.3.0
+    echo "no. BCL will be installed. Performing the cleanup, please wait." 
+    rm -rf $INSTALL/bcl-master
+    wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
+    unzip -o $INSTALL/bcl.zip -d $INSTALL
+    rm $INSTALL/bcl.zip
+    cd $INSTALL/bcl-master
+    ./scripts/build/build_cmdline.linux.sh
+    echo "#******* BCL section *******" >> $vini_dir/sourceme
+    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
+else
+    echo "yes."
+fi
+
+
+#echo -n "Checking if Hex docking software is installed..."
+#grep Hex $vini_dir/sourceme > tmp
 #if  [ ! -s tmp ]
 #then
-#    module purge
-#    module load Python/2.7.18-GCCcore-10.2.0
-#    module load CMake/3.23.1-GCCcore-11.3.0
-#    module load libGLU/9.0.2-GCCcore-11.3.0
-#    echo "no. BCL will be installed. Performing the cleanup, please wait." 
-#    rm -rf $INSTALL/bcl-master
-#    wget -O $INSTALL/bcl.zip  https://codeload.github.com/BCLCommons/bcl/zip/refs/heads/master
-#    unzip -o $INSTALL/bcl.zip -d $INSTALL
-#    rm $INSTALL/bcl.zip
-#    cd $INSTALL/bcl-master
-#    ./scripts/build/build_cmdline.linux.sh
-#    echo "#******* BCL section *******" >> $vini_dir/sourceme
-#    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
+#    echo "no. Hex will be installed." 
+    #module spider libGLU 2&> tmp
+#    grep error tmp 2&> tmp2
+#    if [ ! -s tmp2 ] ; then
+#       echo "module load libGLU/9.0.2-GCCcore-11.3.0" >> $vini_dir/sourceme
+#    fi
+#    rm $INSTALL/hex-8.1.1-x64-centos7.run
+#    cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
+#    exec $INSTALL/hex-8.1.1-x64-centos7.run
+#    echo "#******* Hex section *******" >> $vini_dir/sourceme
 #else
 #    echo "yes."
 #fi
 
-
-echo -n "Checking if Hex docking software is installed..."
-grep Hex $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    echo "no. Hex will be installed." 
-    echo "#******* Hex section *******" >> $vini_dir/sourceme
-    module spider libGLU 2&> tmp
-    grep error tmp 2&> tmp2
-    if [ ! -s tmp2 ] ; then
-       echo "module load libGLU/9.0.2-GCCcore-11.3.0" >> $vini_dir/sourceme
-    fi
-    rm $INSTALL/hex-8.1.1-x64-centos7.run
-    cp $vini_dir/hex-8.1.1-x64-centos7.run $INSTALL
-    exec $INSTALL/hex-8.1.1-x64-centos7.run
-else
-    echo "yes."
-fi
+sh $vini_dir/hex_install
 
 
-# Check if gdown is installed
+# Check if the data from Google Drive is installed
 SOURCE_ME=$vini_dir/sourceme
-if grep -q "#\\*\\*\\*\\*\\* gdown section \\*\\*\\*\\*\\*" "$SOURCE_ME"; then
-    echo "✅ gdown already installed."
-else
-echo " gdown not iinstalled. Installing..."
-
-available_modules=$(module avail 2>&1 | grep -E "python|cray-python" | grep -v "legacy" | sort -V)
-
-# If at least one Python module is found
-if [[ -n "$available_modules" ]]; then
-    chosen_module=$(echo "$available_modules" | head -n 1 | awk '{print $1}')
-    echo "✅ Loading detected Python module: $chosen_module"
-    module load "$chosen_module"
-    python3 -m pip install --user --upgrade pip gdown
-    #gdown "https://drive.google.com/uc?id=19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O "${DEPMAP_DIR}/Depmap.tar.gz"
-    #tar -xvzf "${DEPMAP_DIR}/Depmap.tar.gz" -C ${DEPMAP_DIR}
-    #echo "✅ Depmap installed at $DEPMAP_DIR"
-    {
-    echo ""
-    echo "#***** gdown section *****"
-    #echo "export DEPMAP_DIR=$DEPMAP_DIR"
-    #echo "export PATH=\$DEPMAP_DIR/bin:\$PATH"
-    } >> "$SOURCE_ME"
-else
-    echo "❌ No Python module found in the module system!"
-    exit 1
-fi
-fi
-
-echo -n "Checking if database is in place..."
-grep "database section" $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
+if  grep -q "#\\*\\*\\*\\*\\* GD_data section \\*\\*\\*\\*\\*" "$SOURCE_ME"
 then
-    echo "no."
-    available_modules=$(module avail 2>&1 | grep -E "python|cray-python" | grep -v "legacy" | sort -V)
-    chosen_module=$(echo "$available_modules" | head -n 1 | awk '{print $1}')
-    echo "✅ Loading detected Python module: $chosen_module"
-    module load "$chosen_module"
-    python3 -m pip install --user --upgrade pip gdown
-    echo -n "no. Please wait while Vini database is downloaded..."
-    mkdir -p $vini_dir/database
-    gdown "https://drive.google.com/uc?id=1N1ky3VXpLjEoKPCeyfENHLhRu_LoURuU" -O "${vini_dir}/database/database.tar.bz2"
-    cd $vini_dir/database
-    tar -xvf database.tar.bz2
-    echo "#***database section***" >> $vini_dir/sourceme
-    rm database.tar.bz2
+    echo "Data from GD already downloaded."
+else
+    available_python=$(module --ignore-cache spider Python 2>&1 | grep -Eo 'Python/[0-9]+\.[0-9]+\.[0-9]+' | sort -u | tail -n 1)
+    echo "module load $available_python" >> "$SOURCE_ME"
+    echo "export VINI_PYTHON_MODULE=$available_python" >> "$SOURCE_ME"
+
+    echo "Installing gdown..."
+    module load "$available_python"
+    python -m pip install --user --upgrade pip gdown
+    DATABASE_DIR="$vini_dir/database"
+    DEPMAP_DIR="$vini_dir/database/DepMap"
+    mkdir -p $DEPMAP_DIR $DATABASE_DIR
+
+    echo "Installing DepMap..."
+    gdown "https://drive.google.com/uc?id=19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O "${DEPMAP_DIR}/Depmap.tar.gz"
+    tar -xvzf "${DEPMAP_DIR}/Depmap.tar.gz" -C ${DEPMAP_DIR}
+    rm ${DEPMAP_DIR}/Depmap.tar.gz
+
+    echo "Installing database..."
+    gdown "https://drive.google.com/uc?id=12tUXGOdyQV_GLUmRzsGnB7vgKrvLjZcH" -O "${DATABASE_DIR}/database.tar.bz2"
+    tar -xvf "${DATABASE_DIR}/database.tar.bz2" -C ${DATABASE_DIR}
+    rm ${DATABASE_DIR}/database.tar.bz2
+
     {
     echo ""
-    echo "#***** database section *****"
-    } >> $vini_dir/sourceme
-else
-    echo "yes."
+    echo "#***** GD_data section *****"
+    echo "export DEPMAP_DIR=$DEPMAP_DIR"
+    echo "export DATABASE_DIR=$DATABASE_DIR"
+    echo "export PATH=\$DEPMAP_DIR/bin:\$PATH"
+    } >> "$SOURCE_ME"
+
 fi
 
 source $vini_dir/sourceme
 
 
+grep pdb-tools $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    source $vini_dir/sourceme
+    echo "Installing pdb-tools...."
+    mkdir -p $INSTALL/pdb-tools/bin
+    pip install --target=$INSTALL/pdb-tools pdb-tools
+    echo "" $vini_dir/sourceme
+    echo "#***** pdb_data section *****" >> $vini_dir/sourceme
+    echo "export PATH=\$INSTALL/pdb-tools/bin:\$PATH" >> $vini_dir/sourceme
+    echo "done."
+fi
 
 echo "You have to re-login in order to changes make effect!"

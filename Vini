@@ -33,7 +33,7 @@ then
     source $vini_dir/sourceme
     echo "The following software is installed:" 
     programs=`grep section sourceme | wc -l`
-    NOPROGS=15   #the number of 3rd programs Vini is using
+    NOPROGS=16   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
@@ -42,14 +42,27 @@ then
         exit
     else
         echo "All required programs are in place, continuing."
+        source $vini_dir/sourceme
     fi
 else
     sh install.sh
+    source $vini_dir/sourceme
     echo "Installation is finished. Re-login and start Vini again."
     pkill -u $USER
 fi
 
 
+
+SOURCE_ME="$vini_dir/sourceme"
+
+if grep -q "VINI_PYTHON_MODULE" "$SOURCE_ME"; then
+    # Extract the module name
+    vini_python_module=$(grep "VINI_PYTHON_MODULE" "$SOURCE_ME" | cut -d'=' -f2)
+    echo "Loading saved Python module: $vini_python_module"
+    #module load "$vini_python_module"
+else
+    echo "No saved Python module found in sourceme, using system Python."
+fi
 
 sh $vini_dir/clean
 rm -f $WORKDIR/dockidlist* $WORKDIR/slemidlist* $WORKDIR/SLEM*
@@ -71,6 +84,7 @@ mkdir -p $WORKDIR/ligands_stage   #stagging area
 
 mkdir -p $vini_dir/genes
 mkdir -p $vini_dir/genes/pdb_files
+mkdir -p $vini_dir/genes/sdf_files
 mkdir -p $vini_dir/genes/expressions 
 mkdir -p $vini_dir/genes/mutations
 mkdir -p $vini_dir/genes/sequences
@@ -96,6 +110,11 @@ then
         echo "export partition=${partition}" >> $vini_dir/globals
         bash detects_cores_on_PBS $partition
         bash detects_memsize_on_PBS $partition
+        # Assume modern GPU nodes have 4 GPUs
+        if [[ "$partition" == *gpu* ]]; then
+            gpus_per_node=4
+            echo "export gpus_per_node=${gpus_per_node}" >> $vini_dir/globals
+        fi
         bash detects_max_walltime_on_PBS $partition
     fi
 else 
@@ -110,6 +129,12 @@ else
     echo "export partition=${partition}" >> $vini_dir/globals
     echo "export cores_per_node=${cores_per_node}" >> $vini_dir/globals
     echo "export memory_per_node=${memory_per_node}" >> $vini_dir/globals
+    # Detect GPUs per node if partition is GPU type
+    gpu_info=$(sinfo -o "%G" -p $partition | awk 'NR==2 {print $1}')
+    if [[ "$gpu_info" == *gpu* ]]; then
+        gpus_per_node=4
+        echo "export gpus_per_node=${gpus_per_node}" >> $vini_dir/globals
+    fi
     bash detects_max_walltime_on_SLURM $partition
 fi
 
@@ -135,16 +160,27 @@ rm -f jobs
 
 cat COPYRIGHT
 
-read -p "Enter your SLURM/PBS  account or type NONE if you do not have it:" account
-echo "export ACCOUNT=${account}" >> $vini_dir/globals
+#sacctmgr show user $USER > tmp
+#sacct=`tail -1 tmp | awk '{print $2}'`
+#account=${sacct//[+-]/}
+#echo "export ACCOUNT=${account}" >> "$vini_dir/globals"
 
-#walltime=60   #max time is 60 minutes
+if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
+    reduced_account=$(sacctmgr show assoc user=$USER | grep normal | head -1 | awk '{gsub(/[-+]+$/, "", $2); print $2}')
+    ACCOUNT=$(id | grep -oE "[^,]*\(${reduced_account}[^)]*\)" | sed 's/.*(//;s/)//')
+    echo "export ACCOUNT=${ACCOUNT}" >> "$vini_dir/globals"
+    echo "Detected and set real SLURM account: ${ACCOUNT}"
+else
+    echo "ACCOUNT already exists in globals file."
+fi
 
 > $WORKDIR/dock_id_list  #Clear precedence lists
 > $WORKDIR/slem_id_list
 
 cores_per_job=48 #number of cores Rosetta and Vina jobs use
-read -p "Enter maximum number of CPU cores VINI is allowed to use in parallel:" maxcores
+#read -e -p "Enter total  number of CPU cores VINI can use in parallel:" -i 5000 maxcores
+read -e -i 5000 -p "Enter total number of CPU cores VINI can use in parallel or <enter> to accept default: " maxcores
+
 max_jobs=`echo $maxcores $cores_per_job | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
 cores_per_node=$(awk -F'=' '/cores_per_node/ {gsub(/[^0-9]/,"",$2); print $2}' < globals)
@@ -197,36 +233,9 @@ echo "export cpus=$cores_per_node" >> $vini_dir/globals
 read -e -p "Include cancer gene expressions and mutations from Cancer Cell Line Encyclopedia into analysis (y/n)? Press enter to accept the default: " -i "y" CCLE
 
 if  [ $CCLE == "y" ]
-  then
-     echo "export CCLE=y" >> $vini_dir/globals
-     echo "export exp=exp"   >> $vini_dir/globals
-#    echo ; echo "If you have never registered for COSMIC before, stop here.. Go to https://cancer.sanger.ac.uk/cosmic/register  and register. Upon receiving approval, enter your registration email and password here."
-
-#    # https://cancer.sanger.ac.uk/cell_lines  cell lines mutations and expressions
-    
-#    read -e -p "Already registered (y/n)? Press enter to accept the default: " -i "y" yesno
-#    if  [ $yesno == "n" ]
-#    then
-#        read -p "Enter email:" email
-#        echo -n "Enter password:"; read -s password ; echo ""
-#        echo $email > $WORKDIR/COSMIC_email
-#        echo $password > $WORKDIR/COSMIC_password
-#        chmod g-r,o-r $WORKDIR/COSMIC_password
-#    else
-#        if  [ ! -e $WORKDIR/COSMIC_email ] || [ ! -e $WORKDIR/COSMIC_password ] ; then
-#            echo "no data found. You will need to enter data for the first time. "
-#            read -p "Enter email:" email
-#            echo -n "Enter password:"; read -s password ; echo ""
-#            echo $email > $WORKDIR/COSMIC_email
-#            echo $password > $WORKDIR/COSMIC_password
-#            chmod g-r,o-r $WORKDIR/COSMIC_password
-#        fi
-#    fi
-#    touch -a -m -t 200001010101 $WORKDIR/COSMIC_token #reset time creation to 01-01-2000
-#    sh $vini_dir/renew_COSMIC_token #update COSMIC token if older than 24 hours
-#    kit="n"
-#    echo "export kit=$kit" >> $vini_dir/globals
-    
+then
+    echo "export CCLE=y" >> $vini_dir/globals
+    echo "export exp=exp"   >> $vini_dir/globals
 else
     echo "export CCLE=n" >> $vini_dir/globals
     echo "export exp=noexp"   >> $vini_dir/globals
@@ -246,7 +255,6 @@ echo "export kit=$kit" >> $vini_dir/globals
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds
 
 
-
 #echo -n "Trying to retrieve the list of available organisms from KEGG, please wait..."
 #wget -O tmp --no-check-certificate -q http://rest.kegg.jp/list/organism
 #echo "done."
@@ -254,22 +262,18 @@ echo "export kit=$kit" >> $vini_dir/globals
 # Path to cached organism list on Google Drive
 gdown -q "1qTB_aqTdReWhczwF3-EwIlAzMh_ruOvH" -O tmp
 
-
 awk '{$1=""}1' tmp | awk '{$1=$1}1' > tmp2
 awk 'NF{NF--};1' <tmp2 > $WORKDIR/organisms
-
 
 echo "Next will be shown the list of available organisms (use bar to scroll and <q> to exit)."
 echo "Then choose the abbreviation for organism to analyse  and press <enter>. Example: for dog, enter cfa ."
 echo ""
 echo "" ; read -p "Press enter to continue." cont
 
-
 cat $WORKDIR/organisms | less
 echo "" ; rm tmp tmp2
 read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept the default: " -i "hsa" ORGANISM
 echo "export ORGANISM=$ORGANISM" >> $vini_dir/globals
-
 
 #echo -n "Trying to retrieve the list of available metabolic pathways from KEGG, please wait..."
 #wget -O $vini_dir/tmp --no-check-certificate -q $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
@@ -277,7 +281,6 @@ echo "export ORGANISM=$ORGANISM" >> $vini_dir/globals
 
 gdown -q "1BMYtV-8tv3Rv2Z54eC7HWF-BRuRbdndu" -O tmp
 cat tmp | sed "s/path:hsa//g" > $WORKDIR/pathways ; rm tmp
-
 
 echo "Next will be shown the list of available pathways (use bar to scroll and <q> to exit)."
 echo "Then choose the pathway number and press <enter>. Example: For screening prostate cancer, enter 05215 ."
@@ -294,38 +297,16 @@ data="_data"
 read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept the default: " -i "y" yesno
 if [ $yesno == y ]
 then
-    module load cray-python/3.9.13.1
     pip install pandas tqdm
     compute_cell_line=$TRUE
     echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/globals
-    echo "downloading DepMap data, please wait."
-    gdown -q "19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O ./database/Depmap.tar.gz
-    tar -xvzf ./database/Depmap.tar.gz -C ./database
     read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "PANC-1" cell_line
     if  [ $CCLE == "y" ]
     then
-        #if  [ ! -e $vini_dir/database/NCI-60_cell_lines/$cell_line/expressions/${cell_line}.csv ]
-        #then
-            export cell_line=${cell_line}
-            python3 get_cell_line_expressions.py
-            #echo "WARNING: Before proceeding, upload file with cell expression data" $cell_line.csv "to" $vini_dir/database/genes/expressions "directory!"
-            #echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=<cell name>&token=<token number"
-            #echo "Expression file can be downloaded from: https://cancer.sanger.ac.uk/cosmic-download/download/index?table=V92_37_CLP_COMPLETEGENEEXPR&samplename=PC3&token=690964090297947914600221106259589042"
-            #read -p "press enter when the upload is done." ready
-            #echo $cell_line > cell_line
-            #if [ ! -f $vini_dir/database/genes/expressions/${cell_line}.csv ]
-            #then
-                #echo "WARNING: File with expressions for" ${cell_line} "cell line not found!"
-                #echo -n "Obtain this file manually from COSMIC DB "
-                #echo "and put it under" $vini_dir/database/genes/expressions/ "directory with the name" ${cell_line}.csv 
-                #read -p "Press enter when done." enter
-            #else
-                #echo ${cell_line} "cell line will be processed."    
-            #fi
-        #else
-        #    rm -rf $vini_dir/KEGG_cancer_pathways/$CANCER_PATHWAY/$cell_line
-        #fi
-      echo ${cell_line} "cell line will be processed."    
+        export cell_line=${cell_line}
+        python get_cell_line_expressions.py  #get expressions
+        python get_cell_line_mutations.py    #get mutations
+        echo ${cell_line} "cell line will be processed."    
     fi
 
     echo "export cell_line=${cell_line}" >> $vini_dir/globals

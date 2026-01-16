@@ -1,0 +1,64 @@
+#************General**********
+export vini_dir=/ceph/hpc/home/eudraskot/Vini
+export SLURMACCT=r2022r03-224-users
+#export WORKDIR=/exa5/scratch/user/eudraskot
+export SHARED=/ceph/hpc/data/r2022r03-224-users
+export INSTALL=/ceph/hpc/data/r2022r03-224-users/eudraskot
+export WORKDIR=/ceph/hpc/data/r2022r03-224-users/eudraskot/workdir
+#***Blast section***
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ncbi-blast-2.14.0+-src/c++/ReleaseMT/bin:$PATH
+#******* Java section *******
+module load Java/11.0.2 
+
+#******* BCL section *******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/bcl-master/build/linux64_release/bin:$PATH
+#***mgltools_x86_64Linux2_1.5.7 section***
+export MGLTOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools
+export MGLUTILS=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24
+export MGLBIN=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin
+export MGL=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/mgltools_x86_64Linux2_1.5.7/bin:$PATH
+#***ADFRsuite 1.0 section***
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/ADFRsuite_x86_64Linux_1.0/bin:$PATH
+#***** Vina section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot:$PATH
+#******UCSF Chimera section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/chimera-1.17.3-linux_x86_64/bin:$PATH
+module load libGLU/9.0.2-GCCcore-11.3.0
+#***** Autodock4 section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/autodock4/x86_64Linux2:$PATH
+#*****OpenBabel section******
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/openbabel-3.1.1/bin:$PATH
+module load Boost/1.76.0-GCC-10.3.0
+
+module load Python/3.9.6
+
+#*****AlphaFold section******
+selected_module=AlphaFold/2.2.2-foss-2021a-CUDA-11.3.1
+export ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold
+export AlphaFoldSTART=/cvmfs/sling.si/modules/el7/software/AlphaFold/2.2.2-foss-2021a-CUDA-11.3.1/bin/alphafold
+module load Python/3.9.6
+export VINI_PYTHON_MODULE=Python/3.9.6
+
+module load Python/3.9.6
+export VINI_PYTHON_MODULE=Python/3.9.6
+
+#***** GD_data section *****
+export DEPMAP_DIR=/ceph/hpc/home/eudraskot/Vini/database/DepMap
+export DATABASE_DIR=/ceph/hpc/home/eudraskot/Vini/database
+export PATH=$DEPMAP_DIR/bin:$PATH
+
+# ***** Hex section *****
+export PATH="$PATH:/ceph/hpc/data/r2022r03-224-users/eudraskot/hex_cache"
+
+#******* Rosetta section *******
+export ROSETTA=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-408/main
+export ROSETTA_TOOLS=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-408/main/tools/protein_tools/scripts
+export ROSETTA_PUB=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-408/main/source/src/apps/public/relax_w_allatom_cst
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-408/main/source/bin:$PATH
+export PATH=/ceph/hpc/data/r2022r03-224-users/eudraskot/rosetta.source.release-408/main/database:$PATH
+module load OpenMPI/4.1.6-GCC-13.2.0
+#***** pdb_data section *****
+export PATH=$INSTALL/pdb-tools/bin:$PATH
+#************miniconda2 section**********
+#***miniconda3 section***

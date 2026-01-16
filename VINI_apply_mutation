@@ -1,0 +1,51 @@
+#!/bin/bash
+# ----------------------------
+# VINI_apply_mutation
+# ----------------------------
+# Usage: VINI_apply_mutation <original_fasta> <mutation> <output_fasta>
+# Example: VINI_apply_mutation P01116.fasta p.G12D P01116_mut.fasta
+# ----------------------------
+
+ORIG_FASTA="$1"
+MUTATION="$2"
+OUTPUT_FASTA="$3"
+
+# Check arguments
+if [[ -z "$ORIG_FASTA" || -z "$MUTATION" || -z "$OUTPUT_FASTA" ]]; then
+    echo "Usage: $0 <original_fasta> <mutation> <output_fasta>"
+    exit 1
+fi
+
+# Extract mutation info
+# Format expected: p.A123B  (original AA, position, new AA)
+if [[ ! "$MUTATION" =~ ^p\.([A-Z])([0-9]+)([A-Z])$ ]]; then
+    echo "Warning: Unsupported mutation format: $MUTATION. Skipping."
+    exit 0
+fi
+
+ORIG_AA="${BASH_REMATCH[1]}"
+POS="${BASH_REMATCH[2]}"
+NEW_AA="${BASH_REMATCH[3]}"
+
+# Read FASTA sequence (ignore header)
+SEQ=$(tail -n +2 "$ORIG_FASTA" | tr -d '\n')
+
+# Check that original AA matches sequence
+SEQ_AA="${SEQ:$((POS-1)):1}"
+
+if [[ "$SEQ_AA" != "$ORIG_AA" ]]; then
+    echo "Warning: original AA $ORIG_AA does not match sequence at position $POS ($SEQ_AA). Skipping."
+    exit 0
+fi
+
+# Apply mutation
+MUT_SEQ="${SEQ:0:$((POS-1))}$NEW_AA${SEQ:$POS}"
+
+# Write mutated sequence to output FASTA
+{
+    head -n 1 "$ORIG_FASTA"
+    echo "$MUT_SEQ" | fold -w 60
+} > "$OUTPUT_FASTA"
+
+echo "Mutation $MUTATION applied: $OUTPUT_FASTA"
+

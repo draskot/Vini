@@ -1,1 +1,11 @@
-hex -batch protein1.pdb protein2.pdb < docking.mac > docking.log
+echo "obabel ligand.mol2 -O ligand.pdb"
+
+#Compute protein center of mass
+echo "awk '/^ATOM/ {x+=\$7; y+=\$8; z+=\$9; n++} END {print x/n, y/n, z/n}' receptor.pdb > prot_com.txt"
+
+#Translate ligand away from protein
+echo "read cx cy cz < prot_com.txt"
+echo "obabel ligand.pdb -O ligand_shifted.pdb --translate \"15 0 0\""
+
+#Create initial crystal complex
+echo "cat receptor.pdb ligand_shifted.pdb > crystal_complex.pdb"

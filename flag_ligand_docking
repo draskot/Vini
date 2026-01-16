@@ -1,27 +1,26 @@
-
+# Protein sidechain sampling
 -ex1
 -ex2
 
--no_optH false
-
+# Hydrogen / flips
 -flip_HNQ true
 
--ignore_ligand_chi true
-
+# Robust ligand handling
 -ignore_unrecognized_res
-
 -detect_disulf false
 
+# Packing
 -packing
 
+# RosettaScripts
 -parser:protocol dock.xml
 
--run:preserve_header
+# REQUIRED for ligand docking
+-run:preserve_header true
 
--extra_res_fa LIG.params
+# Ligand
+-extra_res_fa ligand.params
 
--mistakes
-
+# Output control
 -nstruct 1
-
 -overwrite

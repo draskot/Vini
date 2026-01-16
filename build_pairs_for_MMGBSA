@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKDIR="${WORKDIR:?WORKDIR not set}"
+RELATIONS="$WORKDIR/relations"
+RECEPTORS="$WORKDIR/receptors_contracted"
+OUTPUT="$WORKDIR/pairs_for_MMGBSA.txt"
+
+> "$OUTPUT"
+
+# Step 1: build KEGG -> UniProt/PubChem mapping
+declare -A KEGG2ID
+while read -r line; do
+    [[ -z "$line" ]] && continue
+    KEGG=$(echo "$line" | awk '{print $1}')
+    ID=$(echo "$line" | awk '{print $3}')
+    KEGG2ID["$KEGG"]="$ID"
+done < "$RECEPTORS"
+
+# Step 2: scan relations and produce pairs
+declare -A PAIRS_ADDED
+while read -r line; do
+    [[ -z "$line" ]] && continue
+    KEGG_A=$(echo "$line" | awk '{print $1}')
+    KEGG_B=$(echo "$line" | awk '{print $2}')
+
+    ID_A=${KEGG2ID["$KEGG_A"]:-}
+    ID_B=${KEGG2ID["$KEGG_B"]:-}
+
+    # skip if mapping missing
+    [[ -z "$ID_A" || -z "$ID_B" ]] && continue
+
+    # skip compound-compound pairs if desired
+    if [[ "$ID_A" == pubchem* && "$ID_B" == pubchem* ]]; then
+        continue
+    fi
+
+    # sort to avoid duplicates
+    if [[ "$ID_A" < "$ID_B" ]]; then
+        PAIR="$ID_A $ID_B"
+    else
+        PAIR="$ID_B $ID_A"
+    fi
+
+    if [[ -z "${PAIRS_ADDED[$PAIR]+x}" ]]; then
+        echo "$PAIR" >> "$OUTPUT"
+        PAIRS_ADDED["$PAIR"]=1
+    fi
+
+done < "$RELATIONS"
+
+echo "Done. Pairs written to $OUTPUT"
+

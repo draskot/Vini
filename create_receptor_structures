@@ -3,9 +3,6 @@ source $vini_dir/globals
 UNIPROT_ID_LIST="_uniprot_entries.txt"
 outdir=$vini_dir/genes/pdb_files  #where the predicted structures are placed
 
-outdir=$vini_dir/genes/pdb_files  #Define AlphaFold parameter
-
-
 cp $ROSETTA/tools/protein_tools/scripts/clean_pdb.py ./
 cp $ROSETTA/tools/protein_tools/scripts/amino_acids.py ./
 rm -f *pdb
@@ -23,7 +20,6 @@ echo "finalizing receptor file, please wait..."
 noentries=`wc -l < $WORKDIR/receptors_expanded`
 echo "number of entries in pathway is" $noentries
 entry=1
-
 
 while read -r line
 do     
@@ -83,7 +79,7 @@ do
         if  [ $nowords -eq $TWO ]
         then
             echo -n " without structure. Checking if in repo..."
-            if  [ -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]   
+            if  [ -e $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb ]   
             then
                 echo "yes. Adding" ${uniprot_id} "to" $WORKDIR/receptors_contracted "with P flag." 
                 echo $KEGG_entry_id $KEGG_gene_name $uniprot_id "P" >> $WORKDIR/receptors_contracted
@@ -104,7 +100,7 @@ do
             then 
                 if  [ ! -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ] 
                 then
-                    cp $vini_dir/database&genes/pdb_files/${uniprot_id}.pdb $vini_dir/genes/pdb_files
+                    cp $vini_dir/database/genes/pdb_files/${uniprot_id}.pdb $vini_dir/genes/pdb_files
                 fi
                 echo " yes. Adding" $uniprot_id "to" $WORKDIR/receptors_contracted "with E flag."
                 echo ${KEGG_entry_id} ${KEGG_gene_name} ${uniprot_id} "E" >> $WORKDIR/receptors_contracted
@@ -180,7 +176,8 @@ do
     let "entry++"
 done < $WORKDIR/receptors_expanded
 
-cp $vini_dir/genes/pdb_files/* $vini_dir/database/genes/pdb_files
+mkdir -p $vini_dir/database/genes/pdb_files/$cell_line
+cp $vini_dir/genes/pdb_files/* $vini_dir/database/genes/pdb_files/$cell_line
 
 awk '!seen[$0]++' $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/$CANCER_PATHWAY${UNIPROT_ID_LIST} > $WORKDIR/tmp #remove duplicate lines
 shuf $WORKDIR/tmp -o tmp2 ; mv tmp2 $WORKDIR/tmp

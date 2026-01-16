@@ -1,84 +1,66 @@
-#Using https://web.expasy.org/translate/ tool for nucleotide to aminoacids sequence translation
-
-
+#!/bin/bash
 
 source $vini_dir/globals
-outdir=$vini_dir/genes/pdb_files
 
 
-SEQDIR=$vini_dir/genes/sequences/
 
-rm -f $vini_dir/genes/sequences/*csv                               #DNA --> protein sequence translation
-echo -n "Translating nucleotide sequences to aminoacid sequences, please wait..."
-> $WORKDIR/mutated #create file with mutated gene names
-> $WORKDIR/wild    
-ls $vini_dir/genes/sequences/*fasta > $WORKDIR/tmp 2>/dev/null
-while read -r line              #DNA --> protein sequence translation
-do
-    uniprot_id=`basename ${line} .fasta`
-    echo ${uniprot_id} >> $WORKDIR/wild
-    uniprot_id=${uniprot_id//_mutated/}
-    mutated_gene_name=${uniprot_id}-${cell_line}
-    echo ${mutated_gene_name} >> $WORKDIR/mutated
-    dnaseq=`cat $line`
-    wget -O $SEQDIR${uniprot_id}_mutated.frame --post-data="dna_sequence=${dnaseq}&output_format=fasta" -q  https://web.expasy.org/cgi-bin/translate/dna2aa.cgi
-    echo -n "."
-done < $WORKDIR/tmp
-echo "done."
+# ---------------- Paths and variables ----------------
+MUTATIONS_FILE="$vini_dir/database/DepMap/cell_lines/$cell_line/mutations/${cell_line}_mutations.txt"
+FASTA_DIR="$vini_dir/database/genes/fasta_files"
+RECEPTORS_FILE="$WORKDIR/receptors_contracted"
+UNIPROT_DB="$vini_dir/database/uniprot_db"
+CELL_LINE_MUT_DIR="$vini_dir/database/cell_lines/$cell_line/mutations"
+SKIPPED_LOG="$WORKDIR/skipped_mutations.log"
 
+echo "Skipped mutations log - $(date)" > "$SKIPPED_LOG"
 
-rm -f ./genes/sequences/*fasta
+# ---------------- Loop over CCLE mutations ----------------
+while read -r line; do
+    # Extract gene name (first word) and mutation (second word)
+    gene=$(echo "$line" | awk '{print $1}')
+    mutation=$(echo "$line" | awk '{print $2}')
 
-sh $vini_dir/find_longest_frame
-#rm -f ./genes/sequences/*frame
+    # 1️⃣ Convert gene -> UniProt ID directly
+    uniprot=$(awk -v g="$gene" '$2==g {print $1; exit}' "$UNIPROT_DB")
 
-while read -r line               #truncate sequences to 80 chars per line / add header
-do
-    filename=`echo ${line}.fasta`
-    uniprot_id=`echo $line | sed 's/_mutated//'`
-    genename=`grep ${uniprot_id} ${vini_dir}/genes/cosmic_ids.csv.orig | awk -F','  '{print $2}'`   #prepare header
-    echo $genename > $WORKDIR/genename  #remove ^M
-    sed -i -e "s/\r//g" $WORKDIR/genename
-    genename=`cat $WORKDIR/genename`
-    echo ">sp|${uniprot_id}|mutated gene ${genename} OS=Homo sapiens OX=9606 GN=${genename} PE=1 SV=4" > $WORKDIR/tmp
-    fold -s -w 80 $vini_dir/genes/sequences/$filename >> $WORKDIR/tmp
-    sed -i -e "s/-//g" $WORKDIR/tmp          #remove hyphen if exists
-    #if  [ ! -e $vini_dir/genes/pdb_files/${uniprot_id}.pdb ]
-    if  [ ! -e $vini_dir/database/cell_lines/${cell_line}/${uniprot_id}.pdb ]
-    then
-        echo "Predicting the structure of mutated ${uniprot_id} with AlphaFold."
-        fasta_file=$vini_dir/genes/fasta_files/${uniprot_id}.fasta
-        sh $vini_dir/predict_with_AlphaFold ${AlphaFold_base} ${fasta_file} ${outdir}
-    else
-        echo "${uniprot_id} structure found in repository."
-        cp $vini_dir/database/cell_lines/${cell_line}/${uniprot_id}.pdb $vini_dir/genes/pdb_files
+    if [[ -z "$uniprot" ]]; then
+        echo "No UniProt ID found for gene $gene. Skipping." | tee -a "$SKIPPED_LOG"
+        continue
     fi
-done < $WORKDIR/wild
 
-jobs=`squeue -u $USER | wc -l`
-if  [ $jobs -gt $ONES ]
-then
-    sh $vini_dir/wait_until_jobs_finish
-    awk '{ gsub("_mutated", ""); print }' $WORKDIR/wild > tmp
-    while read -r line
-    do
-        uniprot_id=`echo $line`
-        if  [ -e $WORKDIR/${uniprot_id}/ranked_0.pdb ]
-        then
-            cp $WORKDIR/${uniprot_id}/ranked_0.pdb $outdir/${uniprot_id}.pdb
-            cp $outdir/${uniprot_id}.pdb $vini_dir/database/cell_lines/${cell_line}/${uniprot_id}.pdb
-        else
-            if  [ -e $WORKDIR/${uniprot_id}/relaxed_model_1_pred_0.pdb ]
-            then
-                cp $WORKDIR/${uniprot_id}/relaxed_model_1_pred_0.pdb $outdir/${uniprot_id}.pdb
-                cp $outdir/${uniprot_id}.pdb $vini_dir/database/cell_lines/${cell_line}/${uniprot_id}.pdb
-            else
-                echo ${uniprot_id} > $WORKDIR/failed_predictions
-            fi
+    # 2️⃣ Check if UniProt ID is in KEGG pathway
+    if ! grep -qw "$uniprot" "$RECEPTORS_FILE"; then
+        echo "Protein $gene ($uniprot) not in KEGG pathway. Skipping." | tee -a "$SKIPPED_LOG"
+        continue
+    fi
+
+    FASTA_FILE="$FASTA_DIR/$uniprot.fasta"
+    if [[ ! -f "$FASTA_FILE" ]]; then # Check if FASTA exists, download if missing
+        echo "FASTA for $gene ($uniprot) missing. Downloading ..." | tee -a "$SKIPPED_LOG"
+        wget -O "$FASTA_FILE" --no-check-certificate -q "https://www.uniprot.org/uniprot/${uniprot}.fasta"
+        if [[ ! -f "$FASTA_FILE" ]]; then
+            echo "Failed to download FASTA for $gene ($uniprot). Skipping." | tee -a "$SKIPPED_LOG"
+            continue
         fi
-        cp $vini_dir/database/cell_lines/${cell_line}/${uniprot_id}.pdb $vini_dir/genes/pdb_files
-    done < tmp
-fi
+    fi
 
-rm -f $WORKDIR/mutated $WORKDIR/tmp    #cleanup
+    MUTATED_FASTA="$CELL_LINE_MUT_DIR/${uniprot}.fasta"
+
+    echo "Applying mutation $mutation to $gene ($uniprot) ..." # Apply mutation using VINI's mutation function
+    sh $vini_dir/VINI_apply_mutation "$FASTA_FILE" "$mutation" "$MUTATED_FASTA"
+
+    MUTATED_PDB="$vini_dir/database/cell_lines/${cell_line}/mutations/${uniprot}.pdb"
+    if [[ -f "$MUTATED_PDB" ]]; then
+        echo "Mutated PDB for $gene ($uniprot) already exists. Skipping AlphaFold prediction." | tee -a "$SKIPPED_LOG"
+    else
+        outdir=$vini_dir/database/cell_lines/${cell_line}/mutations # Call AlphaFold
+        sh $vini_dir/predict_with_AlphaFold ${AlphaFold_base} ${MUTATED_FASTA} ${outdir}
+    fi
+
+done < "$MUTATIONS_FILE"
+
+sh $vini_dir/wait_until_jobs_finish
+cp $vini_dir/database/cell_lines/${cell_line}/mutations/*.pdb $vini_dir/genes/pdb_files
+
+echo "Finished processing mutations."
 

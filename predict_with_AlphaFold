@@ -1,76 +1,163 @@
-source $vini_dir/globals
-source $vini_dir/sourceme
- 
-base=$1
-fasta_file=$2
-outdir=$3
+#!/bin/bash
+# Usage: sh predict_with_AlphaFold.sh <AlphaFold_base> <fasta_file> <outdir>
 
-ONES=1
+base="$1"
+fasta_file="$2"
+outdir="$3"
 
-antibody=`basename ${fasta_file} .fasta`
-rm -rf $WORKDIR/${antibody}      #cleanup
+source "$vini_dir/globals"
+source "$vini_dir/sourceme"
 
-model=`grep -c ">" ${fasta_file}`
-if  [ $model -eq $ONES ]
-then
-    model=monomer
-else
-    model=multimer
+# Remove trailing slash from FASTA file path
+fasta_file="${fasta_file%/}"
+if [ ! -f "$fasta_file" ]; then
+    echo "Error: fasta_file '$fasta_file' does not exist"
+    exit 1
 fi
 
+# Determine antibody name from FASTA file
+antibody="$(basename "$fasta_file" .fasta)"
+if [ -z "$antibody" ]; then
+    echo "Error: cannot determine antibody name from '$fasta_file'"
+    exit 1
+fi
 
-echo "#!/bin/bash"                                                       > $WORKDIR/AlphaFold_${antibody}
-if  [ $SCTYPE == SLURM ]
-then
-    walltime=`sinfo | grep $partition | head -1 | awk '{print $3}'`
-    echo "#SBATCH --time=$walltime"                                         >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --partition="$partition                                   >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --job-name=$antibody"                                     >> $WORKDIR/AlphaFold_${antibody}
-    if [ "$SLURMACCT" != "NONE" ] && [ -n "$SLURMACCT" ]; then
-        echo "#SBATCH --account=$SLURMACCT"                                 >> $WORKDIR/AlphaFold_${antibody}
-    fi
-    echo "#SBATCH --output=$WORKDIR/$antibody.out"                          >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --error=$WORKDIR/$antibody.err"                           >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --nodes=1"                                                >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --ntasks-per-node=1"                                      >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --cpus-per-task=16"                                       >> $WORKDIR/AlphaFold_${antibody}
-    echo "#SBATCH --gres=gpu:1"                                             >> $WORKDIR/AlphaFold_${antibody}
+# Create working directories
+rm -rf "$WORKDIR/$antibody"
+mkdir -p "$WORKDIR/$antibody"
+mkdir -p "$outdir"
+
+# Determine if monomer or multimer
+seq_count=$(grep -c ">" "$fasta_file")
+if [ "$seq_count" -eq 1 ]; then
+    model="monomer"
 else
-    walltime=$(qstat -Qf $partition | grep max.walltime | awk '{print $3}')
-    echo "#PBS -l walltime=$walltime"					    >> $WORKDIR/AlphaFold_${antibody}
-    echo "#PBS -q "$partition						    >> $WORKDIR/AlphaFold_${antibody}
-    echo "#PBS -N $antibody"						    >> $WORKDIR/AlphaFold_${antibody}
-    if [ "$SLURMACCT" != "NONE" ] && [ -n "$SLURMACCT" ]; then
-        echo "#PBS -A $SLURMACCT" >> $WORKDIR/AlphaFold_${antibody}
-    fi
-    echo "#PBS -o $WORKDIR/$antibody.out"				    >> $WORKDIR/AlphaFold_${antibody}
-    echo "#PBS -e $WORKDIR/$antibody.err"				    >> $WORKDIR/AlphaFold_${antibody}
+    model="multimer"
+fi
 
-    if [[ "$partition" == *gpu* ]]; then
-       echo "#PBS -l select=1:ncpus=16:mem=120gb:ngpus=1"                   >> $WORKDIR/AlphaFold_${antibody}
+use_gpu_relax=False
+
+# Determine CPUs and memory per job
+if [[ "$SCTYPE" == "SLURM" && "$partition" == *gpu* ]]; then
+    ncpus_per_job=$((cpus / 4))
+    mem_per_job=$((memory_per_node / 4))
+    # Use 1 GPU per job (AlphaFold compatible)
+    gpus_per_job=1
+else
+    ncpus_per_job=$cpus
+    mem_per_job=$memory_per_node
+    gpus_per_job=0
+fi
+
+batch_script="$WORKDIR/AlphaFold_${antibody}"
+
+# Generate the batch script
+{
+    echo "#!/bin/bash"
+    echo ""
+
+    # --- SLURM header ---
+    if [[ "$SCTYPE" == "SLURM" ]]; then
+        # detect partition max walltime (keep your existing method)
+        walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
+        echo "#SBATCH --time=${walltime}"
+        echo "#SBATCH --partition=${partition}"
+        echo "#SBATCH --job-name=${antibody}"
+        [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#SBATCH --account=${SLURMACCT}"
+        echo "#SBATCH --output=${WORKDIR}/${antibody}.out"
+        echo "#SBATCH --error=${WORKDIR}/${antibody}.err"
+        echo "#SBATCH --nodes=1"
+        echo "#SBATCH --ntasks-per-node=1"
+        echo "#SBATCH --cpus-per-task=${ncpus_per_job}"
+        echo "#SBATCH --mem=${mem_per_job}M"
+        if [[ "${gpus_per_job}" -ge 1 ]]; then
+            echo "#SBATCH --gres=gpu:${gpus_per_job}"
+        fi
+
+    # --- PBS header ---
     else
-       echo "#PBS -l select=1:ncpus=16:mem=120gb"                           >> $WORKDIR/AlphaFold_${antibody}
+        walltime=$(qstat -Qf "$partition" | grep max.walltime | awk '{print $3}')
+        echo "#PBS -l walltime=${walltime}"
+        echo "#PBS -q ${partition}"
+        echo "#PBS -N ${antibody}"
+        [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#PBS -A ${SLURMACCT}"
+        echo "#PBS -o ${WORKDIR}/${antibody}.out"
+        echo "#PBS -e ${WORKDIR}/${antibody}.err"
+        if [[ "$partition" == *gpu* ]]; then
+            echo "#PBS -l select=1:ncpus=${ncpus_per_job}:mem=${mem_per_job}mb:ngpus=${gpus_per_job}"
+        else
+            echo "#PBS -l select=1:ncpus=${cpus}:mem=${mem_per_job}mb"
+        fi
     fi
-fi
 
-echo "WORKDIR=${WORKDIR}"                                                   >> $WORKDIR/AlphaFold_${antibody}
-echo "source $INSTALL/miniconda3/bin/activate"                              >> $WORKDIR/AlphaFold_${antibody}
-echo "conda activate env310"                                                >> $WORKDIR/AlphaFold_${antibody}
-echo "$AlphaFoldSTART --data_dir=${ALPHAFOLD_DATA_DIR} --fasta_paths=${fasta_file} --output_dir=${WORKDIR} --model_preset=${model} --db_preset=${base} --use_gpu_relax=False --num_multimer_predictions_per_model=1 --max_template_date=2020-06-05" >> $WORKDIR/AlphaFold_${antibody}
-echo "conda deactivate"                                                     >> $WORKDIR/AlphaFold_${antibody}
-echo "if [ -e $WORKDIR/${antibody}/ranked_0.pdb ]"                          >> $WORKDIR/AlphaFold_${antibody}
-echo "then"                                                                 >> $WORKDIR/AlphaFold_${antibody}
-echo "    cp $WORKDIR/${antibody}/ranked_0.pdb $outdir/${antibody}.pdb"     >> $WORKDIR/AlphaFold_${antibody}
-echo "else"                                                                 >> $WORKDIR/AlphaFold_${antibody}
-echo "    if  [ -e $WORKDIR/${antibody}/relaxed_model_1_pred_0.pdb ]"       >> $WORKDIR/AlphaFold_${antibody}
-echo "    then"                                                             >> $WORKDIR/AlphaFold_${antibody}                       
-echo "        cp $WORKDIR/${antibody}/relaxed_model_1_pred_0.pdb $outdir/${antibody}.pdb" >> $WORKDIR/AlphaFold_${antibody}
-echo "    else"                                                             >> $WORKDIR/AlphaFold_${antibody}
-echo "        echo ${antibody} > $WORKDIR/failed_predictions"               >> $WORKDIR/AlphaFold_${antibody}
-echo "    fi"                                                               >> $WORKDIR/AlphaFold_${antibody}
-echo "fi"                                                                   >> $WORKDIR/AlphaFold_${antibody}
+    echo ""
+    echo "export ALPHAFOLD_DATA_DIR=\"${ALPHAFOLD_DATA_DIR}\""
+    echo "WORKDIR=\"${WORKDIR}\""
+    echo ""
 
-chmod u+x $WORKDIR/AlphaFold_${antibody}
-${job_submit} $WORKDIR/AlphaFold_${antibody}
+    # --- Module / Conda activation ---
+    if [ -n "$selected_module" ]; then
+        echo "module purge"
+        echo "module load ${selected_module}"
+    else
+        echo "source \"${INSTALL}/miniconda3/bin/activate\""
+        echo "conda activate env310"
+    fi
+    echo ""
 
-echo "brakepoint!" ; sleep 1000
+    # --- Run AlphaFold ---
+    # we print the command and then a blank line afterwards to ensure newline separation
+    echo "\"${AlphaFoldSTART}\" \\"
+    echo "    --data_dir=\"${ALPHAFOLD_DATA_DIR}\" \\"
+    echo "    --fasta_paths=\"${fasta_file}\" \\"
+    echo "    --output_dir=\"${WORKDIR}\" \\"
+    echo "    --model_preset=\"${model}\" \\"
+    echo "    --db_preset=\"${base}\" \\"
+    echo "    --use_gpu_relax=${use_gpu_relax} \\"
+    echo "    --num_multimer_predictions_per_model=1 \\"
+    echo "    --max_template_date=2020-06-05"
+    echo ""
+    if [ -z "$selected_module" ]; then
+        echo "conda deactivate"
+    fi
+
+    # ensure separation/newlines before file ops
+    echo ""
+    echo "mkdir -p \"${outdir}\""
+    echo "ranking_file=\"${WORKDIR}/${antibody}/ranking_debug.json\""
+    echo ""
+    echo "if [ -e \"${WORKDIR}/${antibody}/ranked_0.pdb\" ]; then"
+    echo "    cp \"${WORKDIR}/${antibody}/ranked_0.pdb\" \"${outdir}/${antibody}.pdb\""
+    echo "    cp \"${WORKDIR}/${antibody}/ranked_0.pdb\" \"${vini_dir}/database/genes/pdb_files/${antibody}.pdb\""
+    echo "elif [ -e \"\$ranking_file\" ]; then"
+    echo "    # Pick highest-ranked relaxed model using bash (no Python)"
+    echo "    # Extract first element of the \"order\" array, e.g. \"model_1_pred_0\""
+    # robust sed to extract the first string within order array (works for compact or spaced JSON)
+    echo "    best_entry=\$(sed -n 's/.*\"order\"[[:space:]]*:[[:space:]]*\\[[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' \"\$ranking_file\")"
+    echo "    if [ -n \"\$best_entry\" ]; then"
+    echo "        # Convert 'model_1_pred_0' -> '1' (the model index used in relaxed filename)"
+    echo "        best_idx=\$(echo \"\$best_entry\" | sed -E 's/^model_([0-9]+)_pred_0$/\\1/')"
+    echo "        # If sed didn't match the pattern, fall back to extracting any number"
+    echo "        if [ -z \"\$best_idx\" ]; then"
+    echo "            best_idx=\$(echo \"\$best_entry\" | grep -o -E '[0-9]+' | head -1)"
+    echo "        fi"
+    echo "        relaxed_path=\"\${WORKDIR}/${antibody}/relaxed_model_\${best_idx}_pred_0.pdb\""
+    echo "        if [ -e \"\$relaxed_path\" ]; then"
+    echo "            cp \"\$relaxed_path\" \"${outdir}/${antibody}.pdb\""
+    echo "            cp \"\$relaxed_path\" \"${vini_dir}/database/genes/pdb_files/${antibody}.pdb\""
+    echo "        else"
+    echo "            echo \"${antibody}\" >> \"${WORKDIR}/failed_predictions\""
+    echo "        fi"
+    echo "    else"
+    echo "        # ranking file exists but we couldn't parse it"
+    echo "        echo \"${antibody}\" >> \"${WORKDIR}/failed_predictions\""
+    echo "    fi"
+    echo "else"
+    echo "    echo \"${antibody}\" >> \"${WORKDIR}/failed_predictions\""
+    echo "fi"
+
+} > "${batch_script}"
+
+chmod u+x "${batch_script}"
+${job_submit} "${batch_script}"
+

@@ -1,0 +1,234 @@
+#!/bin/bash
+
+
+vini_dir=${vini_dir:-$HOME/Vini}
+source $vini_dir/sourceme
+source "$vini_dir/globals"
+
+workdir=${WORKDIR:-$(pwd)}
+jobs_dir="$workdir/${cancer_type}_data/${cell_line}"
+matrix_file="$jobs_dir/VINI_matrix.txt"
+
+
+mkdir -p "$jobs_dir"
+
+#sentinel="$jobs_dir/.matrix_initialized"
+#if [[ -f $sentinel ]]; then
+#    echo "Matrix already initialized. Skipping job generation."
+#    exit 0
+#fi
+
+ncpus=24
+nrows=$(wc -l < "$matrix_file")
+echo "Matrix has $nrows rows"
+
+row_index=0
+while IFS= read -r line; do
+    elements=($line)
+
+    for ((j=row_index+1; j<nrows; j++)); do
+        element="${elements[j]//[[:space:]]/}"
+        [[ -z "$element" || "$element" == "0" ]] && continue
+        IFS=',' read -r name1 name2 type expr <<< "$element"
+        [[ -z "$type" ]] && continue
+
+        job_dir="$jobs_dir/job_${row_index}_${j}"
+        job_path="$job_dir/job.sh"
+        mkdir -p "$job_dir"
+        cd $job_dir
+        rm -rf ROSETTA_CRASH.log
+        
+        {
+        if [[ "$SCTYPE" == "SLURM" ]]; then # Scheduler header
+            walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
+            echo "#!/bin/bash"
+            echo "#SBATCH --job-name=job_${row_index}_${j}"
+            echo "#SBATCH --partition=$partition"
+            echo "#SBATCH --time=$walltime"
+            echo "#SBATCH --account=$ACCOUNT"
+            echo "#SBATCH --nodes=1"
+            echo "#SBATCH --ntasks=${ncpus}"
+            echo "#SBATCH --output=$job_dir/job.out"
+            echo "#SBATCH --error=$job_dir/job.err"
+        else
+            echo "#PBS -l select=1:ncpus=48:mem=${mem_per_job}mb"
+            echo "#PBS -q $partition"
+            echo "#PBS -N job_${row_index}_${j}"
+            echo "#PBS -o $jobs_dir/job_${row_index}_${j}.out"
+            echo "#PBS -e $jobs_dir/job_${row_index}_${j}.err"
+        fi
+        
+        echo "source $vini_dir/globals"
+
+        echo "export CONDA_SOLVER=classic"
+        echo "export CONDA_NO_PLUGINS=1"
+        echo "export PYTHONNOUSERSITE=1"
+
+        mpi_module_line=$(grep -E '^\s*module\s+load\s+.*[Mm][Pp][Ii]' "$vini_dir/sourceme" | head -n 1)
+        java_module_line=$(grep -E '^\s*module\s+load\s+.*[Jj][Aa][Vv][Ava]' "$vini_dir/sourceme" | head -n 1)
+        echo "module purge"                                                   
+        echo "$mpi_module_line"
+        echo "$java_module_line"
+        echo "module load Python/2.7.18-GCCcore-10.2.0 CMake/3.23.1-GCCcore-11.3.0 libGLU/9.0.2-GCCcore-11.3.0"
+        echo "module load bzip2/1.0.8-GCCcore-11.2.0 libxml2/2.11.5-GCCcore-13.2.0 XZ/5.4.4-GCCcore-13.2.0"
+
+        if [[ "$type" == "PP" ]]
+        then
+            echo "cp ../${name1}.pdb ../${name2}.pdb ."
+            echo "sed -i '/^REMARK/d' ${name1}.pdb ${name2}.pdb"
+            echo "chain=\$(head -1 ${name2}.pdb | awk '{print \$5}')"             #Modify chain letter
+            echo "if [[ \"\$chain\" == \"A\" ]]"
+            echo "then"
+            echo "    java -jar $vini_dir/PDBChainNameSupstitutor-1.0-SNAPSHOT-shaded.jar ${name2}.pdb \"\$chain\" B"
+            echo "    mv  ${name2}.pdb_A_to_B.pdb  ${name2}.pdb"
+            echo "fi"
+            echo "cp $vini_dir/docking_default.mac ./tmp"                         #perform docking with Hex
+            echo "sed -e \"s/receptor\\.pdb/${name1}.pdb/g\" -e \"s/ligand\\.pdb/${name2}.pdb/g\" -e \"s/complex\\.pdb/C_${name1}_${name2}.pdb/g\" tmp > docking.mac"
+            echo "hex -batch ${name1}.pdb ${name2}.pdb < docking.mac"
+            echo "sed -i '/^REMARK/d' ${name1}.pdb"
+            echo "sed -i '/^REMARK/d' ${name2}.pdb"
+            echo "sed -i '/^REMARK/d' C_${name1}_${name2}.pdb"
+
+            echo "source $INSTALL/miniconda2/bin/activate"                        #clean protein complex
+            echo "cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ."
+            echo "cp $ROSETTA_TOOLS/amino_acids.py ."
+            echo "python clean_pdb_keep_ligand.py complex.pdb -ignorechain"
+            echo "mv complex.pdb_00.pdb complex.pdb"
+
+            echo "python clean_pdb_keep_ligand.py C_${name1}_${name2}.pdb -ignorechain"
+            echo "mv C_${name1}_${name2}.pdb_00.pdb C_${name1}_${name2}.pdb"
+            echo "conda deactivate"
+
+            echo "cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./" #prepare flag_global_docking file
+            echo "receptor_chains=\$(grep '^ATOM' ${name1}.pdb | awk '{print \$5}' | sort | uniq | tr -d '\n')"
+            echo "ligand_chains=\$(grep '^ATOM' ${name2}.pdb | awk '{print \$5}' | sort | uniq | tr -d '\n')"
+            echo "partners_line=\${receptor_chains}_\${ligand_chains}"
+            echo "sed -i -e \"s/-partners .*/-partners \${partners_line}/\" flag_global_docking"
+
+            echo "srun --ntasks=${ncpus} --mpi=pmix $ROSETTA/source/bin/relax.mpi.linuxgccrelease -in:file:s C_${name1}_${name2}.pdb @flag_input_relax -overwrite"
+            echo "srun --ntasks=${ncpus} --mpi=pmix $ROSETTA/source/bin/docking_protocol.mpi.linuxgccrelease -in:file:s C_${name1}_${name2}_0001.pdb @flag_global_docking"
+
+            echo "if [ -e ROSETTA_CRASH.log ]"                                    #get PP score
+            echo "then"
+            echo "     echo 1.0 > ${job_dir}/score.txt"
+            echo "else"
+            echo "    cp C_${name1}_${name2}_0001_0001.pdb C_${name1}_${name2}.pdb"
+            echo "    string=\`grep partners flag_global_docking\`"
+            echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')"
+            echo "    srun --ntasks=1 $ROSETTA/source/bin/InterfaceAnalyzer.mpi.linuxgccrelease -s C_${name1}_${name2}.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat  -packstat::oversample 100 -overwrite"
+            echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"
+            echo "    if  [ -z \${score} ] ; then"
+            echo "        echo 1.0 > ${job_dir}/score.txt"
+            echo "    else"
+            echo "         echo \${score} > ${job_dir}/score.txt"
+            echo "    fi"
+            echo "fi"
+        else
+   
+# ------------------------
+# Ligand & Receptor Setup
+# ------------------------
+echo "if [[ \"$name1\" == pubchem:* ]]; then"
+echo "    ligand=\"$name1\""
+echo "    receptor=\"$name2\""
+echo "else"
+echo "    ligand=\"$name2\""
+echo "    receptor=\"$name1\""
+echo "fi"
+
+echo "cp $WORKDIR/${cancer_type}_data/${cell_line}/\${receptor}.pdb receptor.pdb"
+echo "lig_pubchem_id=\$(basename \$ligand .pdb | sed 's/^pubchem://')"
+echo "cp $vini_dir/genes/sdf_files/pubchem:\${lig_pubchem_id}.sdf ligand.sdf"
+echo "cp $vini_dir/clean_sdf_for_rosetta.py ./"
+echo "cp $vini_dir/sanityzation.py ./"
+echo "cp $vini_dir/check_hydrogens.py ./"
+echo "cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ./"
+echo "cp $ROSETTA_TOOLS/amino_acids.py ./"
+
+echo "source $INSTALL/miniconda3/bin/activate"
+echo "conda activate env310"
+echo "python clean_sdf_for_rosetta.py ligand.sdf ligand_clean.sdf"
+echo "python sanityzation.py"
+echo "HAS_H=\$(python check_hydrogens.py ligand_clean.sdf)"
+echo "conda deactivate"
+
+echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames ligand_clean.sdf -conformers_single_file ligand_conformers.sdf -max_iterations 500 -top_models 50"    #generate conformers
+
+echo "source $INSTALL/miniconda3/bin/activate"                                    #convert conformers to mol2
+echo "conda activate env310"
+echo "awk 'BEGIN{c=0} {print} /\\$\\$\\$\\$/{c++; if(c==1) exit}' ligand_conformers.sdf > ligand_start.sdf" 
+echo "HAS_H=\$(python check_hydrogens.py ligand_start.sdf)"
+echo "if [ \"\$HAS_H\" == \"yes\" ]; then" 
+echo "    obabel ligand_conformers.sdf -O ligand.mol2"
+echo "else"
+echo "    obabel ligand_conformers.sdf -O ligand.mol2 -h"
+echo "fi"
+echo "conda deactivate"
+
+echo "source $INSTALL/miniconda2/bin/activate"                                   #generate .params
+echo "python $ROSETTA/source/scripts/python/public/molfile_to_params.py -n LIG -p ligand --keep-names --clobber --conformers-in-one-file ligand.mol2"
+echo "conda deactivate"
+
+echo "source $INSTALL/miniconda3bin/activate"                                    #convert first conformer to pdb
+echo "conda activate env310"
+echo "if [ \"\$HAS_H\" == \"yes\" ]; then"
+echo "    obabel ligand_start.sdf -O ligand_start.pdb"
+echo "else"
+echo "    obabel ligand_start.sdf -O ligand_start.pdb -h"
+echo "fi"
+echo "conda deactivate"
+
+echo "sed 's/UNL/  X/' ligand_start.pdb > ligand_start_chainX.pdb"               #change UNL to X in ligand
+echo "sed -i 's/^HETATM\\(.\\{17\\}\\).\\{3\\}/HETATM\\1LIG/' ligand_start_chainX.pdb"
+echo "grep -Ev '^(COMPND|AUTHOR|CONECT|MASTER|END)' ligand_start_chainX.pdb > ligand_start_chainX.clean.pdb"
+echo "echo 'TER' >> ligand_start_chainX.clean.pdb"
+
+echo "cat receptor.pdb ligand_start_chainX.clean.pdb > complex.pdb"
+
+echo "source $INSTALL/miniconda2/bin/activate"                                    #clean protein complex
+echo "python clean_pdb_keep_ligand.py complex.pdb -ignorechain"
+echo "mv complex.pdb_00.pdb complex.pdb"
+echo "conda deactivate"
+
+echo "srun --ntasks=1 $ROSETTA/source/bin/rosetta_scripts.mpi.linuxgccrelease -in:file:s complex_ligand.pdb @flag_ligand_docking"
+            echo "if [ -e ROSETTA_CRASH.log ]; then"
+            echo "    echo 1.0 > ${job_dir}/score.txt"
+            echo "else"
+            echo "    cp complex_${name1}_${name2}_0001.pdb C_${name1}_${name2}.pdb"
+            echo "    score=\$(grep 'total_score' score.sc | tail -1 | awk '{print \$2}')"  # or pick correct column for total energy
+            echo "    if [ -z \$score ]; then"
+            echo "        echo 1.0 > ${job_dir}/score.txt"
+            echo "    else"
+            echo "        echo \$score > ${job_dir}/score.txt"
+            echo "    fi"
+            echo "fi"
+        fi
+        } > "$job_path"
+# Submit job and collect job ID
+if [[ "$SCTYPE" == "SLURM" ]]; then               # Submit job and collect job ID
+    jid=$(sbatch "$job_path" | awk '{print $4}')  # sbatch returns: Submitted batch job <jobid>
+    submitted_jobs="$submitted_jobs $jid"
+else
+    jid=$(qsub "$job_path")  # qsub usually returns job ID directly
+    submitted_jobs="$submitted_jobs $jid"
+fi
+    done
+    ((row_index++))
+done < "$matrix_file"
+echo "Waiting for all jobs to finish..."
+
+if [[ "$SCTYPE" == "SLURM" ]]; then
+    for jid in $submitted_jobs; do
+        # Wait until job disappears from queue
+        while squeue -j "$jid" &> /dev/null; do
+            sleep 30
+        done
+    done
+else
+    # PBS: Use your existing wait_until_jobs_finish script
+    sh "$vini_dir/wait_until_jobs_finish"
+fi
+
+echo "All jobs finished. Proceeding to collect scores and update matrix..."
+
+touch "$sentinel"

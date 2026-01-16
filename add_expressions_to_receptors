@@ -1,50 +1,50 @@
+source $vini_dir/globals
 
-NULL=0
-ONES=1
-seven=7
+OUTPUT="$WORKDIR/receptors_contracted.tmp"
+EXPR_FILE="$vini_dir/database/cell_lines/${cell_line}/expressions/${cell_line}_expression.txt"
+UNIPROT_DB="$vini_dir/database/uniprot_db"
 
-cosmic=`cat $WORKDIR/cosmic`
-> $WORKDIR/receptors_contracted.tmp
+# Truncate file WITHOUT adding a blank line
+: > "$OUTPUT"
 
-while read -r line #add z_score and normalized gene exp factor to receptors_contracted file (5th and 6th column)
-do
-    flag=`echo $line | awk '{print $4}'`
-    Uniprot_ID=`echo $line | awk '{print $3}'` #check if entry is protein or compound
-    nochars=`echo -n $Uniprot_ID | wc -c`
+while read -r line; do
 
-    if  [ $nochars -gt $seven ]
-    then
-        entry=`echo $Uniprot_ID | head -c 7`
+    uniprot=$(echo "$line" | awk '{print $3}')
+    flag=$(echo "$line" | awk '{print $4}')
+
+    # Detect proteins vs compounds
+    if [[ "$uniprot" == pubchem* ]]; then
+        entry="pubchem"
     else
-        entry=protein
+        entry="protein"
     fi
 
-    if  [ $entry != pubchem ]
-    then                                                                #we have a protein
-        > $WORKDIR/tmp
-        grep $Uniprot_ID ./genes/expression_scores.csv > $WORKDIR/tmp
-        lines=`wc -l < $WORKDIR/tmp`
-        if  [[ $lines -eq $NULL ]] || [[ $flag == "F" ]] 
-        then
-            z_score=0.000
+    if [[ "$entry" == "protein" ]]; then
+
+        # UniProt -> GENE mapping
+        gene=$(awk -v u="$uniprot" '$1==u {print $2}' "$UNIPROT_DB")
+
+        if [[ -z "$gene" ]]; then
+            echo "Warning: gene not found for UniProt $uniprot → expr=0"
+            expr=0.000
         else
-            if  [ $lines -ne $ONES ]
-            then
-                head -1 $WORKDIR/tmp > $WORKDIR/tmp2 ; mv $WORKDIR/tmp2 $WORKDIR/tmp
-            fi
-            if [ $cosmic == y ]
-            then
-                z_score=`cat $WORKDIR/tmp | awk -F',' '{print $2}'`
-            else
-                z_score=0.000
-            fi
+            # Expression lookup
+            expr=$(awk -v g="$gene" '$1==g {print $2}' "$EXPR_FILE")
+            [[ -z "$expr" ]] && expr=0.000
         fi
-    else                                                               #we have a compound
-        z_score=0.000
-    fi
-    nge=`echo ${z_score} ${ONES} | awk '{printf "%.9f \n", $1 + $2}'`
-    echo $line $z_score $nge >> $WORKDIR/receptors_contracted.tmp
-done < $WORKDIR/receptors_contracted
 
-tr -d $'\r' < $WORKDIR/receptors_contracted.tmp > $WORKDIR/receptors_contracted
-rm $WORKDIR/receptors_contracted.tmp
+    else
+        # Compounds → expression = 0
+        expr=0.000
+    fi
+
+    # nge = expr + 1
+    nge=$(awk -v x="$expr" 'BEGIN{printf "%.9f", x+1.0}')
+
+    # Write final line
+    echo "$line $expr $nge" >> "$OUTPUT"
+
+done < "$WORKDIR/receptors_contracted"
+
+mv "$OUTPUT" "$WORKDIR/receptors_contracted"
+

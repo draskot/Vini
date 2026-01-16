@@ -1,74 +1,25 @@
-source $vini_dir/globals
+#!/bin/bash
 
-#> all_user_jobs
-rm -f user_jobs
+source "$vini_dir/globals"
 
-echo -n $USER "jobs remaining: "
-while true
-do
-    sleep 1
-    $job_status -u $USER > all_user_jobs
-    if  [ -e all_user_jobs ] 
-    then
-        lineno=`wc -l < all_user_jobs`                   #get the number of Vini jobs
-        let lineno--
-        echo -n $lineno
-        if  [ $lineno -eq $NULL ] ; then                      #exit loop if there are no more jobs
-            break
-        fi
+echo "[VINI] Waiting for jobs to finish (ignoring CG)..."
+
+while true; do
+    if [[ "$SCTYPE" == "SLURM" ]]; then
+        # Count only RUNNING or PENDING jobs
+        njobs=$(squeue -u "$USER" -h -o "%T" | grep -E 'RUNNING|PENDING' | wc -l)
     else
-        sleep 10                                     #wait for 10 seconds if SLURM controller failed and try again
-        $job_status -u $USER > all_user_jobs
-        if  [ -e all_user_jobs ]
-        then
-            lineno=`wc -l < all_user_jobs`           #get the status of Vini jobs
-            let lineno--
-            echo -n $lineno
-                if  [ $lineno -eq $NULL ]  ; then              #exit loop if there are no more jobs
-                    break
-                fi
-        else
-            sleep 100                                #wait for 100 seconds if SLURM controller failed and try again 
-            $job_status -u $USER > all_user_jobs
-            if  [ -e all_user_jobs ]
-            then
-                lineno=`wc -l < all_user_jobs`           #get the status of Vini jobs
-                let lineno--
-                echo -n $lineno
-                if  [ $lineno -eq $NULL ] ; then             #exit loop if there are no more jobs
-                    break
-                fi
-            else
-                echo "unable to contact SLURM controller, ‚exiting."  >> Vini.crashlog
-                $job_cancel -u $USER
-                killall -u $USER
-            fi
-        fi
+        # PBS equivalent
+        njobs=$(qstat -u "$USER" 2>/dev/null | grep -E ' R | Q ' | wc -l)
     fi
-    echo -n " "
+
+    if [[ "$njobs" -eq 0 ]]; then
+        break
+    fi
+
+    echo "[VINI] Jobs remaining: $njobs"
+    sleep 30
 done
-     nolines=`squeue -u $USER | grep "launch failed requeued held" | wc -l` #clear stucked job
-     if  [ $nolines -gt $NULL ] 
-     then
-         jobID=`squeue -u $USER | grep "launch failed requeued held" | awk '{print $1}'`
-         scancel $jobID
-     fi
 
+echo "[VINI] All jobs finished."
 
-     timeout 3600s touch $WORKDIR/test                                 #Checking if scratch file system is working
-     timeout 3600s ls $WORKDIR/test > tmpfull 2> /dev/null
-     if [ ! -s tmpfull ]
-     then
-         echo "Error while accessing scratch filesystem. Exiting."     >> $vini_dir/Vini.crashlog
-         echo "scratch has been set to alternative location /ceph/hpc/data/r2022r03-224-users/eudraskot/WORKDIR"  >> $vini_dir/Vini.crashlog
-         echo "You will need to re-login and then start Vini again."
-         echo ""                                                      >> $vini_dir/Vini.crashlog
-         $job_cancel -u $USER
-         #old=`grep WORKDIR $vini_dir/sourceme | awk -F'=' '{print $2}'`
-         #new=`grep INSTALL $vini_dir/sourceme | awk -F'=' '{print $2}'`
-         #sed -i -e "s|$old|$new|" "$vini_dir/sourceme"
-         masterpid=`cat $vini_dir/masterpid`
-         kill -9 $masterpid
-     fi
-
-echo "Done."

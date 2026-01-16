@@ -1,0 +1,9 @@
+
+
+
+#bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames Osimertinib.sdf.gz -conformers_single_file osimertinib.global_confs.sdf.gz
+
+#bcl-apps.exe molecule:Help > tom
+
+
+bcl-apps.exe molecule:BuildConformerLibrary -ensemble Everolimus.sdf -scaffolds Everolimus.sdf -conformation_comparer Atom -output Everolimus_conformers.sdf

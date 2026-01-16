@@ -1,0 +1,15 @@
+ml() {
+    # Try to load the module as typed
+    module load "$1" 2>/dev/null && return 0
+
+    # If that fails, find the first case-insensitive match and load it
+    match=$(module avail 2>&1 | grep -i "^[[:space:]]*$1" | head -n1 | awk '{print $1}')
+    if [ -n "$match" ]; then
+        echo "Loading module '$match' instead of '$1'..."
+        module load "$match"
+    else
+        echo "Module '$1' not found."
+        return 1
+    fi
+}
+

@@ -1,13 +1,30 @@
-
 #!/usr/bin/env bash
 
 partition=$1
 
-
+# Function to get MaxTime from SLURM partition
 get_max_walltime_slurm() {
-    # Extract MaxTime from scontrol show partition
-    scontrol show partition "$partition" 2>/dev/null | grep -i 'MaxTime' | head -n1 | awk -F= '{gsub(/ /,"",$2); print $2}'
+    scontrol show partition "$partition" 2>/dev/null | awk '
+    /MaxTime=/ {
+        for(i=1;i<=NF;i++) {
+            if($i ~ /^MaxTime=/) {
+                split($i,a,"=")
+                print a[2]
+                exit
+            }
+        }
+    }'
 }
 
 walltime=$(get_max_walltime_slurm)
+
+# Fallback in case parsing fails
+if [ -z "$walltime" ]; then
+    echo "Warning: Could not detect MaxTime for partition '$partition', using default 24:00:00"
+    walltime="24:00:00"
+fi
+
+# Write to globals
 echo "export walltime=${walltime}" >> $vini_dir/globals
+echo "Detected MaxTime for partition '$partition': $walltime"
+
