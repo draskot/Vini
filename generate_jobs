@@ -152,6 +152,7 @@ echo "python sanityzation.py"
 echo "HAS_H=\$(python check_hydrogens.py ligand_clean.sdf)"
 echo "conda deactivate"
 
+echo "module load oneapi/init_opencl/latest"
 echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames ligand_clean.sdf -conformers_single_file ligand_conformers.sdf -max_iterations 500 -top_models 50"    #generate conformers
 
 echo "source $INSTALL/miniconda3/bin/activate"                                    #convert conformers to mol2
