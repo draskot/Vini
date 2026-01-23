@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+SOURCEME="$HOME/Vini/sourceme"
+
+# Query all CUDA-related module spiders
+module spider cuda 2> /tmp/cuda_spider.txt
+module spider cpe-cuda 2>> /tmp/cuda_spider.txt
+module spider libs/cuda 2>> /tmp/cuda_spider.txt
+module spider CUDA 2>> /tmp/cuda_spider.txt
+
+# Extract module names (supports many namespaces)
+mapfile -t cuda_modules < <(
+    grep -oE '(^|[[:space:]])(cuda/[0-9]+(\.[0-9]+)*|CUDA/[0-9]+(\.[0-9]+)*|libs/cuda/[0-9]+(\.[0-9]+)*|cpe-cuda/[0-9]+(\.[0-9]+)*)' /tmp/cuda_spider.txt \
+    | awk '{print $NF}' \
+    | sort -V -u
+)
+
+if [ ${#cuda_modules[@]} -gt 0 ]; then
+    cuda_module="${cuda_modules[-1]}"
+    echo "Detected CUDA module: ${cuda_module}"
+    echo "module load ${cuda_module}" >> "$SOURCEME"
+    exit 0
+fi
+
+# If no CUDA module found, skip
+echo "No CUDA modules found. Skipping CUDA module load."
+

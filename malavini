@@ -7,8 +7,6 @@ else
     walltime=$(qmgr -c "list queue $partition" | grep "resources_max.walltime" | awk '{print $3}')
 fi
 
-echo "walltime: $walltime: brakepoint!" ; sleep 1000
-
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
 nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`

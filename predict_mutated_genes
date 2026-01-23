@@ -45,9 +45,11 @@ while read -r line; do
     fi
 
     MUTATED_FASTA="$CELL_LINE_MUT_DIR/${uniprot}.fasta"
-
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
     echo "Applying mutation $mutation to $gene ($uniprot) ..." # Apply mutation using VINI's mutation function
     sh $vini_dir/VINI_apply_mutation "$FASTA_FILE" "$mutation" "$MUTATED_FASTA"
+    conda deactivate
 
     MUTATED_PDB="$vini_dir/database/cell_lines/${cell_line}/mutations/${uniprot}.pdb"
     if [[ -f "$MUTATED_PDB" ]]; then

@@ -31,22 +31,21 @@ do
     then
         wget -O $WORKDIR/tmp -q  http://rest.kegg.jp/conv/pubchem/${KEGG_gene_name}
         pubchem_id=`head -1 $WORKDIR/tmp | awk '{print $2}'`
-
-        echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in repo..."
-        if  [[ -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]] || [[ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]]  
+        echo -n "KEGG entry" $entry "is a compound with Pubchem ID" $pubchem_id "Checking if in database..."
+        if  [ -e $vini_dir/database/genes/sdf_files/${pubchem_id}.sdf ]  
         then 
-            if [ ! -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]
-            then
-                cp $vini_dir/genes/database/pdb_files/${pubchem_id}.pdb $vini_dir/genes/pdb_files
-            fi
+            cp $vini_dir/database/genes/sdf_files/${pubchem_id}.sdf $vini_dir/genes/sdf_files
+            cp $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb $vini_dir/genes/pdb_files
             echo " yes. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with E flag."
             echo $KEGG_entry_id $KEGG_gene_name $pubchem_id "E" >> $WORKDIR/receptors_contracted
         else
             echo -n "no. Trying to obtain the structure from Pubchem..."
             echo ${pubchem_id}
             sh download_substance_structure ${pubchem_id}
-            if  [ -e $vini_dir/genes/pdb_files/${pubchem_id}.pdb ]
+            if  [ -e $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb ]
             then
+                cp $vini_dir/database/genes/pdb_files/${pubchem_id}.pdb $vini_dir/genes/pdb_files
+                cp $vini_dir/database/genes/sdf_files/${pubchem_id}.sdf $vini_dir/genes/sdf_files
                 echo "success. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "list with E flag."
             else
                 echo " failed. Adding" $pubchem_id "to" $WORKDIR/receptors_contracted "with F flag."

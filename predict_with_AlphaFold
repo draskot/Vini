@@ -15,6 +15,7 @@ if [ ! -f "$fasta_file" ]; then
     exit 1
 fi
 
+
 # Determine antibody name from FASTA file
 antibody="$(basename "$fasta_file" .fasta)"
 if [ -z "$antibody" ]; then
@@ -34,34 +35,22 @@ if [ "$seq_count" -eq 1 ]; then
 else
     model="multimer"
 fi
-
 use_gpu_relax=False
-
-# Determine CPUs and memory per job
-if [[ "$SCTYPE" == "SLURM" && "$partition" == *gpu* ]]; then
-    ncpus_per_job=$((cpus / 4))
-    mem_per_job=$((memory_per_node / 4))
-    # Use 1 GPU per job (AlphaFold compatible)
-    gpus_per_job=1
-else
-    ncpus_per_job=$cpus
-    mem_per_job=$memory_per_node
-    gpus_per_job=0
-fi
-
 batch_script="$WORKDIR/AlphaFold_${antibody}"
 
-# Generate the batch script
-{
+gpus_per_job=${gpus_per_job:-1}
+ncpus_per_job=$(( cores_per_node / GPUS_PER_NODE ))
+mem_per_node_gb=${memory_per_node%GB}
+mem_per_job_gb=$(( mem_per_node_gb / GPUS_PER_NODE ))
+mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
+
+{                           
     echo "#!/bin/bash"
     echo ""
-
-    # --- SLURM header ---
-    if [[ "$SCTYPE" == "SLURM" ]]; then
-        # detect partition max walltime (keep your existing method)
-        walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
+    if [[ "$SCTYPE" == "SLURM" ]]; then  #SLURM header
+        walltime=$(sinfo -o "%R %l" | grep "$GPU_PARTITION" | head -1 | awk '{print $2}')
         echo "#SBATCH --time=${walltime}"
-        echo "#SBATCH --partition=${partition}"
+        echo "#SBATCH --partition=${GPU_PARTITION}"
         echo "#SBATCH --job-name=${antibody}"
         [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#SBATCH --account=${SLURMACCT}"
         echo "#SBATCH --output=${WORKDIR}/${antibody}.out"
@@ -69,55 +58,53 @@ batch_script="$WORKDIR/AlphaFold_${antibody}"
         echo "#SBATCH --nodes=1"
         echo "#SBATCH --ntasks-per-node=1"
         echo "#SBATCH --cpus-per-task=${ncpus_per_job}"
-        echo "#SBATCH --mem=${mem_per_job}M"
-        if [[ "${gpus_per_job}" -ge 1 ]]; then
-            echo "#SBATCH --gres=gpu:${gpus_per_job}"
-        fi
-
-    # --- PBS header ---
+        echo "#SBATCH --mem=${mem_per_job_mb}M"
+        echo "#SBATCH --gres=gpu:1"
     else
-        walltime=$(qstat -Qf "$partition" | grep max.walltime | awk '{print $3}')
+	ncpus_per_job=16 #PBS header
+        walltime=$(qstat -Qf "$GPU_PARTITION" | grep max.walltime | awk '{print $3}')
         echo "#PBS -l walltime=${walltime}"
-        echo "#PBS -q ${partition}"
+        echo "#PBS -q ${GPU_PARTITION}"
         echo "#PBS -N ${antibody}"
         [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#PBS -A ${SLURMACCT}"
         echo "#PBS -o ${WORKDIR}/${antibody}.out"
         echo "#PBS -e ${WORKDIR}/${antibody}.err"
-        if [[ "$partition" == *gpu* ]]; then
-            echo "#PBS -l select=1:ncpus=${ncpus_per_job}:mem=${mem_per_job}mb:ngpus=${gpus_per_job}"
-        else
-            echo "#PBS -l select=1:ncpus=${cpus}:mem=${mem_per_job}mb"
-        fi
+	echo "#PBS -l select=1:ncpus=${ncpus_per_job}:mem=${mem_per_job_gb}GB:ngpus=${gpus_per_job}"
     fi
 
     echo ""
     echo "export ALPHAFOLD_DATA_DIR=\"${ALPHAFOLD_DATA_DIR}\""
     echo "WORKDIR=\"${WORKDIR}\""
     echo ""
-
-    # --- Module / Conda activation ---
-    if [ -n "$selected_module" ]; then
-        echo "module purge"
+    if [ -n "$selected_module" ]; then #Vega style
+        echo "module purge || true"
         echo "module load ${selected_module}"
+	echo "\"${AlphaFoldSTART}\" \\"
+        echo "    --data_dir=\"${ALPHAFOLD_DATA_DIR}\" \\"
+        echo "    --fasta_paths=\"${fasta_file}\" \\"
+        echo "    --output_dir=\"${WORKDIR}\" \\"
+        echo "    --model_preset=\"${model}\" \\"
+        echo "    --db_preset=\"${base}\" \\"
+        echo "    --use_gpu_relax=${use_gpu_relax} \\"
+        echo "    --num_multimer_predictions_per_model=1 \\"
+        echo "    --max_template_date=2020-06-05"
+        echo ""
     else
-        echo "source \"${INSTALL}/miniconda3/bin/activate\""
-        echo "conda activate env310"
-    fi
-    echo ""
-
-    # --- Run AlphaFold ---
-    # we print the command and then a blank line afterwards to ensure newline separation
-    echo "\"${AlphaFoldSTART}\" \\"
-    echo "    --data_dir=\"${ALPHAFOLD_DATA_DIR}\" \\"
-    echo "    --fasta_paths=\"${fasta_file}\" \\"
-    echo "    --output_dir=\"${WORKDIR}\" \\"
-    echo "    --model_preset=\"${model}\" \\"
-    echo "    --db_preset=\"${base}\" \\"
-    echo "    --use_gpu_relax=${use_gpu_relax} \\"
-    echo "    --num_multimer_predictions_per_model=1 \\"
-    echo "    --max_template_date=2020-06-05"
-    echo ""
-    if [ -z "$selected_module" ]; then
+        echo "source \"${INSTALL}/miniconda3/bin/activate\"" #Kalinina style
+        echo "conda activate alphafold"
+        echo "cd \"$(dirname "${ALPHAFOLD_START}")\" || exit 1"
+        echo ""
+        echo "./$(basename "${ALPHAFOLD_START}") \\"
+        echo "    -d \"${ALPHAFOLD_DATA_DIR}\" \\"
+        echo "    -f \"${fasta_file}\" \\"
+        echo "    -o \"${WORKDIR}\" \\"
+        echo "    -m \"${model}\" \\"
+        echo "    -c \"${base}\" \\"
+        echo "    -r false \\"
+        echo "    -e false \\"
+        echo "    -l 1 \\"
+        echo "    -t 2020-06-05"
+        echo ""
         echo "conda deactivate"
     fi
 

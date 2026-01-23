@@ -33,7 +33,7 @@ then
     source $vini_dir/sourceme
     echo "The following software is installed:" 
     programs=`grep section sourceme | wc -l`
-    NOPROGS=16   #the number of 3rd programs Vini is using
+    NOPROGS=15   #the number of 3rd programs Vini is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
@@ -89,54 +89,88 @@ mkdir -p $vini_dir/genes/expressions
 mkdir -p $vini_dir/genes/mutations
 mkdir -p $vini_dir/genes/sequences
 
-# Added checking for PBS and global variable for script type
+mkdir -p $vini_dir/database/genes
+mkdir -p $vini_dir/database/genes/pdb_files
+mkdir -p $vini_dir/database/genes/sdf_files
 
-sinfo 2&> tmp #try to find which workload manager is running #we are trying to detect SLURM
-grep "command not found" tmp > tmp2
-if [ -s tmp2 ]
-then
-    pbsnodes 2&> tmp3 # trying to detect PBS
-    grep "command not found" tmp3 > tmp4
-    if [ -s tmp4 ]
-    then
-         exit
-    else
-	echo "export SCTYPE=PBS"       >> $vini_dir/globals
-        echo "export job_status=qstat" >> $vini_dir/globals
-        echo "export job_submit=qsub"  >> $vini_dir/globals
-        echo "export job_cancel=qdel"  >> $vini_dir/globals
-        echo "PBS partitions are configured as:" ; qstat -Q
-	read -p "Enter the name of PBS partition Vini will use:" partition
-        echo "export partition=${partition}" >> $vini_dir/globals
-        bash detects_cores_on_PBS $partition
-        bash detects_memsize_on_PBS $partition
-        # Assume modern GPU nodes have 4 GPUs
-        if [[ "$partition" == *gpu* ]]; then
-            gpus_per_node=4
-            echo "export gpus_per_node=${gpus_per_node}" >> $vini_dir/globals
-        fi
-        bash detects_max_walltime_on_PBS $partition
-    fi
-else 
-    echo "export SCTYPE=SLURM"   	>> $vini_dir/globals
-    echo "export job_status=squeue"     >> $vini_dir/globals
-    echo "export job_submit=sbatch"     >> $vini_dir/globals
-    echo "export job_cancel=scancel"    >> $vini_dir/globals
-    echo "SLURM partitions are configured as:" ; sinfo
-    read -p "Enter the name of partition Vini will use:" partition
-    cores_per_node=$(sinfo -o "%P %n %c" -p $partition | awk 'NR==2 {print $3}')
-    memory_per_node=$(sinfo -o "%P %n %m" -p $partition | awk 'NR==2 {print $3}')
-    echo "export partition=${partition}" >> $vini_dir/globals
-    echo "export cores_per_node=${cores_per_node}" >> $vini_dir/globals
-    echo "export memory_per_node=${memory_per_node}" >> $vini_dir/globals
-    # Detect GPUs per node if partition is GPU type
-    gpu_info=$(sinfo -o "%G" -p $partition | awk 'NR==2 {print $1}')
-    if [[ "$gpu_info" == *gpu* ]]; then
-        gpus_per_node=4
-        echo "export gpus_per_node=${gpus_per_node}" >> $vini_dir/globals
-    fi
-    bash detects_max_walltime_on_SLURM $partition
+#--------------------------------------
+# Detect workload manager
+#--------------------------------------
+if command -v sinfo >/dev/null 2>&1; then
+    SCTYPE="SLURM"
+elif command -v pbsnodes >/dev/null 2>&1; then
+    SCTYPE="PBS"
+else
+    echo "No supported workload manager detected (SLURM/PBS)."
+    exit 1
 fi
+
+echo "export SCTYPE=$SCTYPE" >> "$vini_dir/globals"
+
+if [ "$SCTYPE" = "SLURM" ]; then
+    echo "export job_status=squeue"   >> "$vini_dir/globals"
+    echo "export job_submit=sbatch"   >> "$vini_dir/globals"
+    echo "export job_cancel=scancel"  >> "$vini_dir/globals"
+
+    echo "Available SLURM partitions:"
+    sinfo
+
+    # ---------------- CPU partition ----------------
+    read -p "Enter CPU partition (Rosetta, Vina, etc): " CPU_PARTITION
+    echo "export CPU_PARTITION=$CPU_PARTITION" >> "$vini_dir/globals"
+
+    cores_per_node=$(sinfo -o "%P %c" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
+    memory_per_node=$(sinfo -o "%P %m" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
+
+    echo "export CPU_CORES_PER_NODE=$cores_per_node" >> "$vini_dir/globals"
+    echo "export CPU_MEMORY_PER_NODE=$memory_per_node" >> "$vini_dir/globals"
+
+    bash detects_max_walltime_on_SLURM "$CPU_PARTITION"
+
+    # ---------------- GPU partition ----------------
+    read -p "Enter GPU partition (AlphaFold): " GPU_PARTITION
+    echo "export GPU_PARTITION=$GPU_PARTITION" >> "$vini_dir/globals"
+
+    gpu_info=$(sinfo -o "%G" -p "$GPU_PARTITION" | awk 'NR==2 {print $1}')
+
+    if [[ "$gpu_info" != *gpu* ]]; then
+        echo "WARNING: Selected GPU partition does not report GPUs!"
+    fi
+
+    # Conservative default (override later if needed)
+    gpus_per_node=4
+    echo "export GPUS_PER_NODE=$gpus_per_node" >> "$vini_dir/globals"
+
+    bash detects_max_walltime_on_SLURM "$GPU_PARTITION"
+fi
+
+if [ "$SCTYPE" = "PBS" ]; then
+    echo "export job_status=qstat" >> "$vini_dir/globals"
+    echo "export job_submit=qsub"  >> "$vini_dir/globals"
+    echo "export job_cancel=qdel"  >> "$vini_dir/globals"
+
+    echo "Available PBS queues:"
+    qstat -Q
+
+    # ---------------- CPU queue ----------------
+    read -p "Enter CPU queue (Rosetta, Vina, etc): " CPU_PARTITION
+    echo "export CPU_PARTITION=$CPU_PARTITION" >> "$vini_dir/globals"
+
+    bash detects_cores_on_PBS "$CPU_PARTITION"
+    bash detects_memsize_on_PBS "$CPU_PARTITION"
+    bash detects_max_walltime_on_PBS "$CPU_PARTITION"
+
+    # ---------------- GPU queue ----------------
+    read -p "Enter GPU queue (AlphaFold): " GPU_PARTITION
+    echo "export GPU_PARTITION=$GPU_PARTITION" >> "$vini_dir/globals"
+
+    # Conservative assumption
+    gpus_per_node=4
+    echo "export GPUS_PER_NODE=$gpus_per_node" >> "$vini_dir/globals"
+
+    bash detects_max_walltime_on_PBS "$GPU_PARTITION"
+fi
+
 
 source ./globals
 
@@ -160,19 +194,17 @@ rm -f jobs
 
 cat COPYRIGHT
 
-#sacctmgr show user $USER > tmp
-#sacct=`tail -1 tmp | awk '{print $2}'`
-#account=${sacct//[+-]/}
-#echo "export ACCOUNT=${account}" >> "$vini_dir/globals"
+sh $vini_dir/WLM_account_setting
 
-if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
-    reduced_account=$(sacctmgr show assoc user=$USER | grep normal | head -1 | awk '{gsub(/[-+]+$/, "", $2); print $2}')
-    ACCOUNT=$(id | grep -oE "[^,]*\(${reduced_account}[^)]*\)" | sed 's/.*(//;s/)//')
-    echo "export ACCOUNT=${ACCOUNT}" >> "$vini_dir/globals"
-    echo "Detected and set real SLURM account: ${ACCOUNT}"
-else
-    echo "ACCOUNT already exists in globals file."
-fi
+#if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
+#    reduced_account=$(sacctmgr show assoc user=$USER | grep normal | head -1 | awk '{gsub(/[-+]+$/, "", $2); print $2}')
+#    ACCOUNT=$(id | grep -oE "[^,]*\(${reduced_account}[^)]*\)" | sed 's/.*(//;s/)//')
+#    echo "export ACCOUNT=${ACCOUNT}" >> "$vini_dir/globals"
+#    echo "Detected and set real SLURM account: ${ACCOUNT}"
+#else
+#    echo "ACCOUNT already exists in globals file."
+#fi
+
 
 > $WORKDIR/dock_id_list  #Clear precedence lists
 > $WORKDIR/slem_id_list
@@ -297,17 +329,24 @@ data="_data"
 read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept the default: " -i "y" yesno
 if [ $yesno == y ]
 then
+    source $INSTALL/miniconda3/bin/activate
+    conda activate env310
     pip install pandas tqdm
+    conda deactivate
     compute_cell_line=$TRUE
     echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/globals
     read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "PANC-1" cell_line
     if  [ $CCLE == "y" ]
     then
         export cell_line=${cell_line}
+        source $INSTALL/miniconda3/bin/activate
+        conda activate env310
         python get_cell_line_expressions.py  #get expressions
         python get_cell_line_mutations.py    #get mutations
+        conda deactivate
         echo ${cell_line} "cell line will be processed."    
     fi
+
 
     echo "export cell_line=${cell_line}" >> $vini_dir/globals
     echo "Creating ligands_list file with drugs in NCI-60 database."

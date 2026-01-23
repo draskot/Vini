@@ -1,0 +1,146 @@
+#!/bin/bash
+# VINI AlphaFold installer (modules or custom installation)
+# Assumes sourceme already defines INSTALL
+
+#--------------------------------------
+# Load VINI variables
+#--------------------------------------
+SOURCEME="$HOME/Vini/sourceme"
+INSTALL=$(grep '^export INSTALL=' "$SOURCEME" | cut -d= -f2)
+
+if [ -z "$INSTALL" ]; then
+    echo "Error: INSTALL directory not found in sourceme."
+    exit 1
+fi
+
+#--------------------------------------
+# Check if AlphaFold is already in sourceme
+#--------------------------------------
+if grep -q "AlphaFold" "$SOURCEME"; then
+    read -p "AlphaFold section exists in $SOURCEME. Overwrite? (y/N): " ans
+    case "$ans" in
+        [Yy]*) 
+            # remove old AlphaFold section
+            sed -i '/AlphaFold/,+2d' "$SOURCEME"
+            ;;
+        *) 
+            echo "Keeping existing AlphaFold section. Exiting."
+            exit 0
+            ;;
+    esac
+fi
+
+#--------------------------------------
+# Check for available AlphaFold modules
+#--------------------------------------
+echo "Listing available AlphaFold modules..."
+module_spider_output=$(mktemp)
+module spider alphafold &> "$module_spider_output"
+
+# Extract AlphaFold module names
+mapfile -t module_list < <(grep -oE "AlphaFold/[^[:space:]]+" "$module_spider_output" | uniq)
+rm -f "$module_spider_output"
+
+if [ ${#module_list[@]} -gt 0 ]; then
+    echo "Available AlphaFold modules:"
+    for m in "${module_list[@]}"; do
+        echo "  $m"
+    done
+    if  [ ${#module_list[@]} -eq 1 ]; then
+        selected_module="${module_list[0]}"
+        echo "Only one AlphaFold module found. Using: $selected_module"
+    else
+        read -p "Enter the module name to use (exactly as shown above): " selected_module
+    fi
+    echo "#*****AlphaFold section******" >> "$SOURCEME"
+    echo "module load $selected_module" >> "$SOURCEME"
+    echo "export selected_module=\"${selected_module}\"" >> "$SOURCEME"
+    echo "export ALPHAFOLD_DATA_DIR=/ceph/hpc/software/alphafold" >> "$SOURCEME"
+    echo "export ALPHAFOLD_START=$(module show $selected_module 2>&1 | grep -oE '/.*/alphafold')" >> "$SOURCEME"
+    echo "AlphaFold environment configured via module."
+    exit 0
+fi
+
+#--------------------------------------
+# No module found → fallback to custom installation
+#--------------------------------------
+echo "No AlphaFold module found. Proceeding with custom installation..."
+
+# Create conda environment if not exists
+source "$INSTALL/miniconda3/bin/activate"
+
+if ! conda env list | grep -q "^alphafold"; then
+    conda create -y --name alphafold python=3.8
+
+    conda run -n alphafold conda install -y -c conda-forge \
+        openmm==7.5.1 cudatoolkit==11.2.2 pdbfixer
+
+    conda run -n alphafold conda install -y -c bioconda \
+        hmmer hhsuite==3.3.0 kalign2
+
+    conda run -n alphafold pip install --no-cache-dir \
+        absl-py==1.0.0 \
+        biopython==1.79 \
+        chex==0.0.7 \
+        dm-haiku==0.0.9 \
+        dm-tree==0.1.6 \
+        immutabledict==2.0.0 \
+        jax==0.3.25 \
+        ml-collections==0.1.0 \
+        numpy==1.21.6 \
+        pandas==1.3.4 \
+        protobuf==3.20.1 \
+        scipy==1.7.0 \
+        tensorflow-cpu==2.9.0
+
+    conda run -n alphafold pip install --upgrade --no-cache-dir \
+        jax==0.3.25 \
+        jaxlib==0.3.25+cuda11.cudnn805 \
+        -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+fi
+
+ALPHAFOLD_VERSION="2.3.1"
+ALPHAFOLD_DIR="$INSTALL/alphafold-$ALPHAFOLD_VERSION"
+ALPHAFOLD_PATH="$ALPHAFOLD_DIR"
+
+
+if [ ! -d "$ALPHAFOLD_DIR" ]; then
+    echo "AlphaFold source not found. Downloading v$ALPHAFOLD_VERSION..."
+
+    wget -O "$INSTALL/v$ALPHAFOLD_VERSION.tar.gz" \
+        https://github.com/deepmind/alphafold/archive/refs/tags/v$ALPHAFOLD_VERSION.tar.gz
+
+    tar -xzf "$INSTALL/v$ALPHAFOLD_VERSION.tar.gz" -C "$INSTALL"
+    rm -f "$INSTALL/v$ALPHAFOLD_VERSION.tar.gz"
+else
+    echo "AlphaFold source already present."
+fi
+
+
+if [ ! -d "$INSTALL/alphafold_data" ]; then # Download databases if not present
+    sh "$HOME/Vini/download_db.sh" -d "$INSTALL/alphafold_data"
+fi
+
+# Additional setup
+wget -P "$ALPHAFOLD_PATH/alphafold/common" \
+     https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
+
+PATCH_DIR="$INSTALL/miniconda3/envs/alphafold/lib/python3.8/site-packages"
+
+if [ ! -f "$PATCH_DIR/.openmm_patch_done" ]; then
+    patch -p0 -d "$PATCH_DIR" < "$ALPHAFOLD_PATH/docker/openmm.patch"
+    touch "$PATCH_DIR/.openmm_patch_done"
+fi
+
+cp "$HOME/Vini/run_alphafold.sh" "$ALPHAFOLD_PATH"
+
+
+# Write single section to sourceme
+echo "#***** AlphaFold section ******" >> "$SOURCEME"
+echo "export ALPHAFOLD_DATA_DIR=\"$INSTALL/alphafold_data\"" >> "$SOURCEME"
+echo "export ALPHAFOLD_START=\"$ALPHAFOLD_PATH/run_alphafold.sh\"" >> "$SOURCEME"
+./write_cuda_module
+echo "#***** End AlphaFold section ******" >> "$SOURCEME"
+
+echo "Custom AlphaFold installation complete."
+

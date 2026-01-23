@@ -224,7 +224,7 @@ else
 fi
 
 echo -n "Checking if AlphaFold is installed..."
-sh $vini_dir/AlphaFold_install
+$vini_dir/AlphaFold_install
 
 
 
@@ -512,17 +512,17 @@ fi
 source $vini_dir/sourceme
 
 
-grep pdb-tools $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    source $vini_dir/sourceme
-    echo "Installing pdb-tools...."
-    mkdir -p $INSTALL/pdb-tools/bin
-    pip install --target=$INSTALL/pdb-tools pdb-tools
-    echo "" $vini_dir/sourceme
-    echo "#***** pdb_data section *****" >> $vini_dir/sourceme
-    echo "export PATH=\$INSTALL/pdb-tools/bin:\$PATH" >> $vini_dir/sourceme
-    echo "done."
-fi
+#grep pdb-tools $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    source $vini_dir/sourceme
+#    echo "Installing pdb-tools...."
+#    mkdir -p $INSTALL/pdb-tools/bin
+#    pip install --target=$INSTALL/pdb-tools pdb-tools
+#    echo "" $vini_dir/sourceme
+#    echo "#***** pdb_data section *****" >> $vini_dir/sourceme
+#    echo "export PATH=\$INSTALL/pdb-tools/bin:\$PATH" >> $vini_dir/sourceme
+#    echo "done."
+#fi
 
 echo "You have to re-login in order to changes make effect!"
