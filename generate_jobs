@@ -12,13 +12,7 @@ matrix_file="$jobs_dir/VINI_matrix.txt"
 
 mkdir -p "$jobs_dir"
 
-#sentinel="$jobs_dir/.matrix_initialized"
-#if [[ -f $sentinel ]]; then
-#    echo "Matrix already initialized. Skipping job generation."
-#    exit 0
-#fi
 
-ncpus=24
 nrows=$(wc -l < "$matrix_file")
 echo "Matrix has $nrows rows"
 
@@ -37,44 +31,45 @@ while IFS= read -r line; do
         mkdir -p "$job_dir"
         cd $job_dir
         rm -rf ROSETTA_CRASH.log
-        
+
+        ncpus=24
+        mem_per_node_gb=${memory_per_node%GB}
+        mem_per_job_gb=$(( mem_per_node_gb * ncpus / cores_per_node ))
         {
         if [[ "$SCTYPE" == "SLURM" ]]; then # Scheduler header
             walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
             echo "#!/bin/bash"
             echo "#SBATCH --job-name=job_${row_index}_${j}"
-            echo "#SBATCH --partition=$partition"
+            echo "#SBATCH --partition=$CPU_PARTITION"
             echo "#SBATCH --time=$walltime"
             echo "#SBATCH --account=$ACCOUNT"
             echo "#SBATCH --nodes=1"
             echo "#SBATCH --ntasks=${ncpus}"
+	    echo "#SBATCH --cpus-per-task=1"
+	    echo "#SBATCH --mem=${mem_per_job_gb}G"
             echo "#SBATCH --output=$job_dir/job.out"
             echo "#SBATCH --error=$job_dir/job.err"
         else
-            echo "#PBS -l select=1:ncpus=48:mem=${mem_per_job}mb"
-            echo "#PBS -q $partition"
+	    echo "#PBS -l select=1:ncpus=${ncpus}:mem=${mem_per_job_gb}GB,walltime=${walltime}"
+            echo "#PBS -q $CPU_PARTITION"
             echo "#PBS -N job_${row_index}_${j}"
             echo "#PBS -o $jobs_dir/job_${row_index}_${j}.out"
             echo "#PBS -e $jobs_dir/job_${row_index}_${j}.err"
         fi
         
-        echo "source $vini_dir/globals"
-
-        echo "export CONDA_SOLVER=classic"
-        echo "export CONDA_NO_PLUGINS=1"
-        echo "export PYTHONNOUSERSITE=1"
-
         mpi_module_line=$(grep -E '^\s*module\s+load\s+.*[Mm][Pp][Ii]' "$vini_dir/sourceme" | head -n 1)
         java_module_line=$(grep -E '^\s*module\s+load\s+.*[Jj][Aa][Vv][Ava]' "$vini_dir/sourceme" | head -n 1)
-        echo "module purge"                                                   
         echo "$mpi_module_line"
         echo "$java_module_line"
-        echo "module load Python/2.7.18-GCCcore-10.2.0 CMake/3.23.1-GCCcore-11.3.0 libGLU/9.0.2-GCCcore-11.3.0"
-        echo "module load bzip2/1.0.8-GCCcore-11.2.0 libxml2/2.11.5-GCCcore-13.2.0 XZ/5.4.4-GCCcore-13.2.0"
+        #echo "module load Python/2.7.18-GCCcore-10.2.0 CMake/3.23.1-GCCcore-11.3.0 libGLU/9.0.2-GCCcore-11.3.0"
+        #echo "module load bzip2/1.0.8-GCCcore-11.2.0 libxml2/2.11.5-GCCcore-13.2.0 XZ/5.4.4-GCCcore-13.2.0"
 
         if [[ "$type" == "PP" ]]
         then
-            echo "cp ../${name1}.pdb ../${name2}.pdb ."
+            echo "$mpi_module_line"
+            echo "$java_module_line"
+            echo "cp $WORKDIR/${cancer_type}_data/${cell_line}/${name1}.pdb ./"
+            echo "cp $WORKDIR/${cancer_type}_data/${cell_line}/${name2}.pdb ./"
             echo "sed -i '/^REMARK/d' ${name1}.pdb ${name2}.pdb"
             echo "chain=\$(head -1 ${name2}.pdb | awk '{print \$5}')"             #Modify chain letter
             echo "if [[ \"\$chain\" == \"A\" ]]"
@@ -88,13 +83,9 @@ while IFS= read -r line; do
             echo "sed -i '/^REMARK/d' ${name1}.pdb"
             echo "sed -i '/^REMARK/d' ${name2}.pdb"
             echo "sed -i '/^REMARK/d' C_${name1}_${name2}.pdb"
-
-            echo "source $INSTALL/miniconda2/bin/activate"                        #clean protein complex
             echo "cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ."
             echo "cp $ROSETTA_TOOLS/amino_acids.py ."
-            echo "python clean_pdb_keep_ligand.py complex.pdb -ignorechain"
-            echo "mv complex.pdb_00.pdb complex.pdb"
-
+            echo "source $INSTALL/miniconda2/bin/activate"                        #clean protein complex
             echo "python clean_pdb_keep_ligand.py C_${name1}_${name2}.pdb -ignorechain"
             echo "mv C_${name1}_${name2}.pdb_00.pdb C_${name1}_${name2}.pdb"
             echo "conda deactivate"
