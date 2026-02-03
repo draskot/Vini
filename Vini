@@ -33,11 +33,11 @@ then
     source $vini_dir/sourceme
     echo "The following software is installed:" 
     programs=`grep section sourceme | wc -l`
-    NOPROGS=15   #the number of 3rd programs Vini is using
+    NOPROGS=15   #the number of utils VINI is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
-        sh install.sh
+        ./install.sh
         echo "Installation is finished. Log in and start Vini again."
         exit
     else

@@ -13,9 +13,6 @@ if [ -z "$INSTALL" ]; then
     exit 1
 fi
 
-#--------------------------------------
-# Check if AlphaFold is already in sourceme
-#--------------------------------------
 if grep -q "AlphaFold" "$SOURCEME"; then
     read -p "AlphaFold section exists in $SOURCEME. Overwrite? (y/N): " ans
     case "$ans" in
@@ -140,7 +137,5 @@ echo "#***** AlphaFold section ******" >> "$SOURCEME"
 echo "export ALPHAFOLD_DATA_DIR=\"$INSTALL/alphafold_data\"" >> "$SOURCEME"
 echo "export ALPHAFOLD_START=\"$ALPHAFOLD_PATH/run_alphafold.sh\"" >> "$SOURCEME"
 ./write_cuda_module
-echo "#***** End AlphaFold section ******" >> "$SOURCEME"
 
-echo "Custom AlphaFold installation complete."
 
