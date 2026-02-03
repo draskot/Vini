@@ -1,0 +1,45 @@
+# globals must already be sourced
+# provides: SCTYPE
+
+if [[ "$SCTYPE" == "SLURM" ]]; then
+
+    if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
+        reduced_account=$(sacctmgr show assoc user=$USER | grep normal | head -1 | awk '{gsub(/[-+]+$/, "", $2); print $2}')
+        ACCOUNT=$(id | grep -oE "[^,]*\(${reduced_account}[^)]*\)" | sed 's/.*(//;s/)//')
+
+        if [[ -n "$ACCOUNT" ]]; then
+            echo "export ACCOUNT=${ACCOUNT}" >> "$vini_dir/globals"
+            echo "Detected and set real SLURM account: ${ACCOUNT}"
+        else
+            echo "WARNING: Could not auto-detect SLURM account"
+        fi
+    else
+        echo "ACCOUNT already exists in globals file."
+    fi
+
+elif [[ "$SCTYPE" == "PBS" ]]; then
+
+    # PBS: account/project may or may not be required
+    if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
+
+        # Try common PBS env vars (harmless if not present)
+        if [[ -n "$PBS_ACCOUNT" ]]; then
+            echo "export ACCOUNT=${PBS_ACCOUNT}" >> "$vini_dir/globals"
+            echo "Detected PBS account from PBS_ACCOUNT: ${PBS_ACCOUNT}"
+
+        elif [[ -n "$PBS_PROJECT" ]]; then
+            echo "export ACCOUNT=${PBS_PROJECT}" >> "$vini_dir/globals"
+            echo "Detected PBS project from PBS_PROJECT: ${PBS_PROJECT}"
+
+        else
+            echo "PBS detected, but no account/project required or provided."
+            echo "Proceeding without ACCOUNT."
+        fi
+    else
+        echo "ACCOUNT already exists in globals file."
+    fi
+
+else
+    echo "ERROR: Unknown SCTYPE='$SCTYPE' in globals"
+fi
+

@@ -259,21 +259,19 @@ then
             chmod g-r,o-r $WORKDIR/Rosetta_username
             chmod g-r,o-r $WORKDIR/Rosetta_password
         fi
-
         release=3.15
         version=408
-
         if  [ ! -e $INSTALL/rosetta_source_${release}_bundle.tar.bz2 ]
 	then
             wget -P $INSTALL https://downloads.rosettacommons.org/downloads/academic/${release}/rosetta_source_3.15_bundle.tar.bz2
 	fi
-
         echo "Unpacking and compiling Rosetta source, do not interrupt."
         tar -xjf "$INSTALL/rosetta_source_${release}_bundle.tar.bz2" --checkpoint=.4000 -C "$INSTALL"
+	module purge
 	source $INSTALL/miniconda3/bin/activate
         conda activate env310
         cd $INSTALL/rosetta.source.release-${version}/main/source
-        ./scons.py -j 8 bin mode=release extras=cxx11thread
+        ./scons.py -j 24 bin mode=release extras=cxx11thread
 	conda deactivate
         ROSETTA=$INSTALL/rosetta.source.release-${version}/main
         ROSETTA_BIN=$ROSETTA/source/bin
