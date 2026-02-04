@@ -120,10 +120,10 @@ if [ "$SCTYPE" = "SLURM" ]; then
     echo "export CPU_PARTITION=$CPU_PARTITION" >> "$vini_dir/globals"
 
     cores_per_node=$(sinfo -o "%P %c" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
-    memory_per_node=$(sinfo -o "%P %m" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
+    memory_per_node=$(sinfo -o "%P %m" -p "$CPU_PARTITION" | awk 'NR==2 {print int($2)}')
 
-    echo "export CPU_CORES_PER_NODE=$cores_per_node" >> "$vini_dir/globals"
-    echo "export CPU_MEMORY_PER_NODE=$memory_per_node" >> "$vini_dir/globals"
+    echo "export cores_per_node=$cores_per_node" >> "$vini_dir/globals"
+    echo "export memory_per_node=$memory_per_node" >> "$vini_dir/globals"
 
     bash detects_max_walltime_on_SLURM "$CPU_PARTITION"
 
@@ -196,14 +196,7 @@ cat COPYRIGHT
 
 sh $vini_dir/WLM_account_setting
 
-#if ! grep -q "^export ACCOUNT=" "$vini_dir/globals"; then
-#    reduced_account=$(sacctmgr show assoc user=$USER | grep normal | head -1 | awk '{gsub(/[-+]+$/, "", $2); print $2}')
-#    ACCOUNT=$(id | grep -oE "[^,]*\(${reduced_account}[^)]*\)" | sed 's/.*(//;s/)//')
-#    echo "export ACCOUNT=${ACCOUNT}" >> "$vini_dir/globals"
-#    echo "Detected and set real SLURM account: ${ACCOUNT}"
-#else
-#    echo "ACCOUNT already exists in globals file."
-#fi
+
 
 
 > $WORKDIR/dock_id_list  #Clear precedence lists
@@ -215,8 +208,9 @@ read -e -i 5000 -p "Enter total number of CPU cores VINI can use in parallel or 
 
 max_jobs=`echo $maxcores $cores_per_job | awk '{print $1 / $2}'`
 max_jobs=${max_jobs%.*}
-cores_per_node=$(awk -F'=' '/cores_per_node/ {gsub(/[^0-9]/,"",$2); print $2}' < globals)
-memory_per_node=$(awk -F'=' '/memory_per_node/ {gsub(/[^0-9]/,"",$2); print $2}' ./globals)
+cores_per_node=$(awk -F'=' '/cores_per_node/ {gsub(/[^0-9]/,"",$2); print $2}' globals)
+
+memory_per_node=$(awk -F'=' '/memory_per_node/ {gsub(/[^0-9]/,"",$2); print $2}' globals)
 
 nodes=`echo $maxcores $cores_per_node | awk '{print $1 / $2}'`
 nodes=${nodes%.*}

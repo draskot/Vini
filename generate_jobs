@@ -4,6 +4,9 @@ vini_dir=${vini_dir:-$HOME/Vini}
 source $vini_dir/sourceme
 source "$vini_dir/globals"
 ncpus=48
+cores_per_node=$(( $cores_per_node / 2 )) #no hypertreading
+memory_per_node=$(( memory_per_node / 1024 ))
+memory_per_job=$(( memory_per_node * ncpus / cores_per_node ))
 
 jobs_dir="$WORKDIR/${cancer_type}_data/${cell_line}"
 matrix_file="$jobs_dir/VINI_matrix.txt"
@@ -28,23 +31,25 @@ while IFS= read -r line; do
         mkdir -p "$job_dir"
         cd $job_dir
         rm -rf ROSETTA_CRASH.log
-        mem_per_node_gb=${memory_per_node%GB}
-        mem_per_job_gb=$(( mem_per_node_gb * ncpus / cores_per_node ))
+
 	echo "name1: $name1 name2: $name2 type: $type"
         {
+        partition=$CPU_PARTITION
+        walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
         if [[ "$SCTYPE" == "SLURM" ]]; then # Scheduler header
-            walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
             echo "#!/bin/bash"
             echo "#SBATCH --job-name=job_${row_index}_${j}"
             echo "#SBATCH --partition=$CPU_PARTITION"
             echo "#SBATCH --time=$walltime"
             echo "#SBATCH --account=$ACCOUNT"
             echo "#SBATCH --nodes=1"
-            echo "#SBATCH --ntasks=${ncpus}"
-	    echo "#SBATCH --cpus-per-task=1"
-	    echo "#SBATCH --mem=${mem_per_job_gb}G"
+            echo "#SBATCH --ntasks=1"
+	    echo "#SBATCH --cpus-per-task=$ncpus"
+            echo "#SBATCH --threads-per-core=1"
+	    #echo "#SBATCH --mem=${memory_per_job}G"
             echo "#SBATCH --output=$job_dir/job.out"
             echo "#SBATCH --error=$job_dir/job.err"
+            echo "export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK"
         else
 	    echo "#PBS -l select=1:ncpus=${ncpus}:mem=${mem_per_job_gb}GB,walltime=${walltime}"
             echo "#PBS -q $CPU_PARTITION"
@@ -133,26 +138,20 @@ while IFS= read -r line; do
         fi
         } > "$job_path"
 
-if [[ "$SCTYPE" == "SLURM" ]]; then               # Submit job and collect job ID
-    jid=$(sbatch "$job_path" | awk '{print $4}')  # sbatch returns: Submitted batch job <jobid>
-    submitted_jobs="$submitted_jobs $jid"
-else
-    jid=$(qsub "$job_path")  # qsub usually returns job ID directly
-    submitted_jobs="$submitted_jobs $jid"
-fi
+        job_script="$(basename "$job_path")"
+        cd  $jobs_dir/job_${row_index}_${j}
+        if  [[ "$SCTYPE" == "SLURM" ]]; then
+            jid=$(sbatch "$job_script")
+        else
+            jid=$(qsub "$job_script")
+        fi
+        echo "submitted job $jid"
+
     done
     ((row_index++))
 done < "$matrix_file"
 
-echo "Waiting for all jobs to finish..."
-if [[ "$SCTYPE" == "SLURM" ]]; then
-    for jid in $submitted_jobs; do
-        while squeue -j "$jid" &> /dev/null; do
-            sleep 30
-        done
-    done
-else
-    sh "$vini_dir/wait_until_jobs_finish"
-fi
+sh "$vini_dir/wait_until_jobs_finish"
+
 echo "All jobs finished. Proceeding to collect scores and update matrix..."
 
