@@ -51,7 +51,8 @@ while IFS= read -r line; do
             echo "#SBATCH --error=$job_dir/job.err"
             echo "export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK"
         else
-	    echo "#PBS -l select=1:ncpus=${ncpus}:mem=${mem_per_job_gb}GB,walltime=${walltime}"
+	    #echo "#PBS -l select=1:ncpus=${ncpus}:mem=${mem_per_job_gb}GB,walltime=${walltime}"
+	    echo "#PBS -l select=1:ncpus=${ncpus}:walltime=${walltime}"
             echo "#PBS -q $CPU_PARTITION"
             echo "#PBS -N job_${row_index}_${j}"
             echo "#PBS -o $jobs_dir/job_${row_index}_${j}.out"
