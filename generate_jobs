@@ -121,6 +121,8 @@ while IFS= read -r line; do
             echo "conda activate env310"
             echo "python clean_sdf_for_rosetta.py ligand.sdf ligand_clean.sdf"
             echo "conda deactivate"
+            #echo "module load bzip2/1.0.8-GCCcore-11.3.0"
+            #echo " module load oneapi/icc/2022.1.0"
             echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames ligand_clean.sdf -conformers_single_file ligand_conformers.sdf -max_iterations 500 -top_models 50"
 	    echo "obabel ligand_conformers.sdf -O ligand.mol2 -h"
             echo "source $INSTALL/miniconda2/bin/activate"                                   #generate .params

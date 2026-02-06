@@ -375,39 +375,40 @@ echo -n "Checking if BCL is installed..."
 grep BCL $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
 then
+    echo "no. BCL will be installed. Performing the cleanup, please wait."
+    rm -f $INSTALL/master.zip
+    rm -rf $INSTALL/bcl-master
+    wget -P $INSTALL https://github.com/BCLCommons/bcl/archive/refs/heads/master.zip
+    unzip -o $INSTALL/master.zip -d $INSTALL
     read -p "Enter the name of your HPC machine:" cluster
     module purge
     source $INSTALL/miniconda2/bin/activate
     if  [ $cluster == Vega ]
     then
         module load CMake/3.23.1-GCCcore-11.3.0
-        module load oneapi/icc/2022.1.0
+        module load libGLU/9.0.2-GCCcore-11.3.0
+        cd $INSTALL/bcl-master
+        ./scripts/build/build_cmdline.linux.sh
     else
         module load utils/cmake/3.26.0
         module load utils/spack/latest #This is a prerequisite for intel-oneapi-compilers module to load!
         module load intel-oneapi-compilers-2023.1.0-gcc-8.5.0-ff2gbr7
+        cd $INSTALL/bcl-master
+        ./scripts/build/build_cmdline.linux.sh
     fi
-    echo "no. BCL will be installed. Performing the cleanup, please wait."
-    rm -f $INSTALL/master.zip
-    rm -rf $INSTALL/bcl-master
-    wget -P $INSTALL https://github.com/BCLCommons/bcl/archive/refs/heads/master.zip
-    unzip -o $INSTALL/master.zip -d $INSTALL
-    rm $INSTALL/master.zip
-    cd $INSTALL/bcl-master
-    ./scripts/build/build_cmdline.linux.sh
     conda deactivate
-    echo "#******* BCL section *******" >> $vini_dir/sourceme
     echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
+    echo "#******* BCL section *******" >> $vini_dir/sourceme
     if  [ $cluster == Vega ]
     then
-	echo "BCL installation failed!"
+        echo "module load bzip2/1.0.8-GCCcore-11.3.0" >> $vini_dir/sourceme
+        echo "module load oneapi/icc/2022.1.0" >> $vini_dir/sourceme
     else	
         echo "module load libs/bzip2/1.0.6" >> $vini_dir/sourceme
     fi
 else
     echo "yes."
 fi
-
 
 #14. Hex install
 sh $vini_dir/hex_install
