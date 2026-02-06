@@ -5,8 +5,8 @@ source $vini_dir/sourceme
 source "$vini_dir/globals"
 ncpus=48
 cores_per_node=$(( $cores_per_node / 2 )) #no hypertreading
-memory_per_node=$(( memory_per_node / 1024 ))
-memory_per_job=$(( memory_per_node * ncpus / cores_per_node ))
+#memory_per_node=$(( memory_per_node / 1024 ))
+#memory_per_job=$(( memory_per_node * ncpus / cores_per_node ))
 
 jobs_dir="$WORKDIR/${cancer_type}_data/${cell_line}"
 matrix_file="$jobs_dir/VINI_matrix.txt"
