@@ -54,6 +54,7 @@ while IFS= read -r line; do
             echo "#PBS -e $job_dir/job.err"
         fi
 	echo "cd $job_dir"
+        echo "source $vini_dir/sourceme"
 	if [[ "$type" == "PP" || "$type" == "GE" ]]
         then
             echo "cp $WORKDIR/${cancer_type}_data/${cell_line}/${name1}.pdb ./"
