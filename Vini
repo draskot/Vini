@@ -174,23 +174,45 @@ fi
 
 source ./globals
 
-echo -n "Cancelling any remaining jobs from the previous run, please wait..."
+#echo -n "Cancelling any remaining jobs from the previous run, please wait..."
+#$job_status -u $USER > jobs
+#nolines=`wc -l < jobs`
+#if [ $nolines -eq $ONES ]
+#then
+#    echo "no jobs to cancel."
+#else
+#    let nolines++
+#    for (( i=2; i<(nolines+1); i++ ))
+#    do
+#        line=`head -$i jobs | tail -1`
+#        job=`echo $line | awk '{print $1}'`
+#        $job_cancel $job
+#    done
+#fi
+#rm -f jobs
 
-$job_status -u $USER > jobs
-nolines=`wc -l < jobs`
-if [ $nolines -eq $ONES ]
-then
+echo -n "Cancelling any remaining jobs from the previous run, please wait... "
+
+if [[ "$SCTYPE" == "SLURM" ]]; then
+    jobs=$(squeue -u "$USER" -h -o "%i")
+    cancel_cmd="scancel"
+else
+    #jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}')
+    #jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}' | sed 's/\*$//')
+    jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}' | sed 's/\..*//')
+
+    cancel_cmd="qdel"
+fi
+
+if [[ -z "$jobs" ]]; then
     echo "no jobs to cancel."
 else
-    let nolines++
-    for (( i=2; i<(nolines+1); i++ ))
-    do
-        line=`head -$i jobs | tail -1`
-        job=`echo $line | awk '{print $1}'`
-        $job_cancel $job
+    for job in $jobs; do
+        $cancel_cmd "$job"
     done
+    echo "done."
 fi
-rm -f jobs
+
 
 cat COPYRIGHT
 

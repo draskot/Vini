@@ -6,11 +6,9 @@ echo "[VINI] Waiting for jobs to finish (ignoring CG)..."
 
 while true; do
     if [[ "$SCTYPE" == "SLURM" ]]; then
-        # Count only RUNNING or PENDING jobs
         njobs=$(squeue -u "$USER" -h -o "%T" | grep -E 'RUNNING|PENDING' | wc -l)
     else
-        # PBS equivalent
-        njobs=$(qstat -u "$USER" 2>/dev/null | grep -E ' R | Q ' | wc -l)
+	njobs=$(qstat -u "$USER" 2>/dev/null | awk 'NR>5 {count++} END {print count+0}')
     fi
 
     if [[ "$njobs" -eq 0 ]]; then

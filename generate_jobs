@@ -1,5 +1,4 @@
 #!/bin/bash
-
 vini_dir=${vini_dir:-$HOME/Vini}
 source $vini_dir/sourceme
 source "$vini_dir/globals"
@@ -7,16 +6,11 @@ ncpus=48
 cores_per_node=$(( $cores_per_node / 2 )) #no hypertreading
 #memory_per_node=$(( memory_per_node / 1024 ))
 #memory_per_job=$(( memory_per_node * ncpus / cores_per_node ))
-
 jobs_dir="$WORKDIR/${cancer_type}_data/${cell_line}"
 matrix_file="$jobs_dir/VINI_matrix.txt"
-
 mkdir -p "$jobs_dir"
-
 nrows=$(wc -l < "$matrix_file")
 echo "Matrix has $nrows rows"
-
-
 row_index=0
 while IFS= read -r line; do
     elements=($line)
@@ -25,17 +19,19 @@ while IFS= read -r line; do
         [[ -z "$element" || "$element" == "0" ]] && continue
         IFS=',' read -r name1 name2 type expr <<< "$element"
         [[ -z "$type" ]] && continue
-
         job_dir="$jobs_dir/job_${row_index}_${j}"
         job_path="$job_dir/job.sh"
         mkdir -p "$job_dir"
         cd $job_dir
         rm -rf ROSETTA_CRASH.log
-
 	echo "name1: $name1 name2: $name2 type: $type"
         {
         partition=$CPU_PARTITION
-        walltime=$(sinfo -o "%R %l" | grep "$partition" | head -1 | awk '{print $2}')
+	if  [[ "$SCTYPE" == "SLURM" ]]; then
+            walltime=$(sinfo -o "%R %l" | awk -v p="$partition" '$1==p {print $2; exit}')
+        else
+            walltime="48:00:00"   # <-- adjust to what your PBS allows
+        fi
         if [[ "$SCTYPE" == "SLURM" ]]; then # Scheduler header
             echo "#!/bin/bash"
             echo "#SBATCH --job-name=job_${row_index}_${j}"
@@ -46,19 +42,18 @@ while IFS= read -r line; do
             echo "#SBATCH --ntasks=1"
 	    echo "#SBATCH --cpus-per-task=$ncpus"
             echo "#SBATCH --threads-per-core=1"
-	    #echo "#SBATCH --mem=${memory_per_job}G"
             echo "#SBATCH --output=$job_dir/job.out"
             echo "#SBATCH --error=$job_dir/job.err"
             echo "export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK"
         else
-	    #echo "#PBS -l select=1:ncpus=${ncpus}:mem=${mem_per_job_gb}GB,walltime=${walltime}"
-	    echo "#PBS -l select=1:ncpus=${ncpus}:walltime=${walltime}"
+	    echo "#PBS -l select=1:ncpus=${ncpus}"
+	    echo "#PBS -l walltime=48:00:00"
             echo "#PBS -q $CPU_PARTITION"
             echo "#PBS -N job_${row_index}_${j}"
-            echo "#PBS -o $jobs_dir/job_${row_index}_${j}.out"
-            echo "#PBS -e $jobs_dir/job_${row_index}_${j}.err"
+            echo "#PBS -o $job_dir/job.out"
+            echo "#PBS -e $job_dir/job.err"
         fi
-	echo "source $vini_dir/sourceme"
+	echo "cd $job_dir"
 	if [[ "$type" == "PP" || "$type" == "GE" ]]
         then
             echo "cp $WORKDIR/${cancer_type}_data/${cell_line}/${name1}.pdb ./"
@@ -122,8 +117,6 @@ while IFS= read -r line; do
             echo "conda activate env310"
             echo "python clean_sdf_for_rosetta.py ligand.sdf ligand_clean.sdf"
             echo "conda deactivate"
-            #echo "module load bzip2/1.0.8-GCCcore-11.3.0"
-            #echo " module load oneapi/icc/2022.1.0"
             echo "$INSTALL/bcl-master/build/linux64_release/bin/bcl-apps.exe molecule:ConformerGenerator -ensemble_filenames ligand_clean.sdf -conformers_single_file ligand_conformers.sdf -max_iterations 500 -top_models 50"
 	    echo "obabel ligand_conformers.sdf -O ligand.mol2 -h"
             echo "source $INSTALL/miniconda2/bin/activate"                                   #generate .params
