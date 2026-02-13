@@ -177,16 +177,47 @@ done < $WORKDIR/receptors_contracted
 conda deactivate
 
 
-echo -n "Creating inital VINI matrix..."
-source $INSTALL/miniconda3/bin/activate
-conda activate env310
-python create_initial_matrix.py
-conda deactivate
+WORK_MATRIX="${WORKDIR}/${cancer_type}_data/${cell_line}/Matrix"
+DB_DIR="${vini_dir}/database/cell_lines/${cell_line}"
+case "$DTYPE" in
+    P)
+        if [[ -f "$DB_DIR/P_matrix" ]]; then
+            echo "Interconnect P-matrix exists in database, continuing..."
+            cp "$DB_DIR/P_matrix" "$WORK_MATRIX"
+        else
+            echo -n "Creating inital VINI matrix..." #create VINI_matrix.txt
+            source $INSTALL/miniconda3/bin/activate
+            conda activate env310
+            python create_initial_matrix.py
+            conda deactivate
+            echo "Generating interconnect P_matrix (Rosetta), please wait..."
+            sh "$vini_dir/generate_jobs"
+            sh "$vini_dir/create_Rosetta_like_matrix"
+            cp "$WORK_MATRIX" "$DB_DIR/P_matrix"
+        fi
+        ;;
+    S)
+        if [[ -f "$DB_DIR/S_matrix" ]]; then
+            echo "Interconnect S-matrix exists in database, continuing..."
+            cp "$DB_DIR/S_matrix" "$WORK_MATRIX"
+        else
+            echo -n "Creating inital VINI matrix..." #create VINI_matrix.txt
+            source $INSTALL/miniconda3/bin/activate
+            conda activate env310
+            python create_initial_matrix.py
+            conda deactivate
+            echo "Generating interconnect S_matrix (Vina), please wait..."
+            sh "$vini_dir/create_Vina_like_matrix"
+            cp "$WORK_MATRIX" "$DB_DIR/S_matrix"
+        fi
+        ;;
+    *)
+        echo "ERROR: Unknown DTYPE='$DTYPE' (expected P or S)"
+        exit 1
+        ;;
+esac
 
-echo -n "Generating docking job commands..."
-sh $vini_dir/generate_jobs
 
-echo "brakepoint!" ; pwd ; sleep 1000
 
 i=1
 rm -f $WORKDIR/ligands_stage/*
@@ -205,6 +236,7 @@ do
     fi
     let i++
 done < $vini_dir/ligands/ligands_list
+
 
 nr_complexes=`wc -l $WORKDIR/receptors_contracted | awk '{ print $1 }'`
 echo $nr_complexes > $WORKDIR/nr_complexes

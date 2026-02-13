@@ -174,33 +174,13 @@ fi
 
 source ./globals
 
-#echo -n "Cancelling any remaining jobs from the previous run, please wait..."
-#$job_status -u $USER > jobs
-#nolines=`wc -l < jobs`
-#if [ $nolines -eq $ONES ]
-#then
-#    echo "no jobs to cancel."
-#else
-#    let nolines++
-#    for (( i=2; i<(nolines+1); i++ ))
-#    do
-#        line=`head -$i jobs | tail -1`
-#        job=`echo $line | awk '{print $1}'`
-#        $job_cancel $job
-#    done
-#fi
-#rm -f jobs
-
 echo -n "Cancelling any remaining jobs from the previous run, please wait... "
 
 if [[ "$SCTYPE" == "SLURM" ]]; then
     jobs=$(squeue -u "$USER" -h -o "%i")
     cancel_cmd="scancel"
 else
-    #jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}')
-    #jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}' | sed 's/\*$//')
     jobs=$(qstat -u "$USER" | awk 'NR>5 {print $1}' | sed 's/\..*//')
-
     cancel_cmd="qdel"
 fi
 
@@ -213,19 +193,14 @@ else
     echo "done."
 fi
 
-
 cat COPYRIGHT
 
 sh $vini_dir/WLM_account_setting
-
-
-
 
 > $WORKDIR/dock_id_list  #Clear precedence lists
 > $WORKDIR/slem_id_list
 
 cores_per_job=48 #number of cores Rosetta and Vina jobs use
-#read -e -p "Enter total  number of CPU cores VINI can use in parallel:" -i 5000 maxcores
 read -e -i 5000 -p "Enter total number of CPU cores VINI can use in parallel or <enter> to accept default: " maxcores
 
 max_jobs=`echo $maxcores $cores_per_job | awk '{print $1 / $2}'`
@@ -262,7 +237,6 @@ else
     fi
 fi
 
-
 sh $vini_dir/renew_Drugbank_data  #get DrugBank data
 
 cp $vini_dir/ligands/ligands_list $vini_dir/ligands/ligands_list.orig #saving the original list of drugs
@@ -271,7 +245,6 @@ sh $vini_dir/prepare_ligands_list
 sh $vini_dir/prepare_small_drug_structures                
 cp -r $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands/pdb_files
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
-
 
 echo "AlphaFold will be used for protein structures prediction."
 echo "AlphaFold is using $cores_per_node cores and $memory_per_node GB per node"
@@ -380,6 +353,9 @@ then
         fi
     done < $vini_dir/database/NSC_numbers
 
+    read -e -p "Do you want to analyze the efficacy of Protein or Small molecule drugs (P/S)?: Press enter to accept the default: " -i "P" DTYPE
+    echo "export DTYPE=${DTYPE}" >> globals
+
     read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept the default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
     then
@@ -396,8 +372,8 @@ else
     echo "export cell_line=PUBLIC" >> $vini_dir/globals
 fi
 
-
 ligands=`wc -l < $vini_dir/ligands/ligands_list` ; echo $ligands > $WORKDIR/ligands
+
 
 #Autogrid4 fires "Unknown receptor type: "Se, Pt, etc. ",  -- Add parameters for it to the parameter library first!"
 #We must add entries from "AD4_parameters_for_metal_ions" file located in Vini source  directory to AD4_parameters.dat
@@ -417,7 +393,7 @@ fi
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" max_therapy_level
 echo "export max_therapy_level=${max_therapy_level}" >> globals
 
-rm -rf $WORKDIR/$cancer_type$data
+#rm -rf $WORKDIR/$cancer_type$data
 CANCER_PATHWAY=$ORGANISM$cancer_type                             #setting cancer pathway
 echo "export CANCER_PATHWAY=${CANCER_PATHWAY}" >> $vini_dir/globals
 mkdir -p $WORKDIR/${CANCER_PATHWAY}_results
