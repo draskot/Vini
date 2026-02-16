@@ -299,6 +299,7 @@ then
     echo "export PATH=${ROSETTA_DB}:\$PATH"                                       >> $vini_dir/sourceme
 fi
 
+
 #11. Openbabel install
 grep OpenBabel $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -451,5 +452,7 @@ else
     } >> "$SOURCE_ME"
 
 fi
+
+sh $vini_dir/database_sync #create and push on GD VINI database snapshot
 
 echo "You have to re-login in order to changes make effect!"

@@ -74,8 +74,8 @@ while IFS= read -r line; do
             echo "sed -i '/^REMARK/d' C_${name1}_${name2}.pdb"
             echo "cp $ROSETTA_PUB/clean_pdb_keep_ligand.py ."
             echo "cp $ROSETTA_TOOLS/amino_acids.py ."
-            echo "source $INSTALL/miniconda2/bin/activate" #clean protein complex
-            echo "python clean_pdb_keep_ligand.py C_${name1}_${name2}.pdb -ignorechain"
+            echo "source $INSTALL/miniconda2/bin/activate"
+            echo "$INSTALL/miniconda2/bin/python clean_pdb_keep_ligand.py C_${name1}_${name2}.pdb -ignorechain"
             echo "mv C_${name1}_${name2}.pdb_00.pdb C_${name1}_${name2}.pdb"
             echo "conda deactivate"
             echo "cp $vini_dir/flag_input_relax $vini_dir/flag_global_docking ./" #prepare flag_global_docking file
