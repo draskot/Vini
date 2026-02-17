@@ -300,7 +300,7 @@ do
                                  echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> dock
                                  echo "cp complex.pdb complex_${comp_index}.pdb"                               >> dock
                                  echo "$ROSETTA/source/bin/relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads ${ncpus} @flag_input_relax -overwrite" >> dock
-                                 echo "$ROSETTA/source/bin/docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0002.pdb -multithreading:total_threads ${ncpus} @flag_global_docking" >> dock
+                                 echo "$ROSETTA/source/bin/docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0001.pdb -multithreading:total_threads ${ncpus} @flag_global_docking" >> dock
                                  echo "if [ -e ROSETTA_CRASH.log ]"                                            >> dock 
                                  echo "then"                                                                   >> dock
                                  echo "     echo 1.0 > ${target_dir}/score.txt"                                >> dock
@@ -308,7 +308,7 @@ do
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                                  echo "    string=\`grep partners flag_global_docking\`"                        >> dock
                                  echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')"
-                                 echo "$ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0002_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat -packstat::oversample 100 -overwrite"  >> dock
+                                 echo "$ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0001_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat -packstat::oversample 100 -overwrite"  >> dock
                                  echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> dock
                                  echo "    if  [ -z \${score} ] ; then"                         >> dock
                                  echo "        echo 1.0 > ${target_dir}/score.txt"              >> dock
