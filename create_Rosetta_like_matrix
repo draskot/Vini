@@ -1,0 +1,50 @@
+#!/bin/bash
+set -euo pipefail
+
+vini_dir=${vini_dir:-$HOME/Vini}
+source "$vini_dir/sourceme"
+source "$vini_dir/globals"
+
+jobs_dir="$WORKDIR/${cancer_type}_data/${cell_line}"
+input_matrix="$jobs_dir/VINI_matrix.txt"
+output_matrix="$jobs_dir/Matrix"
+
+nrows=$(wc -l < "$input_matrix")
+
+echo "[VINI] Creating score-only matrix..."
+> "$output_matrix"
+
+row_index=0
+while IFS= read -r line; do
+    row_values=()
+
+    for ((j=0; j<nrows; j++)); do
+        # diagonal
+        if [[ $j -eq $row_index ]]; then
+            row_values+=("0")
+            continue
+        fi
+
+        if [[ $j -lt $row_index ]]; then
+            row_values+=("0")
+            continue
+        fi
+
+        job_dir="$jobs_dir/job_${row_index}_${j}"
+        score_file="$job_dir/score.txt"
+
+        if [[ -f "$score_file" ]]; then
+            score=$(<"$score_file")
+            row_values+=("$score")
+        else
+            row_values+=("0")
+        fi
+    done
+
+    echo "${row_values[*]}" >> "$output_matrix"
+    row_index=$((row_index + 1))
+done < "$input_matrix"
+
+echo "[VINI] Score matrix written to:"
+echo "       $output_matrix"
+

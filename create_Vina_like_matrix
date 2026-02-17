@@ -1,0 +1,44 @@
+#!/bin/bash
+
+vini_dir=${vini_dir:-$HOME/Vini}
+source "$vini_dir/sourceme"
+source "$vini_dir/globals"
+
+matrix_dir="$WORKDIR/${cancer_type}_data${cell_line}"
+input_matrix="$matrix_dir/VINI_initial_matrix.txt"
+output_matrix="$matrix_dir/Matrix"
+
+rm -f "$output_matrix"
+
+while IFS= read -r line; do
+    out_line=""
+    for cell in $line; do
+
+        # Empty or zero cell
+        if [[ "$cell" == "0" ]]; then
+            out_line+=" 0"
+            continue
+        fi
+
+        IFS=',' read -r g1 g2 type expr <<< "$cell"
+
+        case "$type" in # Determine interaction weight
+            PP)
+                weight=1
+                ;;
+            GE)
+                weight=-1
+                ;;
+            *)
+                weight=0
+                ;;
+        esac
+
+        value=$(echo "$expr * $weight" | bc -l) # Multiply expression by interaction weight
+        out_line+=" $value"
+    done
+    echo "${out_line# }" >> "$output_matrix"
+done < "$input_matrix"
+echo "[VINI] Small-molecule inferred matrix created:"
+echo "       $output_matrix"
+
