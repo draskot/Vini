@@ -283,7 +283,7 @@ do
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
+                                     echo "#PBS -l nodes=1:ppn=$ncpus"                                            >> dock
 				 fi
 
                                  echo "cp $vini_dir/flag_input_relax $vini_dir/docking.mac ./"                 >> dock
