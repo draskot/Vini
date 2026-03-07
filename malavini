@@ -2,7 +2,7 @@
 vini_dir=${vini_dir:-$HOME/Vini}
 source $vini_dir/sourceme
 source "$vini_dir/globals"
-ncpus=48
+ncpus=24
 partition=$CPU_PARTITION
 
 
@@ -108,7 +108,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
+                                     echo "#SBATCH --cpus-per-task="$ncpus                                        >> dock
 				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
 				     # echo "#PBS -A"			                                          >> dock		SLURMACCT?
@@ -116,7 +116,7 @@ do
 				     echo "#PBS -N D${M}.${N}"							  >> dock
 				     echo "#PBS -o D${M}.${N}.out"						  >> dock
 				     echo "#PBS -e D${M}.${N}.err"						  >> dock
-                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
+                                     echo "#PBS -l nodes=1:ppn=$ncpus"                                            >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -126,7 +126,7 @@ do
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $cores   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                                 >> dock
                                  echo "then"                                                                    >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
@@ -163,7 +163,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
+                                     echo "#SBATCH --cpus-per-task="$ncpus                                        >> dock
 				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
 				     # echo "#PBS -A"								   >> dock		SLURMACCT?
@@ -171,7 +171,7 @@ do
 				     echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
+                                     echo "#PBS -l nodes=1:ppn=$ncpus"                                            >> dock
 				 fi
 
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
@@ -221,7 +221,7 @@ do
                                      echo "#SBATCH --error=D${M}.${N}.err"                                        >> dock
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
-                                     echo "#SBATCH --cpus-per-task="$cores                                        >> dock
+                                     echo "#SBATCH --cpus-per-task="$ncpus                                        >> dock
 				 else
                                      echo "#PBS -l walltime="$walltime                                            >> dock
                                      # echo "#PBS -A"                                                               >> dock         SLURMACCT?
@@ -229,7 +229,7 @@ do
                                      echo "#PBS -N D${M}.${N}"                                                    >> dock
                                      echo "#PBS -o D${M}.${N}.out"                                                >> dock
                                      echo "#PBS -e D${M}.${N}.err"                                                >> dock
-                                     echo "#PBS -l nodes=1:ppn=$cores"                                            >> dock
+                                     echo "#PBS -l nodes=1:ppn=$ncpus"                                            >> dock
 				 fi
 
                                  echo "mv complex_${comp_index}.pdb tmp"                                      >> dock
@@ -243,7 +243,7 @@ do
                                  echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l ligand_${lig_index}.pdb -o ligand_${lig_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $cores   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                               >> dock
                                  echo "then"                                                                  >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
@@ -307,7 +307,7 @@ do
                                  echo "else"                                                                   >> dock
                                  echo "    cp complex_${comp_index}_0002_0001.pdb $target_dir/complex_${comp_index}.pdb" >> dock
                                  echo "    string=\`grep partners flag_global_docking\`"                        >> dock
-                                 echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')"
+                                 echo "    read -r p1 p2 <<< \$(echo "\$string" | awk '{split(\$2, arr, \"_\"); print arr[1], arr[2]}')" >> dock
                                  echo "$ROSETTA/source/bin/InterfaceAnalyzer.cxx11thread.linuxgccrelease -s complex_${comp_index}_0001_0001.pdb -interface \${p1}_\${p2} -out:file:score_only interface.sc -compute_packstat -packstat::oversample 100 -overwrite"  >> dock
                                  echo "    score=\`tail -1 interface.sc | awk '{print \$6}'\`"                 >> dock
                                  echo "    if  [ -z \${score} ] ; then"                         >> dock
@@ -316,11 +316,10 @@ do
                                  echo "         echo \${score} > ${target_dir}/score.txt"       >> dock
                                  echo "    fi"                                                  >> dock
                                  echo "fi"                                                      >> dock
-echo "brakepoint!" ; pwd; sleep 1000
                              fi
                          fi
                      fi
-                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs}
+                 sh $vini_dir/jobs_control_script ${job_status} ${max_jobs_to_run}
                  chmod u+x dock
 
 
@@ -363,7 +362,7 @@ echo "brakepoint!" ; pwd; sleep 1000
 		    echo "#PBS -N SLEM"						 >> ${target_dir}/SLEM
 		    echo "#PBS -o ${target_dir}/SLEM.out"			 >> ${target_dir}/SLEM
 		    echo "#PBS -e ${target_dir}/SLEM.err"			 >> ${target_dir}/SLEM
-                    echo "#PBS -l nodes=1:ppn=$cores"                            >> ${target_dir}/SLEM
+                    echo "#PBS -l nodes=1:ppn=$ncpus"                            >> ${target_dir}/SLEM
 		 fi
  
                  echo "source $vini_dir/globals"                             >> ${target_dir}/SLEM
@@ -445,7 +444,7 @@ else
     echo "#PBS -N postproc"				 >> $WORKDIR/postproc
     echo "#PBS -o $WORKDIR/postproc.out"                 >> $WORKDIR/postproc
     echo "#PBS -e $WORKDIR/postproc.err"                 >> $WORKDIR/postproc
-    echo "#PBS -l nodes=1:ppn=$cores"                    >> $WORKDIR/postproc
+    echo "#PBS -l nodes=1:ppn=$ncpus"                    >> $WORKDIR/postproc
 fi
 
 echo "WORKDIR=${WORKDIR}"                            >> $WORKDIR/postproc

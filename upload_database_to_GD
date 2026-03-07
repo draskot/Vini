@@ -1,0 +1,18 @@
+source $vini_dir/sourceme
+source $vini_dir/globals
+
+
+if  [[ $VINI_DEV_MODE == 1 ]]
+then
+    echo "[VINI] Creating database archive..."
+    tar -cjvf $WORKDIR/database.tar.bz2_ $vini_dir/database
+    read -p "rclone already configured (y/n)?" yesno
+    if  [[ $yesno == n ]]
+    then
+        rclone config
+    fi
+
+
+    echo "[VINI] Uploading to Google Drive..."
+    rclone copy "$ARCHIVE" "$REMOTE"
+fi
