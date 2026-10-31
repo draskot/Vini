@@ -1,0 +1,48 @@
+# Developer-only database snapshot
+source $vini_dir/sourceme
+source $vini_dir/globals
+if [[ "${VINI_DEV_MODE:-0}" -eq 1 ]]; then
+
+    echo "[DEV] Creating database snapshot on WORKDIR..."
+
+    SNAPSHOT_DIR="$WORKDIR/vini_snapshots"
+    mkdir -p "$SNAPSHOT_DIR"
+
+    GIT_HASH=$(git -C "$vini_dir" rev-parse --short HEAD 2>/dev/null || echo "nogit")
+    SNAPSHOT_NAME="database_${GIT_HASH}_$(date +%Y%m%d_%H%M%S).tar.bz2"
+    SNAPSHOT_PATH="$SNAPSHOT_DIR/$SNAPSHOT_NAME"
+
+    echo "[DEV] Creating snapshot please wait..."
+    # Create archive WITHOUT copying data
+    nice -n 10 ionice -c2 -n7  tar -cjf "$SNAPSHOT_PATH" -C "$vini_dir" database
+
+    echo "[DEV] Snapshot stored at:"
+    echo "$SNAPSHOT_PATH"
+
+    grep rclone $vini_dir/sourceme > tmp
+    if  [ ! -s tmp ]
+    then
+        INSTALL="$INSTALL/rclone"
+        mkdir -p "$INSTALL"
+        cd "$INSTALL"
+        if  [ ! -f rclone-current-linux-amd64.zip ]
+        then
+            wget https://downloads.rclone.org/rclone-current-linux-amd64.zip
+            unzip rclone-current-linux-amd64.zip
+        fi
+        cd rclone-*-linux-amd64
+        cp rclone "$INSTALL/"
+        chmod +x "$INSTALL/rclone"
+        echo "#********* rclone section *********#" >> $vini_dir/sourceme
+        read -p "rclone already configured (y/n)? yesno
+        if [[ $yesno == "y ]] ; then
+           rclone config
+        fi
+        echo "export PATH=$INSTALL/rclone:\$PATH" >> $vini_dir/sourceme
+    fi
+
+        echo "[DEV] Uploading snapshot to Google Drive..."
+        rclone copy "$SNAPSHOT_PATH" gdrive:VINI_backups/
+        echo "[DEV] Upload complete."
+fi
+
