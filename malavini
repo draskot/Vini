@@ -167,9 +167,9 @@ do
                                  echo "        \$CONDA_PREFIX/bin/python charge_extractor.py"                   >> dock
                                  
                                  echo "        source mopac_charges.env"     >> dock   #Create MOPAC input files
-                                 echo "        \$CONDA_PREFIX/bin/obabel best_pose.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$LIG_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O ligand_${lig_index}.mop" >> dock
-                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$REC_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O receptor_${comp_index}.mop" >> dock
-                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb best_pose.pdb -omop -j -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$CPX_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O complex_${comp_index}_qm.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/obabel best_pose.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$LIG_CHARGE GNORM=0.1 1SCF THREADS=$ncpus PL\" -O ligand_${lig_index}.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$REC_CHARGE GNORM=0.1 1SCF THREADS=$ncpus PL\" -O receptor_${comp_index}.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb best_pose.pdb -omop -j -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$CPX_CHARGE GNORM=0.1 1SCF THREADS=$ncpus PL\" -O complex_${comp_index}_qm.mop" >> dock
                                  
                                  echo "        mopac ligand_${lig_index}.mop"      >> dock #Run MOPAC and calculate binding energy
                                  echo "        mopac receptor_${comp_index}.mop"   >> dock
