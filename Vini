@@ -33,7 +33,7 @@ then
     source $vini_dir/sourceme
     echo "The following software is installed:" 
     programs=`grep section sourceme | wc -l`
-    NOPROGS=15   #the number of utils VINI is using
+    NOPROGS=16   #the number of utils VINI is using
     if  [ $programs -lt $NOPROGS ]
     then
         echo "Some 3rd party programs are missing. Trying to install them."
@@ -52,9 +52,7 @@ else
 fi
 
 
-
 SOURCE_ME="$vini_dir/sourceme"
-
 if grep -q "VINI_PYTHON_MODULE" "$SOURCE_ME"; then
     # Extract the module name
     vini_python_module=$(grep "VINI_PYTHON_MODULE" "$SOURCE_ME" | cut -d'=' -f2)
@@ -63,6 +61,7 @@ if grep -q "VINI_PYTHON_MODULE" "$SOURCE_ME"; then
 else
     echo "No saved Python module found in sourceme, using system Python."
 fi
+
 
 sh $vini_dir/clean
 rm -f $WORKDIR/dockidlist* $WORKDIR/slemidlist* $WORKDIR/SLEM*
@@ -116,32 +115,31 @@ if [ "$SCTYPE" = "SLURM" ]; then
     sinfo
 
     # ---------------- CPU partition ----------------
-    read -p "Enter CPU partition (Rosetta, Vina, etc): " CPU_PARTITION
+    read -p "Enter CPU partition VINI will use: " CPU_PARTITION
     echo "export CPU_PARTITION=$CPU_PARTITION" >> "$vini_dir/globals"
-
-    cores_per_node=$(sinfo -o "%P %c" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
+    #cores_per_node=$(sinfo -o "%P %c" -p "$CPU_PARTITION" | awk 'NR==2 {print $2}')
+    cores_per_node=$(sinfo -o "%P %X %Y" -p "$CPU_PARTITION" | awk 'NR==2 {sockets=$2; cores=$3; print sockets * cores}')
     memory_per_node=$(sinfo -o "%P %m" -p "$CPU_PARTITION" | awk 'NR==2 {print int($2)}')
-
     echo "export cores_per_node=$cores_per_node" >> "$vini_dir/globals"
     echo "export memory_per_node=$memory_per_node" >> "$vini_dir/globals"
-
     bash detects_max_walltime_on_SLURM "$CPU_PARTITION"
 
     # ---------------- GPU partition ----------------
-    read -p "Enter GPU partition (AlphaFold): " GPU_PARTITION
+    read -p "Enter GPU partition VINI will use: " GPU_PARTITION
     echo "export GPU_PARTITION=$GPU_PARTITION" >> "$vini_dir/globals"
+    cores_per_gpu_node=$(sinfo -o "%P %X %Y" -p "$GPU_PARTITION" | awk 'NR==2 {sockets=$2; cores=$3; print sockets * cores}')
+    echo "export cores_per_gpu_node=$cores_per_gpu_node" >> "$vini_dir/globals"
+    memory_per_gpu_node=$(sinfo -o "%P %m" -p "$GPU_PARTITION" | awk 'NR==2 {print int($2)}')
+    echo "export memory_per_gpu_node=$memory_per_gpu_node" >> "$vini_dir/globals"
+    bash detects_max_walltime_on_SLURM "$GPU_PARTITION"
 
     gpu_info=$(sinfo -o "%G" -p "$GPU_PARTITION" | awk 'NR==2 {print $1}')
-
     if [[ "$gpu_info" != *gpu* ]]; then
         echo "WARNING: Selected GPU partition does not report GPUs!"
     fi
-
     # Conservative default (override later if needed)
     gpus_per_node=4
     echo "export GPUS_PER_NODE=$gpus_per_node" >> "$vini_dir/globals"
-
-    bash detects_max_walltime_on_SLURM "$GPU_PARTITION"
 fi
 
 if [ "$SCTYPE" = "PBS" ]; then
@@ -247,7 +245,9 @@ cp -r $vini_dir/ligands/pdb_files/* $vini_dir/database/ligands/pdb_files
 sh $vini_dir/download_Drugbank_fasta_structures            #download fasta files from Drugbank
 
 echo "AlphaFold will be used for protein structures prediction."
-echo "AlphaFold is using $cores_per_node cores and $memory_per_node GB per node"
+#echo "AlphaFold is using $cores_per_node cores and $memory_per_node MB per node"
+
+
 echo "export AlphaFold_base=full_dbs" >> $vini_dir/globals
 echo "export cpus=$cores_per_node" >> $vini_dir/globals
 
@@ -276,9 +276,6 @@ echo "export kit=$kit" >> $vini_dir/globals
 # https://cactus.nci.nih.gov/download/roadmap #download all PubChem compounds
 
 
-#echo -n "Trying to retrieve the list of available organisms from KEGG, please wait..."
-#wget -O tmp --no-check-certificate -q http://rest.kegg.jp/list/organism
-#echo "done."
 
 # Path to cached organism list on Google Drive
 gdown -q "1qTB_aqTdReWhczwF3-EwIlAzMh_ruOvH" -O tmp
@@ -296,9 +293,6 @@ echo "" ; rm tmp tmp2
 read -e -p "Please enter the abbreviation for organism you want to analyse? Press enter to accept the default: " -i "hsa" ORGANISM
 echo "export ORGANISM=$ORGANISM" >> $vini_dir/globals
 
-#echo -n "Trying to retrieve the list of available metabolic pathways from KEGG, please wait..."
-#wget -O $vini_dir/tmp --no-check-certificate -q $vini_dir/tmp http://rest.kegg.jp/list/pathway/${ORGANISM}
-#echo "done."
 
 gdown -q "1BMYtV-8tv3Rv2Z54eC7HWF-BRuRbdndu" -O tmp
 cat tmp | sed "s/path:hsa//g" > $WORKDIR/pathways ; rm tmp
@@ -318,18 +312,15 @@ data="_data"
 read -e -p "Include the analysis of specific cancer cell line (y/n)? Press enter to accept the default: " -i "y" yesno
 if [ $yesno == y ]
 then
-    source $INSTALL/miniconda3/bin/activate
-    conda activate env310
-    pip install pandas tqdm
-    conda deactivate
     compute_cell_line=$TRUE
     echo "export compute_cell_line=${compute_cell_line}" >> $vini_dir/globals
     read -e -p "Please enter the name of cell line (e.g. MDA-MB-231): Press enter to accept the default: " -i "PANC-1" cell_line
     if  [ $CCLE == "y" ]
     then
         export cell_line=${cell_line}
-        source $INSTALL/miniconda3/bin/activate
+        source $INSTALL/miniconda3/etc/profile.d/conda.sh
         conda activate env310
+        unset PYTHONPATH
         python get_cell_line_expressions.py  #get expressions
         python get_cell_line_mutations.py    #get mutations
         conda deactivate
@@ -352,9 +343,6 @@ then
             echo $drugname "will be analysed."
         fi
     done < $vini_dir/database/NSC_numbers
-
-    read -e -p "Do you want to analyze the efficacy of Protein or Small molecule drugs (P/S)?: Press enter to accept the default: " -i "P" DTYPE
-    echo "export DTYPE=${DTYPE}" >> globals
 
     read -e -p "Use ligands_list or NCI-60_ligands_list file? Press enter to accept the default: " -i "ligands_list" file
     if  [ $file == NCI-60_ligands_list ]
@@ -390,6 +378,11 @@ else
     echo "no need for modification. Parameters for metal ions are already present in AD4_parameters.dat file."
 fi
 
+read -e -p "Select the scoring workflow (empirical / qm)? Press enter to accept the default: " -i "empirical" scoring_type
+scoring_type=$(echo "$scoring_type" | tr '[:upper:]' '[:lower:]')
+echo "export scoring_type=${scoring_type}" >> $vini_dir/globals
+echo "Workflow set to: ${scoring_type}"
+
 read -e -p "Choose therapy level (1 for single drug therapy, 2 for two drugs therapy, etc. ) : " -i "1" max_therapy_level
 echo "export max_therapy_level=${max_therapy_level}" >> globals
 
@@ -416,3 +409,5 @@ then
 else
     ./VelikaVini
 fi
+
+#this is test

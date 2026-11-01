@@ -21,6 +21,9 @@ then
         echo "done."
         echo "Existing gene expression values will be deleted."
         rm -f $WORKDIR/$PATHWAY_FILE $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY/expression_scores.csv
+        echo "export Pathway_updated=Y" >> $vini_dir/globals
+    else
+        echo "export Pathway_updated=N" >> $vini_dir/globals
     fi
 else
     echo "KEGG pathway file does not exists, creating new one."

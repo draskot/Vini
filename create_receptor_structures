@@ -21,6 +21,7 @@ noentries=`wc -l < $WORKDIR/receptors_expanded`
 echo "number of entries in pathway is" $noentries
 entry=1
 
+
 while read -r line
 do     
     KEGG_entry_id=`echo $line | awk '{print $1}'` #get KEGG entry ID (number) and KEGG gene name (hsa:xxxx)

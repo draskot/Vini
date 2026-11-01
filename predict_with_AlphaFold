@@ -15,7 +15,6 @@ if [ ! -f "$fasta_file" ]; then
     exit 1
 fi
 
-
 # Determine antibody name from FASTA file
 antibody="$(basename "$fasta_file" .fasta)"
 if [ -z "$antibody" ]; then
@@ -39,8 +38,8 @@ use_gpu_relax=False
 batch_script="$WORKDIR/AlphaFold_${antibody}"
 
 gpus_per_job=${gpus_per_job:-1}
-ncpus_per_job=$(( cores_per_node / GPUS_PER_NODE ))
-mem_per_node_gb=${memory_per_node%GB}
+ncpus_per_job=$(( cores_per_gpu_node / GPUS_PER_NODE ))
+mem_per_node_gb=$(( memory_per_gpu_node / 1024 ))
 mem_per_job_gb=$(( mem_per_node_gb / GPUS_PER_NODE ))
 mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
 
@@ -52,7 +51,7 @@ mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
         echo "#SBATCH --time=${walltime}"
         echo "#SBATCH --partition=${GPU_PARTITION}"
         echo "#SBATCH --job-name=${antibody}"
-        [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#SBATCH --account=${SLURMACCT}"
+        [ -n "$ACCOUNT" ] && [ "$ACCOUNT" != "NONE" ] && echo "#SBATCH --account=${ACCOUNT}"
         echo "#SBATCH --output=${WORKDIR}/${antibody}.out"
         echo "#SBATCH --error=${WORKDIR}/${antibody}.err"
         echo "#SBATCH --nodes=1"
@@ -66,7 +65,7 @@ mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
         echo "#PBS -l walltime=${walltime}"
         echo "#PBS -q ${GPU_PARTITION}"
         echo "#PBS -N ${antibody}"
-        [ -n "$SLURMACCT" ] && [ "$SLURMACCT" != "NONE" ] && echo "#PBS -A ${SLURMACCT}"
+        [ -n "$ACCOUNT" ] && [ "$ACCOUNT" != "NONE" ] && echo "#PBS -A ${ACCOUNT}"
         echo "#PBS -o ${WORKDIR}/${antibody}.out"
         echo "#PBS -e ${WORKDIR}/${antibody}.err"
 	echo "#PBS -l select=1:ncpus=${ncpus_per_job}:mem=${mem_per_job_gb}GB:ngpus=${gpus_per_job}"
@@ -79,12 +78,14 @@ mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
     if [ -n "$selected_module" ]; then #Vega style
         echo "module purge || true"
         echo "module load ${selected_module}"
-	echo "\"${AlphaFoldSTART}\" \\"
+        echo "alphafold \\"
+	#echo "\"${AlphaFoldSTART}\" \\"
         echo "    --data_dir=\"${ALPHAFOLD_DATA_DIR}\" \\"
         echo "    --fasta_paths=\"${fasta_file}\" \\"
         echo "    --output_dir=\"${WORKDIR}\" \\"
         echo "    --model_preset=\"${model}\" \\"
         echo "    --db_preset=\"${base}\" \\"
+        echo "    --uniref30_database_path=\"/ceph/hpc/software/alphafold/uniref30/UniRef30_2023_02\" \\" 
         echo "    --use_gpu_relax=${use_gpu_relax} \\"
         echo "    --num_multimer_predictions_per_model=1 \\"
         echo "    --max_template_date=2020-06-05"
@@ -120,7 +121,8 @@ mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
     echo "    # Pick highest-ranked relaxed model using bash (no Python)"
     echo "    # Extract first element of the \"order\" array, e.g. \"model_1_pred_0\""
     # robust sed to extract the first string within order array (works for compact or spaced JSON)
-    echo "    best_entry=\$(sed -n 's/.*\"order\"[[:space:]]*:[[:space:]]*\\[[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' \"\$ranking_file\")"
+    #echo "    best_entry=\$(sed -n 's/.*\"order\"[[:space:]]*:[[:space:]]*\\[[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p' \"\$ranking_file\")"
+    echo "    best_entry=\$(tr -d '\n' < \"\$ranking_file\" | sed -n 's/.*\"order\"[[:space:]]*:[[:space:]]*\\[[[:space:]]*\"\\([^\"]*\\)\".*/\\1/p')"
     echo "    if [ -n \"\$best_entry\" ]; then"
     echo "        # Convert 'model_1_pred_0' -> '1' (the model index used in relaxed filename)"
     echo "        best_idx=\$(echo \"\$best_entry\" | sed -E 's/^model_([0-9]+)_pred_0$/\\1/')"
@@ -147,4 +149,3 @@ mem_per_job_mb=$(( mem_per_job_gb * 1024 ))
 
 chmod u+x "${batch_script}"
 ${job_submit} "${batch_script}"
-

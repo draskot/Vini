@@ -1,5 +1,7 @@
+vini_dir=$HOME/Vini
 source $vini_dir/globals
 
+echo "Cleaning the sytem from previous run, please wait..."
 
 > $WORKDIR/missing_genes
 > $WORKDIR/failed_predictions
@@ -12,8 +14,9 @@ rm -f $WORKDIR/postproc*
 rm -f $WORKDIR/SLEM*
 rm -f $vini_dir/genes/cosmic_ids.csv
 
-
 find "$WORKDIR" -maxdepth 1 -type d -regextype posix-egrep -regex '.*/[0-9_]+$' -print -exec rm -rf {} \;
+
+echo "done."
 
 nr_ligands=`wc -l < $vini_dir/ligands/ligands_list`
 #nr_complexes=`cat $WORKDIR/nr_complexes`
@@ -27,16 +30,22 @@ line=`cat tmp`
 tissue=`echo $line | awk '{print $2}'`
 mkdir -p $vini_dir/database/KEGG_cancer_pathways/$CANCER_PATHWAY
 
+echo -n "Downloading KEGG $CANCER_PATHWAY pathway..."
 sh download_KEGG_pathway
+echo "done."
 
 echo "Processing" $CANCER_PATHWAY "metabolic pathway" 
 start_date=`date`
 echo "Analysis started at ${start_date} "
 rm -f $WORKDIR/END
 
+echo "Creating relations and receptors files in $WORKDIR folder..."
 sh $vini_dir/create_relations_receptors_files #create KEGG receptor structures
-sh $vini_dir/create_receptor_structures
+echo "done."
 
+echo "Creating KEGG receptor structures..."
+sh $vini_dir/create_receptor_structures
+echo " done ."
 
 if  [ -s $WORKDIR/missing_genes ]
 then
@@ -47,7 +56,6 @@ then
     echo "Then upload structures to $vini_dir/database/genes/pdb_files/$cell_line and start VINI again."
 fi
 
-
 if  [ -s $WORKDIR/failed_pubchem_structures ]
 then
     echo "Cannot continue as Openbabel failed sdf to pdb conversion for the following KEGG substances:"
@@ -56,8 +64,6 @@ then
     echo "Then upload these strucures to $vini_dir/database/genes/pdb_files/$cell_line directory and start Vini again."
     echo "Exiting." ; exit
 fi
-
-
 
 if [ ! -e $vini_dir/ligands/${cell_line} ]
 then
@@ -102,7 +108,6 @@ source $INSTALL/miniconda3/bin/activate
 conda activate env310
 python add_cell_expressions_to_relations.py
 conda deactivate
-
 
 
 if [ $kit == y ]
@@ -176,48 +181,62 @@ do
 done < $WORKDIR/receptors_contracted
 conda deactivate
 
-
-WORK_MATRIX="${WORKDIR}/${cancer_type}_data/${cell_line}/Matrix"
+WORK_MATRIX="${WORKDIR}/${cancer_type}_data/${cell_line}/Intermediate_matrix"
 DB_DIR="${vini_dir}/database/cell_lines/${cell_line}"
-case "$DTYPE" in
-    P)
-        if [[ -f "$DB_DIR/P_matrix" ]]; then
-            echo "Interconnect P-matrix exists in database, continuing..."
-            cp "$DB_DIR/P_matrix" "$WORK_MATRIX"
-        else
-            echo -n "Creating inital VINI matrix..." #create VINI_matrix.txt
-            source $INSTALL/miniconda3/bin/activate
-            conda activate env310
-            python create_initial_matrix.py
-            conda deactivate
-            echo "Generating interconnect P_matrix (Rosetta), please wait..."
-            sh "$vini_dir/generate_jobs"
-            sh "$vini_dir/create_Rosetta_like_matrix"
-            cp "$WORK_MATRIX" "$DB_DIR/P_matrix"
-        fi
-        ;;
-    S)
-        if [[ -f "$DB_DIR/S_matrix" ]]; then
-            echo "Interconnect S-matrix exists in database, continuing..."
-            cp "$DB_DIR/S_matrix" "$WORK_MATRIX"
-        else
-            echo -n "Creating inital VINI matrix..." #create VINI_matrix.txt
-            source $INSTALL/miniconda3/bin/activate
-            conda activate env310
-            python create_initial_matrix.py
-            conda deactivate
-            echo "Generating interconnect S_matrix (Vina), please wait..."
-            sh "$vini_dir/create_Vina_like_matrix"
-            cp "$WORK_MATRIX" "$DB_DIR/S_matrix"
-        fi
-        ;;
-    *)
-        echo "ERROR: Unknown DTYPE='$DTYPE' (expected P or S)"
-        exit 1
-        ;;
-esac
 
+# -----------------------------------------------------------------
+# 1. Source the latest global states to check for pathway updates
+# -----------------------------------------------------------------
+if [[ -f "$vini_dir/globals" ]]; then
+    source "$vini_dir/globals"
+fi
 
+# Set a default value 'N' if the variable isn't set in globals
+PATHWAY_UPDATED_STATUS="${Pathway_updated:-N}"
+
+# -----------------------------------------------------------------
+# 2. Check cache OR force rebuild if pathway was updated
+# -----------------------------------------------------------------
+if [[ -f "$DB_DIR/Intermediate_matrix" && "$PATHWAY_UPDATED_STATUS" != "Y" ]]; then
+    echo "Intermediate matrix exists in database folder $DB_DIR, copying it to ${WORKDIR}/${cancer_type}_data/${cell_line} folder"
+    cp "$DB_DIR/Intermediate_matrix" "$WORK_MATRIX"
+else
+    if [[ "$PATHWAY_UPDATED_STATUS" == "Y" ]]; then
+        echo "[VINI ALERT] New KEGG pathway detected. Invalidating and removing old matrices..."
+        rm -f "$DB_DIR/Intermediate_matrix"
+        rm -f "$WORK_MATRIX"
+    fi
+
+    echo -n "Creating Initial_matrix..."
+    source "$INSTALL/miniconda3/bin/activate"
+    conda activate env310
+    python create_initial_matrix.py
+    conda deactivate
+
+    # 1. Generate jobs and wait until they finish
+    sh "$vini_dir/generate_jobs"   # Rosetta predicts binding energies
+    sh "$vini_dir/wait_until_jobs_finish"
+
+    echo "done."
+
+    # 2. Generate Intermediate_matrix
+    source "$INSTALL/miniconda3/bin/activate"
+    conda activate env310
+    python "create_intermediate_matrix.py"
+    conda deactivate
+    echo "done."
+
+    # 3. Cache the fresh harmonized matrix layout for future high-speed reuse
+    cp "$WORK_MATRIX" "$DB_DIR/Intermediate_matrix"
+
+    # 🌟 NEW: RESET THE PATHWAY STATE IN GLOBALS 🌟
+    # This prevents Vini from wiping the cache on your very next run!
+    if [[ -f "$vini_dir/globals" ]]; then
+        sed -i 's/export Pathway_updated=Y/export Pathway_updated=N/g' "$vini_dir/globals"
+        echo "[VINI] Pathway update state reset to N in globals."
+    fi
+
+fi
 
 i=1
 rm -f $WORKDIR/ligands_stage/*

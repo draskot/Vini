@@ -26,6 +26,7 @@ rm -f $PATHWAY_FILE
 #PCrel 	protein-compound interaction
 #maplink 	link to another map
 
+
 while read -r line_relations                                #we will keep only relations within given pathway
 do
          source_ID=`echo $line_relations | awk '{print $1}'`        #get source ID from relation
@@ -73,6 +74,7 @@ for word in $REPLY
     done
 done < $WORKDIR/receptors
 
+
 rm -f $WORKDIR/receptors_expanded entry_id
 for i in "${A[@]}"
 do
@@ -86,6 +88,7 @@ if ! [[ "$scale" =~ ^[0-9]+$ ]]
              printf "%s" ${scale} > entry_id
         fi
 done
+
 
 rm entry_id
 echo "done."

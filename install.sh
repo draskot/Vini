@@ -56,35 +56,27 @@ fi
 echo -n "Checking if miniconda3 is installed..."
 grep miniconda3 $vini_dir/sourceme > tmp
 if [ ! -s tmp ]; then
-    echo "no. Performing cleanup (may take several minutes)..."
-    rm -rf $INSTALL/miniconda3
+    echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
+    rm -rf  $INSTALL/miniconda3
+    module purge 2>/dev/null || true
     unset PYTHONPATH
-    echo "done."
-
-    echo "Downloading and installing Miniconda3..."
+    unset LD_LIBRARY_PATH
+    echo "Please wait while downloading and installing miniconda3..."
     wget --no-check-certificate -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
     source $INSTALL/miniconda3/etc/profile.d/conda.sh
-
-    echo "Accepting Conda Terms of Service..."
-    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
-    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-
-    echo "Creating Python 3.9 environment 'env310'..."
-    conda create -n env310 --yes python=3.9
+    echo "Creating Python 3.10 environment 'env310'..."
+    conda create -n env310 --yes python=3.10
     conda activate env310
-    conda install -c conda-forge rdkit
-    conda install  numpy scipy pandas requests mpi4py pyqt
+    conda install -c conda-forge --yes rdkit mdanalysis pdb2pqr openbabel numpy scipy pandas requests mpi4py pyqt tqdm
     conda deactivate
-
     echo "#***miniconda3 section***" >> $vini_dir/sourceme
-
     echo "Cleaning up installer..."
-    rm $INSTALL/Miniconda3-latest-Linux-x86_64.sh
+    rm -f $INSTALL/Miniconda3-latest-Linux-x86_64.sh
 else
     echo "yes."
 fi
-
+rm -f tmp
 
 #3. Chimera install
 echo -n "checking if UCSF Chimera is installed..."
@@ -192,8 +184,11 @@ fi
 
 #8. AlphaFold install
 echo -n "Checking if AlphaFold is installed..."
-$vini_dir/AlphaFold_install
-
+grep AlphaFold $vini_dir/sourceme > tmp
+if  [ ! -s tmp ]
+then
+    $vini_dir/AlphaFold_install
+fi
 
 #9 BLAST install
 echo -n "Checking if Blast is installed..."
@@ -453,6 +448,68 @@ else
 
 fi
 
-sh $vini_dir/database_sync #create and push on GD VINI database snapshot
+echo "Installing MOPAC..."
+PROJECT_FOLDER=/ceph/hpc/data/r2022r03-224-users
+INSTALL=$PROJECT_FOLDER/eudraskot
+vini_dir=$HOME/Vini
+SOURCEME="$vini_dir/sourceme"
+CHECKPOINT_STRING="#*** MOPAC section ***"
+MOPAC=$INSTALL/mopac
+SCRATCH_BUILD=$INSTALL/SCRATCH_BUILD
+
+if [ ! -f "$SOURCEME" ] || ! grep -qF "$CHECKPOINT_STRING" "$SOURCEME"; then
+    # 1. Detect if a cluster module exists natively
+    if module spider mopac 2>&1 | grep -qi "MOPAC"; then
+        echo "MOPAC cluster module detected!"
+        MOPAC_MODULE=$(module avail 2>&1 | grep -oiE "MOPAC/[A-Za-z0-9._\-]+" | head -n 1)
+        
+        # 2. Ask the user for their delivery choice
+        echo "--------------------------------------------------------"
+        echo "Found available cluster module: $MOPAC_MODULE"
+        read -p "Would you like to use this cluster module? [Y/n]: " user_choice
+        echo "--------------------------------------------------------"
+        
+        # Standardize choice string to lowercase
+        user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
+    else
+        # Force local compile if no module exists on the machine environment
+        user_choice="n"
+    fi
+
+    # 3. Decision Loop Routing Layer
+    if [ "$user_choice" = "y" ] || [ "$user_choice" = "" ] || [ "$user_choice" = "yes" ]; then
+        echo "Loading cluster module layout..."
+        module load "$MOPAC_MODULE"
+        mkdir -p "$vini_dir" && touch "$SOURCEME"
+        echo "" >> "$SOURCEME"
+        echo "$CHECKPOINT_STRING" >> "$SOURCEME"
+        echo "module load $MOPAC_MODULE" >> "$SOURCEME"
+    else
+        echo "Proceeding with local custom source installation..."
+        module purge
+        module load CMake/3.29.3-GCCcore-13.3.0 GCC/13.3.0 OpenBLAS/0.3.27-GCC-13.3.0
+        mkdir -p "$MOPAC" "$SCRATCH_BUILD"
+        cd "$SCRATCH_BUILD" && rm -rf ./*
+        cd "$MOPAC" && rm -rf ./*
+        wget https://github.com/openmopac/mopac/archive/refs/heads/main.zip
+        unzip -qo main.zip
+        cd mopac-main
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX="$MOPAC" -DTESTS=OFF
+        make -j 4 && make install
+        mkdir -p "$vini_dir" && touch "$SOURCEME"
+        echo "" >> "$SOURCEME"
+        echo "$CHECKPOINT_STRING" >> "$SOURCEME"
+        echo "export PATH=$MOPAC/bin:\$PATH" >> "$SOURCEME"
+        echo "export LD_LIBRARY_PATH=$MOPAC/lib64:\$LD_LIBRARY_PATH" >> "$SOURCEME"
+        echo "export MOPAC_THREADS=\$SLURM_CPUS_PER_TASK" >> "$SOURCEME"
+    fi
+    echo "MOPAC deployment section finished successfully."
+else
+    echo "Checkpoint verified: MOPAC environment is already active. Continuing installer sequence..."
+fi
+
+#sh $vini_dir/database_sync #create and push on GD VINI database snapshot
 
 echo "You have to re-login in order to changes make effect!"

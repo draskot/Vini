@@ -1,86 +1,50 @@
-import os, time, sys
-import pandas as pd
+import os
+import sys
 import numpy as np
 
-t0 = time.time()
+def create_energy_binding(target_dir):
+    # Fixed input/output names inside target_dir
+    matrix_filename = "Intermediate_matrix"
+    vector_filename = "vec"
+    output_filename = "EB_matrix"
 
-def main(argv):
-    if len(argv) < 1:
-        print("Usage: script.py <path_to_target_dir_file>")
-        exit()
+    # Construct the full paths
+    matrix_path = os.path.join(target_dir, matrix_filename)
+    vector_path = os.path.join(target_dir, vector_filename)
+    output_path = os.path.join(target_dir, output_filename)
+    
+    # 1. Load the files
+    try:
+        matrix = np.loadtxt(matrix_path)
+        vector = np.loadtxt(vector_path)
+    except Exception as e:
+        print(f"Error loading files from {target_dir}: {e}")
+        sys.exit(1)
+
+    # 2. Validate dimensions
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        print(f"Error: Matrix must be square (NxN). Found shape: {matrix.shape}")
+        sys.exit(1)
         
-    target_dir_path = argv[0]
+    N = matrix.shape[0]
+    if vector.size != N:
+        print(f"Error: Vector size ({vector.size}) does not match matrix dimensions ({N}x{N}).")
+        sys.exit(1)
 
-    try:
-        WORKDIR = os.environ['WORKDIR']
-    except KeyError:
-        print("WORKDIR environmental variable is not set")
-        exit()
+    # 3. Substitute the main diagonal elements
+    matrix[np.diag_indices_from(matrix)] = vector.flatten()
 
-    try:
-        with open(target_dir_path, 'r') as f:
-            target_dir = f.read()
-            TARGETDIR = os.path.join(target_dir.strip("\n"))
-    except:
-        print("Can't open file with target directory")
-        exit()
-
-    try:
-        with open(os.path.join(WORKDIR, 'complexes'), 'r') as f:
-            dim = f.read().strip("\n")
-    except:
-        print("Can't open file with complexes")
-        exit()
-
-    try:
-        with open(os.path.join(WORKDIR, 'therapy_level'), 'r') as f:
-            therapy_level = f.read().strip("\n")
-    except:
-        print("Can't open file with therapy_level")
-        exit()
-
-    try:
-        os.remove(os.path.join(WORKDIR, 'temp_buf'))
-    except OSError:
-        print("No temp_buf to remove")
-
-    # Loading files into DataFrames
-    try:
-        receptors_contracted_df = pd.read_csv(os.path.join(WORKDIR, 'receptors_contracted'), sep=' ', header=None)
-        relations_df = pd.read_csv(os.path.join(WORKDIR, 'relations'), sep=' ', header=None)
-        affinity_values = pd.read_csv(os.path.join(TARGETDIR, 'vec'), header=None)
-    except:
-        print("Error loading CSV files")
-        exit()
-
-    # Initializing energy binding matrix (dim x dim)
-    main.EB_matrix = pd.DataFrame(np.zeros((int(dim), int(dim)), dtype=object))
-
-    # Filling EB matrix diagonal with affinity values
-    np.fill_diagonal(main.EB_matrix.values, affinity_values)
-
-    if therapy_level == "1":
-        # Adding expression values for off-diagonal elements
-        result = [applyToEB(relation, receptors_contracted_df)
-                  for relation in relations_df.iloc[:, :].to_numpy()]
-
-    print(os.path.join(TARGETDIR, 'EB_matrix'))
-    main.EB_matrix.to_csv(os.path.join(TARGETDIR, 'EB_matrix'), sep=" ", header=False, index=False)
-
-def applyToEB(relation, receptors_contracted_df):
-    source_id = relation[0]
-    target_id = relation[1]
-    genex = relation[3]
-    #global EB_matrix
-    rc = receptors_contracted_df
-    source_positions = rc[rc.iloc[:, 0] == source_id].index.to_numpy()
-    target_positions = rc[rc.iloc[:, 0] == target_id].index.to_numpy()
-    # sve kombinacije elemenata iz jednog i drugog skupa
-    for sp in source_positions:
-        for tp in target_positions:
-            main.EB_matrix.iloc[sp, tp] = genex
+    # 4. Save the resulting EB_matrix
+    np.savetxt(output_path, matrix, fmt='%.6f')
+    print(f"Successfully created and saved {output_filename} in {target_dir}")
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
-    print('calculated in {:.3f} sec'.format(time.time() - t0))
-
+    # Ensure the user passed the target directory argument
+    if len(sys.argv) < 2:
+        print("Error: Missing target directory argument.")
+        print("Usage: python create_energy_binding_matrix.py <target_dir>")
+        sys.exit(1)
+        
+    # Get the target directory from the first command-line argument
+    given_dir = sys.argv[1]
+    create_energy_binding(given_dir)

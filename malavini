@@ -1,9 +1,10 @@
-#!/bin/bash
-vini_dir=${vini_dir:-$HOME/Vini}
+export vini_dir=$HOME/Vini
 source $vini_dir/sourceme
 source "$vini_dir/globals"
 ncpus=24
 partition=$CPU_PARTITION
+
+master_matrix_path=$PROJECT_FOLDER/$USER/workdir/${cancer_type}_data/$cell_line/Intermediate_matrix
 
 
 if [ $SCTYPE == SLURM ]
@@ -12,7 +13,6 @@ then
 else
     walltime=$(qmgr -c "list queue $CPU_PARTITION" | grep "resources_max.walltime" | awk '{print $3}')
 fi
-
 
 receptors=`wc -l < $WORKDIR/receptors_contracted`
 ligands=`wc -l < $vini_dir/ligands/ligands_list`
@@ -66,6 +66,7 @@ do
                  nr_complexes=`ls ${comp_source}/complex* | wc -l`
                  for (( N=1; N<$((nr_complexes+1)); N++ )) #5th loop
        	         do
+
                      printf -v comp_index "%03d" $N  
                      workdir="${I}_${J}_${L}_${M}_${N}"
                      mkdir -p $WORKDIR/$workdir
@@ -97,9 +98,15 @@ do
                              UNKN2=`grep -w B ligand_${lig_index}.pdbqt | awk '{print $3}'`
                              if  [[ -z $UNKN1 ]] && [[ -z $UNKN2 ]] #No metal ions, using Autodock Vina
                              then
+                                 #ram_allocation=$(( ncpus * 2000 ))
+                                 # Dynamically calculate RAM per core based on the cluster's actual hardware specs
+                                 # (memory_per_node / cores_per_node) * 0.95 to leave a safe buffer for OS overhead
+                                 ram_per_core=$(( (memory_per_node / cores_per_node) * 95 / 100 ))
+                                 # Calculate the total resource shield footprint for this specific job
+                                 ram_allocation=$(( ncpus * ram_per_core ))
 				 if [ $SCTYPE == SLURM ]
 				 then
-                                     echo "#!/bin/bash"                                                            > dock  
+                                     echo "#!/bin/bash"                                                            > dock
                                      echo "#SBATCH --time="$walltime                                              >> dock
                                      echo "#SBATCH --account=$ACCOUNT"                                            >> dock
                                      echo "#SBATCH --partition="$partition                                        >> dock
@@ -109,39 +116,73 @@ do
                                      echo "#SBATCH --nodes=1"                                                     >> dock
                                      echo "#SBATCH --ntasks=1"                                                    >> dock
                                      echo "#SBATCH --cpus-per-task="$ncpus                                        >> dock
+                                     echo "#SBATCH --mem="${ram_allocation}M"                                     >> dock
+                                     echo "#SBATCH --export=ALL"                                                  >> dock
 				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
-				     # echo "#PBS -A"			                                          >> dock		SLURMACCT?
+				     # echo "#PBS -A"			                     >> dock		SLURMACCT?
 				     echo "#PBS -q "$partition							  >> dock
 				     echo "#PBS -N D${M}.${N}"							  >> dock
 				     echo "#PBS -o D${M}.${N}.out"						  >> dock
 				     echo "#PBS -e D${M}.${N}.err"						  >> dock
-                                     echo "#PBS -l nodes=1:ppn=$ncpus"                                            >> dock
+                                     echo "#PBS -l select=1:ncpus=$ncpus:mem=${ram_allocation}mb"                 >> dock
 				 fi
-
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
                                  echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_receptor4.py -r complex_$comp_index.pdb -o complex_${comp_index}.pdbqt" >> dock
                                  echo "cp $MGLTOOLS/AD4_parameters.dat ./"                                    >> dock
                                  echo "cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdbqt ./"                >> dock
+                                 echo "cp $HOME/Vini/vini_trimmer.py ./"                                      >> dock
+                                 echo "cp $HOME/Vini/charge_extractor.py ./"                                  >> dock
+                                 echo "cp $HOME/Vini/calculate_qm_binding_energy.py ./"                       >> dock
+                                 echo "cp $HOME/Vini/transfer_coordinates.py ./"                       >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "$INSTALL/vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                                 >> dock
                                  echo "then"                                                                    >> dock
+                                 echo "    source $HOME/Vini/sourceme"                                          >> dock
+                                 echo "    source $INSTALL/miniconda3/bin/activate"                             >> dock
+                                 echo "    conda activate env310"                                               >> dock
+                                 echo "    awk '/MODEL 1/{p=1} p{print} /ENDMDL/{p=0; exit}' ligand.pdbqt > best_pose.pdbqt" >> dock
+                                 echo "    obabel -ipdbqt best_pose.pdbqt -opdb -O best_pose.pdb -h"            >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
-                                 echo "    infile=complex_${comp_index}.pdb"                                    >> dock #get last ATOM/HETATM number from receptor
-                                 echo "    last_order_number=\$(awk '/^(ATOM|HETATM)/{order=\$2} END{print order}' "\${infile}")" >> dock
-                                 echo "    obabel -ipdbqt ligand.pdbqt -O tmp.pdb"                              >> dock
-                                 echo "    grep -we HETATM -we END tmp.pdb > ligand.pdb"                        >> dock
-                                 echo "    chain_id=\`grep -m 1 "ATOM" complex_${comp_index}.pdb | awk '{print \$5}'\`" >> dock
-                                 echo "    python3 modify_chain_id.py ligand.pdb tmp \$chain_id"                >> dock
-                                 echo "    python3 update_pdb.py \$last_order_number tmp ligand.pdb"            >> dock  #modify ATOM numbers
-                                 echo "    sed -i -e "s/UNL/$ligand/" ligand.pdb"                               >> dock
+                                 echo "    infile=complex_${comp_index}.pdb"                                    >> dock
+                                 echo "    last_order_number=\$(awk '/^(ATOM|HETATM)/{order=\$2} END{print order}' \"\${infile}\")" >> dock
+                                 echo "    obabel -ipdbqt ligand.pdbqt -O openbabel_ligand.pdb"                  >> dock
+                                 echo "    grep -we HETATM -we END openbabel_ligand.pdb > ligand.pdb"            >> dock
+                                 echo "    chain_id=\$(grep -m 1 \"ATOM\" complex_${comp_index}.pdb | awk '{print \$5}')" >> dock
+                                 echo "    python modify_chain_id.py ligand.pdb ligand_tmp.pdb \$chain_id"       >> dock
+                                 echo "    python update_pdb.py \$last_order_number ligand_tmp.pdb ligand.pdb"   >> dock  #modify ATOM numbers
+                                 echo "    sed -i -e \"s/UNL/LIG/\" ligand.pdb"                                 >> dock
+                                 echo "    scoring_type=\$(grep 'scoring_type' $HOME/Vini/globals | awk -F'=' '{print \$2}')" >> dock
+                                 echo "    if [ \"\$scoring_type\" = \"qm\" ]"                                  >> dock
+                                 echo "    then"                                                                >> dock
+                                 #Semi-empirical QM scoring begin
+                                 echo "        unset PYTHONPATH"                                                >> dock
+                                 echo "        cp $WORKDIR/ligands_stage/ligand_${lig_index}.pdb ./"            >> dock
+                                 echo "        \$CONDA_PREFIX/bin/python transfer_coordinates.py ligand_${lig_index}.pdb best_pose.pdbqt best_pose.pdb" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/python -u vini_trimmer.py complex_${comp_index}.pdb best_pose.pdb trimmed_receptor_${comp_index}.pdb 5.0" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/pdb2pqr --ff PARSE --neutraln --neutralc --with-ph 7.4 trimmed_receptor_${comp_index}.pdb qm_ready_receptor_${comp_index}.pdb" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/python charge_extractor.py"                   >> dock
+                                 
+                                 echo "        source mopac_charges.env"     >> dock   #Create MOPAC input files
+                                 echo "        \$CONDA_PREFIX/bin/obabel best_pose.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$LIG_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O ligand_${lig_index}.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb -omop -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$REC_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O receptor_${comp_index}.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/obabel qm_ready_receptor_${comp_index}.pdb best_pose.pdb -omop -j -xk \"PM6-D3H4X EPS=78.4 CHARGE=\$CPX_CHARGE GNORM=0.1 1SCF THREADS=$ncpus\" -O complex_${comp_index}_qm.mop" >> dock
+                                 
+                                 echo "        mopac ligand_${lig_index}.mop"      >> dock #Run MOPAC and calculate binding energy
+                                 echo "        mopac receptor_${comp_index}.mop"   >> dock
+                                 echo "        mopac complex_${comp_index}_qm.mop" >> dock
+                                 echo "        \$CONDA_PREFIX/bin/python calculate_qm_binding_energy.py ${lig_index} ${comp_index}" >> dock
+                                 echo "    fi"                                                                  >> dock
+                                 #Semi-empirical QM scoring end
                                  echo "    cat complex_${comp_index}.pdb > tmp"                                 >> dock
                                  echo "    cat ligand.pdb >> tmp"                                               >> dock
                                  echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> dock
-                                 echo "    python3 extract_affinity.py ${target_dir}/log_${comp_index}"         >> dock
+                                 echo "    \$CONDA_PREFIX/bin/python extract_affinity.py ${target_dir}/log_${comp_index}" >> dock
+                                 echo "    conda deactivate"                                                    >> dock
+                                 echo "    rm -f openbabel_ligand.pdb ligand_tmp.pdb tmp"                       >> dock
                                  echo "else"                                                                    >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                          >> dock
                                  echo "fi"                                                                      >> dock
@@ -187,11 +228,16 @@ do
                                  echo "cat complex_${comp_index}.dpf >> tmp"                                        >> dock
                                  echo "mv tmp complex_${comp_index}.dpf"                                            >> dock
                                  echo "autodock4 -p complex_${comp_index}.dpf -l complex_${comp_index}.log"         >> dock
-                                 echo "python3 $vini_dir/extract_docked_ligand_coordinates.py complex_${comp_index}.log ligand_${lig_index}.pdbqt"   >> adock
+                                 echo "source $INSTALL/miniconda3/bin/activate"                                     >> dock
+                                 echo "conda activate env310"                                                       >> dock
+                                 echo "python $vini_dir/extract_docked_ligand_coordinates.py complex_${comp_index}.log ligand_${lig_index}.pdbqt" >> dock
+                                 echo "conda deactivate" >> dock
                                  echo "cat complex_${comp_index}.pdbqt > COMPLEX.pdbqt"                             >> dock
                                  echo "cat ligand_${lig_index}.pdbqt  >> COMPLEX.pdbqt"                             >> dock
                                  echo "if  [ -e COMPLEX.pdbqt ]"                                                    >> dock
                                  echo "then"                                                                        >> dock
+                                 echo "    source $INSTALL/miniconda3/bin/activate"                                 >> dock
+                                 echo "    conda activate env310"                                                   >> dock
                                  echo "    obabel -ipdbqt COMPLEX.pdbqt -O $target_dir/complex_${comp_index}.pdb"   >> dock
                                  echo "    grep  \"DOCKED: USER \" complex_${comp_index}.log | grep  \"Estimated Free Energy of Binding \" | sort -k2 -n > tmp" >> dock
                                  echo "    a=\`head -1 tmp | awk '{print \$9}'\`"                                   >> dock
@@ -201,6 +247,7 @@ do
                                  echo "    else"                                                                    >> dock
                                  echo "        echo \$a > $target_dir/log_${comp_index}"                            >> dock
                                  echo "    fi"                                                                      >> dock
+                                 echo "    conda deactivate"                                                        >> dock
                                  echo "else"                                                                        >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                              >> dock
                                  echo "fi"                                                                          >> dock
@@ -243,22 +290,27 @@ do
                                  echo "$MGLBIN/pythonsh $MGLTOOLS/Utilities24/prepare_ligand4.py -l ligand_${lig_index}.pdb -o ligand_${lig_index}.pdbqt" >> dock
                                  echo "$MGLBIN/pythonsh $MGLUTILS/prepare_gpf.py -l ligand_${lig_index}.pdbqt -r complex_${comp_index}.pdbqt" >> dock
                                  echo "sh $vini_dir/create_Vina_config_file ${lig_index} ${comp_index} ${conf_index}" >> dock
-                                 echo "vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
+                                 echo "$INSTALL/vina --cpu $ncpus   --size_x 40 --size_y 40 --size_z 40 --config conf_$conf_index.txt --exhaustiveness ${exhaustiveness} --receptor complex_${comp_index}.pdbqt --ligand ligand_${lig_index}.pdbqt --out ligand.pdbqt > log" >> dock
                                  echo "if  [ -e ligand.pdbqt ]"                                               >> dock
                                  echo "then"                                                                  >> dock
+                                 echo "    source $INSTALL/miniconda3/bin/activate"                           >> dock
+                                 echo "    conda activate env310"                                             >> dock
                                  echo "    obabel -ipdbqt complex_${comp_index}.pdbqt -O complex_${comp_index}.pdb" >> dock
                                  echo "    infile=complex_${comp_index}.pdb"                                  >> dock #get last ATOM/HETATM number from receptor
                                  echo "    last_order_number=\$(awk '/^(ATOM|HETATM)/{order=\$2} END{print order}' "\${infile}")" >> vdock
                                  echo "    obabel -ipdbqt ligand.pdbqt -O tmp.pdb"                            >> dock
                                  echo "    grep -we HETATM -we END tmp.pdb > ligand.pdb"                      >> dock
                                  echo "    chain_id=\`grep -m 1 "ATOM" complex_${comp_index}.pdb | awk '{print \$5}'\`" >> dock
-                                 echo "    python3 modify_chain_id.py ligand.pdb tmp \$chain_id"              >> dock
-                                 echo "    python3 update_pdb.py \$last_order_number tmp ligand.pdb"          >> dock  #modify ATOM numbers
+                                 echo "    source $INSTALL/miniconda3/bin/activate"                           >> dock
+                                 echo "    conda activate env310"                                             >> dock
+                                 echo "    python modify_chain_id.py ligand.pdb tmp \$chain_id"               >> dock
+                                 echo "    python update_pdb.py \$last_order_number tmp ligand.pdb"  >> dock  #modify ATOM numbers
                                  echo "    sed -i -e "s/UNL/$ligand/" ligand.pdb"                             >> dock
                                  echo "    cat complex_${comp_index}.pdb > tmp"                               >> dock
                                  echo "    cat ligand.pdb >> tmp"                                             >> dock
                                  echo "    grep -we ATOM -we HETATM tmp > $target_dir/complex_${comp_index}.pdb" >> dock
-                                 echo  "    python3 extract_affinity.py ${target_dir}/log_${comp_index}"        >> dock
+                                 echo  "   python extract_affinity.py ${target_dir}/log_${comp_index}"        >> dock
+                                 echo "    conda deactivate"                                                  >> dock
                                  echo "else"                                                                  >> dock
                                  echo "    echo ERROR > $target_dir/log_${comp_index}"                        >> dock
                                  echo "fi"                                                                    >> dock
@@ -294,10 +346,13 @@ do
                                  echo "python clean_pdb_keep_ligand.py complex_${comp_index}.pdb -ignorechain" >> dock
                                  echo "mv complex_${comp_index}.pdb_00.pdb complex_${comp_index}.pdb"          >> dock
                                  echo "conda deactivate"                                                       >> dock
-                                 echo "python3 analyze_chains.py ${comp_index} ${lig_index}"                   >> dock
+                                 echo "source $INSTALL/miniconda3/bin/activate"                                >> dock
+                                 echo "conda activate env310"                                                  >> dock
+                                 echo "python analyze_chains.py ${comp_index} ${lig_index}"                    >> dock
+                                 echo "conda deactivate"                                                       >> dock
                                  echo "cp complex_${comp_index}.pdb receptor.pdb"                              >> dock
                                  echo "cp ligand_${lig_index}.pdb ligand.pdb"                                  >> dock
-                                 echo "hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log"         >> dock
+                                 echo "$INSTALL/hex -batch receptor.pdb ligand.pdb < docking.mac > docking.log" >> dock
                                  echo "cp complex.pdb complex_${comp_index}.pdb"                               >> dock
                                  echo "$ROSETTA/source/bin/relax.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}.pdb -multithreading:total_threads ${ncpus} @flag_input_relax -overwrite" >> dock
                                  echo "$ROSETTA/source/bin/docking_protocol.cxx11thread.linuxgccrelease -in:file:s complex_${comp_index}_0001.pdb -multithreading:total_threads ${ncpus} @flag_global_docking" >> dock
@@ -336,6 +391,7 @@ do
                  chmod u+x $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}
                  sh $WORKDIR/dock_${I}_${J}_${L}_${M}_${N}                                   #submit 
     	         done # end of 5th loop
+
 
                  echo $I > $target_dir/I
                  echo $J > $target_dir/J
@@ -383,14 +439,20 @@ do
                  echo "grep ERROR ${target_dir}/vec > tmp"                   >> ${target_dir}/SLEM
                  echo "if  [ -s tmp ]"                                       >> ${target_dir}/SLEM
                  echo "then"                                                 >> ${target_dir}/SLEM
-                 echo "    python3 $vini_dir/get_random_value.py ${target_dir}/vec" >> ${target_dir}/SLEM
+                 echo "    source $INSTALL/miniconda3/bin/activate"          >> ${target_dir}/SLEM
+                 echo "    conda activate env310"                            >> ${target_dir}/SLEM
+                 echo "    $INSTALL/miniconda3/envs/env310/bin/python $vini_dir/get_random_value.py ${target_dir}/vec" >> ${target_dir}/SLEM
+                 echo "    conda deactivate"                                 >> ${target_dir}/SLEM
                  echo "fi"                                                   >> ${target_dir}/SLEM
 
                  echo "ls ${target_dir}/log* > tmp"                          >> ${target_dir}/SLEM #create matrix & eigenvalues
                  echo "complexes=\`wc -l < tmp\`"                            >> ${target_dir}/SLEM
                  echo "echo \$complexes > complexes"                         >> ${target_dir}/SLEM
-                 echo "python3 $vini_dir/create_energy_binding_matrix.py $target_dir/target_dir" >> ${target_dir}/SLEM
-                 echo "python3 $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/SLEM
+                 echo "source $INSTALL/miniconda3/bin/activate"              >> ${target_dir}/SLEM
+                 echo "conda activate env310"                                >> ${target_dir}/SLEM
+                 echo "cp ${master_matrix_path} ${target_dir}/Intermediate_matrix"       >> ${target_dir}/SLEM
+                 echo "$INSTALL/miniconda3/envs/env310/bin/python $vini_dir/create_energy_binding_matrix.py ${target_dir}"   >> ${target_dir}/SLEM
+                 echo "$INSTALL/miniconda3/envs/env310/bin/python $vini_dir/compute_eigenvalues.py -s $target_dir/EB_matrix -t $target_dir/eigenvalues" >> ${target_dir}/SLEM
                  echo "conda deactivate"                                     >> ${target_dir}/SLEM
 
                  echo "therapy_level=\`cat $vini_dir/therapy_level\`"        >> ${target_dir}/SLEM #compute SLEM
