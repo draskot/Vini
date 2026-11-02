@@ -118,6 +118,8 @@ do
                                      echo "#SBATCH --cpus-per-task="$ncpus                                        >> dock
                                      echo "#SBATCH --mem="${ram_allocation}M"                                     >> dock
                                      echo "#SBATCH --export=ALL"                                                  >> dock
+                                     echo "export OMP_NUM_THREADS=\$SLURM_CPUS_PER_TASK"                          >> dock
+                                     echo "export MKL_NUM_THREADS=\$SLURM_CPUS_PER_TASK"                          >> dock
 				 else
 				     echo "#PBS -l walltime="$walltime						  >> dock
 				     # echo "#PBS -A"			                     >> dock		SLURMACCT?
@@ -126,6 +128,8 @@ do
 				     echo "#PBS -o D${M}.${N}.out"						  >> dock
 				     echo "#PBS -e D${M}.${N}.err"						  >> dock
                                      echo "#PBS -l select=1:ncpus=$ncpus:mem=${ram_allocation}mb"                 >> dock
+                                     echo "export OMP_NUM_THREADS=\$NCPUS"                                        >> dock
+                                     echo "export MKL_NUM_THREADS=\$NCPUS"                                        >> dock
 				 fi
                                  echo "sh $vini_dir/adjust_pdb.awk complex_$comp_index.pdb adjusted.pdb"      >> dock
                                  echo "mv adjusted.pdb complex_$comp_index.pdb"                               >> dock
