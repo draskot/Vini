@@ -52,58 +52,127 @@ else
     echo "yes."
 fi
 
-#2. Minconda3 install
+# 2. Miniconda3 install
 echo -n "Checking if miniconda3 is installed..."
-grep miniconda3 $vini_dir/sourceme > tmp
-if [ ! -s tmp ]; then
+if ! grep -q "miniconda3" "$vini_dir/sourceme" 2>/dev/null; then
     echo "no. Performing cleanup. May take several minutes to finish, do not interrupt."
-    rm -rf  $INSTALL/miniconda3
-    module purge 2>/dev/null || true
+    rm -rf "$INSTALL/miniconda3"
+    if command -v module >/dev/null 2>&1; then
+        module purge 2>/dev/null || true
+    fi
     unset PYTHONPATH
     unset LD_LIBRARY_PATH
-    echo "Please wait while downloading and installing miniconda3..."
-    wget --no-check-certificate -P $INSTALL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    sh $INSTALL/Miniconda3-latest-Linux-x86_64.sh -b -p $INSTALL/miniconda3
-    source $INSTALL/miniconda3/etc/profile.d/conda.sh
+
+    # Option 1: Use system-provided Python-CONDA module if available
+    if command -v module >/dev/null 2>&1 && module avail Python-CONDA 2>&1 | grep -q "Python-CONDA"; then
+        echo "Found system Python-CONDA module. Linking it to $INSTALL/miniconda3..."
+        module load Python 2>/dev/null || true
+        module load Python-CONDA
+        CONDA_BASE=$(conda info --base)
+
+        mkdir -p "$INSTALL/miniconda3/envs" "$INSTALL/miniconda3/pkgs"
+        ln -s "$CONDA_BASE/bin" "$INSTALL/miniconda3/bin"
+        ln -s "$CONDA_BASE/etc" "$INSTALL/miniconda3/etc"
+        ln -s "$CONDA_BASE/condabin" "$INSTALL/miniconda3/condabin" 2>/dev/null || true
+
+        export CONDA_PKGS_DIRS="$INSTALL/miniconda3/pkgs"
+        export CONDA_ENVS_DIRS="$INSTALL/miniconda3/envs"
+    else
+        # Option 2: Fall back to standalone Miniforge3 (handles both glibc < 2.28 and >= 2.28)
+        ARCH=$(uname -m)
+        glibc_ver=$(ldd --version 2>&1 | awk 'NR==1{print $NF}')
+        glibc_num=$(echo "$glibc_ver" | awk -F. '{printf "%d%02d", $1, $2}')
+
+        if [ -n "$glibc_num" ] && [ "$glibc_num" -lt 228 ]; then
+            echo "Detected older GLIBC ($glibc_ver < 2.28). Using GLIBC 2.17-compatible Miniforge3..."
+            CONDA_URL="https://github.com{ARCH}.sh"
+        else
+            echo "Detected modern GLIBC ($glibc_ver >= 2.28). Using latest Miniforge3..."
+            CONDA_URL="https://github.com{ARCH}.sh"
+        fi
+
+        wget --no-check-certificate -O "$INSTALL/miniforge3.sh" "$CONDA_URL" || {
+            echo "ERROR: Failed to download Miniforge3."
+            exit 1
+        }
+        if ! head -n 1 "$INSTALL/miniforge3.sh" 2>/dev/null | grep -q "^#!"; then
+            echo "ERROR: Downloaded file is not a valid shell script."
+            rm -f "$INSTALL/miniforge3.sh"
+            exit 1
+        fi
+        bash "$INSTALL/miniforge3.sh" -b -p "$INSTALL/miniconda3" || {
+            echo "ERROR: Miniforge3 installation failed."
+            rm -f "$INSTALL/miniforge3.sh"
+            exit 1
+        }
+        rm -f "$INSTALL/miniforge3.sh"
+    fi
+
+    # Load conda via the unified $INSTALL/miniconda3 path
+    . "$INSTALL/miniconda3/etc/profile.d/conda.sh"
+
     echo "Creating Python 3.10 environment 'env310'..."
-    conda create -n env310 --yes python=3.10
-    conda activate env310
-    conda install -c conda-forge --yes rdkit mdanalysis pdb2pqr openbabel numpy scipy pandas requests mpi4py pyqt tqdm
-    conda deactivate
-    echo "#***miniconda3 section***" >> $vini_dir/sourceme
-    echo "Cleaning up installer..."
-    rm -f $INSTALL/Miniconda3-latest-Linux-x86_64.sh
+    conda create -p "$INSTALL/miniconda3/envs/env310" --yes python=3.10 && \
+    conda activate "$INSTALL/miniconda3/envs/env310" && \
+    conda install -c conda-forge --yes rdkit mdanalysis pdb2pqr openbabel numpy scipy pandas requests mpi4py pyqt tqdm && \
+    conda deactivate || {
+        echo "ERROR: Failed to create or populate conda environment 'env310'."
+        exit 1
+    }
+
+    echo "#***miniconda3 section***" >> "$vini_dir/sourceme"
 else
     echo "yes."
 fi
-rm -f tmp
 
-#3. Chimera install
-echo -n "checking if UCSF Chimera is installed..."
-grep Chimera $vini_dir/sourceme > tmp    #install UCSF Chimera
-if  [ ! -s tmp ]
-then
+# 3. Chimera install
+echo -n "Checking if UCSF Chimera is installed..."
+if ! grep -q "Chimera" "$vini_dir/sourceme" 2>/dev/null; then
     echo "no."
-    read -e -p "Enter the name of the Chimera version you want to install. Press enter to install default:" -i "chimera-1.18-linux_x86_64" chimera 
-    #chimera=chimera-1.17.3-linux_x86_64
+    DEFAULT_CHIMERA="chimera-1.20-linux_x86_64"
+    printf "Enter the Chimera installer name without .bin [default: %s]: " "$DEFAULT_CHIMERA"
+    read chimera
+    chimera=${chimera:-$DEFAULT_CHIMERA}
+    # Strip trailing .bin if the user accidentally included it
+    chimera=${chimera%.bin}
+
     echo -n "Chimera installation directory must be empty. Performing cleanup..."
-    rm -rf $INSTALL/${chimera}
+    rm -rf "$INSTALL/${chimera}"
     echo "done."
-    echo "Download Chimera ${chimera}.bin from https://www.cgl.ucsf.edu/chimera/download.html into" $INSTALL
-    read -p "Put ${chimera}.bin into $INSTALL directory and press enter." enter
-    echo "Chimera installation started. When asked for the install location enter:" $INSTALL/${chimera}
-    echo "enter <no> when asked <Install desktop menu and icon?>" ; echo
-    echo "choose no link (0) when asked <Install symbolic link to chimera executable for command line use in which directory?>" ; echo
-    read -p "press enter to continue." enter
-    chmod u+x $INSTALL/${chimera}.bin
-    cd $INSTALL
-    ./${chimera}.bin
-    rm ${chimera}.bin
-    cd $vini_dir
-    echo "#******UCSF Chimera section******" >> $vini_dir/sourceme
-    echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> $vini_dir/sourceme
-    echo "Installation done. Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py , otherwise it will not work as expected!" 
-    read -p  "Press return when the registration is done." enter
+
+    # Only prompt the user if the .bin file isn't already in $INSTALL
+    while [ ! -f "$INSTALL/${chimera}.bin" ]; do
+        echo ""
+        echo "Please download ${chimera}.bin from https://www.cgl.ucsf.edu/chimera/download.html"
+        echo "and place it into: $INSTALL"
+        printf "Press Enter once ${chimera}.bin is in $INSTALL..."
+        read enter
+    done
+
+    echo "Installing UCSF Chimera automatically into $INSTALL/${chimera}..."
+    chmod u+x "$INSTALL/${chimera}.bin"
+    (
+        cd "$INSTALL" || exit 1
+        # Automatically answer the 3 installer prompts:
+        # 1) Install location: $INSTALL/$chimera
+        # 2) Install desktop menu and icon?: no
+        # 3) Symbolic link directory choice: 0 (no link)
+        printf "%s\nno\n0\n" "$INSTALL/${chimera}" | "./${chimera}.bin"
+    ) || {
+        echo "ERROR: UCSF Chimera installation failed."
+        exit 1
+    }
+
+    rm -f "$INSTALL/${chimera}.bin"
+
+    echo "#******UCSF Chimera section******" >> "$vini_dir/sourceme"
+    echo "export PATH=$INSTALL/${chimera}/bin:\$PATH" >> "$vini_dir/sourceme"
+
+    echo ""
+    echo "Chimera installation done!"
+    echo "NOTE: Register Chimera at https://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py so it runs without nag prompts."
+    printf "Press Enter once registration is complete (or to continue)..."
+    read enter
 else
     echo "yes."
 fi
@@ -230,7 +299,7 @@ else
 fi
 
 
-#10. Rosetta install
+# 10. Rosetta install
 source $vini_dir/sourceme
 echo -n "Checking if Rosetta is installed..."
 grep Rosetta $vini_dir/sourceme > tmp
@@ -246,28 +315,38 @@ then
         then
             echo "In order to run Rosetta you need to obtain license from https://els2.comotion.uw.edu/product/rosetta"
             echo "This license is free for academic users."
-            echo "Upon receiving a license, enter username and password here."
-            read -p "Enter username:" Rosetta_username
-            echo -n "Enter password:"; read -s Rosetta_password ; echo ""
-            echo $Rosetta_username > $WORKDIR/Rosetta_username
-            echo $Rosetta_password > $WORKDIR/Rosetta_password
-            chmod g-r,o-r $WORKDIR/Rosetta_username
-            chmod g-r,o-r $WORKDIR/Rosetta_password
+            #echo "Upon receiving a license, enter username and password here."
+            #read -p "Enter username:" Rosetta_username
+            #echo -n "Enter password:"; read -s Rosetta_password ; echo ""
+            #echo $Rosetta_username > $WORKDIR/Rosetta_username
+            #echo $Rosetta_password > $WORKDIR/Rosetta_password
+            #chmod g-r,o-r $WORKDIR/Rosetta_username
+            #chmod g-r,o-r $WORKDIR/Rosetta_password
         fi
         release=3.15
         version=408
         if  [ ! -e $INSTALL/rosetta_source_${release}_bundle.tar.bz2 ]
-	then
+        then
             wget -P $INSTALL https://downloads.rosettacommons.org/downloads/academic/${release}/rosetta_source_3.15_bundle.tar.bz2
-	fi
-        echo "Unpacking and compiling Rosetta source, do not interrupt."
+        fi
+      echo "Unpacking and compiling Rosetta source, do not interrupt."
         tar -xjf "$INSTALL/rosetta_source_${release}_bundle.tar.bz2" --checkpoint=.4000 -C "$INSTALL"
-	module purge
-	source $INSTALL/miniconda3/bin/activate
+        module purge
+        source $INSTALL/miniconda3/bin/activate
         conda activate env310
         cd $INSTALL/rosetta.source.release-${version}/main/source
-        ./scons.py -j 24 bin mode=release extras=cxx11thread
-	conda deactivate
+        if command -v module >/dev/null 2>&1; then
+           module load gcc/13.4.0 2>/dev/null || module load gcc 2>/dev/null || true
+        fi
+        ./scons.py -j 4 bin mode=release extras=cxx11thread || {
+            echo "ERROR: Rosetta compilation failed."
+            conda deactivate
+            exit 1
+        }
+        conda deactivate
+        rm -f "$INSTALL/rosetta_source_${release}_bundle.tar.bz2"
+        cd $vini_dir
+        echo "module load gcc/13.4.0 2>/dev/null || module load gcc 2>/dev/null || true" >> "$vini_dir/sourceme"
         ROSETTA=$INSTALL/rosetta.source.release-${version}/main
         ROSETTA_BIN=$ROSETTA/source/bin
         ROSETTA_DB=$ROSETTA/database
@@ -295,48 +374,49 @@ then
 fi
 
 
-#11. Openbabel install
-grep OpenBabel $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
-    module spider Openbabel 2> tmp
-    grep -w error tmp > openbabel
-    if [ ! -s openbabel ]
-    then
-        echo "Found the following openbabel module(s):" ; cat tmp
-        read -p "Please select one of Openbabel modules found:" openbabel
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "module load" $openbabel >> $vini_dir/sourceme
-    else
-        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
-        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
-        
-        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
-        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
-        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
-        cd $INSTALL/openbabel-openbabel-3-1-1/build
-        rm -rf $INSTALL/openbabel-3.1.1
-        module purge
-        module spider cmake
-        read -p "Enter cmake module to load:" cmake_module
-        module load ${cmake_module}
-        module spider boost
-        read -p "Enter Boost module to load:" boost_module
-        module load ${boost_module}
-        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
-        make -j 4
-        make install
-        cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
-        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
-        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
-        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
-        cd $vini_dir
-        echo -n "done."
-    fi
-fi
-rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
 
-#12. Java install
+#11. Openbabel install
+#grep OpenBabel $vini_dir/sourceme > tmp
+#if  [ ! -s tmp ]
+#then
+#    module spider Openbabel 2> tmp
+#    grep -w error tmp > openbabel
+#    if [ ! -s openbabel ]
+#    then
+#        echo "Found the following openbabel module(s):" ; cat tmp
+#        read -p "Please select one of Openbabel modules found:" openbabel
+#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        echo "module load" $openbabel >> $vini_dir/sourceme
+#    else
+#        echo "No Openbabel module found on this system. Installing Openbabel 3.1.1..."
+#        wget -P $INSTALL https://codeload.github.com/openbabel/openbabel/tar.gz/refs/tags/openbabel-3-1-1
+        
+#        mv $INSTALL/openbabel-3-1-1 $INSTALL/openbabel-3-1-1.tar.gz
+#        tar -xvzf $INSTALL/openbabel-3-1-1.tar.gz -C $INSTALL
+#        mkdir -p $INSTALL/openbabel-openbabel-3-1-1/build
+#        cd $INSTALL/openbabel-openbabel-3-1-1/build
+#        rm -rf $INSTALL/openbabel-3.1.1
+#        module purge
+#        module spider cmake
+#        read -p "Enter cmake module to load:" cmake_module
+#        module load ${cmake_module}
+#        module spider boost
+#        read -p "Enter Boost module to load:" boost_module
+#        module load ${boost_module}
+#        cmake ../ -DCMAKE_INSTALL_PREFIX=$INSTALL/openbabel-3.1.1
+#        make -j 4
+#        make install
+#        cp $INSTALL/openbabel-openbabel-3-1-1/build/lib/libcoordgen.so* $INSTALL/openbabel-3.1.1/lib
+#        echo "#*****OpenBabel section******" >> $vini_dir/sourceme
+#        echo "export PATH=$INSTALL/openbabel-3.1.1/bin:\$PATH" >> $vini_dir/sourceme
+#        echo "module load Boost/1.76.0-GCC-10.3.0" >> $vini_dir/sourceme
+#        cd $vini_dir
+#        echo -n "done."
+#    fi
+#fi
+#rm -f openbabel tmp $INSTALL/openbabel-3-1-1.tar.gz
+
+#11. Java install
 echo -n "Checking if Java is installed..."
 grep Java $vini_dir/sourceme > tmp
 if  [ ! -s tmp ]
@@ -366,149 +446,222 @@ else
     echo "yes."
 fi
 
-#13. BCL install
+#12. BCL install
 echo -n "Checking if BCL is installed..."
-grep BCL $vini_dir/sourceme > tmp
-if  [ ! -s tmp ]
-then
+if ! grep -q "BCL" "$vini_dir/sourceme" 2>/dev/null; then
     echo "no. BCL will be installed. Performing the cleanup, please wait."
-    rm -f $INSTALL/master.zip
-    rm -rf $INSTALL/bcl-master
-    wget -P $INSTALL https://github.com/BCLCommons/bcl/archive/refs/heads/master.zip
-    unzip -o $INSTALL/master.zip -d $INSTALL
-    read -p "Enter the name of your HPC machine:" cluster
-    module purge
-    source $INSTALL/miniconda2/bin/activate
-    if  [ $cluster == Vega ]
-    then
-        module load CMake/3.23.1-GCCcore-11.3.0
-        module load libGLU/9.0.2-GCCcore-11.3.0
-        cd $INSTALL/bcl-master
-        ./scripts/build/build_cmdline.linux.sh
-    else
-        module load utils/cmake/3.26.0
-        module load utils/spack/latest #This is a prerequisite for intel-oneapi-compilers module to load!
-        module load intel-oneapi-compilers-2023.1.0-gcc-8.5.0-ff2gbr7
-        cd $INSTALL/bcl-master
-        ./scripts/build/build_cmdline.linux.sh
+    rm -f "$INSTALL/master.zip"
+    rm -rf "$INSTALL/bcl-master"
+
+    wget -P $INSTALL https://github.com/BCLCommons/bcl/archive/refs/heads/master.zip || {
+        echo "ERROR: Failed to download BCL."
+        exit 1
+    }
+    unzip -o -q "$INSTALL/master.zip" -d "$INSTALL" || {
+        echo "ERROR: Failed to unzip BCL."
+        exit 1
+    }
+
+    if command -v module >/dev/null 2>&1; then
+        module purge 2>/dev/null || true
+        module load cmake 2>/dev/null || module load CMake 2>/dev/null || true
+        #module load gcc/13.4.0 2>/dev/null || module load gcc 2>/dev/null || module load GCC 2>/dev/null || true
+        module load libGLU 2>/dev/null || true
     fi
-    conda deactivate
-    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> $vini_dir/sourceme
-    echo "#******* BCL section *******" >> $vini_dir/sourceme
-    if  [ $cluster == Vega ]
-    then
-        echo "module load bzip2/1.0.8-GCCcore-11.3.0" >> $vini_dir/sourceme
-        echo "module load oneapi/icc/2022.1.0" >> $vini_dir/sourceme
-    else	
-        echo "module load libs/bzip2/1.0.6" >> $vini_dir/sourceme
+
+    . "$INSTALL/miniconda2/etc/profile.d/conda.sh" 2>/dev/null || . "$INSTALL/miniconda2/bin/activate"
+    (
+        cd "$INSTALL/bcl-master" || exit 1
+        ./scripts/build/build_cmdline.linux.sh
+    ) || {
+        echo "ERROR: BCL compilation failed."
+        conda deactivate 2>/dev/null || true
+        exit 1
+    }
+    conda deactivate 2>/dev/null || true
+
+    # Bundle libbz2 and libOpenCL into an isolated BCL lib folder for runtime portability
+    mkdir -p "$INSTALL/bcl-master/lib"
+    if [ ! -e "$INSTALL/miniconda3/envs/env310/lib/libOpenCL.so.1" ]; then
+        CONDA_PKGS_DIRS="$INSTALL/miniconda3/pkgs" "$INSTALL/miniconda3/bin/conda" install -p "$INSTALL/miniconda3/envs/env310" -c conda-forge --yes ocl-icd 2>/dev/null || true
     fi
+    ln -sf "$INSTALL/miniconda3/envs/env310/lib/libbz2.so"* "$INSTALL/bcl-master/lib/" 2>/dev/null || true
+    ln -sf "$INSTALL/miniconda3/envs/env310/lib/libOpenCL.so"* "$INSTALL/bcl-master/lib/" 2>/dev/null || true
+    ln -sf "$INSTALL/miniconda3/pkgs/ocl-icd-"*/lib/libOpenCL.so* "$INSTALL/bcl-master/lib/" 2>/dev/null || true
+    rm -f "$INSTALL/master.zip"
+
+    echo "#******* BCL section *******" >> "$vini_dir/sourceme"
+    echo "export PATH=$INSTALL/bcl-master/build/linux64_release/bin:\$PATH" >> "$vini_dir/sourceme"
+    echo "export LD_LIBRARY_PATH=$INSTALL/bcl-master/lib:\$LD_LIBRARY_PATH" >> "$vini_dir/sourceme"
 else
     echo "yes."
 fi
 
-#14. Hex install
-sh $vini_dir/hex_install
 
-
-#15. GD install
-# Check if the data from Google Drive is installed
-SOURCE_ME=$vini_dir/sourceme
-if  grep -q "#\\*\\*\\*\\*\\* GD_data section \\*\\*\\*\\*\\*" "$SOURCE_ME"
-then
-    echo "Data from GD already downloaded."
+#13. GD install
+SOURCE_ME="$vini_dir/sourceme"
+echo -n "Checking if Google Drive data (DepMap & database) is installed..."
+if grep -q "#\*\*\*\*\* GD_data section \*\*\*\*\*" "$SOURCE_ME" 2>/dev/null; then
+    echo "yes."
 else
-    available_python=$(module --ignore-cache spider Python 2>&1 | grep -Eo 'Python/[0-9]+\.[0-9]+\.[0-9]+' | sort -u | tail -n 1)
-    echo "module load $available_python" >> "$SOURCE_ME"
-    echo "export VINI_PYTHON_MODULE=$available_python" >> "$SOURCE_ME"
 
-    echo "Installing gdown..."
-    module load "$available_python"
-    python -m pip install --user --upgrade pip gdown
+    # Install gdown cleanly inside VINI's env310 (avoids loading conflicting system Python/GCC modules)
+    "$INSTALL/miniconda3/envs/env310/bin/pip" install --quiet --upgrade gdown || {
+        echo "ERROR: Failed to install gdown in env310."
+        exit 1
+    }
+    GDOWN_BIN="$INSTALL/miniconda3/envs/env310/bin"
+    GDOWN="$GDOWN_BIN/gdown"
+
+    echo "no. Downloading DepMap and VINI databases..."
     DATABASE_DIR="$vini_dir/database"
     DEPMAP_DIR="$vini_dir/database/DepMap"
-    mkdir -p $DEPMAP_DIR $DATABASE_DIR
+    mkdir -p "$DEPMAP_DIR" "$DATABASE_DIR"
 
-    echo "Installing DepMap..."
-    gdown "https://drive.google.com/uc?id=19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O "${DEPMAP_DIR}/Depmap.tar.gz"
-    tar -xvzf "${DEPMAP_DIR}/Depmap.tar.gz" -C ${DEPMAP_DIR}
-    rm ${DEPMAP_DIR}/Depmap.tar.gz
+    echo "Downloading and extracting DepMap (319 MB)..."
+    "$GDOWN" "19qjZgt9WNPFrbBir0-Ux--Yvzsh1shc7" -O "${DEPMAP_DIR}/Depmap.tar.gz" || {
+        echo "ERROR: Failed to download Depmap.tar.gz from Google Drive."
+        rm -f "${DEPMAP_DIR}/Depmap.tar.gz"
+        exit 1
+    }
+    tar -xzf "${DEPMAP_DIR}/Depmap.tar.gz" -C "$DEPMAP_DIR" || {
+        echo "ERROR: Failed to extract Depmap.tar.gz."
+        exit 1
+    }
+    rm -f "${DEPMAP_DIR}/Depmap.tar.gz"
 
-    echo "Installing database..."
-    gdown "https://drive.google.com/uc?id=12tUXGOdyQV_GLUmRzsGnB7vgKrvLjZcH" -O "${DATABASE_DIR}/database.tar.bz2"
-    tar -xvf "${DATABASE_DIR}/database.tar.bz2" -C ${DATABASE_DIR}
-    rm ${DATABASE_DIR}/database.tar.bz2
+    echo "Downloading and extracting VINI database. May take several minutes, do not interrupt."
+    "$GDOWN" "12tUXGOdyQV_GLUmRzsGnB7vgKrvLjZcH" -O "${DATABASE_DIR}/database.tar.bz2" || {
+        echo "ERROR: Failed to download database.tar.bz2 from Google Drive."
+        rm -f "${DATABASE_DIR}/database.tar.bz2"
+        exit 1
+    }
+    tar -xjf "${DATABASE_DIR}/database.tar.bz2" -C "$DATABASE_DIR" || {
+        echo "ERROR: Failed to extract database.tar.bz2."
+        exit 1
+    }
+    rm -f "${DATABASE_DIR}/database.tar.bz2"
+    echo "Done!"
 
     {
-    echo ""
-    echo "#***** GD_data section *****"
-    echo "export DEPMAP_DIR=$DEPMAP_DIR"
-    echo "export DATABASE_DIR=$DATABASE_DIR"
-    echo "export PATH=\$DEPMAP_DIR/bin:\$PATH"
+        echo "#***** GD_data section *****"
+        echo "export DEPMAP_DIR=$DEPMAP_DIR"
+        echo "export DATABASE_DIR=$DATABASE_DIR"
+        echo "export PATH=\$DEPMAP_DIR/bin:\$PATH"
+        echo "export PATH=$GDOWN_BIN:\$PATH"
     } >> "$SOURCE_ME"
 
+    echo "Google Drive data installation finished."
 fi
 
-echo "Installing MOPAC..."
-PROJECT_FOLDER=/ceph/hpc/data/r2022r03-224-users
-INSTALL=$PROJECT_FOLDER/eudraskot
-vini_dir=$HOME/Vini
+#14. MOPAC install
+echo -n "Checking if MOPAC is installed..."
 SOURCEME="$vini_dir/sourceme"
 CHECKPOINT_STRING="#*** MOPAC section ***"
-MOPAC=$INSTALL/mopac
-SCRATCH_BUILD=$INSTALL/SCRATCH_BUILD
+MOPAC="$INSTALL/mopac"
+SCRATCH_BUILD="$INSTALL/SCRATCH_BUILD"
 
 if [ ! -f "$SOURCEME" ] || ! grep -qF "$CHECKPOINT_STRING" "$SOURCEME"; then
-    # 1. Detect if a cluster module exists natively
-    if module spider mopac 2>&1 | grep -qi "MOPAC"; then
-        echo "MOPAC cluster module detected!"
+    echo "no."
+
+    # 1. Detect if a cluster module exists natively (extract module name first, verify non-empty)
+    MOPAC_MODULE=""
+    if command -v module >/dev/null 2>&1; then
         MOPAC_MODULE=$(module avail 2>&1 | grep -oiE "MOPAC/[A-Za-z0-9._\-]+" | head -n 1)
-        
-        # 2. Ask the user for their delivery choice
+    fi
+
+    if [ -n "$MOPAC_MODULE" ]; then
+        echo "MOPAC cluster module detected!"
         echo "--------------------------------------------------------"
         echo "Found available cluster module: $MOPAC_MODULE"
-        read -p "Would you like to use this cluster module? [Y/n]: " user_choice
+        printf "Would you like to use this cluster module? [Y/n]: "
+        read user_choice
         echo "--------------------------------------------------------"
-        
-        # Standardize choice string to lowercase
         user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
     else
-        # Force local compile if no module exists on the machine environment
         user_choice="n"
     fi
 
-    # 3. Decision Loop Routing Layer
+    # 2. Decision Loop Routing Layer
     if [ "$user_choice" = "y" ] || [ "$user_choice" = "" ] || [ "$user_choice" = "yes" ]; then
         echo "Loading cluster module layout..."
-        module load "$MOPAC_MODULE"
+        module load "$MOPAC_MODULE" || {
+            echo "ERROR: Failed to load $MOPAC_MODULE."
+            exit 1
+        }
         mkdir -p "$vini_dir" && touch "$SOURCEME"
-        echo "" >> "$SOURCEME"
-        echo "$CHECKPOINT_STRING" >> "$SOURCEME"
-        echo "module load $MOPAC_MODULE" >> "$SOURCEME"
+        {
+            echo ""
+            echo "$CHECKPOINT_STRING"
+            echo "module load $MOPAC_MODULE"
+        } >> "$SOURCEME"
     else
         echo "Proceeding with local custom source installation..."
-        module purge
-        module load CMake/3.29.3-GCCcore-13.3.0 GCC/13.3.0 OpenBLAS/0.3.27-GCC-13.3.0
+        if command -v module >/dev/null 2>&1; then
+            module purge 2>/dev/null || true
+            module load cmake/v3.31.10 2>/dev/null || module load cmake 2>/dev/null || module load CMake 2>/dev/null || true
+            module load gcc/13.4.0 2>/dev/null || module load gcc 2>/dev/null || module load GCC 2>/dev/null || true
+            module load LIBS/OpenBLAS 2>/dev/null || module load OpenBLAS 2>/dev/null || module load openblas 2>/dev/null || true
+        fi
+
         mkdir -p "$MOPAC" "$SCRATCH_BUILD"
-        cd "$SCRATCH_BUILD" && rm -rf ./*
-        cd "$MOPAC" && rm -rf ./*
-        wget https://github.com/openmopac/mopac/archive/refs/heads/main.zip
-        unzip -qo main.zip
-        cd mopac-main
-        mkdir -p build
-        cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX="$MOPAC" -DTESTS=OFF
-        make -j 4 && make install
+        rm -rf "$SCRATCH_BUILD"/* "$MOPAC"/*
+
+        wget -P "$SCRATCH_BUILD" https://github.com/openmopac/mopac/archive/refs/heads/main.zip || {
+            echo "ERROR: Failed to download OpenMOPAC."
+            exit 1
+        }
+        unzip -qo "$SCRATCH_BUILD/main.zip" -d "$SCRATCH_BUILD" || {
+            echo "ERROR: Failed to unzip OpenMOPAC."
+            exit 1
+        }
+
+        (
+            cd "$SCRATCH_BUILD/mopac-main" || exit 1
+            rm -rf build && mkdir -p build && cd build || exit 1
+
+            # Locate libopenblas.so from loaded module (LIBRARY_PATH / LD_LIBRARY_PATH) or fallback to env310
+            BLAS_LIB_DIR=$(echo "$LIBRARY_PATH:$LD_LIBRARY_PATH" | tr ':' '\n' | grep -i openblas | head -n 1)
+            if [ -z "$BLAS_LIB_DIR" ]; then
+                BLAS_LIB_DIR="$INSTALL/miniconda3/envs/env310/lib"
+            fi
+
+            cmake .. -DCMAKE_INSTALL_PREFIX="$MOPAC" -DTESTS=OFF -DAUTO_BLAS=OFF -DMOPAC_LINK="-L${BLAS_LIB_DIR} -lopenblas" || exit 1
+            make -j 4 && make install
+        ) || {
+            echo "ERROR: MOPAC compilation failed."
+            exit 1
+        }
+
+        # Bundle runtime Fortran/OpenBLAS shared libraries into $MOPAC/lib64 so no compiler module is needed at runtime
+        mkdir -p "$MOPAC/lib64"
+        for lib in libgfortran.so libquadmath.so libopenblas.so; do
+            found_lib=$(ldd "$MOPAC/bin/mopac" 2>/dev/null | awk -v l="$lib" '$1 ~ l {print $3}')
+            if [ -n "$found_lib" ] && [ -f "$found_lib" ]; then
+                cp -L "$found_lib"* "$MOPAC/lib64/" 2>/dev/null || true
+            fi
+        done
+
+        # Clean up build directory and return to $vini_dir
+        rm -rf "$SCRATCH_BUILD"
+        cd "$vini_dir"
+
         mkdir -p "$vini_dir" && touch "$SOURCEME"
-        echo "" >> "$SOURCEME"
-        echo "$CHECKPOINT_STRING" >> "$SOURCEME"
-        echo "export PATH=$MOPAC/bin:\$PATH" >> "$SOURCEME"
-        echo "export LD_LIBRARY_PATH=$MOPAC/lib64:\$LD_LIBRARY_PATH" >> "$SOURCEME"
-        echo "export MOPAC_THREADS=\$SLURM_CPUS_PER_TASK" >> "$SOURCEME"
+        {
+            echo ""
+            echo "$CHECKPOINT_STRING"
+            echo "export PATH=$MOPAC/bin:\$PATH"
+            echo "export LD_LIBRARY_PATH=$MOPAC/lib64:$MOPAC/lib:\$LD_LIBRARY_PATH"
+            echo "export MOPAC_THREADS=\${SLURM_CPUS_PER_TASK:-4}"
+        } >> "$SOURCEME"
     fi
     echo "MOPAC deployment section finished successfully."
 else
-    echo "Checkpoint verified: MOPAC environment is already active. Continuing installer sequence..."
+    echo "yes."
 fi
+
+#15. Hex install
+sh $vini_dir/hex_install
 
 #sh $vini_dir/database_sync #create and push on GD VINI database snapshot
 

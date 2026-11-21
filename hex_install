@@ -1,14 +1,12 @@
 #!/bin/bash
 
-echo "=== Hex Installer (Interactive Mode) ==="
+echo "=== Hex Installer ==="
 
 # ----------------------------
 #  Load variables from sourceme
 # ----------------------------
 if [ -z "$vini_dir" ]; then
-    echo "ERROR: vini_dir is not set!"
-    echo "Run: source Vini/sourceme"
-    exit 1
+    vini_dir="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
 fi
 
 SOURCEME="$vini_dir/sourceme"
@@ -18,8 +16,7 @@ if [ ! -f "$SOURCEME" ]; then
     exit 1
 fi
 
-# Load INSTALL from sourceme
-INSTALL=$(grep "^export INSTALL=" "$SOURCEME" | sed 's/export INSTALL=//')
+INSTALL=$(grep "^export INSTALL=" "$SOURCEME" | sed 's/export INSTALL=//' | tr -d '"'\''')
 
 if [ -z "$INSTALL" ]; then
     echo "ERROR: INSTALL variable not found in $SOURCEME"
@@ -28,76 +25,78 @@ fi
 
 echo "Using INSTALL directory: $INSTALL"
 
-TOOLS="$INSTALL"
-HEX_URL="https://hex.loria.fr/dist/hex-8.1.1-x64-centos7.run"
-HEX_RUN="$INSTALL/hex-8.1.1-x64-centos7.run"
-
+HEX_FILE="hex-8.1.1-x64-centos7.run"
+HEX_SRC="$vini_dir/database/$HEX_FILE"
+HEX_RUN="$INSTALL/$HEX_FILE"
+HEX_DEST="$INSTALL/hex-8.1.1"
 
 # ----------------------------
 # 1. Check if Hex is already registered
 # ----------------------------
 if grep -q "Hex section" "$SOURCEME"; then
-    echo "Hex already appears in sourceme → skipping installation."
+    echo "Hex already appears in sourceme -> skipping installation."
     exit 0
 fi
 
 echo "Hex is not yet installed. Proceeding..."
 
 # ----------------------------
-# 2. Download installer if missing
+# 2. Copy bundled installer from VINI database into $INSTALL
 # ----------------------------
-if [ ! -f "$HEX_RUN" ]; then
-    echo "Downloading Hex installer:"
-    echo "  $HEX_URL"
-    wget -O "$HEX_RUN" "$HEX_URL"
-    if [ $? -ne 0 ]; then
-        echo "ERROR: download failed!"
+if [ -f "$HEX_SRC" ]; then
+    echo "Copying bundled Hex installer from $HEX_SRC to $INSTALL..."
+    cp -f "$HEX_SRC" "$HEX_RUN" || {
+        echo "ERROR: Failed to copy $HEX_SRC to $HEX_RUN!"
         exit 1
-    fi
-else
-    echo "Installer already exists at: $HEX_RUN"
+    }
+elif [ ! -f "$HEX_RUN" ]; then
+    echo "ERROR: Bundled Hex installer not found at $HEX_SRC or $HEX_RUN!"
+    exit 1
 fi
 
 chmod +x "$HEX_RUN"
 
 # ----------------------------
-# 3. Run interactive installer
+# 3. Run installer (try unattended into $HEX_DEST first, fallback to text/interactive)
 # ----------------------------
 echo ""
-echo ">>> Starting interactive Hex installer"
-echo ">>> Please follow the on-screen prompts"
+echo ">>> Installing Hex into $HEX_DEST..."
 echo ""
 
-"$HEX_RUN"
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: Hex installer exited with errors."
-    exit 1
+rm -rf "$HEX_DEST"
+if ! "$HEX_RUN" --mode unattended --prefix "$HEX_DEST" 2>/dev/null; then
+    echo "Starting interactive terminal Hex installer..."
+    echo ">>> When prompted for installation directory, enter: $HEX_DEST"
+    unset DISPLAY
+    "$HEX_RUN" --mode text || "$HEX_RUN" || {
+        echo "ERROR: Hex installer exited with errors."
+        rm -f "$HEX_RUN"
+        exit 1
+    }
 fi
 
-echo ""
-echo "Hex installation appears to have finished."
-echo ""
-
 # ----------------------------
-# 4. Append Hex section to sourceme
+# 4. Detect Hex executable location and append to sourceme
 # ----------------------------
-HEX_PATH=$(find "$TOOLS" -maxdepth 1 -type d -name "hex*" | head -1)
+HEX_BIN=$(find "$INSTALL" -maxdepth 3 -type f -name "hex" -perm -u+x 2>/dev/null | head -n 1)
 
-if [ -z "$HEX_PATH" ]; then
-    echo "WARNING: Hex installation directory not found inside $TOOLS"
+if [ -z "$HEX_BIN" ]; then
+    echo "WARNING: Hex executable not found inside $INSTALL"
     echo "You may need to manually adjust PATH."
+    rm -f "$HEX_RUN"
+    exit 1
 else
-    echo "Detected Hex installation in: $HEX_PATH"
+    HEX_BIN_DIR=$(dirname "$HEX_BIN")
+    echo "Detected Hex executable at: $HEX_BIN"
 
     {
         echo ""
         echo "# ***** Hex section *****"
-        echo "export PATH=\"\$PATH:$HEX_PATH\""
+        echo "export PATH=\"\$PATH:$HEX_BIN_DIR\""
     } >> "$SOURCEME"
 
-    echo "Hex PATH added to $SOURCEME"
+    rm -f "$HEX_RUN"
+    echo "Hex PATH ($HEX_BIN_DIR) added to $SOURCEME"
 fi
 
 echo "=== Hex setup complete ==="
-

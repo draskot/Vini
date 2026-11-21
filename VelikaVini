@@ -47,6 +47,7 @@ echo "Creating KEGG receptor structures..."
 sh $vini_dir/create_receptor_structures
 echo " done ."
 
+
 if  [ -s $WORKDIR/missing_genes ]
 then
     echo "Cannot continue as the following KEGG genes are missing entry in Uniprot:"
@@ -64,6 +65,8 @@ then
     echo "Then upload these strucures to $vini_dir/database/genes/pdb_files/$cell_line directory and start Vini again."
     echo "Exiting." ; exit
 fi
+
+#echo "brakepoint!" ; sleep 1000
 
 if [ ! -e $vini_dir/ligands/${cell_line} ]
 then

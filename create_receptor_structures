@@ -3,8 +3,10 @@ source $vini_dir/globals
 UNIPROT_ID_LIST="_uniprot_entries.txt"
 outdir=$vini_dir/genes/pdb_files  #where the predicted structures are placed
 
-cp $ROSETTA/tools/protein_tools/scripts/clean_pdb.py ./
-cp $ROSETTA/tools/protein_tools/scripts/amino_acids.py ./
+#cp $ROSETTA/tools/protein_tools/scripts/clean_pdb.py ./
+#cp $ROSETTA/tools/protein_tools/scripts/amino_acids.py ./
+cp $vini_dir/clean_pdb.py ./
+cp $vini_dir/amino_acids.py ./
 rm -f *pdb
 
 #http://mmb.irbbarcelona.org/gitlab/DBW/PDBBrowser/raw/d80ad01c7569f5cfaac3a247f6e086d63db815cc/PDBData/cmpd_res.idx
